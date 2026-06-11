@@ -771,6 +771,7 @@ function WorkoutTab(props: {
   const [focusedExerciseId, setFocusedExerciseId] = useState<string>();
   const [sessionScrollKey, setSessionScrollKey] = useState(0);
   const exerciseEditorRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const workoutTopRef = useRef<HTMLDivElement | null>(null);
   const sessionSectionRef = useRef<HTMLElement | null>(null);
   const activeSession = props.workoutSessions.find((session) => session.id === sessionId);
   const activeExercises = props.workoutExercises
@@ -822,6 +823,11 @@ function WorkoutTab(props: {
   const toggleExerciseFavorite = async (exercise: ExercisePreset) => {
     await db.exercise_presets.update(exercise.id, { is_favorite: !exercise.is_favorite, updated_at: nowIso() });
     await props.refresh();
+  };
+
+  const scrollToWorkoutTop = () => {
+    setFocusedExerciseId(undefined);
+    workoutTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
   const startFromTemplate = async (template: WorkoutTemplate) => {
@@ -887,7 +893,7 @@ function WorkoutTab(props: {
     .slice(0, 40);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" ref={workoutTopRef}>
       <div className="grid grid-cols-3 gap-2">
         {(["favorite", "preset", "body", "equipment", "previous", "search"] as const).map((item) => (
           <button className={`mode-button ${mode === item ? "mode-button-active" : ""}`} key={item} onClick={() => setMode(item)}>{workoutModeLabel(item)}</button>
@@ -975,7 +981,8 @@ function WorkoutTab(props: {
               />
             </div>
           ))}
-          <div className="p-3">
+          <div className="grid gap-2 p-3">
+            <button className="secondary-button w-full" onClick={scrollToWorkoutTop}><Plus size={17} />他の種目を追加</button>
             <button className="secondary-button w-full" onClick={async () => {
               const sessionExercises = props.workoutExercises.filter((exercise) => exercise.session_id === activeSession.id);
               const template: WorkoutTemplate = {
