@@ -57,6 +57,7 @@ import type {
   WorkoutSession,
   WorkoutSet,
   WorkoutTemplate,
+  WorkoutTemplateIconKey,
 } from "./types";
 import { addDays, dateRange, formatJapaneseDate, nowIso, todayAppDate } from "./lib/date";
 import { makeId } from "./lib/ids";
@@ -850,6 +851,16 @@ function WorkoutTab(props: {
     await updateTemplateExercises(template, template.exercises.filter((_, itemIndex) => itemIndex !== index));
   };
 
+  const updateTemplateDetails = async (template: WorkoutTemplate, details: { name: string; icon_key: WorkoutTemplateIconKey }) => {
+    const name = details.name.trim() || template.name;
+    await db.workout_templates.update(template.id, {
+      name,
+      icon_key: details.icon_key,
+      updated_at: nowIso(),
+    });
+    await props.refresh();
+  };
+
   const scrollToWorkoutTop = () => {
     setFocusedExerciseId(undefined);
     workoutTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -967,6 +978,7 @@ function WorkoutTab(props: {
               onAddExercise={(exercise) => addExerciseToTemplate(editingTemplate.id, exercisePresetToTemplateExercise(exercise))}
               onRemoveExercise={(index) => removeExerciseFromTemplate(editingTemplate, index)}
               onStart={() => startFromTemplate(editingTemplate)}
+              onUpdateDetails={(details) => updateTemplateDetails(editingTemplate, details)}
               query={templateExerciseQuery}
               setQuery={setTemplateExerciseQuery}
               template={editingTemplate}
@@ -1033,6 +1045,7 @@ function WorkoutTab(props: {
                 id: makeId("template_user"),
                 name: `${activeSession.title} preset`,
                 body_parts: activeSession.body_parts,
+                icon_key: inferWorkoutTemplateIconKey({ body_parts: activeSession.body_parts, exercises: [] }),
                 exercises: sessionExercises.map((exercise) => ({
                   exercise_id: exercise.exercise_id,
                   exercise_name: exercise.exercise_name,
@@ -1661,7 +1674,7 @@ function WorkoutTemplateRow({ template, isEditing, onStart, onEdit }: {
 }) {
   return (
     <div className={`flex items-center justify-between gap-3 px-4 py-4 transition-colors hover:bg-rice/70 ${isEditing ? "bg-leaf/20" : ""}`}>
-      <Pictogram {...getWorkoutPictogram(template.body_parts.join(" "), template.exercises[0]?.equipment_type)} />
+      <Pictogram {...getWorkoutTemplatePictogram(template)} />
       <button className="min-w-0 flex-1 text-left" onClick={() => onStart(template)}>
         <p className="truncate text-sm font-bold">{template.name}</p>
         <p className="truncate text-xs text-moss">{template.body_parts.join(" / ") || "未設定"} · {template.exercises.length}種目</p>
@@ -1672,7 +1685,7 @@ function WorkoutTemplateRow({ template, isEditing, onStart, onEdit }: {
   );
 }
 
-function WorkoutTemplateEditor({ template, exercisePresets, query, setQuery, onStart, onAddExercise, onRemoveExercise }: {
+function WorkoutTemplateEditor({ template, exercisePresets, query, setQuery, onStart, onAddExercise, onRemoveExercise, onUpdateDetails }: {
   template: WorkoutTemplate;
   exercisePresets: ExercisePreset[];
   query: string;
@@ -1680,7 +1693,10 @@ function WorkoutTemplateEditor({ template, exercisePresets, query, setQuery, onS
   onStart: () => void | Promise<void>;
   onAddExercise: (exercise: ExercisePreset) => void | Promise<void>;
   onRemoveExercise: (index: number) => void | Promise<void>;
+  onUpdateDetails: (details: { name: string; icon_key: WorkoutTemplateIconKey }) => void | Promise<void>;
 }) {
+  const [nameDraft, setNameDraft] = useState(template.name);
+  const [iconDraft, setIconDraft] = useState<WorkoutTemplateIconKey>(template.icon_key ?? inferWorkoutTemplateIconKey(template));
   const needle = query.trim().toLowerCase();
   const addResults = exercisePresets
     .filter((exercise) => {
@@ -1689,6 +1705,10 @@ function WorkoutTemplateEditor({ template, exercisePresets, query, setQuery, onS
       return haystack.includes(needle);
     })
     .slice(0, 12);
+  useEffect(() => {
+    setNameDraft(template.name);
+    setIconDraft(template.icon_key ?? inferWorkoutTemplateIconKey(template));
+  }, [template.id, template.name, template.icon_key, template.body_parts.join("|"), template.exercises.length]);
   return (
     <section className="compact-card divide-y divide-line overflow-hidden">
       <div className="px-4 py-3">
@@ -1699,6 +1719,28 @@ function WorkoutTemplateEditor({ template, exercisePresets, query, setQuery, onS
           </div>
           <button className="primary-button h-10 px-3 py-2" onClick={onStart}><Check size={16} />開始</button>
         </div>
+      </div>
+
+      <div className="p-4">
+        <label className="text-xs font-semibold text-moss">
+          プリセット名
+          <input className="mt-2 h-11 w-full text-base" value={nameDraft} onChange={(event) => setNameDraft(event.target.value)} placeholder="プリセット名" />
+        </label>
+        <div className="mt-3">
+          <p className="text-xs font-semibold text-moss">アイコン</p>
+          <div className="mt-2 grid grid-cols-3 gap-2">
+            {workoutTemplateIconOptions.map((option) => {
+              const pictogram = getWorkoutTemplateIconPictogram(option.key);
+              return (
+                <button className={`tap-tile gap-2 ${iconDraft === option.key ? "tap-tile-active" : ""}`} key={option.key} onClick={() => setIconDraft(option.key)}>
+                  <Pictogram {...pictogram} />
+                  <span>{option.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+        <button className="secondary-button mt-3 w-full" onClick={() => onUpdateDetails({ name: nameDraft, icon_key: iconDraft })}><Save size={16} />名前とアイコンを保存</button>
       </div>
 
       <div>
@@ -1989,6 +2031,41 @@ function getWorkoutPictogram(bodyPart = "", equipmentType = "") {
   if (/背中|広背|ロー|プル/.test(text)) return { icon: Activity, tone: "moss" as PictogramTone };
   if (/腹|体幹|コア/.test(text)) return { icon: Weight, tone: "leaf" as PictogramTone };
   return { icon: Dumbbell, tone: "moss" as PictogramTone };
+}
+
+const workoutTemplateIconOptions: { key: WorkoutTemplateIconKey; label: string }[] = [
+  { key: "strength", label: "全身" },
+  { key: "upper", label: "上半身" },
+  { key: "legs", label: "脚" },
+  { key: "back", label: "背中" },
+  { key: "core", label: "体幹" },
+  { key: "cardio", label: "有酸素" },
+];
+
+function getWorkoutTemplatePictogram(template: Pick<WorkoutTemplate, "icon_key" | "body_parts" | "exercises">) {
+  if (template.icon_key) return getWorkoutTemplateIconPictogram(template.icon_key);
+  return getWorkoutPictogram(template.body_parts.join(" "), template.exercises[0]?.equipment_type);
+}
+
+function getWorkoutTemplateIconPictogram(key: WorkoutTemplateIconKey) {
+  return {
+    strength: { icon: Dumbbell, tone: "moss" as PictogramTone },
+    upper: { icon: BicepsFlexed, tone: "clay" as PictogramTone },
+    legs: { icon: Dumbbell, tone: "sun" as PictogramTone },
+    back: { icon: Activity, tone: "moss" as PictogramTone },
+    core: { icon: Weight, tone: "leaf" as PictogramTone },
+    cardio: { icon: Bike, tone: "sky" as PictogramTone },
+  }[key];
+}
+
+function inferWorkoutTemplateIconKey(template: Pick<WorkoutTemplate, "body_parts" | "exercises">): WorkoutTemplateIconKey {
+  const text = `${template.body_parts.join(" ")} ${template.exercises[0]?.equipment_type ?? ""}`;
+  if (/有酸素|バイク|トレッドミル|ランニング|ウォーキング|クロストレーナー|ローイング/.test(text)) return "cardio";
+  if (/胸|肩|腕|上腕|三頭|二頭/.test(text)) return "upper";
+  if (/脚|下半身|尻|ヒップ/.test(text)) return "legs";
+  if (/背中|広背|ロー|プル/.test(text)) return "back";
+  if (/腹|体幹|コア/.test(text)) return "core";
+  return "strength";
 }
 
 function WorkoutGoalProgress({ label, done, target }: { label: string; done: number; target: number }) {
