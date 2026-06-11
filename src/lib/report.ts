@@ -1,6 +1,7 @@
 import type { FoodEntry, Goal, Profile, WeightLog, WorkoutExercise, WorkoutSession, WorkoutSet } from "../types";
 import { dateRange } from "./date";
 import { phaseLabels } from "./goalCalculator";
+import { formatWeeklyWorkoutStatus, type WeeklyWorkoutStatus } from "./workoutStatus";
 
 export function generateMarkdownReport(input: {
   profile?: Profile;
@@ -10,6 +11,7 @@ export function generateMarkdownReport(input: {
   workoutSessions: WorkoutSession[];
   workoutExercises: WorkoutExercise[];
   workoutSets: WorkoutSet[];
+  weeklyWorkoutStatus?: WeeklyWorkoutStatus;
   periodStart: string;
   periodEnd: string;
   question: string;
@@ -81,6 +83,7 @@ ${isDaily ? `対象日: ${input.periodStart}` : `期間: ${input.periodStart} - 
 - フェーズ: ${input.goal ? phaseLabels[input.goal.phase] : "未設定"}
 - 目標 kcal: ${input.goal?.target_calories ?? "-"}
 - 目標 P/F/C: ${input.goal?.target_protein_g ?? "-"}g / ${input.goal?.target_fat_g ?? "-"}g / ${input.goal?.target_carbs_g ?? "-"}g
+- 週の運動目標: 筋トレ ${input.goal?.target_workouts_per_week ?? "-"}回 / 有酸素 ${input.goal?.target_cardio_sessions_per_week ?? "-"}回
 
 ## プロフィール
 
@@ -124,6 +127,8 @@ ${foodLines.join("\n") || "- 記録なし"}
 
 - セッション数: ${input.workoutSessions.length}
 - 種目数: ${scopedExercises.length}
+- 今週の達成状況: ${input.weeklyWorkoutStatus ? formatWeeklyWorkoutStatus(input.weeklyWorkoutStatus) : "未計算"}
+- 今週の対象期間: ${input.weeklyWorkoutStatus ? `${input.weeklyWorkoutStatus.start} - ${input.weeklyWorkoutStatus.end}` : "-"}
 
 ${exerciseLines.join("\n") || "- 記録なし"}
 
