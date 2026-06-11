@@ -1,6 +1,7 @@
 import { genericFoods } from "./generic";
 import { proteinProductFoods } from "./proteinProducts";
 import { quickEstimateFoods } from "./quickEstimates";
+import { burgerKingMenuFoods } from "./chains/burgerkingMenu";
 import { gyudonFoods } from "./chains/gyudon";
 import { udonFoods } from "./chains/udon";
 import { teishokuFoods } from "./chains/teishoku";
@@ -27,6 +28,7 @@ export const foodSeeds = [
   ...genericFoods,
   ...proteinProductFoods,
   ...quickEstimateFoods,
+  ...burgerKingMenuFoods,
   ...gyudonFoods,
   ...matsuyaOfficialFoods,
   ...sukiyaOfficialFoods,

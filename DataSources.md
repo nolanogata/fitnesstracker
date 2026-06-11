@@ -25,6 +25,7 @@ UI confidence labels:
 - 天丼てんや: official in-store calorie/allergen PDF. Added selected core tempura bowls from the 2026-06-11 sheet.
 - リンガーハット: official allergy/nutrition page. Added selected chanpon, sara-udon, and gyoza items checked on 2026-06-12.
 - モスバーガー: official nutrition PDF. Added selected burger and side core items from the 2026-05-20 sheet.
+- バーガーキング: official menu page was checked on 2026-06-12. Added selected official-menu-name entries as `estimated/medium`; P/F/C values are not official.
 - ほっともっと: official Tokyo menu nutrition pages/list. Added selected core bento items checked on 2026-06-12.
 - 餃子の王将: official regional menu pages were checked on 2026-06-12. Added selected official-menu-name entries as `estimated/medium`; P/F/C values are not official.
 - なか卯: official nutrition PDF. Added representative parent bowls, beef bowls, katsudon, karaage bowl, and udon items from the 2026-06-10 sheet.
@@ -41,6 +42,7 @@ UI confidence labels:
   - Doutor and Tully's: official menu pages were checked on 2026-06-12. Added selected official-menu-name entries as `estimated/medium`.
   - Komeda: official menu and menu-allergy APIs were checked on 2026-06-12. Kcal values are official, but P/F/C is estimated, so entries remain `estimated/medium`.
 - Protein bars/drinks:
+  - Protein foods are separated into the `プロテイン` category rather than `サプリ`.
   - Asahi 一本満足バー and Meiji SAVAS product pages were checked on 2026-06-12. Added selected items as `official/high` when kcal/P/F/C/salt were directly shown as single values.
   - Morinaga in jelly/bar pages were checked on 2026-06-12. Added selected items as `estimated/medium` where values are ranged or only product names were available in the current pass.
 - External nutrition fallback:
