@@ -573,7 +573,7 @@ function FoodTab(props: { menuItems: MenuItem[]; foodEntries: FoodEntry[]; appDa
           <div className="flex items-center justify-between px-4 py-3" key={entry.id}>
             <div>
               <p className="text-sm font-semibold">{entry.name}</p>
-              <p className="text-xs text-moss">{mealLabels[entry.meal_type]} · {entry.entry_source}</p>
+              <p className="text-xs text-moss">{mealLabels[entry.meal_type]} · {sourceLabel(entry.entry_source, entry.confidence)}</p>
             </div>
             <div className="flex items-center gap-2">
               <p className="text-sm font-bold">{entry.calories}</p>
@@ -588,6 +588,7 @@ function FoodTab(props: { menuItems: MenuItem[]; foodEntries: FoodEntry[]; appDa
           <div className="compact-card w-full p-4">
             <p className="text-lg font-bold">{selected.name}</p>
             <p className="text-sm text-moss">{selected.brand ?? selected.category} · {Math.round(selected.calories * multiplier)} kcal</p>
+            <p className="mt-1 text-xs font-semibold text-clay">{sourceLabel(selected.data_source, selected.confidence)}</p>
             <div className="mt-3 grid grid-cols-4 gap-2">
               {Object.entries(mealLabels).map(([key, label]) => (
                 <button key={key} className={`chip justify-center ${mealType === key ? "chip-active" : ""}`} onClick={() => setMealType(key as MealType)}>{label}</button>
@@ -1049,6 +1050,7 @@ function Onboarding({ refresh }: { refresh: () => Promise<void> }) {
     workouts: 3,
     cardio: 1,
   });
+  const [restoreMessage, setRestoreMessage] = useState("");
   const age = new Date().getFullYear() - draft.birth_year;
   const profile: Profile = {
     id: "local",
@@ -1075,6 +1077,27 @@ function Onboarding({ refresh }: { refresh: () => Promise<void> }) {
     <main className="mx-auto min-h-screen max-w-[430px] bg-rice px-4 py-8 text-ink">
       <div className="compact-card p-5">
         <h1 className="text-2xl font-black tracking-normal">Phase Log Local</h1>
+        <section className="mt-4 rounded-md border border-leaf/30 bg-leaf/10 p-3 text-sm">
+          <p className="font-bold">前に使っていたデータがある場合</p>
+          <p className="mt-1 text-xs text-moss">アップデート後や別のiPhoneでこの画面が出たら、設定で保存したバックアップJSONを読み込んで復元してください。</p>
+          <label className="secondary-button mt-3 w-full cursor-pointer">
+            <Archive size={17} />バックアップJSONを読み込む
+            <input className="hidden" type="file" accept="application/json" onChange={async (event: ChangeEvent<HTMLInputElement>) => {
+              const file = event.target.files?.[0];
+              if (!file) return;
+              try {
+                const payload = JSON.parse(await file.text()) as BackupPayload;
+                await importBackup(payload);
+                localStorage.setItem(backupStorageKey, nowIso());
+                setRestoreMessage("復元しました。");
+                await refresh();
+              } catch {
+                setRestoreMessage("読み込みに失敗しました。JSONファイルを確認してください。");
+              }
+            }} />
+          </label>
+          {restoreMessage && <p className="mt-2 text-xs font-semibold text-clay">{restoreMessage}</p>}
+        </section>
         <div className="mt-5 grid grid-cols-2 gap-2">
           <label className="col-span-2 text-xs font-semibold">名前<input className="mt-1 w-full" value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} /></label>
           <NumberInput label="身長cm" value={draft.height_cm} onChange={(value) => setDraft({ ...draft, height_cm: value })} />
@@ -1098,6 +1121,7 @@ function Onboarding({ refresh }: { refresh: () => Promise<void> }) {
           <NumberInput label="kcal上書き" value={draft.target_calories} onChange={(value) => setDraft({ ...draft, target_calories: value })} />
           <NumberInput label="P上書き" value={draft.target_protein_g} onChange={(value) => setDraft({ ...draft, target_protein_g: value })} />
         </div>
+        <p className="mt-3 rounded-md bg-surface p-3 text-xs text-moss">初回設定後は、Settingsのバックアップから週1回くらいJSONエクスポートしておくと、次にこの画面が出ても復元できます。</p>
         <p className="mt-4 rounded-md bg-rice p-3 text-sm">目標: {calculated.target_calories} kcal / P{calculated.target_protein_g} F{calculated.target_fat_g} C{calculated.target_carbs_g}</p>
         <button className="primary-button mt-4 w-full" onClick={async () => {
           const timestamp = nowIso();
@@ -1175,7 +1199,7 @@ function FoodItemRow({ item, onPick, onClone, refresh }: { item: MenuItem; onPic
       <button className="min-w-0 flex-1 text-left" onClick={() => onPick(item)}>
         <p className="truncate text-sm font-semibold">{item.name}</p>
         <p className="truncate text-xs text-moss">{item.brand ?? item.category} · {item.calories}kcal · P{item.protein_g} F{item.fat_g} C{item.carbs_g}</p>
-        <p className="text-[11px] text-clay">{item.data_source} · {item.confidence}</p>
+        <p className="text-[11px] font-semibold text-clay">{sourceLabel(item.data_source, item.confidence)}</p>
       </button>
       <button className="icon-button h-8 w-8" aria-label="編集して個人メニュー化" onClick={() => onClone(item)}><Pencil size={14} /></button>
       <button className="icon-button h-8 w-8" aria-label="お気に入り" onClick={async () => {
@@ -1496,6 +1520,17 @@ function draftNumber(value: string) {
 
 function sourceRank(source: MenuItem["data_source"]) {
   return { official: 0, user: 1, estimated: 2, quick_estimate: 3 }[source];
+}
+
+function sourceLabel(source: MenuItem["data_source"], confidence: MenuItem["confidence"]) {
+  const sourceText = {
+    official: "公式値",
+    estimated: "推定値",
+    quick_estimate: "ざっくり概算",
+    user: "自分で入力",
+  }[source];
+  const confidenceText = confidence === "low" ? "一部不明" : confidence === "medium" ? "確認推奨" : "";
+  return [sourceText, confidenceText].filter(Boolean).join(" · ");
 }
 
 function workoutModeLabel(mode: WorkoutMode) {
