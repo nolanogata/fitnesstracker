@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, type ChangeEvent, type ReactNode 
 import {
   Activity,
   Archive,
+  BarChart3,
   Check,
   ChevronRight,
   Copy,
@@ -18,6 +19,7 @@ import {
   Search,
   Settings,
   Trash2,
+  Trophy,
   Utensils,
   Weight,
 } from "lucide-react";
@@ -47,7 +49,7 @@ import { activityLabels, buildGoal, calculateTargets, phaseLabels } from "./lib/
 import { downloadText, exportBackup, importBackup, resetLocalData } from "./lib/backup";
 import { generateMarkdownReport } from "./lib/report";
 
-type Tab = "home" | "food" | "workout" | "settings";
+type Tab = "home" | "food" | "workout" | "records" | "settings";
 type FoodMode = "search" | "favorite" | "chain" | "category" | "quick" | "rough" | "manual" | "personal";
 type WorkoutMode = "favorite" | "preset" | "body" | "equipment" | "previous" | "search";
 type SettingsFocus = "ai" | undefined;
@@ -260,6 +262,14 @@ function App() {
             refresh={refresh}
           />
         )}
+        {tab === "records" && (
+          <RecordsTab
+            weightLogs={weightLogs}
+            workoutSessions={workoutSessions}
+            workoutExercises={workoutExercises}
+            workoutSets={workoutSets}
+          />
+        )}
         {tab === "settings" && (
           <SettingsTab
             profile={profile}
@@ -277,10 +287,11 @@ function App() {
       </section>
 
       <nav className="safe-bottom fixed inset-x-0 bottom-0 z-30 mx-auto max-w-[430px] border-t border-line bg-white px-3 pt-2">
-        <div className="grid grid-cols-4 gap-1">
+        <div className="grid grid-cols-5 gap-1">
           <TabButton active={tab === "home"} icon={<Home size={19} />} label="Home" onClick={() => { setSettingsFocus(undefined); setTab("home"); }} />
           <TabButton active={tab === "food"} icon={<Utensils size={19} />} label="Food" onClick={() => { setSettingsFocus(undefined); setTab("food"); }} />
           <TabButton active={tab === "workout"} icon={<Dumbbell size={19} />} label="Workout" onClick={() => { setSettingsFocus(undefined); setTab("workout"); }} />
+          <TabButton active={tab === "records"} icon={<BarChart3 size={19} />} label="記録" onClick={() => { setSettingsFocus(undefined); setTab("records"); }} />
           <TabButton active={tab === "settings"} icon={<Settings size={19} />} label="Settings" onClick={() => { setSettingsFocus(undefined); setTab("settings"); }} />
         </div>
       </nav>
@@ -911,6 +922,96 @@ function WorkoutTab(props: {
   );
 }
 
+function RecordsTab(props: {
+  weightLogs: WeightLog[];
+  workoutSessions: WorkoutSession[];
+  workoutExercises: WorkoutExercise[];
+  workoutSets: WorkoutSet[];
+}) {
+  const sortedWeightLogs = [...props.weightLogs].sort((a, b) => a.logged_at.localeCompare(b.logged_at));
+  const latestWeight = sortedWeightLogs.at(-1);
+  const firstWeight = sortedWeightLogs[0];
+  const latestBodyFat = [...sortedWeightLogs].reverse().find((log) => typeof log.body_fat_percentage === "number");
+  const firstBodyFat = sortedWeightLogs.find((log) => typeof log.body_fat_percentage === "number");
+  const workoutHistory = buildWorkoutHistory(props.workoutSessions, props.workoutExercises, props.workoutSets);
+  const recentPrs = workoutHistory.flatMap((session) => session.prs.map((pr) => ({ ...pr, app_date: session.app_date }))).slice(0, 8);
+
+  return (
+    <div className="space-y-4">
+      <section className="compact-card p-4">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-sm font-bold">体重・体脂肪</p>
+            <p className="text-xs text-moss">最新 {latestWeight ? formatJapaneseDate(latestWeight.app_date) : "-"}</p>
+          </div>
+          <div className="text-right text-xs">
+            <p className="font-bold">{latestWeight ? `${latestWeight.weight_kg}kg` : "-"}</p>
+            <p className="text-moss">{typeof latestBodyFat?.body_fat_percentage === "number" ? `${latestBodyFat.body_fat_percentage}%` : "体脂肪 -"}</p>
+          </div>
+        </div>
+        <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+          <MetricPill label="体重変化" value={formatSignedDelta(latestWeight?.weight_kg, firstWeight?.weight_kg, "kg")} />
+          <MetricPill label="体脂肪変化" value={formatSignedDelta(latestBodyFat?.body_fat_percentage, firstBodyFat?.body_fat_percentage, "%")} />
+        </div>
+      </section>
+
+      <HistoryLineChart
+        title="体重推移"
+        unit="kg"
+        logs={sortedWeightLogs}
+        getValue={(log) => log.weight_kg}
+        color="#526a57"
+      />
+      <HistoryLineChart
+        title="体脂肪率"
+        unit="%"
+        logs={sortedWeightLogs.filter((log) => typeof log.body_fat_percentage === "number")}
+        getValue={(log) => log.body_fat_percentage}
+        color="#c76f51"
+      />
+
+      <section className="compact-card divide-y divide-line">
+        <ListHeader title="最近の記録更新" value={`${recentPrs.length}件`} />
+        {recentPrs.map((pr) => (
+          <div className="flex items-start gap-3 px-4 py-3" key={`${pr.exerciseName}-${pr.app_date}-${pr.label}`}>
+            <div className="mt-0.5 rounded-full bg-sun/20 p-1.5 text-[#8a5d13]"><Trophy size={15} /></div>
+            <div className="min-w-0">
+              <p className="text-sm font-bold">{pr.exerciseName}</p>
+              <p className="text-xs text-moss">{formatJapaneseDate(pr.app_date)} · {pr.label}</p>
+            </div>
+          </div>
+        ))}
+        {recentPrs.length === 0 && <EmptyLine text="まだ記録更新はありません" />}
+      </section>
+
+      <section className="compact-card divide-y divide-line">
+        <ListHeader title="ワークアウト履歴" value={`${workoutHistory.length}件`} />
+        {workoutHistory.slice(0, 20).map((session) => (
+          <div className="px-4 py-3" key={session.id}>
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-sm font-bold">{session.title}</p>
+                <p className="text-xs text-moss">{formatJapaneseDate(session.app_date)} · {session.exerciseCount}種目 · {session.setCount}セット</p>
+              </div>
+              {session.prs.length > 0 && <span className="rounded-full bg-sun/20 px-2 py-0.5 text-[11px] font-black text-[#8a5d13]">PR {session.prs.length}</span>}
+            </div>
+            <div className="mt-2 space-y-1">
+              {session.lines.slice(0, 4).map((line) => (
+                <div className="flex items-center justify-between gap-2 text-xs" key={line.exerciseName}>
+                  <span className="truncate text-ink">{line.exerciseName}</span>
+                  <span className={line.isPr ? "shrink-0 font-bold text-clay" : "shrink-0 text-moss"}>{line.isPr ? "PR " : ""}{line.label}</span>
+                </div>
+              ))}
+              {session.lines.length > 4 && <p className="text-xs text-moss">ほか {session.lines.length - 4}種目</p>}
+            </div>
+          </div>
+        ))}
+        {workoutHistory.length === 0 && <EmptyLine text="まだワークアウト履歴はありません" />}
+      </section>
+    </div>
+  );
+}
+
 function SettingsTab(props: {
   profile?: Profile;
   goals: Goal[];
@@ -1447,6 +1548,78 @@ function MacroLine({ label, value, target, color = "#8fb48e", warnOnOver = false
   );
 }
 
+function MetricPill({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-md border border-line bg-rice px-3 py-2">
+      <p className="text-[11px] font-semibold text-moss">{label}</p>
+      <p className="mt-0.5 text-sm font-black">{value}</p>
+    </div>
+  );
+}
+
+function HistoryLineChart({
+  title,
+  unit,
+  logs,
+  getValue,
+  color,
+}: {
+  title: string;
+  unit: string;
+  logs: WeightLog[];
+  getValue: (log: WeightLog) => number | undefined;
+  color: string;
+}) {
+  const values = logs
+    .map((log) => ({ date: log.app_date, value: getValue(log) }))
+    .filter((point): point is { date: string; value: number } => typeof point.value === "number" && Number.isFinite(point.value));
+  const recent = values.slice(-30);
+  const min = recent.length ? Math.min(...recent.map((point) => point.value)) : 0;
+  const max = recent.length ? Math.max(...recent.map((point) => point.value)) : 0;
+  const span = Math.max(max - min, 1);
+  const width = 320;
+  const height = 132;
+  const pad = 18;
+  const points = recent.map((point, index) => {
+    const x = recent.length === 1 ? width / 2 : pad + (index / (recent.length - 1)) * (width - pad * 2);
+    const y = pad + (1 - (point.value - min) / span) * (height - pad * 2);
+    return { ...point, x, y };
+  });
+  const path = points.map((point, index) => `${index === 0 ? "M" : "L"} ${point.x} ${point.y}`).join(" ");
+  const latest = recent.at(-1);
+
+  return (
+    <section className="compact-card p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-sm font-bold">{title}</p>
+          <p className="text-xs text-moss">直近30件</p>
+        </div>
+        <p className="text-sm font-black">{latest ? `${latest.value}${unit}` : "-"}</p>
+      </div>
+      {recent.length > 0 ? (
+        <>
+          <svg className="mt-3 h-36 w-full overflow-visible" viewBox={`0 0 ${width} ${height}`} role="img" aria-label={title}>
+            <line x1={pad} y1={height - pad} x2={width - pad} y2={height - pad} stroke="#ded9cf" strokeWidth="1" />
+            <line x1={pad} y1={pad} x2={width - pad} y2={pad} stroke="#ded9cf" strokeWidth="1" strokeDasharray="4 4" />
+            {path && <path d={path} fill="none" stroke={color} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />}
+            {points.map((point, index) => (
+              <circle key={`${point.date}-${index}`} cx={point.x} cy={point.y} r={index === points.length - 1 ? 4 : 2.5} fill={index === points.length - 1 ? "#f7f6f2" : color} stroke={color} strokeWidth="2" />
+            ))}
+          </svg>
+          <div className="mt-1 flex justify-between text-[11px] font-semibold text-moss">
+            <span>{recent[0]?.date}</span>
+            <span>min {round1(min)}{unit} / max {round1(max)}{unit}</span>
+            <span>{latest?.date}</span>
+          </div>
+        </>
+      ) : (
+        <p className="mt-4 rounded-md bg-rice px-3 py-6 text-center text-sm text-moss">まだ記録がありません</p>
+      )}
+    </section>
+  );
+}
+
 function getCalorieState(remaining: number, target: number) {
   if (target <= 0) {
     return {
@@ -1606,6 +1779,107 @@ function sumFood(entries: FoodEntry[]) {
 function defaultGoal(profile?: Profile): Goal | undefined {
   if (!profile) return undefined;
   return buildGoal({ profile, phase: "maintenance", activity_level: "moderate", age: new Date().getFullYear() - profile.birth_year });
+}
+
+type WorkoutPr = {
+  exerciseName: string;
+  label: string;
+};
+
+type WorkoutHistoryLine = {
+  exerciseName: string;
+  label: string;
+  isPr: boolean;
+};
+
+type WorkoutHistoryItem = {
+  id: string;
+  app_date: string;
+  title: string;
+  exerciseCount: number;
+  setCount: number;
+  lines: WorkoutHistoryLine[];
+  prs: WorkoutPr[];
+};
+
+function buildWorkoutHistory(sessions: WorkoutSession[], exercises: WorkoutExercise[], sets: WorkoutSet[]): WorkoutHistoryItem[] {
+  const exercisesBySession = new Map<string, WorkoutExercise[]>();
+  const setsByExercise = new Map<string, WorkoutSet[]>();
+  exercises.forEach((exercise) => {
+    exercisesBySession.set(exercise.session_id, [...(exercisesBySession.get(exercise.session_id) ?? []), exercise]);
+  });
+  sets.forEach((set) => {
+    setsByExercise.set(set.workout_exercise_id, [...(setsByExercise.get(set.workout_exercise_id) ?? []), set]);
+  });
+
+  const bestByExercise = new Map<string, number>();
+  const sortedSessions = [...sessions].sort((a, b) => a.logged_at.localeCompare(b.logged_at));
+
+  return sortedSessions.map((session) => {
+    const sessionExercises = (exercisesBySession.get(session.id) ?? []).sort((a, b) => a.order - b.order);
+    const lines: WorkoutHistoryLine[] = [];
+    const prs: WorkoutPr[] = [];
+    let setCount = 0;
+
+    sessionExercises.forEach((exercise) => {
+      const exerciseSets = (setsByExercise.get(exercise.id) ?? []).sort((a, b) => a.set_order - b.set_order);
+      setCount += exerciseSets.length;
+      const bestSet = pickBestWorkoutSet(exercise, exerciseSets);
+      if (!bestSet) {
+        lines.push({ exerciseName: exercise.exercise_name, label: `${exerciseSets.length}セット`, isPr: false });
+        return;
+      }
+      const previousBest = bestByExercise.get(exercise.exercise_name);
+      const isPr = typeof previousBest === "number" && bestSet.score > previousBest;
+      if (isPr) {
+        prs.push({ exerciseName: exercise.exercise_name, label: bestSet.label });
+      }
+      bestByExercise.set(exercise.exercise_name, Math.max(previousBest ?? 0, bestSet.score));
+      lines.push({ exerciseName: exercise.exercise_name, label: bestSet.label, isPr });
+    });
+
+    return {
+      id: session.id,
+      app_date: session.app_date,
+      title: session.title,
+      exerciseCount: sessionExercises.length,
+      setCount,
+      lines,
+      prs,
+    };
+  }).reverse();
+}
+
+function pickBestWorkoutSet(exercise: WorkoutExercise, sets: WorkoutSet[]) {
+  const candidates = sets
+    .map((set) => {
+      if (exercise.body_part === "有酸素" || set.duration_min) {
+        const duration = set.duration_min ?? 0;
+        if (!duration) return undefined;
+        return {
+          score: duration,
+          label: `${duration}分${set.active_calories ? ` / ${set.active_calories}kcal` : ""}`,
+        };
+      }
+      const weight = set.weight_kg ?? 0;
+      const reps = set.reps ?? 0;
+      if (!weight && !reps) return undefined;
+      const score = weight ? weight * (1 + reps / 30) : reps;
+      return {
+        score,
+        label: weight ? `${weight}kg x ${reps || "-"}回` : `${reps}回`,
+      };
+    })
+    .filter((candidate): candidate is { score: number; label: string } => !!candidate);
+  return candidates.sort((a, b) => b.score - a.score)[0];
+}
+
+function formatSignedDelta(latest?: number, first?: number, unit = "") {
+  if (typeof latest !== "number" || typeof first !== "number") return "-";
+  const delta = round1(latest - first);
+  if (delta > 0) return `+${delta}${unit}`;
+  if (delta < 0) return `${delta}${unit}`;
+  return `±0${unit}`;
 }
 
 function movingAverage(logs: WeightLog[], count: number) {
