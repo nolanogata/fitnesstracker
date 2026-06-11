@@ -35,6 +35,26 @@ export function generateMarkdownReport(input: {
   const sessionIds = new Set(input.workoutSessions.map((session) => session.id));
   const scopedExercises = input.workoutExercises.filter((exercise) => sessionIds.has(exercise.session_id));
   const isDaily = input.periodStart === input.periodEnd;
+  const average = {
+    calories: Math.round(totals.calories / divisor),
+    protein: Math.round(totals.protein / divisor),
+    fat: Math.round(totals.fat / divisor),
+    carbs: Math.round(totals.carbs / divisor),
+  };
+  const macroDiffs = input.goal
+    ? {
+        calories: average.calories - input.goal.target_calories,
+        protein: average.protein - input.goal.target_protein_g,
+        fat: average.fat - input.goal.target_fat_g,
+        carbs: average.carbs - input.goal.target_carbs_g,
+      }
+    : undefined;
+  const fcWarnings = macroDiffs
+    ? [
+        macroDiffs.fat > 0 ? `脂質 +${macroDiffs.fat}g` : "",
+        macroDiffs.carbs > 0 ? `炭水化物 +${macroDiffs.carbs}g` : "",
+      ].filter(Boolean)
+    : [];
 
   const foodLines = input.foodEntries.map((entry) => {
     const brand = entry.brand ? `${entry.brand} / ` : "";
@@ -79,14 +99,22 @@ ${isDaily ? `対象日: ${input.periodStart}` : `期間: ${input.periodStart} - 
 
 - 記録あり日数: ${foodDays.size}
 - 未記録日: ${missingDays.length}日 (${missingDays.join(", ") || "なし"})
-- 平均 kcal: ${Math.round(totals.calories / divisor)}
-- 平均 P/F/C: ${Math.round(totals.protein / divisor)}g / ${Math.round(totals.fat / divisor)}g / ${Math.round(totals.carbs / divisor)}g
+- 平均 kcal: ${average.calories}
+- 平均 P/F/C: ${average.protein}g / ${average.fat}g / ${average.carbs}g
 - 外食・チェーン系ログ: ${eatingOut}件
 - スイーツ系ログ: ${sweets}件
 - 飲酒・飲み会ログ: ${drinking}件
 - 推定ログ比率: ${
     Math.round((input.foodEntries.filter((entry) => entry.confidence !== "high").length / Math.max(input.foodEntries.length, 1)) * 100)
   }%
+
+## 目標との差分
+
+- kcal: ${macroDiffs ? formatDiff(macroDiffs.calories, "kcal") : "目標未設定"}
+- P: ${macroDiffs ? formatDiff(macroDiffs.protein, "g") : "目標未設定"}
+- F: ${macroDiffs ? formatDiff(macroDiffs.fat, "g") : "目標未設定"}
+- C: ${macroDiffs ? formatDiff(macroDiffs.carbs, "g") : "目標未設定"}
+- F/C超過: ${fcWarnings.join(" / ") || "なし"}
 
 ## 食事ログ
 
@@ -103,4 +131,10 @@ ${exerciseLines.join("\n") || "- 記録なし"}
 
 ${input.question || "ここに質問を追記してください。"}
 `;
+}
+
+function formatDiff(value: number, unit: string) {
+  if (value > 0) return `+${value}${unit}超過`;
+  if (value < 0) return `${Math.abs(value)}${unit}不足`;
+  return "目標どおり";
 }

@@ -324,14 +324,16 @@ function HomeTab(props: {
               <p className="text-xs font-bold text-moss">残りカロリー</p>
               <span className={`rounded-full px-2 py-0.5 text-[11px] font-black ${calorieState.badgeClass}`}>{calorieState.label}</span>
             </div>
-            <p className={`mt-1 text-4xl font-black tracking-normal ${calorieState.valueClass}`}>{calorieState.displayValue}</p>
-            <p className="text-sm font-semibold text-moss">{calorieState.subtitle}</p>
-            <p className="mt-1 text-xs text-moss">{props.dayTotals.calories} / {props.goal?.target_calories ?? "-"} kcal</p>
+            <p className={`mt-1 text-4xl font-black tracking-normal ${calorieState.valueClass}`}>
+              {calorieState.displayValue}
+              {props.goal?.target_calories ? <span className="ml-1 text-base">kcal</span> : null}
+            </p>
+            <p className="mt-1 text-xs text-moss">摂取 {props.dayTotals.calories} kcal / 目標 {props.goal?.target_calories ?? "-"} kcal</p>
           </div>
           <div className="grid gap-1 text-right text-xs">
             <MacroLine label="P" value={props.dayTotals.protein} target={props.goal?.target_protein_g ?? 0} color="#526a57" />
-            <MacroLine label="F" value={props.dayTotals.fat} target={props.goal?.target_fat_g ?? 0} color="#c76f51" />
-            <MacroLine label="C" value={props.dayTotals.carbs} target={props.goal?.target_carbs_g ?? 0} color="#d9a441" />
+            <MacroLine label="F" value={props.dayTotals.fat} target={props.goal?.target_fat_g ?? 0} color="#c76f51" warnOnOver />
+            <MacroLine label="C" value={props.dayTotals.carbs} target={props.goal?.target_carbs_g ?? 0} color="#d9a441" warnOnOver />
           </div>
         </div>
       </section>
@@ -1430,12 +1432,17 @@ function PartialNumberInput({ label, value, step = 1, onChange }: { label: strin
   );
 }
 
-function MacroLine({ label, value, target, color = "#8fb48e" }: { label: string; value: number; target: number; color?: string }) {
+function MacroLine({ label, value, target, color = "#8fb48e", warnOnOver = false }: { label: string; value: number; target: number; color?: string; warnOnOver?: boolean }) {
   const percent = target ? Math.min(100, Math.round((value / target) * 100)) : 0;
+  const isOver = warnOnOver && target > 0 && value > target;
+  const displayTarget = target || "-";
   return (
-    <div className="w-28">
-      <div className="flex justify-between"><span>{label}</span><span>{round1(value)}/{target}</span></div>
-      <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-line"><div className="h-full" style={{ width: `${percent}%`, backgroundColor: color }} /></div>
+    <div className={`w-32 rounded-md px-2 py-1 transition-colors ${isOver ? "bg-clay/10 text-clay" : "text-ink"}`}>
+      <div className="flex justify-between gap-2">
+        <span className="font-bold">{label}{isOver ? <span className="ml-1 text-[10px]">超過</span> : null}</span>
+        <span className="whitespace-nowrap">{round1(value)}/{displayTarget}g</span>
+      </div>
+      <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-line"><div className="h-full" style={{ width: `${percent}%`, backgroundColor: isOver ? "#c76f51" : color }} /></div>
     </div>
   );
 }
