@@ -19,6 +19,7 @@ import { nakauOfficialFoods } from "./chains/nakauOfficial";
 import { ootoyaMenuFoods } from "./chains/ootoyaMenu";
 import { shinpachiMenuFoods } from "./chains/shinpachiMenu";
 import { subwayOfficialFoods } from "./chains/subwayOfficial";
+import { sukiyaOfficialFoods } from "./chains/sukiyaOfficial";
 import { yayoikenOfficialFoods } from "./chains/yayoikenOfficial";
 import { yoshinoyaOfficialFoods } from "./chains/yoshinoyaOfficial";
 
@@ -28,6 +29,7 @@ export const foodSeeds = [
   ...quickEstimateFoods,
   ...gyudonFoods,
   ...matsuyaOfficialFoods,
+  ...sukiyaOfficialFoods,
   ...nakauOfficialFoods,
   ...yoshinoyaOfficialFoods,
   ...udonFoods,

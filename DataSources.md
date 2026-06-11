@@ -29,7 +29,7 @@ UI confidence labels:
 - 餃子の王将: official regional menu pages were checked on 2026-06-12. Added selected official-menu-name entries as `estimated/medium`; P/F/C values are not official.
 - なか卯: official nutrition PDF. Added representative parent bowls, beef bowls, katsudon, karaage bowl, and udon items from the 2026-06-10 sheet.
 - やよい軒: official Tokyo nutrition table. Added representative teishoku, fish meals, and donburi items from the 2026-06-01 table.
-- すき家: official menu pages and nutrition list links.
+- すき家: official nutrition PDF. Added representative beef bowl variants and sizes from the 2026-06-09 nutrition sheet.
 - 大戸屋: official menu page is store-scoped and warns menus differ by store. Added selected official-menu-name entries as `estimated/medium` only; P/F/C values are not official.
 - しんぱち食堂: official site menu lists fish set meals. Added selected official-menu-name entries as `estimated/medium` only; P/F/C values are not official.
 - Family restaurants:
