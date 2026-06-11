@@ -1,0 +1,127 @@
+import type { ExercisePreset, WorkoutTemplate } from "../../types";
+import { stableId } from "../../lib/ids";
+
+const timestamp = "2026-01-01T00:00:00.000Z";
+
+const exercise = (
+  name: string,
+  body_part: string,
+  equipment_type: string,
+  movement_pattern: string,
+  default_sets = 3,
+  default_reps = 10,
+  default_duration_min?: number,
+): ExercisePreset => ({
+  id: stableId("exercise", [name, body_part, equipment_type]),
+  name,
+  body_part,
+  equipment_type,
+  movement_pattern,
+  default_sets,
+  default_reps,
+  default_duration_min,
+  is_public_preset: true,
+  is_user_created: false,
+  preset_pack: "starter",
+  created_at: timestamp,
+  updated_at: timestamp,
+});
+
+export const exerciseSeeds: ExercisePreset[] = [
+  exercise("チェストプレス", "胸", "マシン", "push"),
+  exercise("インクラインチェストプレス", "胸", "マシン", "push"),
+  exercise("ペックフライ", "胸", "マシン", "fly"),
+  exercise("スミスマシンベンチプレス", "胸", "スミスマシン", "push"),
+  exercise("ケーブルフライ", "胸", "ケーブル", "fly"),
+  exercise("バーベルベンチプレス", "胸", "フリーウェイト", "push"),
+  exercise("ダンベルベンチプレス", "胸", "フリーウェイト", "push"),
+  exercise("プッシュアップ", "胸", "自重・自宅", "push"),
+  exercise("ラットプルダウン", "背中", "マシン", "pull"),
+  exercise("シーテッドロー", "背中", "マシン", "pull"),
+  exercise("ケーブルロー", "背中", "ケーブル", "pull"),
+  exercise("ワンハンドケーブルロー", "背中", "ケーブル", "pull"),
+  exercise("バーベルロー", "背中", "フリーウェイト", "pull"),
+  exercise("ダンベルロー", "背中", "フリーウェイト", "pull"),
+  exercise("デッドリフト", "背中", "フリーウェイト", "hinge", 3, 5),
+  exercise("チンニング", "背中", "自重・自宅", "pull", 3, 8),
+  exercise("レッグプレス", "脚", "マシン", "squat"),
+  exercise("ハックスクワット", "脚", "マシン", "squat"),
+  exercise("レッグエクステンション", "脚", "マシン", "extension"),
+  exercise("シーテッドレッグカール", "脚", "マシン", "curl"),
+  exercise("スミスマシンスクワット", "脚", "スミスマシン", "squat"),
+  exercise("バーベルスクワット", "脚", "フリーウェイト", "squat", 3, 5),
+  exercise("ダンベルランジ", "脚", "フリーウェイト", "lunge"),
+  exercise("ブルガリアンスクワット", "脚", "フリーウェイト", "lunge"),
+  exercise("自重スクワット", "脚", "自重・自宅", "squat", 3, 15),
+  exercise("ショルダープレス", "肩", "マシン", "push"),
+  exercise("ラテラルレイズマシン", "肩", "マシン", "raise"),
+  exercise("スミスマシンショルダープレス", "肩", "スミスマシン", "push"),
+  exercise("ケーブルサイドレイズ", "肩", "ケーブル", "raise"),
+  exercise("ダンベルショルダープレス", "肩", "フリーウェイト", "push"),
+  exercise("サイドレイズ", "肩", "フリーウェイト", "raise"),
+  exercise("リアレイズ", "肩", "フリーウェイト", "raise"),
+  exercise("アームカールマシン", "腕", "マシン", "curl"),
+  exercise("ケーブルプレスダウン", "腕", "ケーブル", "extension"),
+  exercise("ケーブルカール", "腕", "ケーブル", "curl"),
+  exercise("バーベルカール", "腕", "フリーウェイト", "curl"),
+  exercise("ダンベルカール", "腕", "フリーウェイト", "curl"),
+  exercise("ハンマーカール", "腕", "フリーウェイト", "curl"),
+  exercise("ナロープッシュアップ", "腕", "自重・自宅", "push"),
+  exercise("アブドミナルクランチ", "体幹", "マシン", "crunch"),
+  exercise("ケーブルクランチ", "体幹", "ケーブル", "crunch"),
+  exercise("プランク", "体幹", "自重・自宅", "hold", 3, 0, 1),
+  exercise("サイドプランク", "体幹", "自重・自宅", "hold", 3, 0, 1),
+  exercise("クランチ", "体幹", "自重・自宅", "crunch", 3, 15),
+  exercise("レッグレイズ", "体幹", "自重・自宅", "raise", 3, 12),
+  exercise("アブローラー", "体幹", "自重・自宅", "rollout", 3, 10),
+  exercise("クロストレーナー", "有酸素", "有酸素", "cardio", 1, 0, 20),
+  exercise("トレッドミル", "有酸素", "有酸素", "cardio", 1, 0, 20),
+  exercise("傾斜ウォーキング", "有酸素", "有酸素", "cardio", 1, 0, 20),
+  exercise("早歩き", "有酸素", "有酸素", "cardio", 1, 0, 30),
+  exercise("バイク", "有酸素", "有酸素", "cardio", 1, 0, 20),
+  exercise("リカンベントバイク", "有酸素", "有酸素", "cardio", 1, 0, 20),
+  exercise("エアロバイク高負荷", "有酸素", "有酸素", "cardio", 1, 0, 20),
+  exercise("ローイングマシン", "有酸素", "有酸素", "cardio", 1, 0, 15),
+  exercise("ステアクライマー", "有酸素", "有酸素", "cardio", 1, 0, 15),
+  exercise("階段昇降", "有酸素", "自重・自宅", "cardio", 1, 0, 15),
+  exercise("ウォーキング", "有酸素", "有酸素", "cardio", 1, 0, 30),
+  exercise("ランニング", "有酸素", "有酸素", "cardio", 1, 0, 20),
+  exercise("ジョギング", "有酸素", "有酸素", "cardio", 1, 0, 20),
+  exercise("縄跳び", "有酸素", "自重・自宅", "cardio", 1, 0, 10),
+  exercise("HIIT", "有酸素", "自重・自宅", "cardio", 1, 0, 12),
+];
+
+const templateExercise = (name: string) => {
+  const preset = exerciseSeeds.find((item) => item.name === name);
+  if (!preset) throw new Error(`Missing exercise seed: ${name}`);
+  return {
+    exercise_id: preset.id,
+    exercise_name: preset.name,
+    body_part: preset.body_part,
+    equipment_type: preset.equipment_type,
+    sets: preset.default_sets ?? 3,
+    reps: preset.default_reps,
+    duration_min: preset.default_duration_min,
+  };
+};
+
+const template = (name: string, body_parts: string[], exerciseNames: string[]): WorkoutTemplate => ({
+  id: stableId("template", [name, "starter"]),
+  name,
+  body_parts,
+  exercises: exerciseNames.map(templateExercise),
+  is_public_preset: true,
+  is_user_created: false,
+  created_at: timestamp,
+  updated_at: timestamp,
+});
+
+export const workoutTemplateSeeds: WorkoutTemplate[] = [
+  template("胸の日", ["胸", "腕"], ["チェストプレス", "ペックフライ", "ダンベルベンチプレス", "ケーブルプレスダウン"]),
+  template("脚の日", ["脚"], ["レッグプレス", "レッグエクステンション", "シーテッドレッグカール", "自重スクワット"]),
+  template("背中の日", ["背中", "腕"], ["ラットプルダウン", "シーテッドロー", "ダンベルロー", "ダンベルカール"]),
+  template("肩の日", ["肩"], ["ショルダープレス", "サイドレイズ", "リアレイズ", "ケーブルサイドレイズ"]),
+  template("全身マシン", ["胸", "背中", "脚", "肩"], ["チェストプレス", "ラットプルダウン", "レッグプレス", "ショルダープレス"]),
+  template("自宅トレ", ["胸", "脚", "体幹"], ["プッシュアップ", "自重スクワット", "プランク", "クランチ"]),
+  template("有酸素のみ", ["有酸素"], ["トレッドミル", "バイク"]),
+];
