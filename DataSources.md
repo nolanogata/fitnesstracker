@@ -45,6 +45,8 @@ UI confidence labels:
   - Protein foods are separated into the `プロテイン` category rather than `サプリ`.
   - Asahi 一本満足バー and Meiji SAVAS product pages were checked on 2026-06-12. Added selected items as `official/high` when kcal/P/F/C/salt were directly shown as single values.
   - Morinaga in jelly/bar pages were checked on 2026-06-12. Added selected items as `estimated/medium` where values are ranged or only product names were available in the current pass.
+- General foods:
+  - Common home/general meal presets such as rice bowls, curry, noodles, bread, mains, side dishes, soups, desserts, and drinks are bundled as `estimated/medium` practical logging defaults. They are not official nutrition values and should be treated as editable estimates.
 - External nutrition fallback:
   - FatSecret Japan was checked on 2026-06-12. Added selected Starbucks, Komeda, Gusto, and Saizeriya rows as `unofficial/medium` only when menu name and serving unit matched closely enough. Non-exact matches were skipped.
 - 丸亀製麺: official menu and allergen pages were verified. Official P/F/C table was not found in the current pass.
