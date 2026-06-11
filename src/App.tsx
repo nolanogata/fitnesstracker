@@ -10,6 +10,7 @@ import {
   Heart,
   Home,
   Minus,
+  Pencil,
   Plus,
   RotateCcw,
   Save,
@@ -47,6 +48,22 @@ import { generateMarkdownReport } from "./lib/report";
 
 type Tab = "home" | "food" | "workout" | "settings";
 type FoodMode = "search" | "chain" | "category" | "quick" | "manual" | "personal";
+type SettingsFocus = "ai" | undefined;
+type ManualFoodDraft = {
+  name: string;
+  brand: string;
+  meal_type: MealType;
+  category: string;
+  subcategory: string;
+  calories: string;
+  protein_g: string;
+  fat_g: string;
+  carbs_g: string;
+  salt_g: string;
+  note: string;
+  savePreset: boolean;
+  favorite: boolean;
+};
 
 const mealLabels: Record<MealType, string> = {
   breakfast: "朝",
@@ -85,15 +102,16 @@ const genericCategories: Record<string, string[]> = {
   その他: ["不明"],
 };
 
-const emptyManual = {
+const emptyManual: ManualFoodDraft = {
   name: "",
   brand: "",
   meal_type: "lunch" as MealType,
   category: "自炊",
-  calories: 0,
-  protein_g: 0,
-  fat_g: 0,
-  carbs_g: 0,
+  subcategory: "白米",
+  calories: "",
+  protein_g: "",
+  fat_g: "",
+  carbs_g: "",
   salt_g: "",
   note: "",
   savePreset: false,
@@ -113,6 +131,7 @@ function App() {
   const [workoutExercises, setWorkoutExercises] = useState<WorkoutExercise[]>([]);
   const [workoutSets, setWorkoutSets] = useState<WorkoutSet[]>([]);
   const [tab, setTab] = useState<Tab>(() => (localStorage.getItem("phase-log-tab") as Tab) || "home");
+  const [settingsFocus, setSettingsFocus] = useState<SettingsFocus>();
   const appDate = todayAppDate(settings?.day_boundary_hour ?? 3);
   const activeGoal = goals.find((goal) => goal.is_active);
 
@@ -189,7 +208,14 @@ function App() {
             workoutExercises={workoutExercises}
             latestWeight={latestWeight}
             weightLogs={weightLogs}
-            setTab={setTab}
+            setTab={(nextTab) => {
+              setSettingsFocus(undefined);
+              setTab(nextTab);
+            }}
+            openAiReport={() => {
+              setSettingsFocus("ai");
+              setTab("settings");
+            }}
             refresh={refresh}
           />
         )}
@@ -213,6 +239,7 @@ function App() {
             activeGoal={activeGoal}
             menuItems={menuItems}
             workoutTemplates={workoutTemplates}
+            focus={settingsFocus}
             refresh={refresh}
             allData={{ foodEntries, weightLogs, workoutSessions, workoutExercises, workoutSets }}
           />
@@ -221,10 +248,10 @@ function App() {
 
       <nav className="safe-bottom fixed inset-x-0 bottom-0 z-30 mx-auto max-w-[430px] border-t border-line bg-white px-3 pt-2">
         <div className="grid grid-cols-4 gap-1">
-          <TabButton active={tab === "home"} icon={<Home size={19} />} label="Home" onClick={() => setTab("home")} />
-          <TabButton active={tab === "food"} icon={<Utensils size={19} />} label="Food" onClick={() => setTab("food")} />
-          <TabButton active={tab === "workout"} icon={<Dumbbell size={19} />} label="Workout" onClick={() => setTab("workout")} />
-          <TabButton active={tab === "settings"} icon={<Settings size={19} />} label="Settings" onClick={() => setTab("settings")} />
+          <TabButton active={tab === "home"} icon={<Home size={19} />} label="Home" onClick={() => { setSettingsFocus(undefined); setTab("home"); }} />
+          <TabButton active={tab === "food"} icon={<Utensils size={19} />} label="Food" onClick={() => { setSettingsFocus(undefined); setTab("food"); }} />
+          <TabButton active={tab === "workout"} icon={<Dumbbell size={19} />} label="Workout" onClick={() => { setSettingsFocus(undefined); setTab("workout"); }} />
+          <TabButton active={tab === "settings"} icon={<Settings size={19} />} label="Settings" onClick={() => { setSettingsFocus(undefined); setTab("settings"); }} />
         </div>
       </nav>
     </main>
@@ -242,6 +269,7 @@ function HomeTab(props: {
   latestWeight?: WeightLog;
   weightLogs: WeightLog[];
   setTab: (tab: Tab) => void;
+  openAiReport: () => void;
   refresh: () => Promise<void>;
 }) {
   const [weight, setWeight] = useState(props.latestWeight?.weight_kg ?? props.profile?.current_weight_kg ?? 70);
@@ -268,7 +296,7 @@ function HomeTab(props: {
         <button className="primary-button" onClick={() => props.setTab("food")}><Utensils size={17} />食事を追加</button>
         <button className="secondary-button" onClick={() => props.setTab("workout")}><Dumbbell size={17} />筋トレ</button>
         <button className="secondary-button" onClick={() => props.setTab("settings")}><Activity size={17} />ゴール</button>
-        <button className="secondary-button" onClick={() => props.setTab("settings")}><FileText size={17} />AI相談</button>
+        <button className="secondary-button" onClick={props.openAiReport}><FileText size={17} />AI相談レポート</button>
       </div>
 
       <section className="compact-card p-4">
@@ -385,10 +413,21 @@ function FoodTab(props: { menuItems: MenuItem[]; foodEntries: FoodEntry[]; appDa
     await props.refresh();
   };
 
+  const cloneSelectedToManual = () => {
+    if (!selected) return;
+    setManual(toManualDraft(selected, mealType));
+    setSelected(undefined);
+    setMode("manual");
+  };
+
   const saveManual = async () => {
     if (!manual.name.trim()) return;
     const timestamp = nowIso();
     let menuItemId: string | undefined;
+    const nutrition = draftNutrition(manual);
+    const tags = unique([manual.category, manual.subcategory, manual.brand, ...(nutrition.unknown.length ? ["栄養素一部不明"] : [])]);
+    const note = unique([manual.note, nutrition.unknown.length ? `未入力: ${nutrition.unknown.join("/")}` : ""]).join(" / ") || undefined;
+    const confidence = nutrition.unknown.length ? "low" : "high";
     if (manual.savePreset) {
       menuItemId = makeId("menu_user");
       await db.menu_items.put({
@@ -396,15 +435,15 @@ function FoodTab(props: { menuItems: MenuItem[]; foodEntries: FoodEntry[]; appDa
         name: manual.name,
         brand: manual.brand || undefined,
         category: manual.category,
-        tags: [manual.category, manual.brand].filter(Boolean),
-        calories: Number(manual.calories),
-        protein_g: Number(manual.protein_g),
-        fat_g: Number(manual.fat_g),
-        carbs_g: Number(manual.carbs_g),
-        salt_g: manual.salt_g === "" ? undefined : Number(manual.salt_g),
+        tags,
+        calories: nutrition.calories,
+        protein_g: nutrition.protein_g,
+        fat_g: nutrition.fat_g,
+        carbs_g: nutrition.carbs_g,
+        salt_g: nutrition.salt_g,
         default_meal_type: manual.meal_type,
         data_source: "user",
-        confidence: "high",
+        confidence,
         is_public_preset: false,
         is_user_created: true,
         is_favorite: manual.favorite,
@@ -419,16 +458,16 @@ function FoodTab(props: { menuItems: MenuItem[]; foodEntries: FoodEntry[]; appDa
       meal_type: manual.meal_type,
       name: manual.name,
       brand: manual.brand || undefined,
-      calories: Number(manual.calories),
-      protein_g: Number(manual.protein_g),
-      fat_g: Number(manual.fat_g),
-      carbs_g: Number(manual.carbs_g),
-      salt_g: manual.salt_g === "" ? undefined : Number(manual.salt_g),
+      calories: nutrition.calories,
+      protein_g: nutrition.protein_g,
+      fat_g: nutrition.fat_g,
+      carbs_g: nutrition.carbs_g,
+      salt_g: nutrition.salt_g,
       portion_multiplier: 1,
       entry_source: "user",
-      confidence: "high",
+      confidence,
       menu_item_id: menuItemId,
-      note: manual.note || undefined,
+      note,
       created_at: timestamp,
       updated_at: timestamp,
     });
@@ -485,7 +524,7 @@ function FoodTab(props: { menuItems: MenuItem[]; foodEntries: FoodEntry[]; appDa
           )}
           <section className="compact-card divide-y divide-line overflow-hidden">
             <ListHeader title={foodModeLabel(mode)} value={`${results.length}件`} />
-            {results.map((item) => <FoodItemRow key={item.id} item={item} onPick={setSelected} refresh={props.refresh} />)}
+            {results.map((item) => <FoodItemRow key={item.id} item={item} onPick={setSelected} onClone={setManualFromItem(setManual, setMode)} refresh={props.refresh} />)}
             {results.length === 0 && <EmptyLine text="見つかりません" />}
           </section>
         </>
@@ -531,6 +570,7 @@ function FoodTab(props: { menuItems: MenuItem[]; foodEntries: FoodEntry[]; appDa
               <button className="secondary-button" onClick={() => setSelected(undefined)}>閉じる</button>
               <button className="primary-button" onClick={saveSelected}><Check size={17} />記録</button>
             </div>
+            <button className="secondary-button mt-2 w-full" onClick={cloneSelectedToManual}><Pencil size={17} />編集して個人メニュー化</button>
           </div>
         </div>
       )}
@@ -752,6 +792,7 @@ function SettingsTab(props: {
   activeGoal?: Goal;
   menuItems: MenuItem[];
   workoutTemplates: WorkoutTemplate[];
+  focus?: SettingsFocus;
   refresh: () => Promise<void>;
   allData: {
     foodEntries: FoodEntry[];
@@ -786,8 +827,49 @@ function SettingsTab(props: {
       })
     : undefined;
 
+  const aiReportSection = (
+    <section className={`compact-card p-4 ${props.focus === "ai" ? "border-2 border-leaf" : ""}`}>
+      <div className="flex items-center justify-between gap-2">
+        <h2 className="font-bold">AI相談レポート</h2>
+        {props.focus === "ai" && <span className="rounded-md bg-leaf px-2 py-1 text-[11px] font-bold text-white">相談を作成</span>}
+      </div>
+      <div className="mt-3 grid grid-cols-4 gap-2">
+        {[7, 14, 30].map((days) => <button className={`chip justify-center ${reportDays === days ? "chip-active" : ""}`} key={days} onClick={() => setReportDays(days)}>{days}日</button>)}
+        <button className="chip justify-center" onClick={() => setReportDays(14)}>標準</button>
+      </div>
+      <textarea className="mt-3 min-h-20 w-full" value={question} onChange={(event) => setQuestion(event.target.value)} placeholder="相談したいこと" />
+      <button className="primary-button mt-3 w-full" onClick={async () => {
+        const end = todayAppDate();
+        const start = addDays(end, -(reportDays - 1));
+        const range = dateRange(start, end);
+        const content = generateMarkdownReport({
+          profile: props.profile,
+          goal: props.activeGoal,
+          foodEntries: props.allData.foodEntries.filter((entry) => range.includes(entry.app_date)),
+          weightLogs: props.allData.weightLogs.filter((entry) => range.includes(entry.app_date)),
+          workoutSessions: props.allData.workoutSessions.filter((entry) => range.includes(entry.app_date)),
+          workoutExercises: props.allData.workoutExercises,
+          workoutSets: props.allData.workoutSets,
+          periodStart: start,
+          periodEnd: end,
+          question,
+        });
+        setReport(content);
+        await db.ai_reports.put({ id: makeId("report"), period_start: start, period_end: end, format: "markdown", content, created_at: nowIso(), updated_at: nowIso() });
+      }}><FileText size={17} />生成</button>
+      {report && (
+        <>
+          <textarea className="mt-3 min-h-56 w-full font-mono text-xs" value={report} readOnly />
+          <button className="secondary-button mt-2 w-full" onClick={() => downloadText(`phase-log-report-${Date.now()}.md`, report, "text/markdown")}><FileDown size={17} />Markdown保存</button>
+        </>
+      )}
+    </section>
+  );
+
   return (
     <div className="space-y-4">
+      {props.focus === "ai" && aiReportSection}
+
       <section className="compact-card p-4">
         <h2 className="font-bold">ゴール設定</h2>
         <div className="mt-3 grid grid-cols-2 gap-2">
@@ -827,20 +909,22 @@ function SettingsTab(props: {
         <ManualFoodForm manual={presetDraft} setManual={setPresetDraft} compact onSave={async () => {
           if (!presetDraft.name.trim()) return;
           const timestamp = nowIso();
+          const nutrition = draftNutrition(presetDraft);
+          const tags = unique([presetDraft.category, presetDraft.subcategory, presetDraft.brand, ...(nutrition.unknown.length ? ["栄養素一部不明"] : [])]);
           await db.menu_items.put({
             id: makeId("menu_user"),
             name: presetDraft.name,
             brand: presetDraft.brand || undefined,
             category: presetDraft.category,
-            tags: [presetDraft.category, presetDraft.brand].filter(Boolean),
-            calories: Number(presetDraft.calories),
-            protein_g: Number(presetDraft.protein_g),
-            fat_g: Number(presetDraft.fat_g),
-            carbs_g: Number(presetDraft.carbs_g),
-            salt_g: presetDraft.salt_g === "" ? undefined : Number(presetDraft.salt_g),
+            tags,
+            calories: nutrition.calories,
+            protein_g: nutrition.protein_g,
+            fat_g: nutrition.fat_g,
+            carbs_g: nutrition.carbs_g,
+            salt_g: nutrition.salt_g,
             default_meal_type: presetDraft.meal_type,
             data_source: "user",
-            confidence: "high",
+            confidence: nutrition.unknown.length ? "low" : "high",
             is_public_preset: false,
             is_user_created: true,
             is_favorite: presetDraft.favorite,
@@ -860,39 +944,7 @@ function SettingsTab(props: {
         </div>
       </section>
 
-      <section className="compact-card p-4">
-        <h2 className="font-bold">AI相談レポート</h2>
-        <div className="mt-3 grid grid-cols-4 gap-2">
-          {[7, 14, 30].map((days) => <button className={`chip justify-center ${reportDays === days ? "chip-active" : ""}`} key={days} onClick={() => setReportDays(days)}>{days}日</button>)}
-          <button className="chip justify-center" onClick={() => setReportDays(14)}>標準</button>
-        </div>
-        <textarea className="mt-3 min-h-20 w-full" value={question} onChange={(event) => setQuestion(event.target.value)} placeholder="相談したいこと" />
-        <button className="primary-button mt-3 w-full" onClick={async () => {
-          const end = todayAppDate();
-          const start = addDays(end, -(reportDays - 1));
-          const range = dateRange(start, end);
-          const content = generateMarkdownReport({
-            profile: props.profile,
-            goal: props.activeGoal,
-            foodEntries: props.allData.foodEntries.filter((entry) => range.includes(entry.app_date)),
-            weightLogs: props.allData.weightLogs.filter((entry) => range.includes(entry.app_date)),
-            workoutSessions: props.allData.workoutSessions.filter((entry) => range.includes(entry.app_date)),
-            workoutExercises: props.allData.workoutExercises,
-            workoutSets: props.allData.workoutSets,
-            periodStart: start,
-            periodEnd: end,
-            question,
-          });
-          setReport(content);
-          await db.ai_reports.put({ id: makeId("report"), period_start: start, period_end: end, format: "markdown", content, created_at: nowIso(), updated_at: nowIso() });
-        }}><FileText size={17} />生成</button>
-        {report && (
-          <>
-            <textarea className="mt-3 min-h-56 w-full font-mono text-xs" value={report} readOnly />
-            <button className="secondary-button mt-2 w-full" onClick={() => downloadText(`phase-log-report-${Date.now()}.md`, report, "text/markdown")}><FileDown size={17} />Markdown保存</button>
-          </>
-        )}
-      </section>
+      {props.focus !== "ai" && aiReportSection}
 
       <section className="compact-card p-4">
         <h2 className="font-bold">バックアップ</h2>
@@ -1014,11 +1066,12 @@ function Onboarding({ refresh }: { refresh: () => Promise<void> }) {
 }
 
 function ManualFoodForm({ manual, setManual, onSave, compact = false }: {
-  manual: typeof emptyManual;
-  setManual: (manual: typeof emptyManual) => void;
+  manual: ManualFoodDraft;
+  setManual: (manual: ManualFoodDraft) => void;
   onSave: () => void;
   compact?: boolean;
 }) {
+  const subcategories = genericCategories[manual.category] ?? [];
   return (
     <section className={compact ? "" : "compact-card p-4"}>
       {!compact && <h2 className="font-bold">手入力</h2>}
@@ -1028,11 +1081,25 @@ function ManualFoodForm({ manual, setManual, onSave, compact = false }: {
         <select value={manual.meal_type} onChange={(event) => setManual({ ...manual, meal_type: event.target.value as MealType })}>
           {Object.entries(mealLabels).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
         </select>
-        <input value={manual.category} onChange={(event) => setManual({ ...manual, category: event.target.value })} placeholder="カテゴリ" />
-        <NumberInput label="kcal" value={manual.calories} onChange={(value) => setManual({ ...manual, calories: value })} />
-        <NumberInput label="P" value={manual.protein_g} step={0.1} onChange={(value) => setManual({ ...manual, protein_g: value })} />
-        <NumberInput label="F" value={manual.fat_g} step={0.1} onChange={(value) => setManual({ ...manual, fat_g: value })} />
-        <NumberInput label="C" value={manual.carbs_g} step={0.1} onChange={(value) => setManual({ ...manual, carbs_g: value })} />
+        <div className="col-span-2">
+          <p className="mb-2 text-xs font-semibold">カテゴリ</p>
+          <div className="grid grid-cols-3 gap-2">
+            {Object.keys(genericCategories).map((category) => (
+              <button className={`chip justify-center ${manual.category === category ? "chip-active" : ""}`} key={category} onClick={() => setManual({ ...manual, category, subcategory: genericCategories[category]?.[0] ?? "" })}>{category}</button>
+            ))}
+          </div>
+          {!!subcategories.length && (
+            <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
+              {subcategories.map((subcategory) => (
+                <button className={`chip ${manual.subcategory === subcategory ? "chip-active" : ""}`} key={subcategory} onClick={() => setManual({ ...manual, subcategory })}>{subcategory}</button>
+              ))}
+            </div>
+          )}
+        </div>
+        <PartialNumberInput label="kcal" value={manual.calories} onChange={(value) => setManual({ ...manual, calories: value })} />
+        <PartialNumberInput label="P" value={manual.protein_g} step={0.1} onChange={(value) => setManual({ ...manual, protein_g: value })} />
+        <PartialNumberInput label="F" value={manual.fat_g} step={0.1} onChange={(value) => setManual({ ...manual, fat_g: value })} />
+        <PartialNumberInput label="C" value={manual.carbs_g} step={0.1} onChange={(value) => setManual({ ...manual, carbs_g: value })} />
         <input value={manual.salt_g} onChange={(event) => setManual({ ...manual, salt_g: event.target.value })} placeholder="塩分 optional" />
         <input value={manual.note} onChange={(event) => setManual({ ...manual, note: event.target.value })} placeholder="メモ" />
       </div>
@@ -1045,7 +1112,7 @@ function ManualFoodForm({ manual, setManual, onSave, compact = false }: {
   );
 }
 
-function FoodItemRow({ item, onPick, refresh }: { item: MenuItem; onPick: (item: MenuItem) => void; refresh: () => Promise<void> }) {
+function FoodItemRow({ item, onPick, onClone, refresh }: { item: MenuItem; onPick: (item: MenuItem) => void; onClone: (item: MenuItem) => void; refresh: () => Promise<void> }) {
   return (
     <div className="flex items-center justify-between gap-2 px-4 py-3">
       <button className="min-w-0 flex-1 text-left" onClick={() => onPick(item)}>
@@ -1053,6 +1120,7 @@ function FoodItemRow({ item, onPick, refresh }: { item: MenuItem; onPick: (item:
         <p className="truncate text-xs text-moss">{item.brand ?? item.category} · {item.calories}kcal · P{item.protein_g} F{item.fat_g} C{item.carbs_g}</p>
         <p className="text-[11px] text-clay">{item.data_source} · {item.confidence}</p>
       </button>
+      <button className="icon-button h-8 w-8" aria-label="編集して個人メニュー化" onClick={() => onClone(item)}><Pencil size={14} /></button>
       <button className="icon-button h-8 w-8" aria-label="お気に入り" onClick={async () => {
         await db.menu_items.update(item.id, { is_favorite: !item.is_favorite, updated_at: nowIso() });
         await refresh();
@@ -1146,6 +1214,15 @@ function NumberInput({ label, value, step = 1, onChange }: { label: string; valu
     <label className="text-xs font-semibold">
       {label}
       <input className="mt-1 w-full" type="number" step={step} value={value} onChange={(event) => onChange(Number(event.target.value))} />
+    </label>
+  );
+}
+
+function PartialNumberInput({ label, value, step = 1, onChange }: { label: string; value: string; step?: number; onChange: (value: string) => void }) {
+  return (
+    <label className="text-xs font-semibold">
+      {label}
+      <input className="mt-1 w-full" inputMode="decimal" type="number" step={step} value={value} onChange={(event) => onChange(event.target.value)} placeholder="不明なら空欄" />
     </label>
   );
 }
@@ -1302,6 +1379,61 @@ function foodModeLabel(mode: FoodMode) {
     manual: "手入力",
     personal: "個人",
   }[mode];
+}
+
+function toManualDraft(item: MenuItem, mealType: MealType = "lunch"): ManualFoodDraft {
+  const category = genericCategories[item.category] ? item.category : "チェーン店";
+  const subcategory = item.tags.find((tag) => genericCategories[category]?.includes(tag)) ?? genericCategories[category]?.[0] ?? "";
+  return {
+    name: item.name,
+    brand: item.brand ?? "",
+    meal_type: item.default_meal_type ?? mealType,
+    category,
+    subcategory,
+    calories: String(item.calories),
+    protein_g: String(item.protein_g),
+    fat_g: String(item.fat_g),
+    carbs_g: String(item.carbs_g),
+    salt_g: item.salt_g === undefined ? "" : String(item.salt_g),
+    note: item.data_source === "estimated" ? "推定メニューから編集" : "",
+    savePreset: true,
+    favorite: item.is_favorite,
+  };
+}
+
+function setManualFromItem(setManual: (manual: ManualFoodDraft) => void, setMode: (mode: FoodMode) => void) {
+  return (item: MenuItem) => {
+    setManual(toManualDraft(item, item.default_meal_type ?? "lunch"));
+    setMode("manual");
+  };
+}
+
+function draftNutrition(manual: ManualFoodDraft) {
+  const calories = draftNumber(manual.calories);
+  const protein = draftNumber(manual.protein_g);
+  const fat = draftNumber(manual.fat_g);
+  const carbs = draftNumber(manual.carbs_g);
+  const salt = manual.salt_g.trim() === "" ? undefined : draftNumber(manual.salt_g).value;
+  return {
+    calories: Math.round(calories.value),
+    protein_g: round1(protein.value),
+    fat_g: round1(fat.value),
+    carbs_g: round1(carbs.value),
+    salt_g: salt === undefined ? undefined : round1(salt),
+    unknown: [
+      calories.unknown ? "kcal" : "",
+      protein.unknown ? "P" : "",
+      fat.unknown ? "F" : "",
+      carbs.unknown ? "C" : "",
+    ].filter(Boolean),
+  };
+}
+
+function draftNumber(value: string) {
+  const trimmed = value.trim();
+  if (!trimmed) return { value: 0, unknown: true };
+  const parsed = Number(trimmed);
+  return Number.isFinite(parsed) ? { value: parsed, unknown: false } : { value: 0, unknown: true };
 }
 
 function sourceRank(source: MenuItem["data_source"]) {
