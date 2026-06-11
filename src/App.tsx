@@ -69,7 +69,7 @@ import { getWeeklyWorkoutStatus, type WeeklyWorkoutStatus } from "./lib/workoutS
 type Tab = "home" | "food" | "workout" | "records" | "settings";
 type FoodMode = "search" | "favorite" | "chain" | "category" | "quick" | "manual" | "personal";
 type WorkoutMode = "favorite" | "preset" | "body" | "equipment" | "previous" | "search";
-type SettingsFocus = "ai" | undefined;
+type SettingsFocus = "ai" | "backup" | undefined;
 type HistoryGrouping = "day" | "week" | "month";
 type BackupInfo = {
   lastBackupAt?: string;
@@ -268,6 +268,10 @@ function App() {
               setSettingsFocus("ai");
               setTab("settings");
             }}
+            openBackup={() => {
+              setSettingsFocus("backup");
+              setTab("settings");
+            }}
             refresh={refresh}
           />
         )}
@@ -336,6 +340,7 @@ function HomeTab(props: {
   backupInfo: BackupInfo;
   setTab: (tab: Tab) => void;
   openAiReport: () => void;
+  openBackup: () => void;
   refresh: () => Promise<void>;
 }) {
   const [weight, setWeight] = useState(props.latestWeight?.weight_kg ?? props.profile?.current_weight_kg ?? 70);
@@ -355,10 +360,11 @@ function HomeTab(props: {
   return (
     <div className="space-y-3">
       {props.backupInfo.level !== "ok" && (
-        <button className="compact-card flex w-full items-center gap-3 px-4 py-3 text-left" onClick={() => props.setTab("settings")}>
+        <button className="compact-card flex w-full items-center gap-3 px-4 py-3 text-left" onClick={props.openBackup}>
           <div className="min-w-0 flex-1">
             <p className="text-sm font-bold">{backupTitle}</p>
             <p className="mt-1 text-xs leading-relaxed text-moss">{backupMessage(props.backupInfo)}</p>
+            <p className="mt-1 text-[11px] font-bold text-moss">タップでバックアップ保存へ</p>
           </div>
           <ChevronRight className="shrink-0 text-muted" size={18} />
         </button>
@@ -1260,6 +1266,15 @@ function SettingsTab(props: {
   const [report, setReport] = useState("");
   const [copiedReport, setCopiedReport] = useState(false);
   const [backupImportMessage, setBackupImportMessage] = useState("");
+  const backupSectionRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    if (props.focus !== "backup") return;
+    const timer = window.setTimeout(() => {
+      backupSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 50);
+    return () => window.clearTimeout(timer);
+  }, [props.focus]);
 
   const calculated = props.profile
     ? calculateTargets({
@@ -1419,8 +1434,11 @@ function SettingsTab(props: {
 
       {props.focus !== "ai" && aiReportSection}
 
-      <section className="compact-card p-4">
-        <h2 className="font-bold">バックアップ</h2>
+      <section ref={backupSectionRef} className={`compact-card scroll-mt-24 p-4 ${props.focus === "backup" ? "border-2 border-leaf" : ""}`}>
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="font-bold">バックアップ</h2>
+          {props.focus === "backup" && <span className="rounded-md bg-leaf px-2 py-1 text-[11px] font-bold text-moss">保存はこちら</span>}
+        </div>
         <div className={`mt-2 rounded-md border p-3 text-sm ${props.backupInfo.level === "danger" ? "border-clay/40 bg-clay/10" : "border-leaf/40 bg-leaf/10"}`}>
           <p className="font-semibold text-ink">{backupMessage(props.backupInfo)}</p>
           <p className="mt-1 text-xs text-moss">目安は週1回。外食や筋トレを連日記録している時は、3-4日に1回保存しておくと安心です。</p>
