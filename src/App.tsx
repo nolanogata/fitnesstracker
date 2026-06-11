@@ -48,6 +48,7 @@ import { makeId } from "./lib/ids";
 import { activityLabels, buildGoal, calculateTargets, phaseLabels } from "./lib/goalCalculator";
 import { downloadText, exportBackup, importBackup, resetLocalData } from "./lib/backup";
 import { generateMarkdownReport } from "./lib/report";
+import { formatWeeklyWorkoutStatus, getWeeklyWorkoutStatus, type WeeklyWorkoutStatus } from "./lib/workoutStatus";
 
 type Tab = "home" | "food" | "workout" | "records" | "settings";
 type FoodMode = "search" | "favorite" | "chain" | "category" | "quick" | "rough" | "manual" | "personal";
@@ -200,6 +201,7 @@ function App() {
   const dayTotals = sumFood(todayEntries);
   const target = activeGoal ?? defaultGoal(profile);
   const backupInfo = getBackupInfo(lastBackupAt, foodEntries.length + weightLogs.length + workoutSessions.length + workoutSets.length);
+  const weeklyWorkoutStatus = getWeeklyWorkoutStatus(target, workoutSessions, workoutExercises, appDate);
   const markBackupNow = () => {
     const timestamp = nowIso();
     localStorage.setItem(backupStorageKey, timestamp);
@@ -235,6 +237,7 @@ function App() {
             todayEntries={todayEntries}
             todayWorkouts={todayWorkouts}
             workoutExercises={workoutExercises}
+            weeklyWorkoutStatus={weeklyWorkoutStatus}
             latestWeight={latestWeight}
             weightLogs={weightLogs}
             backupInfo={backupInfo}
@@ -275,6 +278,7 @@ function App() {
             profile={profile}
             goals={goals}
             activeGoal={activeGoal}
+            weeklyWorkoutStatus={weeklyWorkoutStatus}
             menuItems={menuItems}
             workoutTemplates={workoutTemplates}
             focus={settingsFocus}
@@ -307,6 +311,7 @@ function HomeTab(props: {
   todayEntries: FoodEntry[];
   todayWorkouts: WorkoutSession[];
   workoutExercises: WorkoutExercise[];
+  weeklyWorkoutStatus: WeeklyWorkoutStatus;
   latestWeight?: WeightLog;
   weightLogs: WeightLog[];
   backupInfo: BackupInfo;
@@ -346,6 +351,20 @@ function HomeTab(props: {
             <MacroLine label="F" value={props.dayTotals.fat} target={props.goal?.target_fat_g ?? 0} color="#c76f51" warnOnOver />
             <MacroLine label="C" value={props.dayTotals.carbs} target={props.goal?.target_carbs_g ?? 0} color="#d9a441" warnOnOver />
           </div>
+        </div>
+      </section>
+
+      <section className="compact-card p-4">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-sm font-bold">今週の運動目標</p>
+            <p className="text-xs text-moss">{props.weeklyWorkoutStatus.start} - {props.weeklyWorkoutStatus.end}</p>
+          </div>
+          <p className="text-right text-sm font-black text-moss">{formatWeeklyWorkoutStatus(props.weeklyWorkoutStatus)}</p>
+        </div>
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          <WorkoutGoalProgress label="筋トレ" done={props.weeklyWorkoutStatus.strengthDone} target={props.weeklyWorkoutStatus.strengthTarget} />
+          <WorkoutGoalProgress label="有酸素" done={props.weeklyWorkoutStatus.cardioDone} target={props.weeklyWorkoutStatus.cardioTarget} />
         </div>
       </section>
 
@@ -1016,6 +1035,7 @@ function SettingsTab(props: {
   profile?: Profile;
   goals: Goal[];
   activeGoal?: Goal;
+  weeklyWorkoutStatus: WeeklyWorkoutStatus;
   menuItems: MenuItem[];
   workoutTemplates: WorkoutTemplate[];
   focus?: SettingsFocus;
@@ -1037,6 +1057,8 @@ function SettingsTab(props: {
     target_weight_kg: props.activeGoal?.target_weight_kg ?? props.profile?.current_weight_kg ?? 70,
     manual_target_calories: 0,
     manual_protein_g: 0,
+    target_workouts_per_week: props.activeGoal?.target_workouts_per_week ?? 3,
+    target_cardio_sessions_per_week: props.activeGoal?.target_cardio_sessions_per_week ?? 1,
   });
   const [presetDraft, setPresetDraft] = useState({ ...emptyManual, name: "", savePreset: true });
   const [reportMode, setReportMode] = useState<ReportMode>("day");
@@ -1086,6 +1108,7 @@ function SettingsTab(props: {
           workoutSessions: props.allData.workoutSessions.filter((entry) => range.includes(entry.app_date)),
           workoutExercises: props.allData.workoutExercises,
           workoutSets: props.allData.workoutSets,
+          weeklyWorkoutStatus: props.weeklyWorkoutStatus,
           periodStart: start,
           periodEnd: end,
           question,
@@ -1124,6 +1147,8 @@ function SettingsTab(props: {
           </select>
           <NumberInput label="年齢" value={goalDraft.age} onChange={(value) => setGoalDraft({ ...goalDraft, age: value })} />
           <NumberInput label="目標体重" value={goalDraft.target_weight_kg} step={0.1} onChange={(value) => setGoalDraft({ ...goalDraft, target_weight_kg: value })} />
+          <NumberInput label="筋トレ/週" value={goalDraft.target_workouts_per_week} onChange={(value) => setGoalDraft({ ...goalDraft, target_workouts_per_week: value })} />
+          <NumberInput label="有酸素/週" value={goalDraft.target_cardio_sessions_per_week} onChange={(value) => setGoalDraft({ ...goalDraft, target_cardio_sessions_per_week: value })} />
           <NumberInput label="kcal上書き (0=自動)" value={goalDraft.manual_target_calories} onChange={(value) => setGoalDraft({ ...goalDraft, manual_target_calories: value })} />
           <NumberInput label="P上書き (0=自動)" value={goalDraft.manual_protein_g} onChange={(value) => setGoalDraft({ ...goalDraft, manual_protein_g: value })} />
         </div>
@@ -1140,6 +1165,8 @@ function SettingsTab(props: {
             target_weight_kg: goalDraft.target_weight_kg,
             manual_target_calories: goalDraft.manual_target_calories || undefined,
             manual_protein_g: goalDraft.manual_protein_g || undefined,
+            target_workouts_per_week: goalDraft.target_workouts_per_week,
+            target_cardio_sessions_per_week: goalDraft.target_cardio_sessions_per_week,
           });
           await db.goals.put(goal);
           await db.settings.update("local", { active_goal_id: goal.id, updated_at: timestamp });
@@ -1553,6 +1580,22 @@ function MetricPill({ label, value }: { label: string; value: string }) {
     <div className="rounded-md border border-line bg-rice px-3 py-2">
       <p className="text-[11px] font-semibold text-moss">{label}</p>
       <p className="mt-0.5 text-sm font-black">{value}</p>
+    </div>
+  );
+}
+
+function WorkoutGoalProgress({ label, done, target }: { label: string; done: number; target: number }) {
+  const percent = target > 0 ? Math.min(100, Math.round((done / target) * 100)) : 0;
+  const complete = target > 0 && done >= target;
+  return (
+    <div className={`rounded-md border px-3 py-2 ${complete ? "border-leaf/40 bg-leaf/10" : "border-line bg-rice"}`}>
+      <div className="flex items-center justify-between gap-2 text-xs">
+        <span className="font-bold">{label}</span>
+        <span className={complete ? "font-black text-moss" : "font-black text-ink"}>{done}/{target || "-"}</span>
+      </div>
+      <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-line">
+        <div className={`h-full ${complete ? "bg-moss" : "bg-sun"}`} style={{ width: `${percent}%` }} />
+      </div>
     </div>
   );
 }
