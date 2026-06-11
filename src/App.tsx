@@ -573,7 +573,7 @@ function FoodTab(props: { menuItems: MenuItem[]; foodEntries: FoodEntry[]; appDa
           <button type="submit" className={`${mode === "search" ? "primary-button" : "secondary-button"} h-12 px-4`}>検索</button>
         </form>
         <div className="grid grid-cols-3 gap-2">
-          {(["favorite", "chain", "category", "quick", "rough", "manual", "personal"] as FoodMode[]).map((item) => (
+          {(["favorite", "personal", "rough", "chain", "category", "quick", "manual"] as FoodMode[]).map((item) => (
             <button key={item} className={`mode-button ${mode === item ? "mode-button-active" : ""}`} onClick={() => setMode(item)}>
               {foodModeLabel(item)}
             </button>
@@ -1606,10 +1606,10 @@ function foodModeLabel(mode: FoodMode) {
     favorite: "お気に入り",
     chain: "チェーン",
     category: "カテゴリ",
-    quick: "見積",
+    quick: "一般",
     rough: "ざっくり",
     manual: "手入力",
-    personal: "個人",
+    personal: "マイメニュー",
   }[mode];
 }
 
