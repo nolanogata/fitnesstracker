@@ -5,6 +5,7 @@ import { udonFoods } from "./chains/udon";
 import { teishokuFoods } from "./chains/teishoku";
 import { fastFoodFoods } from "./chains/fastFood";
 import { familyRestaurantFoods } from "./chains/familyRestaurant";
+import { familyRestaurantMenuFoods } from "./chains/familyRestaurantMenus";
 import { cafeFoods } from "./chains/cafe";
 import { convenienceFoods } from "./chains/convenience";
 import { kfcOfficialFoods } from "./chains/kfcOfficial";
@@ -33,6 +34,7 @@ export const foodSeeds = [
   ...kfcOfficialFoods,
   ...mcdonaldsOfficialFoods,
   ...subwayOfficialFoods,
+  ...familyRestaurantMenuFoods,
   ...familyRestaurantFoods,
   ...cafeFoods,
   ...convenienceFoods,
