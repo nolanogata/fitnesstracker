@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ChangeEvent, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ChangeEvent, type ReactNode } from "react";
 import {
   Activity,
   Archive,
@@ -694,10 +694,21 @@ function WorkoutTab(props: {
   const [sessionId, setSessionId] = useState<string>();
   const [mode, setMode] = useState<WorkoutMode>("favorite");
   const [filter, setFilter] = useState("");
+  const [focusedExerciseId, setFocusedExerciseId] = useState<string>();
+  const exerciseEditorRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const activeSession = props.workoutSessions.find((session) => session.id === sessionId);
   const activeExercises = props.workoutExercises
     .filter((exercise) => exercise.session_id === sessionId)
     .sort((a, b) => a.order - b.order);
+
+  useEffect(() => {
+    if (!focusedExerciseId) return;
+    const target = exerciseEditorRefs.current[focusedExerciseId];
+    if (!target) return;
+    target.scrollIntoView({ behavior: "smooth", block: "center" });
+    const timer = window.setTimeout(() => setFocusedExerciseId(undefined), 1800);
+    return () => window.clearTimeout(timer);
+  }, [focusedExerciseId, activeExercises.length]);
 
   const startFromTemplate = async (template: WorkoutTemplate) => {
     const timestamp = nowIso();
@@ -812,7 +823,7 @@ function WorkoutTab(props: {
                   });
                   setSessionId(targetSessionId);
                 }
-                await addExerciseToSession(targetSessionId, {
+                const addedExerciseId = await addExerciseToSession(targetSessionId, {
                   exercise_id: exercise.id,
                   exercise_name: exercise.name,
                   body_part: exercise.body_part,
@@ -822,6 +833,7 @@ function WorkoutTab(props: {
                   duration_min: exercise.default_duration_min,
                 }, props.workoutExercises.filter((item) => item.session_id === targetSessionId).length, props.workoutSets, props.workoutExercises);
                 await props.refresh();
+                setFocusedExerciseId(addedExerciseId);
               }}>
                 <div>
                   <p className="text-sm font-semibold">{exercise.name}</p>
@@ -838,13 +850,20 @@ function WorkoutTab(props: {
         <section className="compact-card divide-y divide-line">
           <ListHeader title={activeSession.title} value={`${activeExercises.length}種目`} />
           {activeExercises.map((exercise) => (
-            <WorkoutExerciseEditor
+            <div
               key={exercise.id}
-              exercise={exercise}
-              sets={props.workoutSets.filter((set) => set.workout_exercise_id === exercise.id).sort((a, b) => a.set_order - b.set_order)}
-              bodyWeightKg={props.profile?.current_weight_kg ?? 70}
-              refresh={props.refresh}
-            />
+              ref={(node) => {
+                exerciseEditorRefs.current[exercise.id] = node;
+              }}
+              className={`workout-editor-anchor ${focusedExerciseId === exercise.id ? "workout-editor-focus" : ""}`}
+            >
+              <WorkoutExerciseEditor
+                exercise={exercise}
+                sets={props.workoutSets.filter((set) => set.workout_exercise_id === exercise.id).sort((a, b) => a.set_order - b.set_order)}
+                bodyWeightKg={props.profile?.current_weight_kg ?? 70}
+                refresh={props.refresh}
+              />
+            </div>
           ))}
           <div className="p-3">
             <button className="secondary-button w-full" onClick={async () => {
@@ -1503,7 +1522,7 @@ async function addExerciseToSession(
   order: number,
   allSets: WorkoutSet[],
   allExercises: WorkoutExercise[],
-) {
+): Promise<string> {
   const timestamp = nowIso();
   const exercise: WorkoutExercise = {
     id: makeId("workout_exercise"),
@@ -1539,6 +1558,7 @@ async function addExerciseToSession(
     };
   });
   await db.workout_sets.bulkPut(sets);
+  return exercise.id;
 }
 
 const cardioMets: Record<string, number> = {

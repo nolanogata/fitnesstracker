@@ -134,3 +134,13 @@ button {
 .tap-tile-active {
   @apply border-moss bg-moss text-white;
 }
+
+.workout-editor-anchor {
+  scroll-margin: 5rem;
+  transition: background-color 220ms ease, box-shadow 220ms ease;
+}
+
+.workout-editor-focus {
+  @apply bg-leaf/10;
+  box-shadow: inset 3px 0 0 rgba(82, 106, 87, 0.72);
+}
