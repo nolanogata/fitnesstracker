@@ -936,7 +936,7 @@ function SettingsTab(props: {
           <button className="chip justify-center" onClick={() => setReportDays(14)}>標準</button>
         </div>
       )}
-      <textarea className="mt-3 min-h-20 w-full" value={question} onChange={(event) => setQuestion(event.target.value)} placeholder="相談したいこと" />
+      <textarea className="mt-3 min-h-20 w-full" value={question} onChange={(event) => setQuestion(event.target.value)} placeholder="AIにコピーして相談できるレポートを生成します。特に相談したいことがあれば記入してください。なければそのまま生成を押してください" />
       <button className="primary-button mt-3 w-full" onClick={async () => {
         const end = todayAppDate();
         const start = reportMode === "day" ? end : addDays(end, -(reportDays - 1));
