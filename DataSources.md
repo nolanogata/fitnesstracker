@@ -21,6 +21,12 @@ UI confidence labels:
 - 吉野家: official nutrition/allergen PDF. Added 牛丼 core sizes from the 2026-06-04 values.
 - マクドナルド: official product nutrition pages. Added selected burger and side core items from product pages checked on 2026-06-12.
 - サブウェイ: official nutrition PDF. Added selected sandwiches and potato sides from the 2026-06-10 nutrition sheet.
+- CoCo壱番屋: official nutrition PDF. Added selected core curries from the 2026-06-04 nutrition sheet.
+- 天丼てんや: official in-store calorie/allergen PDF. Added selected core tempura bowls from the 2026-06-11 sheet.
+- リンガーハット: official allergy/nutrition page. Added selected chanpon, sara-udon, and gyoza items checked on 2026-06-12.
+- モスバーガー: official nutrition PDF. Added selected burger and side core items from the 2026-05-20 sheet.
+- ほっともっと: official Tokyo menu nutrition pages/list. Added selected core bento items checked on 2026-06-12.
+- 餃子の王将: official regional menu pages were checked on 2026-06-12. Added selected official-menu-name entries as `estimated/medium`; P/F/C values are not official.
 - なか卯: official nutrition PDF. Added representative parent bowls, beef bowls, katsudon, karaage bowl, and udon items from the 2026-06-10 sheet.
 - やよい軒: official Tokyo nutrition table. Added representative teishoku, fish meals, and donburi items from the 2026-06-01 table.
 - すき家: official menu pages and nutrition list links.
