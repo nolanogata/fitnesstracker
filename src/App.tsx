@@ -78,6 +78,10 @@ type BackupInfo = {
   level: "ok" | "soon" | "danger";
 };
 type ReportMode = HistoryGrouping;
+type PortionOption = {
+  label: string;
+  value: number;
+};
 type ManualFoodDraft = {
   name: string;
   brand: string;
@@ -573,10 +577,15 @@ function FoodTab(props: { menuItems: MenuItem[]; foodEntries: FoodEntry[]; appDa
   const scrollToFoodTop = () => {
     window.requestAnimationFrame(() => foodTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
   };
+  const selectFoodItem = (item: MenuItem) => {
+    setMultiplier(1);
+    setSelected(item);
+  };
   const selectMode = (nextMode: FoodMode) => {
     setMode(nextMode);
     scrollToFoodTop();
   };
+  const portionOptions = selected ? getPortionOptions(selected) : [];
   const results = useMemo(() => {
     const needle = query.trim().toLowerCase();
     const tokens = needle.split(/\s+/).filter(Boolean);
@@ -748,14 +757,14 @@ function FoodTab(props: { menuItems: MenuItem[]; foodEntries: FoodEntry[]; appDa
       {mode !== "manual" && (
         <>
           {mode === "search" && (
-            <QuickStrip title="Recent" items={recentItems} onPick={setSelected} fallback={favoriteItems} />
+            <QuickStrip title="Recent" items={recentItems} onPick={selectFoodItem} fallback={favoriteItems} />
           )}
           {mode === "favorite" && favoriteItems.length === 0 && (
             <section className="compact-card p-4 text-sm text-moss">食品行のハートを押すとここから呼び出せます。</section>
           )}
           <section className="compact-card divide-y divide-line overflow-hidden">
             <ListHeader title={foodModeLabel(mode)} value={`${results.length}件`} />
-            {results.map((item) => <FoodItemRow key={item.id} item={item} onPick={setSelected} onClone={setManualFromItem(setManual, setMode)} refresh={props.refresh} />)}
+            {results.map((item) => <FoodItemRow key={item.id} item={item} onPick={selectFoodItem} onClone={setManualFromItem(setManual, setMode)} refresh={props.refresh} />)}
             {results.length === 0 && <EmptyLine text="見つかりません" />}
           </section>
         </>
@@ -795,8 +804,8 @@ function FoodTab(props: { menuItems: MenuItem[]; foodEntries: FoodEntry[]; appDa
               ))}
             </div>
             <div className="mt-3 grid grid-cols-3 gap-2">
-              {[["少なめ", 0.8], ["普通", 1], ["多め", 1.2], ["ご飯少なめ", 0.85], ["ご飯大盛", 1.25], ["タンパク質多め", 1.1], ["脂質多め", 1.15]].map(([label, value]) => (
-                <button key={label} className={`chip justify-center ${multiplier === value ? "chip-active" : ""}`} onClick={() => setMultiplier(Number(value))}>{label}</button>
+              {portionOptions.map(({ label, value }) => (
+                <button key={label} className={`chip justify-center ${multiplier === value ? "chip-active" : ""}`} onClick={() => setMultiplier(value)}>{label}</button>
               ))}
             </div>
             <input className="mt-3 w-full" type="number" step="0.05" value={multiplier} onChange={(event) => setMultiplier(Number(event.target.value))} />
@@ -2829,6 +2838,62 @@ function formatFoodEntryName(entry: FoodEntry, menuItems: MenuItem[]) {
   const menuItem = menuItems.find((item) => item.id === entry.menu_item_id);
   if (!menuItem || entry.name !== menuItem.name) return entry.name;
   return formatMenuItemName(menuItem);
+}
+
+function getPortionOptions(item: MenuItem): PortionOption[] {
+  const text = [item.name, item.category, item.serving_label, ...item.tags].filter(Boolean).join(" ");
+  const servingLabel = item.serving_label?.trim();
+  const standardLabel = servingLabel && !unhelpfulServingLabels.has(servingLabel) ? servingLabel : "普通";
+
+  if (hasFoodToken(text, ["ドリンク", "コーヒー", "カフェラテ", "牛乳", "豆乳", "ジュース", "炭酸", "アルコール"])) {
+    return [
+      { label: "S", value: 0.75 },
+      { label: standardLabel === "普通" ? "M" : standardLabel, value: 1 },
+      { label: "L", value: 1.25 },
+    ];
+  }
+
+  if (item.category === "プロテイン" || hasFoodToken(text, ["プロテイン", "プロテインバー", "プロテインドリンク", "プロテインゼリー"])) {
+    return [
+      { label: "半分", value: 0.5 },
+      { label: standardLabel === "普通" ? "1回分" : standardLabel, value: 1 },
+      { label: doubleServingLabel(servingLabel, "2回分"), value: 2 },
+    ];
+  }
+
+  if (hasFoodToken(text, ["おにぎり", "パン", "サンドイッチ", "トースト", "スイーツ", "和菓子", "果物", "卵"])) {
+    return [
+      { label: "半分", value: 0.5 },
+      { label: standardLabel === "普通" ? "1個" : standardLabel, value: 1 },
+      { label: doubleServingLabel(servingLabel, "2個"), value: 2 },
+    ];
+  }
+
+  if (hasFoodToken(text, ["ごはん", "丼", "カレー", "麺", "ラーメン", "うどん", "そば", "パスタ", "焼きそば", "寿司", "弁当", "定食"])) {
+    return [
+      { label: "少なめ", value: 0.8 },
+      { label: standardLabel === "普通" ? "普通量" : standardLabel, value: 1 },
+      { label: "多め", value: 1.2 },
+    ];
+  }
+
+  return [
+    { label: "半分", value: 0.5 },
+    { label: standardLabel === "普通" ? "1人前" : standardLabel, value: 1 },
+    { label: "1.5人前", value: 1.5 },
+  ];
+}
+
+function hasFoodToken(text: string, tokens: string[]) {
+  return tokens.some((token) => text.includes(token));
+}
+
+function doubleServingLabel(servingLabel: string | undefined, fallback: string) {
+  const label = servingLabel?.trim();
+  if (!label || unhelpfulServingLabels.has(label)) return fallback;
+  const singleServing = label.match(/^1(.+)$/);
+  if (singleServing) return `2${singleServing[1]}`;
+  return fallback;
 }
 
 async function updateServiceWorkers() {
