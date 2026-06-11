@@ -1066,6 +1066,7 @@ function SettingsTab(props: {
   const [question, setQuestion] = useState("");
   const [report, setReport] = useState("");
   const [copiedReport, setCopiedReport] = useState(false);
+  const [backupImportMessage, setBackupImportMessage] = useState("");
 
   const calculated = props.profile
     ? calculateTargets({
@@ -1232,11 +1233,21 @@ function SettingsTab(props: {
             <input className="hidden" type="file" accept="application/json" onChange={async (event: ChangeEvent<HTMLInputElement>) => {
               const file = event.target.files?.[0];
               if (!file) return;
-              const payload = JSON.parse(await file.text()) as BackupPayload;
-              await importBackup(payload);
-              await props.refresh();
+              try {
+                const payload = JSON.parse(await file.text()) as BackupPayload;
+                if (!confirm("バックアップを読み込むと、現在この端末にあるローカルデータをバックアップ内容で置き換えます。続けますか？")) return;
+                await importBackup(payload);
+                props.markBackupNow();
+                setBackupImportMessage("読み込みました。現在のデータはバックアップ内容に置き換わっています。");
+                await props.refresh();
+              } catch (error) {
+                setBackupImportMessage(error instanceof Error ? error.message : "読み込みに失敗しました。JSONファイルを確認してください。");
+              } finally {
+                event.target.value = "";
+              }
             }} />
           </label>
+          {backupImportMessage && <p className="rounded-md bg-rice px-3 py-2 text-xs font-semibold text-moss">{backupImportMessage}</p>}
           <button className="secondary-button border-clay text-clay" onClick={() => {
             if (confirm("ローカルデータをすべて削除しますか？")) resetLocalData();
           }}><Trash2 size={17} />リセット</button>
@@ -1297,7 +1308,7 @@ function Onboarding({ refresh }: { refresh: () => Promise<void> }) {
         <h1 className="text-2xl font-black tracking-normal">ゴールトラッカー</h1>
         <section className="mt-4 rounded-md border border-leaf/30 bg-leaf/10 p-3 text-sm">
           <p className="font-bold">前に使っていたデータがある場合</p>
-          <p className="mt-1 text-xs text-moss">アップデート後や別のiPhoneでこの画面が出たら、設定で保存したバックアップJSONを読み込んで復元してください。</p>
+          <p className="mt-1 text-xs text-moss">アップデート後や別のiPhoneでこの画面が出たら、設定で保存したバックアップJSONを読み込んで復元してください。読み込みは追加ではなく、バックアップ内容への置き換えです。</p>
           <label className="secondary-button mt-3 w-full cursor-pointer">
             <Archive size={17} />バックアップJSONを読み込む
             <input className="hidden" type="file" accept="application/json" onChange={async (event: ChangeEvent<HTMLInputElement>) => {
@@ -1309,8 +1320,10 @@ function Onboarding({ refresh }: { refresh: () => Promise<void> }) {
                 localStorage.setItem(backupStorageKey, nowIso());
                 setRestoreMessage("復元しました。");
                 await refresh();
-              } catch {
-                setRestoreMessage("読み込みに失敗しました。JSONファイルを確認してください。");
+              } catch (error) {
+                setRestoreMessage(error instanceof Error ? error.message : "読み込みに失敗しました。JSONファイルを確認してください。");
+              } finally {
+                event.target.value = "";
               }
             }} />
           </label>
