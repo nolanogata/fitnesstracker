@@ -100,6 +100,10 @@ button {
 }
 
 .source-badge-estimated {
+  @apply border-ink/15 bg-ink/5 text-moss;
+}
+
+.source-badge-partial {
   @apply border-sun/40 bg-sun/15 text-[#8a5d13];
 }
 

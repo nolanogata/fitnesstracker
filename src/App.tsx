@@ -641,7 +641,7 @@ function FoodTab(props: { menuItems: MenuItem[]; foodEntries: FoodEntry[]; appDa
             <p className="text-lg font-bold">{selected.name}</p>
             <p className="text-sm text-moss">{selected.brand ?? selected.category} · {Math.round(selected.calories * multiplier)} kcal</p>
             <div className="mt-2">
-              <SourceBadge source={selected.data_source} confidence={selected.confidence} />
+              <SourceBadge item={selected} source={selected.data_source} confidence={selected.confidence} />
             </div>
             <div className="mt-3 grid grid-cols-4 gap-2">
               {Object.entries(mealLabels).map(([key, label]) => (
@@ -1286,7 +1286,7 @@ function FoodItemRow({ item, onPick, onClone, refresh }: { item: MenuItem; onPic
         <p className="truncate text-sm font-semibold">{item.name}</p>
         <p className="truncate text-xs text-moss">{item.brand ?? item.category} · {item.calories}kcal · P{item.protein_g} F{item.fat_g} C{item.carbs_g}</p>
         <div className="mt-1">
-          <SourceBadge source={item.data_source} confidence={item.confidence} />
+          <SourceBadge item={item} source={item.data_source} confidence={item.confidence} />
         </div>
       </button>
       <button className="icon-button h-8 w-8" aria-label="編集して個人メニュー化" onClick={() => onClone(item)}><Pencil size={14} /></button>
@@ -1652,27 +1652,51 @@ function sourceRank(source: MenuItem["data_source"]) {
   return { official: 0, user: 1, unofficial: 2, estimated: 3, quick_estimate: 4 }[source];
 }
 
-function sourceLabel(source: MenuItem["data_source"], confidence: MenuItem["confidence"]) {
-  const sourceText = {
+function sourceLabel(source: MenuItem["data_source"], confidence: MenuItem["confidence"], item?: MenuItem) {
+  const sourceText = sourceDescription(source, item);
+  const confidenceText = confidenceDescription(source, confidence, item);
+  return [sourceText, confidenceText].filter(Boolean).join(" · ");
+}
+
+function SourceBadge({ source, confidence, item }: { source: MenuItem["data_source"]; confidence: MenuItem["confidence"]; item?: MenuItem }) {
+  return (
+    <span className={`source-badge ${sourceBadgeClass(source, item)}`}>
+      {sourceLabel(source, confidence, item)}
+    </span>
+  );
+}
+
+function sourceDescription(source: MenuItem["data_source"], item?: MenuItem) {
+  if (source === "estimated" && item) {
+    if (item.tags.includes("公式カロリー")) return "公式kcal・PFC推定";
+    if (hasOfficialPartialSignal(item)) return "公式名・PFC推定";
+  }
+  return {
     official: "公式値",
     unofficial: "非公式値",
     estimated: "推定値",
     quick_estimate: "ざっくり概算",
     user: "自分で入力",
   }[source];
-  const confidenceText = confidence === "low" ? "一部不明" : confidence === "medium" ? "確認推奨" : "";
-  return [sourceText, confidenceText].filter(Boolean).join(" · ");
 }
 
-function SourceBadge({ source, confidence }: { source: MenuItem["data_source"]; confidence: MenuItem["confidence"] }) {
-  return (
-    <span className={`source-badge ${sourceBadgeClass(source)}`}>
-      {sourceLabel(source, confidence)}
-    </span>
-  );
+function confidenceDescription(source: MenuItem["data_source"], confidence: MenuItem["confidence"], item?: MenuItem) {
+  if (source === "official") return "信用度 高";
+  if (source === "unofficial") return "信用度 中";
+  if (source === "estimated" && item && hasOfficialPartialSignal(item)) return "信用度 中";
+  if (source === "estimated") return "信用度 低";
+  if (source === "quick_estimate") return "信用度 低";
+  if (confidence === "low") return "信用度 低";
+  if (confidence === "medium") return "信用度 中";
+  return "信用度 高";
 }
 
-function sourceBadgeClass(source: MenuItem["data_source"]) {
+function hasOfficialPartialSignal(item: MenuItem) {
+  return Boolean(item.source_url || item.tags.some((tag) => tag.includes("公式")));
+}
+
+function sourceBadgeClass(source: MenuItem["data_source"], item?: MenuItem) {
+  if (source === "estimated" && item && hasOfficialPartialSignal(item)) return "source-badge-partial";
   return {
     official: "source-badge-official",
     unofficial: "source-badge-unofficial",
