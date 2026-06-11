@@ -6,6 +6,14 @@
 - `unofficial/medium`: copied from a third-party nutrition database when official P/F/C was not verified. The app must show this as `非公式値`.
 - `estimated/medium` or `quick_estimate/low`: practical logging fallback, never presented as verified.
 
+UI confidence labels:
+
+- `公式値 · 信用度 高`: official kcal/P/F/C.
+- `公式kcal・PFC推定 · 信用度 中`: official kcal was checked, but P/F/C is estimated.
+- `公式名・PFC推定 · 信用度 中`: official menu/product name was checked, but nutrition is estimated.
+- `推定値 · 信用度 低`: no official or third-party source was checked for that row.
+- `非公式値 · 信用度 中`: third-party nutrition source, not brand-verified.
+
 ## Priority Official Sources
 
 - KFC: official nutrition PDF. Added selected core items from the 2026-06-03 nutrition sheet.
