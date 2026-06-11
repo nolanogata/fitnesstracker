@@ -48,7 +48,7 @@ import { downloadText, exportBackup, importBackup, resetLocalData } from "./lib/
 import { generateMarkdownReport } from "./lib/report";
 
 type Tab = "home" | "food" | "workout" | "settings";
-type FoodMode = "search" | "favorite" | "chain" | "category" | "quick" | "manual" | "personal";
+type FoodMode = "search" | "favorite" | "chain" | "category" | "quick" | "rough" | "manual" | "personal";
 type WorkoutMode = "favorite" | "preset" | "body" | "equipment" | "previous" | "search";
 type SettingsFocus = "ai" | undefined;
 type BackupInfo = {
@@ -125,6 +125,12 @@ const emptyManual: ManualFoodDraft = {
   note: "",
   savePreset: false,
   favorite: false,
+};
+
+const emptyRough: ManualFoodDraft = {
+  ...emptyManual,
+  category: "その他",
+  subcategory: "不明",
 };
 
 const backupStorageKey = "phase-log-last-backup-at";
@@ -392,6 +398,7 @@ function FoodTab(props: { menuItems: MenuItem[]; foodEntries: FoodEntry[]; appDa
   const [mealType, setMealType] = useState<MealType>("lunch");
   const [multiplier, setMultiplier] = useState(1);
   const [manual, setManual] = useState(emptyManual);
+  const [rough, setRough] = useState(emptyRough);
   const [chainCategory, setChainCategory] = useState("牛丼・丼");
   const [brand, setBrand] = useState("松屋");
   const [genericCategory, setGenericCategory] = useState("ごはん・丼");
@@ -505,6 +512,36 @@ function FoodTab(props: { menuItems: MenuItem[]; foodEntries: FoodEntry[]; appDa
     await props.refresh();
   };
 
+  const saveRough = async () => {
+    const timestamp = nowIso();
+    const nutrition = draftNutrition(rough);
+    const label = rough.note.trim() || "ざっくり";
+    const note = unique([
+      rough.note,
+      nutrition.unknown.length ? `未入力: ${nutrition.unknown.join("/")}` : "",
+    ]).join(" / ") || undefined;
+    await db.food_entries.put({
+      id: makeId("food"),
+      app_date: props.appDate,
+      logged_at: timestamp,
+      meal_type: rough.meal_type,
+      name: `${mealLabels[rough.meal_type]}の${label}`,
+      calories: nutrition.calories,
+      protein_g: nutrition.protein_g,
+      fat_g: nutrition.fat_g,
+      carbs_g: nutrition.carbs_g,
+      salt_g: nutrition.salt_g,
+      portion_multiplier: 1,
+      entry_source: "quick_estimate",
+      confidence: "low",
+      note,
+      created_at: timestamp,
+      updated_at: timestamp,
+    });
+    setRough({ ...emptyRough, meal_type: rough.meal_type });
+    await props.refresh();
+  };
+
   return (
     <div className="space-y-4">
       <div className="sticky top-[74px] z-10 -mx-4 bg-rice px-4 pb-2">
@@ -513,7 +550,7 @@ function FoodTab(props: { menuItems: MenuItem[]; foodEntries: FoodEntry[]; appDa
           <input className="h-12 w-full pl-10 text-base" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="食品・ブランド検索" />
         </div>
         <div className="mt-2 grid grid-cols-3 gap-2">
-          {(["search", "favorite", "chain", "category", "quick", "manual", "personal"] as FoodMode[]).map((item) => (
+          {(["search", "favorite", "chain", "category", "quick", "rough", "manual", "personal"] as FoodMode[]).map((item) => (
             <button key={item} className={`mode-button ${mode === item ? "mode-button-active" : ""}`} onClick={() => setMode(item)}>
               {foodModeLabel(item)}
             </button>
@@ -547,7 +584,7 @@ function FoodTab(props: { menuItems: MenuItem[]; foodEntries: FoodEntry[]; appDa
         </section>
       )}
 
-      {mode !== "manual" && (
+      {mode !== "manual" && mode !== "rough" && (
         <>
           {mode === "search" && (
             <QuickStrip title="Recent" items={recentItems} onPick={setSelected} fallback={favoriteItems} />
@@ -565,6 +602,10 @@ function FoodTab(props: { menuItems: MenuItem[]; foodEntries: FoodEntry[]; appDa
 
       {mode === "manual" && (
         <ManualFoodForm manual={manual} setManual={setManual} onSave={saveManual} />
+      )}
+
+      {mode === "rough" && (
+        <RoughFoodForm rough={rough} setRough={setRough} onSave={saveRough} />
       )}
 
       <section className="compact-card divide-y divide-line">
@@ -1193,6 +1234,38 @@ function ManualFoodForm({ manual, setManual, onSave, compact = false }: {
   );
 }
 
+function RoughFoodForm({ rough, setRough, onSave }: {
+  rough: ManualFoodDraft;
+  setRough: (manual: ManualFoodDraft) => void;
+  onSave: () => void;
+}) {
+  return (
+    <section className="compact-card p-4">
+      <h2 className="font-bold">ざっくり</h2>
+      <div className="mt-3 grid grid-cols-4 gap-2">
+        {Object.entries(mealLabels).map(([key, label]) => (
+          <button
+            className={`tap-tile ${rough.meal_type === key ? "tap-tile-active" : ""}`}
+            key={key}
+            onClick={() => setRough({ ...rough, meal_type: key as MealType })}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      <div className="mt-3 grid grid-cols-2 gap-2">
+        <PartialNumberInput label="kcal" value={rough.calories} onChange={(value) => setRough({ ...rough, calories: value })} />
+        <PartialNumberInput label="P" value={rough.protein_g} step={0.1} onChange={(value) => setRough({ ...rough, protein_g: value })} />
+        <PartialNumberInput label="F" value={rough.fat_g} step={0.1} onChange={(value) => setRough({ ...rough, fat_g: value })} />
+        <PartialNumberInput label="C" value={rough.carbs_g} step={0.1} onChange={(value) => setRough({ ...rough, carbs_g: value })} />
+        <input value={rough.salt_g} onChange={(event) => setRough({ ...rough, salt_g: event.target.value })} placeholder="塩分 optional" />
+        <input value={rough.note} onChange={(event) => setRough({ ...rough, note: event.target.value })} placeholder="メモ" />
+      </div>
+      <button className="primary-button mt-3 w-full" onClick={onSave}><Save size={17} />保存</button>
+    </section>
+  );
+}
+
 function FoodItemRow({ item, onPick, onClone, refresh }: { item: MenuItem; onPick: (item: MenuItem) => void; onClone: (item: MenuItem) => void; refresh: () => Promise<void> }) {
   return (
     <div className="flex items-center justify-between gap-2 px-4 py-3">
@@ -1458,6 +1531,7 @@ function foodModeLabel(mode: FoodMode) {
     chain: "チェーン",
     category: "カテゴリ",
     quick: "見積",
+    rough: "ざっくり",
     manual: "手入力",
     personal: "個人",
   }[mode];
