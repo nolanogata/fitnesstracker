@@ -9,7 +9,7 @@ export type Phase =
 
 export type Sex = "male" | "female" | "unspecified";
 export type ActivityLevel = "low" | "moderate" | "high" | "very_high";
-export type DataSource = "official" | "estimated" | "quick_estimate" | "user";
+export type DataSource = "official" | "unofficial" | "estimated" | "quick_estimate" | "user";
 export type Confidence = "high" | "medium" | "low";
 export type MealType = "breakfast" | "lunch" | "dinner" | "snack";
 
