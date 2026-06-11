@@ -1,6 +1,6 @@
 # Food Data Source Policy
 
-Phase Log Local keeps bundled food data in two layers:
+ゴールトラッカー keeps bundled food data in two layers:
 
 - `official/high`: copied from a brand's official nutrition page or PDF, with `source_url` and `fetched_at`.
 - `estimated/medium` or `quick_estimate/low`: practical logging fallback, never presented as verified.

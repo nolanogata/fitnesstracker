@@ -1,6 +1,6 @@
 {
-  "name": "Phase Log Local",
-  "short_name": "Phase Log",
+  "name": "ゴールトラッカー",
+  "short_name": "ゴールトラッカー",
   "description": "Local-first food, workout, weight, and goal logging.",
   "start_url": ".",
   "scope": ".",

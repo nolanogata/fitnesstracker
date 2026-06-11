@@ -205,7 +205,7 @@ function App() {
         <div className="flex items-center justify-between">
           <div>
             <p className="text-xs font-semibold text-moss">{formatJapaneseDate(appDate)}</p>
-            <h1 className="text-xl font-bold tracking-normal">Phase Log</h1>
+            <h1 className="text-xl font-bold tracking-normal">ゴールトラッカー</h1>
           </div>
           <div className="rounded-md border border-leaf/20 bg-leaf/10 px-3 py-2 text-right text-xs shadow-soft">
             <p className="font-semibold">{activeGoal ? phaseLabels[activeGoal.phase] : "未設定"}</p>
@@ -1026,7 +1026,7 @@ function SettingsTab(props: {
       </section>
 
       <section className="compact-card p-4 text-sm text-moss">
-        <p className="font-semibold text-ink">Phase Log Local</p>
+        <p className="font-semibold text-ink">ゴールトラッカー</p>
         <p>IndexedDB local-only · no login · no backend</p>
         <p className="mt-2">同じURLを友達が開いても、ログは各iPhone内に別々に保存されます。</p>
       </section>
@@ -1076,7 +1076,7 @@ function Onboarding({ refresh }: { refresh: () => Promise<void> }) {
   return (
     <main className="mx-auto min-h-screen max-w-[430px] bg-rice px-4 py-8 text-ink">
       <div className="compact-card p-5">
-        <h1 className="text-2xl font-black tracking-normal">Phase Log Local</h1>
+        <h1 className="text-2xl font-black tracking-normal">ゴールトラッカー</h1>
         <section className="mt-4 rounded-md border border-leaf/30 bg-leaf/10 p-3 text-sm">
           <p className="font-bold">前に使っていたデータがある場合</p>
           <p className="mt-1 text-xs text-moss">アップデート後や別のiPhoneでこの画面が出たら、設定で保存したバックアップJSONを読み込んで復元してください。</p>
