@@ -51,6 +51,26 @@ button {
   @apply rounded-lg border border-line bg-surface shadow-soft;
 }
 
+.calorie-card {
+  @apply rounded-lg border p-4 shadow-soft transition-colors;
+}
+
+.calorie-card-neutral {
+  @apply border-line bg-surface;
+}
+
+.calorie-card-under {
+  @apply border-sun/40 bg-sun/15;
+}
+
+.calorie-card-over {
+  @apply border-clay/35 bg-clay/10;
+}
+
+.calorie-card-on-track {
+  @apply border-leaf/45 bg-leaf/15;
+}
+
 .icon-button {
   @apply inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-line bg-surface text-ink transition active:scale-95;
 }
