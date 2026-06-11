@@ -255,6 +255,7 @@ function App() {
             appDate={appDate}
             dayTotals={dayTotals}
             todayEntries={todayEntries}
+            menuItems={menuItems}
             todayWorkouts={todayWorkouts}
             workoutExercises={workoutExercises}
             workoutSets={workoutSets}
@@ -334,6 +335,7 @@ function HomeTab(props: {
   appDate: string;
   dayTotals: ReturnType<typeof sumFood>;
   todayEntries: FoodEntry[];
+  menuItems: MenuItem[];
   todayWorkouts: WorkoutSession[];
   workoutExercises: WorkoutExercise[];
   workoutSets: WorkoutSet[];
@@ -460,7 +462,7 @@ function HomeTab(props: {
         <ListHeader title="今日の食事" value={`${props.todayEntries.length}件`} />
         {props.todayEntries.slice(0, 1).map((entry) => (
           <button className="w-full text-left" key={entry.id} onClick={() => props.setTab("food")}>
-            <HomeFoodLogRow entry={entry} />
+            <HomeFoodLogRow entry={entry} displayName={formatFoodEntryName(entry, props.menuItems)} />
           </button>
         ))}
         {props.todayEntries.length === 0 && <EmptyLine text="まだ食事ログなし" />}
@@ -513,11 +515,11 @@ function CheckInStepper({ label, value, suffix, step, onChange }: { label: strin
   );
 }
 
-function HomeFoodLogRow({ entry }: { entry: FoodEntry }) {
+function HomeFoodLogRow({ entry, displayName }: { entry: FoodEntry; displayName: string }) {
   return (
     <div className="flex items-center gap-3 px-4 py-3.5">
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-semibold">{entry.name}</p>
+        <p className="truncate text-sm font-semibold">{displayName}</p>
         <p className="mt-1 text-xs text-moss">{mealLabels[entry.meal_type]} · {entry.calories} kcal</p>
         <div className="mt-2 flex flex-wrap gap-1.5">
           <span className="rounded-full bg-oat px-2 py-1 text-[11px] font-semibold text-moss">P{entry.protein_g}</span>
@@ -573,7 +575,7 @@ function FoodTab(props: { menuItems: MenuItem[]; foodEntries: FoodEntry[]; appDa
       app_date: props.appDate,
       logged_at: timestamp,
       meal_type: mealType,
-      name: selected.name,
+      name: formatMenuItemName(selected),
       brand: selected.brand,
       calories: Math.round(selected.calories * multiplier),
       protein_g: round1(selected.protein_g * multiplier),
@@ -737,6 +739,7 @@ function FoodTab(props: { menuItems: MenuItem[]; foodEntries: FoodEntry[]; appDa
           <FoodLogRow
             entry={entry}
             key={entry.id}
+            displayName={formatFoodEntryName(entry, props.menuItems)}
             showSource
             onDelete={async () => {
               await db.food_entries.delete(entry.id);
@@ -749,7 +752,7 @@ function FoodTab(props: { menuItems: MenuItem[]; foodEntries: FoodEntry[]; appDa
       {selected && (
         <div className="fixed inset-0 z-40 flex items-end bg-ink/30 px-4 pb-4">
           <div className="compact-card w-full p-4">
-            <p className="text-lg font-bold">{selected.name}</p>
+            <p className="text-lg font-bold">{formatMenuItemName(selected)}</p>
             <p className="text-sm text-moss">{selected.brand ?? selected.category} · {Math.round(selected.calories * multiplier)} kcal</p>
             <div className="mt-2">
               <SourceBadge item={selected} source={selected.data_source} confidence={selected.confidence} />
@@ -1723,7 +1726,7 @@ function FoodItemRow({ item, onPick, onClone, refresh }: { item: MenuItem; onPic
     <div className="flex items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-rice/70">
       <Pictogram {...pictogram} />
       <button className="min-w-0 flex-1 text-left" onClick={() => onPick(item)}>
-        <p className="truncate text-sm font-semibold">{item.name}</p>
+        <p className="truncate text-sm font-semibold">{formatMenuItemName(item)}</p>
         <p className="truncate text-xs text-moss">{item.brand ?? item.category} · {item.calories}kcal · P{item.protein_g} F{item.fat_g} C{item.carbs_g}</p>
         <div className="mt-1">
           <SourceBadge item={item} source={item.data_source} confidence={item.confidence} />
@@ -1891,13 +1894,13 @@ function ExercisePresetRow({ exercise, isFavorite, onAdd, onToggleFavorite, onPi
   );
 }
 
-function FoodLogRow({ entry, showSource = false, onDelete }: { entry: FoodEntry; showSource?: boolean; onDelete?: () => Promise<void> }) {
+function FoodLogRow({ entry, displayName, showSource = false, onDelete }: { entry: FoodEntry; displayName?: string; showSource?: boolean; onDelete?: () => Promise<void> }) {
   const pictogram = getFoodPictogram(entry);
   return (
     <div className="flex items-center justify-between gap-3 px-4 py-3">
       <Pictogram {...pictogram} />
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-semibold">{entry.name}</p>
+        <p className="truncate text-sm font-semibold">{displayName ?? entry.name}</p>
         <div className="mt-1 flex flex-wrap items-center gap-1.5">
           <span className="text-xs text-moss">{mealLabels[entry.meal_type]} · P{entry.protein_g} F{entry.fat_g} C{entry.carbs_g}</span>
           {showSource && <SourceBadge source={entry.entry_source} confidence={entry.confidence} />}
@@ -2308,7 +2311,7 @@ function QuickStrip({ title, items, fallback, onPick }: { title: string; items: 
     <section className="compact-card p-3">
       <p className="mb-2 text-xs font-bold text-moss">{title}</p>
       <div className="flex gap-2 overflow-x-auto pb-1">
-        {visible.slice(0, 10).map((item) => <button className="chip" key={item.id} onClick={() => onPick(item)}>{item.name}</button>)}
+        {visible.slice(0, 10).map((item) => <button className="chip" key={item.id} onClick={() => onPick(item)}>{formatMenuItemName(item)}</button>)}
       </div>
     </section>
   );
@@ -2618,7 +2621,7 @@ function toManualDraft(item: MenuItem, mealType: MealType = "lunch"): ManualFood
   const category = genericCategories[item.category] ? item.category : "チェーン店";
   const subcategory = item.tags.find((tag) => genericCategories[category]?.includes(tag)) ?? genericCategories[category]?.[0] ?? "";
   return {
-    name: item.name,
+    name: formatMenuItemName(item),
     brand: item.brand ?? "",
     meal_type: item.default_meal_type ?? mealType,
     category,
@@ -2779,6 +2782,21 @@ function workoutModeLabel(mode: WorkoutMode) {
     previous: "前回",
     search: "検索",
   }[mode];
+}
+
+const unhelpfulServingLabels = new Set(["1品", "1食"]);
+
+function formatMenuItemName(item: Pick<MenuItem, "name" | "serving_label">) {
+  const servingLabel = item.serving_label?.trim();
+  if (!servingLabel || unhelpfulServingLabels.has(servingLabel) || item.name.includes(servingLabel)) return item.name;
+  return `${item.name}（${servingLabel}）`;
+}
+
+function formatFoodEntryName(entry: FoodEntry, menuItems: MenuItem[]) {
+  if (!entry.menu_item_id) return entry.name;
+  const menuItem = menuItems.find((item) => item.id === entry.menu_item_id);
+  if (!menuItem || entry.name !== menuItem.name) return entry.name;
+  return formatMenuItemName(menuItem);
 }
 
 function getBackupInfo(lastBackupAt: string | undefined, trackedRecords: number): BackupInfo {
