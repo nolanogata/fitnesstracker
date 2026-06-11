@@ -87,6 +87,13 @@ export function generateMarkdownReport(input: {
 
 ${isDaily ? `対象日: ${input.periodStart}` : `期間: ${input.periodStart} - ${input.periodEnd}`}
 
+## AIへの依頼
+
+- このレポートとこれまでの会話を踏まえて、現在の目標に対する妥当な目標カロリーとP/F/Cを算定してください。
+- 現在トラッカーに設定されている目標値を修正した方がよい場合は、修正後の kcal / P / F / C を明示してください。
+- 修正が不要な場合も、その理由と次に見るべき記録指標を簡潔に教えてください。
+- トラッカー側で変更する値がある場合は、「トラッカー修正案」として入力しやすい形でまとめてください。
+
 ## 現在のゴール
 
 - フェーズ: ${input.goal ? phaseLabels[input.goal.phase] : "未設定"}
