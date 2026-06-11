@@ -770,10 +770,14 @@ function WorkoutTab(props: {
   const [filter, setFilter] = useState("");
   const [focusedExerciseId, setFocusedExerciseId] = useState<string>();
   const [sessionScrollKey, setSessionScrollKey] = useState(0);
+  const [editingTemplateId, setEditingTemplateId] = useState<string>();
+  const [templateExerciseQuery, setTemplateExerciseQuery] = useState("");
+  const [templateTargetItem, setTemplateTargetItem] = useState<{ label: string; item: TemplateExercise }>();
   const exerciseEditorRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const workoutTopRef = useRef<HTMLDivElement | null>(null);
   const sessionSectionRef = useRef<HTMLElement | null>(null);
   const activeSession = props.workoutSessions.find((session) => session.id === sessionId);
+  const editingTemplate = props.workoutTemplates.find((template) => template.id === editingTemplateId);
   const activeExercises = props.workoutExercises
     .filter((exercise) => exercise.session_id === sessionId)
     .sort((a, b) => a.order - b.order);
@@ -823,6 +827,27 @@ function WorkoutTab(props: {
   const toggleExerciseFavorite = async (exercise: ExercisePreset) => {
     await db.exercise_presets.update(exercise.id, { is_favorite: !exercise.is_favorite, updated_at: nowIso() });
     await props.refresh();
+  };
+
+  const updateTemplateExercises = async (template: WorkoutTemplate, exercises: TemplateExercise[]) => {
+    await db.workout_templates.update(template.id, {
+      exercises,
+      body_parts: templateBodyParts(exercises),
+      updated_at: nowIso(),
+    });
+    await props.refresh();
+  };
+
+  const addExerciseToTemplate = async (templateId: string, item: TemplateExercise) => {
+    const template = props.workoutTemplates.find((item) => item.id === templateId);
+    if (!template) return;
+    await updateTemplateExercises(template, [...template.exercises, item]);
+    setEditingTemplateId(template.id);
+    setTemplateTargetItem(undefined);
+  };
+
+  const removeExerciseFromTemplate = async (template: WorkoutTemplate, index: number) => {
+    await updateTemplateExercises(template, template.exercises.filter((_, itemIndex) => itemIndex !== index));
   };
 
   const scrollToWorkoutTop = () => {
@@ -910,6 +935,7 @@ function WorkoutTab(props: {
               key={exercise.id}
               onAdd={addPresetExercise}
               onToggleFavorite={toggleExerciseFavorite}
+              onPickTemplate={props.workoutTemplates.length ? (item) => setTemplateTargetItem({ label: item.name, item: exercisePresetToTemplateExercise(item) }) : undefined}
             />
           ))}
           {favoriteExercises.length === 0 && <EmptyLine text="種目行のハートを押すと、ここから単一種目をすぐ追加できます" />}
@@ -917,20 +943,36 @@ function WorkoutTab(props: {
       )}
 
       {mode === "preset" && (
-        <section className="compact-card divide-y divide-line">
-          <ListHeader title="ワークアウトプリセット" value={`${props.workoutTemplates.length}件`} />
-          {props.workoutTemplates.map((template) => (
-            <button className="flex w-full items-center justify-between gap-3 px-4 py-4 text-left transition-colors hover:bg-rice/70" key={template.id} onClick={() => startFromTemplate(template)}>
-              <Pictogram {...getWorkoutPictogram(template.body_parts.join(" "), template.exercises[0]?.equipment_type)} />
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-bold">{template.name}</p>
-                <p className="truncate text-xs text-moss">{template.body_parts.join(" / ")} · {template.exercises.length}種目</p>
-              </div>
-              <ChevronRight size={18} />
-            </button>
-          ))}
-          {props.workoutTemplates.length === 0 && <EmptyLine text="ワークアウト後に「現在の内容をプリセット保存」でここから呼び出せます" />}
-        </section>
+        <div className="space-y-3">
+          <section className="compact-card divide-y divide-line">
+            <ListHeader title="ワークアウトプリセット" value={`${props.workoutTemplates.length}件`} />
+            {props.workoutTemplates.map((template) => (
+              <WorkoutTemplateRow
+                isEditing={editingTemplateId === template.id}
+                key={template.id}
+                onEdit={() => {
+                  setEditingTemplateId(editingTemplateId === template.id ? undefined : template.id);
+                  setTemplateExerciseQuery("");
+                }}
+                onStart={startFromTemplate}
+                template={template}
+              />
+            ))}
+            {props.workoutTemplates.length === 0 && <EmptyLine text="ワークアウト後に「現在の内容をプリセット保存」でここから呼び出せます" />}
+          </section>
+
+          {editingTemplate && (
+            <WorkoutTemplateEditor
+              exercisePresets={props.exercisePresets}
+              onAddExercise={(exercise) => addExerciseToTemplate(editingTemplate.id, exercisePresetToTemplateExercise(exercise))}
+              onRemoveExercise={(index) => removeExerciseFromTemplate(editingTemplate, index)}
+              onStart={() => startFromTemplate(editingTemplate)}
+              query={templateExerciseQuery}
+              setQuery={setTemplateExerciseQuery}
+              template={editingTemplate}
+            />
+          )}
+        </div>
       )}
 
       {mode === "previous" && (
@@ -956,6 +998,7 @@ function WorkoutTab(props: {
                 key={exercise.id}
                 onAdd={addPresetExercise}
                 onToggleFavorite={toggleExerciseFavorite}
+                onPickTemplate={props.workoutTemplates.length ? (item) => setTemplateTargetItem({ label: item.name, item: exercisePresetToTemplateExercise(item) }) : undefined}
               />
             ))}
           </div>
@@ -977,6 +1020,7 @@ function WorkoutTab(props: {
                 exercise={exercise}
                 sets={props.workoutSets.filter((set) => set.workout_exercise_id === exercise.id).sort((a, b) => a.set_order - b.set_order)}
                 bodyWeightKg={props.profile?.current_weight_kg ?? 70}
+                onPickTemplate={props.workoutTemplates.length ? (item) => setTemplateTargetItem(item) : undefined}
                 refresh={props.refresh}
               />
             </div>
@@ -1026,6 +1070,28 @@ function WorkoutTab(props: {
           </button>
         ))}
       </section>
+
+      {templateTargetItem && (
+        <div className="fixed inset-0 z-40 flex items-end bg-ink/30 px-4 pb-4">
+          <div className="compact-card w-full p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-lg font-bold">プリセットへ追加</p>
+                <p className="mt-1 text-sm text-moss">{templateTargetItem.label}</p>
+              </div>
+              <button className="icon-button h-9 w-9" aria-label="閉じる" onClick={() => setTemplateTargetItem(undefined)}>×</button>
+            </div>
+            <div className="mt-3 grid gap-2">
+              {props.workoutTemplates.map((template) => (
+                <button className="secondary-button justify-between" key={template.id} onClick={() => addExerciseToTemplate(template.id, templateTargetItem.item)}>
+                  <span className="truncate">{template.name}</span>
+                  <span className="text-xs text-muted">{template.exercises.length}種目</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -1587,11 +1653,108 @@ function FoodItemRow({ item, onPick, onClone, refresh }: { item: MenuItem; onPic
   );
 }
 
-function ExercisePresetRow({ exercise, isFavorite, onAdd, onToggleFavorite }: {
+function WorkoutTemplateRow({ template, isEditing, onStart, onEdit }: {
+  template: WorkoutTemplate;
+  isEditing: boolean;
+  onStart: (template: WorkoutTemplate) => void | Promise<void>;
+  onEdit: () => void;
+}) {
+  return (
+    <div className={`flex items-center justify-between gap-3 px-4 py-4 transition-colors hover:bg-rice/70 ${isEditing ? "bg-leaf/20" : ""}`}>
+      <Pictogram {...getWorkoutPictogram(template.body_parts.join(" "), template.exercises[0]?.equipment_type)} />
+      <button className="min-w-0 flex-1 text-left" onClick={() => onStart(template)}>
+        <p className="truncate text-sm font-bold">{template.name}</p>
+        <p className="truncate text-xs text-moss">{template.body_parts.join(" / ") || "未設定"} · {template.exercises.length}種目</p>
+      </button>
+      <button className={`icon-button h-8 w-8 ${isEditing ? "border-moss/50 text-moss" : ""}`} aria-label={`${template.name}を編集`} onClick={onEdit}><Pencil size={14} /></button>
+      <button className="icon-button h-8 w-8" aria-label={`${template.name}を開始`} onClick={() => onStart(template)}><ChevronRight size={14} /></button>
+    </div>
+  );
+}
+
+function WorkoutTemplateEditor({ template, exercisePresets, query, setQuery, onStart, onAddExercise, onRemoveExercise }: {
+  template: WorkoutTemplate;
+  exercisePresets: ExercisePreset[];
+  query: string;
+  setQuery: (query: string) => void;
+  onStart: () => void | Promise<void>;
+  onAddExercise: (exercise: ExercisePreset) => void | Promise<void>;
+  onRemoveExercise: (index: number) => void | Promise<void>;
+}) {
+  const needle = query.trim().toLowerCase();
+  const addResults = exercisePresets
+    .filter((exercise) => {
+      if (!needle) return true;
+      const haystack = `${exercise.name} ${exercise.body_part} ${exercise.equipment_type}`.toLowerCase();
+      return haystack.includes(needle);
+    })
+    .slice(0, 12);
+  return (
+    <section className="compact-card divide-y divide-line overflow-hidden">
+      <div className="px-4 py-3">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="truncate text-sm font-bold">{template.name}を編集</p>
+            <p className="mt-1 text-xs text-moss">プリセット内の種目を削除・追加できます。</p>
+          </div>
+          <button className="primary-button h-10 px-3 py-2" onClick={onStart}><Check size={16} />開始</button>
+        </div>
+      </div>
+
+      <div>
+        <ListHeader title="登録中の種目" value={`${template.exercises.length}件`} />
+        {template.exercises.map((exercise, index) => (
+          <TemplateExerciseRow exercise={exercise} index={index} key={`${exercise.exercise_name}-${index}`} onRemove={onRemoveExercise} />
+        ))}
+        {template.exercises.length === 0 && <EmptyLine text="まだ種目がありません。下から追加できます" />}
+      </div>
+
+      <div className="p-4">
+        <label className="text-xs font-semibold text-moss">
+          追加する種目
+          <input className="mt-2 h-11 w-full text-base" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="種目名・部位・器具で検索" />
+        </label>
+        <div className="mt-3 divide-y divide-line rounded-md border border-line">
+          {addResults.map((exercise) => (
+            <button className="flex w-full items-center justify-between gap-3 px-3 py-3 text-left transition-colors hover:bg-rice/70" key={exercise.id} onClick={() => onAddExercise(exercise)}>
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold">{exercise.name}</p>
+                <p className="truncate text-xs text-moss">{exercise.body_part} · {exercise.equipment_type}</p>
+              </div>
+              <Plus className="shrink-0 text-moss" size={16} />
+            </button>
+          ))}
+          {addResults.length === 0 && <EmptyLine text="追加できる種目が見つかりません" />}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function TemplateExerciseRow({ exercise, index, onRemove }: {
+  exercise: TemplateExercise;
+  index: number;
+  onRemove: (index: number) => void | Promise<void>;
+}) {
+  const pictogram = getWorkoutPictogram(exercise.body_part, exercise.equipment_type);
+  return (
+    <div className="flex items-center justify-between gap-3 px-4 py-3">
+      <Pictogram {...pictogram} />
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-semibold">{exercise.exercise_name}</p>
+        <p className="truncate text-xs text-moss">{exercise.body_part} · {exercise.equipment_type} · {exercise.sets}セット</p>
+      </div>
+      <button className="icon-button h-8 w-8 text-clay" aria-label={`${exercise.exercise_name}をプリセットから削除`} onClick={() => onRemove(index)}><Trash2 size={14} /></button>
+    </div>
+  );
+}
+
+function ExercisePresetRow({ exercise, isFavorite, onAdd, onToggleFavorite, onPickTemplate }: {
   exercise: ExercisePreset;
   isFavorite: boolean;
   onAdd: (exercise: ExercisePreset) => void | Promise<void>;
   onToggleFavorite: (exercise: ExercisePreset) => void | Promise<void>;
+  onPickTemplate?: (exercise: ExercisePreset) => void;
 }) {
   const pictogram = getWorkoutPictogram(exercise.body_part, exercise.equipment_type);
   return (
@@ -1602,6 +1765,7 @@ function ExercisePresetRow({ exercise, isFavorite, onAdd, onToggleFavorite }: {
         <p className="truncate text-xs text-moss">{exercise.body_part} · {exercise.equipment_type}</p>
       </button>
       <button className="icon-button h-8 w-8" aria-label={`${exercise.name}を追加`} onClick={() => onAdd(exercise)}><Plus size={14} /></button>
+      {onPickTemplate && <button className="icon-button h-8 w-8" aria-label={`${exercise.name}をプリセットへ追加`} onClick={() => onPickTemplate(exercise)}><Archive size={14} /></button>}
       <button
         className={`icon-button h-8 w-8 ${isFavorite ? "border-sun/50 text-[#8a5d13]" : ""}`}
         aria-label={`${exercise.name}をお気に入り${isFavorite ? "から外す" : "に追加"}`}
@@ -1637,11 +1801,13 @@ function WorkoutExerciseEditor({
   exercise,
   sets,
   bodyWeightKg,
+  onPickTemplate,
   refresh,
 }: {
   exercise: WorkoutExercise;
   sets: WorkoutSet[];
   bodyWeightKg: number;
+  onPickTemplate?: (item: { label: string; item: TemplateExercise }) => void;
   refresh: () => Promise<void>;
 }) {
   const isCardio = exercise.body_part === "有酸素" || exercise.equipment_type === "有酸素";
@@ -1704,6 +1870,12 @@ function WorkoutExerciseEditor({
           await db.workout_sets.put({ ...previous, id: makeId("set"), set_order: sets.length + 1, created_at: nowIso(), updated_at: nowIso() });
           await refresh();
         }}>複製</button>
+        {onPickTemplate && (
+          <button className="secondary-button col-span-2" onClick={() => onPickTemplate({
+            label: exercise.exercise_name,
+            item: workoutExerciseToTemplateExercise(exercise, sets),
+          })}><Archive size={16} />この種目をプリセットへ追加</button>
+        )}
       </div>
     </div>
   );
@@ -2320,6 +2492,24 @@ function exercisePresetToTemplateExercise(exercise: ExercisePreset): TemplateExe
     weight_kg: exercise.default_weight_kg,
     duration_min: exercise.default_duration_min,
   };
+}
+
+function workoutExerciseToTemplateExercise(exercise: WorkoutExercise, sets: WorkoutSet[]): TemplateExercise {
+  const firstSet = sets[0];
+  return {
+    exercise_id: exercise.exercise_id,
+    exercise_name: exercise.exercise_name,
+    body_part: exercise.body_part,
+    equipment_type: exercise.equipment_type,
+    sets: sets.length || 3,
+    reps: firstSet?.reps,
+    weight_kg: firstSet?.weight_kg,
+    duration_min: firstSet?.duration_min,
+  };
+}
+
+function templateBodyParts(exercises: TemplateExercise[]) {
+  return unique(exercises.map((exercise) => exercise.body_part));
 }
 
 function draftNutrition(manual: ManualFoodDraft) {
