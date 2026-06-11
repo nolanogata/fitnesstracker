@@ -390,8 +390,8 @@ function HomeTab(props: {
         <button className="secondary-button min-h-12" onClick={() => props.setTab("workout")}><Plus size={17} />筋トレを記録</button>
       </div>
       <div className="flex justify-center gap-4 text-xs font-bold text-moss">
-        <button className="px-2 py-1" onClick={() => props.setTab("settings")}>ゴール</button>
-        <button className="px-2 py-1 text-muted" onClick={props.openAiReport}>AI相談レポート</button>
+        <button className="px-2 py-1" onClick={() => props.setTab("settings")}>ゴールを確認</button>
+        <button className="px-2 py-1 text-muted" onClick={props.openAiReport}>AI相談用のレポートを生成</button>
       </div>
 
       <section className="compact-card p-4">
@@ -654,16 +654,27 @@ function FoodTab(props: { menuItems: MenuItem[]; foodEntries: FoodEntry[]; appDa
 
       {mode === "chain" && (
         <section className="compact-card p-3">
-          <select className="h-12 w-full text-base" value={chainCategory} onChange={(event) => {
-            setChainCategory(event.target.value);
-            setBrand(chainCategories[event.target.value]?.[0] ?? "");
-          }}>
-            {Object.keys(chainCategories).map((item) => <option key={item}>{item}</option>)}
-          </select>
-          <div className="mt-2 grid grid-cols-2 gap-2">
+          <p className="mb-2 text-xs font-semibold text-moss">ジャンル</p>
+          <div className="grid grid-cols-2 gap-2">
+            {Object.keys(chainCategories).map((item) => (
+              <button
+                className={`tap-tile ${chainCategory === item ? "tap-tile-active" : ""}`}
+                key={item}
+                onClick={() => {
+                  setChainCategory(item);
+                  setBrand(chainCategories[item]?.[0] ?? "");
+                }}
+              >
+                {item}
+              </button>
+            ))}
+          </div>
+          <p className="mb-2 mt-3 text-xs font-semibold text-moss">チェーン</p>
+          <div className="grid grid-cols-2 gap-2">
             {chainCategories[chainCategory].map((item) => (
               <button className={`tap-tile ${brand === item ? "tap-tile-active" : ""}`} key={item} onClick={() => setBrand(item)}>{item}</button>
             ))}
+            {chainCategories[chainCategory].length === 0 && <p className="col-span-2 px-1 py-2 text-sm text-moss">該当するチェーンはまだ登録されていません。</p>}
           </div>
         </section>
       )}
