@@ -302,6 +302,7 @@ function HomeTab(props: {
 }) {
   const [weight, setWeight] = useState(props.latestWeight?.weight_kg ?? props.profile?.current_weight_kg ?? 70);
   const remaining = (props.goal?.target_calories ?? 0) - props.dayTotals.calories;
+  const calorieState = getCalorieState(remaining, props.goal?.target_calories ?? 0);
   const average7 = movingAverage(props.weightLogs, 7);
   return (
     <div className="space-y-4">
@@ -312,12 +313,16 @@ function HomeTab(props: {
         </button>
       )}
 
-      <section className="compact-card p-4">
+      <section className={`calorie-card ${calorieState.cardClass}`}>
         <div className="flex items-start justify-between gap-3">
           <div>
-            <p className="text-xs font-semibold text-moss">Remaining</p>
-            <p className="mt-1 text-4xl font-black tracking-normal">{remaining}</p>
-            <p className="text-sm text-moss">{props.dayTotals.calories} / {props.goal?.target_calories ?? "-"} kcal</p>
+            <div className="flex items-center gap-2">
+              <p className="text-xs font-bold text-moss">残りカロリー</p>
+              <span className={`rounded-full px-2 py-0.5 text-[11px] font-black ${calorieState.badgeClass}`}>{calorieState.label}</span>
+            </div>
+            <p className={`mt-1 text-4xl font-black tracking-normal ${calorieState.valueClass}`}>{calorieState.displayValue}</p>
+            <p className="text-sm font-semibold text-moss">{calorieState.subtitle}</p>
+            <p className="mt-1 text-xs text-moss">{props.dayTotals.calories} / {props.goal?.target_calories ?? "-"} kcal</p>
           </div>
           <div className="grid gap-1 text-right text-xs">
             <MacroLine label="P" value={props.dayTotals.protein} target={props.goal?.target_protein_g ?? 0} color="#526a57" />
@@ -1399,6 +1404,47 @@ function MacroLine({ label, value, target, color = "#8fb48e" }: { label: string;
       <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-line"><div className="h-full" style={{ width: `${percent}%`, backgroundColor: color }} /></div>
     </div>
   );
+}
+
+function getCalorieState(remaining: number, target: number) {
+  if (target <= 0) {
+    return {
+      label: "未設定",
+      displayValue: "-",
+      subtitle: "目標kcalを設定すると状態を表示します",
+      cardClass: "calorie-card-neutral",
+      badgeClass: "bg-ink/5 text-moss",
+      valueClass: "text-ink",
+    };
+  }
+  if (remaining < 0) {
+    return {
+      label: "オーバー",
+      displayValue: Math.abs(remaining),
+      subtitle: `${Math.abs(remaining)} kcal超過`,
+      cardClass: "calorie-card-over",
+      badgeClass: "bg-clay text-white",
+      valueClass: "text-clay",
+    };
+  }
+  if (remaining <= 100) {
+    return {
+      label: "ほぼ目標",
+      displayValue: remaining,
+      subtitle: remaining === 0 ? "ぴったり目標" : `あと ${remaining} kcal`,
+      cardClass: "calorie-card-on-track",
+      badgeClass: "bg-moss text-white",
+      valueClass: "text-moss",
+    };
+  }
+  return {
+    label: "不足",
+    displayValue: remaining,
+    subtitle: `あと ${remaining} kcal`,
+    cardClass: "calorie-card-under",
+    badgeClass: "bg-sun text-white",
+    valueClass: "text-[#8a5d13]",
+  };
 }
 
 function ListHeader({ title, value }: { title: string; value: string }) {
