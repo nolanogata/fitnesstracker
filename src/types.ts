@@ -126,6 +126,7 @@ export type ExercisePreset = {
   intensity_default?: string;
   is_public_preset: boolean;
   is_user_created: boolean;
+  is_favorite?: boolean;
   preset_pack?: string;
   created_at: string;
   updated_at: string;

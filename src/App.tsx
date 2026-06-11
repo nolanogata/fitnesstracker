@@ -758,7 +758,9 @@ function WorkoutTab(props: {
   const [mode, setMode] = useState<WorkoutMode>("favorite");
   const [filter, setFilter] = useState("");
   const [focusedExerciseId, setFocusedExerciseId] = useState<string>();
+  const [sessionScrollKey, setSessionScrollKey] = useState(0);
   const exerciseEditorRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const sessionSectionRef = useRef<HTMLElement | null>(null);
   const activeSession = props.workoutSessions.find((session) => session.id === sessionId);
   const activeExercises = props.workoutExercises
     .filter((exercise) => exercise.session_id === sessionId)
@@ -772,6 +774,44 @@ function WorkoutTab(props: {
     const timer = window.setTimeout(() => setFocusedExerciseId(undefined), 1800);
     return () => window.clearTimeout(timer);
   }, [focusedExerciseId, activeExercises.length]);
+
+  useEffect(() => {
+    if (!sessionScrollKey || focusedExerciseId || !activeSession) return;
+    sessionSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [activeSession, focusedExerciseId, sessionScrollKey]);
+
+  const addPresetExercise = async (exercise: ExercisePreset) => {
+    let targetSessionId = sessionId;
+    if (!targetSessionId) {
+      targetSessionId = makeId("session");
+      const timestamp = nowIso();
+      await db.workout_sessions.put({
+        id: targetSessionId,
+        app_date: props.appDate,
+        logged_at: timestamp,
+        title: "フリーワークアウト",
+        workout_type: "strength",
+        body_parts: [exercise.body_part],
+        created_at: timestamp,
+        updated_at: timestamp,
+      });
+      setSessionId(targetSessionId);
+    }
+    const addedExerciseId = await addExerciseToSession(
+      targetSessionId,
+      exercisePresetToTemplateExercise(exercise),
+      props.workoutExercises.filter((item) => item.session_id === targetSessionId).length,
+      props.workoutSets,
+      props.workoutExercises,
+    );
+    await props.refresh();
+    setFocusedExerciseId(addedExerciseId);
+  };
+
+  const toggleExerciseFavorite = async (exercise: ExercisePreset) => {
+    await db.exercise_presets.update(exercise.id, { is_favorite: !exercise.is_favorite, updated_at: nowIso() });
+    await props.refresh();
+  };
 
   const startFromTemplate = async (template: WorkoutTemplate) => {
     const timestamp = nowIso();
@@ -787,11 +827,14 @@ function WorkoutTab(props: {
       updated_at: timestamp,
     };
     await db.workout_sessions.put(newSession);
+    let firstExerciseId: string | undefined;
     for (const [index, item] of template.exercises.entries()) {
-      await addExerciseToSession(newSession.id, item, index, props.workoutSets, props.workoutExercises);
+      const addedExerciseId = await addExerciseToSession(newSession.id, item, index, props.workoutSets, props.workoutExercises);
+      firstExerciseId ??= addedExerciseId;
     }
     setSessionId(newSession.id);
     await props.refresh();
+    setFocusedExerciseId(firstExerciseId);
   };
 
   const copyPrevious = async () => {
@@ -809,16 +852,20 @@ function WorkoutTab(props: {
       updated_at: timestamp,
     };
     await db.workout_sessions.put(newSession);
+    let firstExerciseId: string | undefined;
     for (const exercise of exercises) {
       const newExercise = { ...exercise, id: makeId("workout_exercise"), session_id: newSession.id, created_at: timestamp, updated_at: timestamp };
+      firstExerciseId ??= newExercise.id;
       await db.workout_exercises.put(newExercise);
       const sets = props.workoutSets.filter((set) => set.workout_exercise_id === exercise.id);
       await db.workout_sets.bulkPut(sets.map((set) => ({ ...set, id: makeId("set"), workout_exercise_id: newExercise.id, created_at: timestamp, updated_at: timestamp })));
     }
     setSessionId(newSession.id);
     await props.refresh();
+    setFocusedExerciseId(firstExerciseId);
   };
 
+  const favoriteExercises = props.exercisePresets.filter((item) => item.is_favorite);
   const exerciseResults = props.exercisePresets
     .filter((item) => {
       if (mode === "body" && filter) return item.body_part === filter;
@@ -836,9 +883,25 @@ function WorkoutTab(props: {
         ))}
       </div>
 
-      {(mode === "favorite" || mode === "preset") && (
+      {mode === "favorite" && (
         <section className="compact-card divide-y divide-line">
-          <ListHeader title={mode === "favorite" ? "お気に入りワークアウト" : "自分のプリセット"} value={`${props.workoutTemplates.length}件`} />
+          <ListHeader title="お気に入り種目" value={`${favoriteExercises.length}件`} />
+          {favoriteExercises.map((exercise) => (
+            <ExercisePresetRow
+              exercise={exercise}
+              isFavorite={!!exercise.is_favorite}
+              key={exercise.id}
+              onAdd={addPresetExercise}
+              onToggleFavorite={toggleExerciseFavorite}
+            />
+          ))}
+          {favoriteExercises.length === 0 && <EmptyLine text="種目行のハートを押すと、ここから単一種目をすぐ追加できます" />}
+        </section>
+      )}
+
+      {mode === "preset" && (
+        <section className="compact-card divide-y divide-line">
+          <ListHeader title="ワークアウトプリセット" value={`${props.workoutTemplates.length}件`} />
           {props.workoutTemplates.map((template) => (
             <button className="flex w-full items-center justify-between gap-3 px-4 py-4 text-left transition-colors hover:bg-rice/70" key={template.id} onClick={() => startFromTemplate(template)}>
               <Pictogram {...getWorkoutPictogram(template.body_parts.join(" "), template.exercises[0]?.equipment_type)} />
@@ -869,53 +932,21 @@ function WorkoutTab(props: {
             </div>
           )}
           <div className="mt-3 divide-y divide-line">
-            {exerciseResults.map((exercise) => {
-              const pictogram = getWorkoutPictogram(exercise.body_part, exercise.equipment_type);
-              return (
-              <button className="flex w-full items-center justify-between gap-3 py-3 text-left transition-colors hover:bg-rice/70" key={exercise.id} onClick={async () => {
-                let targetSessionId = sessionId;
-                if (!targetSessionId) {
-                  targetSessionId = makeId("session");
-                  const timestamp = nowIso();
-                  await db.workout_sessions.put({
-                    id: targetSessionId,
-                    app_date: props.appDate,
-                    logged_at: timestamp,
-                    title: "フリーワークアウト",
-                    workout_type: "strength",
-                    body_parts: [exercise.body_part],
-                    created_at: timestamp,
-                    updated_at: timestamp,
-                  });
-                  setSessionId(targetSessionId);
-                }
-                const addedExerciseId = await addExerciseToSession(targetSessionId, {
-                  exercise_id: exercise.id,
-                  exercise_name: exercise.name,
-                  body_part: exercise.body_part,
-                  equipment_type: exercise.equipment_type,
-                  sets: exercise.default_sets ?? 3,
-                  reps: exercise.default_reps,
-                  duration_min: exercise.default_duration_min,
-                }, props.workoutExercises.filter((item) => item.session_id === targetSessionId).length, props.workoutSets, props.workoutExercises);
-                await props.refresh();
-                setFocusedExerciseId(addedExerciseId);
-              }}>
-                <Pictogram {...pictogram} />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-semibold">{exercise.name}</p>
-                  <p className="truncate text-xs text-moss">{exercise.body_part} · {exercise.equipment_type}</p>
-                </div>
-                <Plus size={17} />
-              </button>
-              );
-            })}
+            {exerciseResults.map((exercise) => (
+              <ExercisePresetRow
+                exercise={exercise}
+                isFavorite={!!exercise.is_favorite}
+                key={exercise.id}
+                onAdd={addPresetExercise}
+                onToggleFavorite={toggleExerciseFavorite}
+              />
+            ))}
           </div>
         </section>
       )}
 
       {activeSession && (
-        <section className="compact-card divide-y divide-line">
+        <section className="compact-card divide-y divide-line" ref={sessionSectionRef}>
           <ListHeader title={activeSession.title} value={`${activeExercises.length}種目`} />
           {activeExercises.map((exercise) => (
             <div
@@ -964,7 +995,11 @@ function WorkoutTab(props: {
       <section className="compact-card divide-y divide-line">
         <ListHeader title="履歴" value={`${props.workoutSessions.length}件`} />
         {props.workoutSessions.slice(0, 12).map((session) => (
-          <button className="flex w-full items-center justify-between px-4 py-3 text-left" key={session.id} onClick={() => setSessionId(session.id)}>
+          <button className="flex w-full items-center justify-between px-4 py-3 text-left" key={session.id} onClick={() => {
+            setSessionId(session.id);
+            setFocusedExerciseId(undefined);
+            setSessionScrollKey((key) => key + 1);
+          }}>
             <div>
               <p className="text-sm font-semibold">{session.title}</p>
               <p className="text-xs text-moss">{formatJapaneseDate(session.app_date)} · {session.body_parts.join(" / ")}</p>
@@ -1530,6 +1565,32 @@ function FoodItemRow({ item, onPick, onClone, refresh }: { item: MenuItem; onPic
         await db.menu_items.update(item.id, { is_favorite: !item.is_favorite, updated_at: nowIso() });
         await refresh();
       }}><Heart size={14} fill={item.is_favorite ? "currentColor" : "none"} /></button>
+    </div>
+  );
+}
+
+function ExercisePresetRow({ exercise, isFavorite, onAdd, onToggleFavorite }: {
+  exercise: ExercisePreset;
+  isFavorite: boolean;
+  onAdd: (exercise: ExercisePreset) => void | Promise<void>;
+  onToggleFavorite: (exercise: ExercisePreset) => void | Promise<void>;
+}) {
+  const pictogram = getWorkoutPictogram(exercise.body_part, exercise.equipment_type);
+  return (
+    <div className="flex items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-rice/70">
+      <Pictogram {...pictogram} />
+      <button className="min-w-0 flex-1 text-left" onClick={() => onAdd(exercise)}>
+        <p className="truncate text-sm font-semibold">{exercise.name}</p>
+        <p className="truncate text-xs text-moss">{exercise.body_part} · {exercise.equipment_type}</p>
+      </button>
+      <button className="icon-button h-8 w-8" aria-label={`${exercise.name}を追加`} onClick={() => onAdd(exercise)}><Plus size={14} /></button>
+      <button
+        className={`icon-button h-8 w-8 ${isFavorite ? "border-sun/50 text-[#8a5d13]" : ""}`}
+        aria-label={`${exercise.name}をお気に入り${isFavorite ? "から外す" : "に追加"}`}
+        onClick={() => onToggleFavorite(exercise)}
+      >
+        <Heart size={14} fill={isFavorite ? "currentColor" : "none"} />
+      </button>
     </div>
   );
 }
@@ -2227,6 +2288,19 @@ function setManualFromItem(setManual: (manual: ManualFoodDraft) => void, setMode
   return (item: MenuItem) => {
     setManual(toManualDraft(item, item.default_meal_type ?? "lunch"));
     setMode("manual");
+  };
+}
+
+function exercisePresetToTemplateExercise(exercise: ExercisePreset): TemplateExercise {
+  return {
+    exercise_id: exercise.id,
+    exercise_name: exercise.name,
+    body_part: exercise.body_part,
+    equipment_type: exercise.equipment_type,
+    sets: exercise.default_sets ?? 3,
+    reps: exercise.default_reps,
+    weight_kg: exercise.default_weight_kg,
+    duration_min: exercise.default_duration_min,
   };
 }
 
