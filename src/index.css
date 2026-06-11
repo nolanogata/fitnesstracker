@@ -3,8 +3,8 @@
 @tailwind utilities;
 
 :root {
-  color: #1f2923;
-  background: #f7f6f2;
+  color: #242820;
+  background: #f7f4ec;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -40,9 +40,7 @@ button {
 }
 
 .app-shell {
-  background:
-    linear-gradient(180deg, rgba(143, 180, 142, 0.14) 0, rgba(247, 246, 242, 0) 230px),
-    #f7f6f2;
+  background: #f7f4ec;
 }
 
 .safe-bottom {
@@ -54,11 +52,11 @@ button {
 }
 
 .compact-card {
-  @apply rounded-lg border border-line/90 bg-surface/95 shadow-soft;
+  @apply rounded-lg border border-line bg-surface;
 }
 
 .calorie-card {
-  @apply rounded-lg border p-4 shadow-soft transition-colors;
+  @apply rounded-lg border border-line bg-surface p-5 transition-colors;
 }
 
 .calorie-card-neutral {
@@ -66,27 +64,27 @@ button {
 }
 
 .calorie-card-under {
-  @apply border-sun/40 bg-sun/15;
+  @apply border-line bg-surface;
 }
 
 .calorie-card-over {
-  @apply border-clay/35 bg-clay/10;
+  @apply border-clay/40 bg-surface;
 }
 
 .calorie-card-on-track {
-  @apply border-leaf/45 bg-leaf/15;
+  @apply border-moss/25 bg-surface;
 }
 
 .icon-button {
-  @apply inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-line bg-surface text-ink transition hover:border-leaf/60 active:scale-95;
+  @apply inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-line bg-surface text-ink transition hover:border-moss/40 active:scale-95;
 }
 
 .primary-button {
-  @apply inline-flex items-center justify-center gap-2 rounded-md bg-moss px-4 py-2.5 text-sm font-semibold text-white shadow-[0_8px_18px_rgba(82,106,87,0.18)] transition active:scale-[0.98];
+  @apply inline-flex items-center justify-center gap-2 rounded-xl bg-moss px-4 py-3 text-sm font-bold text-white transition active:scale-[0.98];
 }
 
 .secondary-button {
-  @apply inline-flex items-center justify-center gap-2 rounded-md border border-line bg-surface px-3 py-2 text-sm font-semibold text-ink transition active:scale-[0.98];
+  @apply inline-flex items-center justify-center gap-2 rounded-xl border border-line bg-surface px-3 py-3 text-sm font-bold text-moss transition active:scale-[0.98];
 }
 
 .chip {

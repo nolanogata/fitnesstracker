@@ -15,19 +15,21 @@ export default {
         ]
       },
       colors: {
-        ink: "#1f2923",
-        moss: "#526a57",
-        leaf: "#8fb48e",
-        clay: "#c76f51",
-        sun: "#d9a441",
+        ink: "#242820",
+        moss: "#4F6B55",
+        leaf: "#E5EDE3",
+        clay: "#C46A52",
+        sun: "#D99A3D",
         sky: "#6f96a6",
         blush: "#d98770",
-        rice: "#f7f6f2",
-        surface: "#fffdf8",
-        line: "#e4dfd2"
+        rice: "#F7F4EC",
+        surface: "#FFFDF8",
+        oat: "#F1EBDD",
+        line: "#E4DCCB",
+        muted: "#9A927F"
       },
       boxShadow: {
-        soft: "0 12px 30px rgba(31, 41, 35, 0.08)"
+        soft: "0 10px 24px rgba(36, 40, 32, 0.04)"
       }
     }
   },
