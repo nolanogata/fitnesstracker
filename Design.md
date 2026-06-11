@@ -1,6 +1,6 @@
-# Phase Log Local Design
+# ゴールトラッカー Design
 
-Phase Log Local is a mobile-first local PWA for one personal user. The interface is built for repeated iPhone logging: dense, quiet, tap-first, and fast enough to use between meals or sets.
+ゴールトラッカー is a mobile-first local PWA for one personal user. The interface is built for repeated iPhone logging: dense, quiet, tap-first, and fast enough to use between meals or sets.
 
 ## Product Shape
 

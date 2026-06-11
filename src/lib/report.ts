@@ -52,7 +52,7 @@ export function generateMarkdownReport(input: {
     return `- ${exercise.exercise_name}: ${sets.length} set${best ? ` / best ${best.weight_kg ?? "-"}kg x ${best.reps ?? "-"}` : ""}${cardio}`;
   });
 
-  return `# Phase Log AI相談レポート
+  return `# ゴールトラッカー AI相談レポート
 
 ${isDaily ? `対象日: ${input.periodStart}` : `期間: ${input.periodStart} - ${input.periodEnd}`}
 

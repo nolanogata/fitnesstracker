@@ -1,4 +1,4 @@
-# Phase Log Local
+# ゴールトラッカー
 
 Mobile-first local-only PWA for food, workout, body weight, goal, and AI-ready report logging.
 
