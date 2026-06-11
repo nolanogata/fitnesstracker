@@ -898,8 +898,8 @@ function SettingsTab(props: {
     age: props.activeGoal?.age ?? 35,
     activity_level: props.activeGoal?.activity_level ?? "moderate" as ActivityLevel,
     target_weight_kg: props.activeGoal?.target_weight_kg ?? props.profile?.current_weight_kg ?? 70,
-    manual_target_calories: props.activeGoal?.target_calories ?? 0,
-    manual_protein_g: props.activeGoal?.target_protein_g ?? 0,
+    manual_target_calories: 0,
+    manual_protein_g: 0,
   });
   const [presetDraft, setPresetDraft] = useState({ ...emptyManual, name: "", savePreset: true });
   const [reportMode, setReportMode] = useState<ReportMode>("day");
@@ -987,8 +987,8 @@ function SettingsTab(props: {
           </select>
           <NumberInput label="年齢" value={goalDraft.age} onChange={(value) => setGoalDraft({ ...goalDraft, age: value })} />
           <NumberInput label="目標体重" value={goalDraft.target_weight_kg} step={0.1} onChange={(value) => setGoalDraft({ ...goalDraft, target_weight_kg: value })} />
-          <NumberInput label="kcal上書き" value={goalDraft.manual_target_calories} onChange={(value) => setGoalDraft({ ...goalDraft, manual_target_calories: value })} />
-          <NumberInput label="P上書き" value={goalDraft.manual_protein_g} onChange={(value) => setGoalDraft({ ...goalDraft, manual_protein_g: value })} />
+          <NumberInput label="kcal上書き (0=自動)" value={goalDraft.manual_target_calories} onChange={(value) => setGoalDraft({ ...goalDraft, manual_target_calories: value })} />
+          <NumberInput label="P上書き (0=自動)" value={goalDraft.manual_protein_g} onChange={(value) => setGoalDraft({ ...goalDraft, manual_protein_g: value })} />
         </div>
         <p className="mt-3 rounded-md bg-rice p-3 text-sm">計算: {calculated?.target_calories ?? "-"} kcal / P{calculated?.target_protein_g ?? "-"} F{calculated?.target_fat_g ?? "-"} C{calculated?.target_carbs_g ?? "-"}</p>
         <button className="primary-button mt-3 w-full" onClick={async () => {
@@ -1011,7 +1011,7 @@ function SettingsTab(props: {
       </section>
 
       <section className="compact-card p-4">
-        <h2 className="font-bold">個人フードプリセット</h2>
+        <h2 className="font-bold">個人メニューを追加</h2>
         <ManualFoodForm manual={presetDraft} setManual={setPresetDraft} compact onSave={async () => {
           if (!presetDraft.name.trim()) return;
           const timestamp = nowIso();
@@ -1172,8 +1172,8 @@ function Onboarding({ refresh }: { refresh: () => Promise<void> }) {
           <NumberInput label="目標体重" value={draft.target_weight_kg} step={0.1} onChange={(value) => setDraft({ ...draft, target_weight_kg: value })} />
           <NumberInput label="筋トレ/週" value={draft.workouts} onChange={(value) => setDraft({ ...draft, workouts: value })} />
           <NumberInput label="有酸素/週" value={draft.cardio} onChange={(value) => setDraft({ ...draft, cardio: value })} />
-          <NumberInput label="kcal上書き" value={draft.target_calories} onChange={(value) => setDraft({ ...draft, target_calories: value })} />
-          <NumberInput label="P上書き" value={draft.target_protein_g} onChange={(value) => setDraft({ ...draft, target_protein_g: value })} />
+          <NumberInput label="kcal上書き (0=自動)" value={draft.target_calories} onChange={(value) => setDraft({ ...draft, target_calories: value })} />
+          <NumberInput label="P上書き (0=自動)" value={draft.target_protein_g} onChange={(value) => setDraft({ ...draft, target_protein_g: value })} />
         </div>
         <p className="mt-3 rounded-md bg-surface p-3 text-xs text-moss">初回設定後は、Settingsのバックアップから週1回くらいJSONエクスポートしておくと、次にこの画面が出ても復元できます。</p>
         <p className="mt-4 rounded-md bg-rice p-3 text-sm">目標: {calculated.target_calories} kcal / P{calculated.target_protein_g} F{calculated.target_fat_g} C{calculated.target_carbs_g}</p>
