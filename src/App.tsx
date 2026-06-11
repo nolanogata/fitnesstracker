@@ -4,6 +4,7 @@ import {
   Archive,
   Check,
   ChevronRight,
+  Copy,
   Dumbbell,
   FileDown,
   FileText,
@@ -47,8 +48,16 @@ import { downloadText, exportBackup, importBackup, resetLocalData } from "./lib/
 import { generateMarkdownReport } from "./lib/report";
 
 type Tab = "home" | "food" | "workout" | "settings";
-type FoodMode = "search" | "chain" | "category" | "quick" | "manual" | "personal";
+type FoodMode = "search" | "favorite" | "chain" | "category" | "quick" | "manual" | "personal";
+type WorkoutMode = "favorite" | "preset" | "body" | "equipment" | "previous" | "search";
 type SettingsFocus = "ai" | undefined;
+type BackupInfo = {
+  lastBackupAt?: string;
+  daysSinceBackup?: number;
+  trackedRecords: number;
+  level: "ok" | "soon" | "danger";
+};
+type ReportMode = "day" | "period";
 type ManualFoodDraft = {
   name: string;
   brand: string;
@@ -118,6 +127,8 @@ const emptyManual: ManualFoodDraft = {
   favorite: false,
 };
 
+const backupStorageKey = "phase-log-last-backup-at";
+
 function App() {
   const [settings, setSettings] = useState<AppSettings>();
   const [profile, setProfile] = useState<Profile>();
@@ -132,6 +143,7 @@ function App() {
   const [workoutSets, setWorkoutSets] = useState<WorkoutSet[]>([]);
   const [tab, setTab] = useState<Tab>(() => (localStorage.getItem("phase-log-tab") as Tab) || "home");
   const [settingsFocus, setSettingsFocus] = useState<SettingsFocus>();
+  const [lastBackupAt, setLastBackupAt] = useState<string | undefined>(() => localStorage.getItem(backupStorageKey) || undefined);
   const appDate = todayAppDate(settings?.day_boundary_hour ?? 3);
   const activeGoal = goals.find((goal) => goal.is_active);
 
@@ -176,6 +188,12 @@ function App() {
   const latestWeight = weightLogs.at(-1);
   const dayTotals = sumFood(todayEntries);
   const target = activeGoal ?? defaultGoal(profile);
+  const backupInfo = getBackupInfo(lastBackupAt, foodEntries.length + weightLogs.length + workoutSessions.length + workoutSets.length);
+  const markBackupNow = () => {
+    const timestamp = nowIso();
+    localStorage.setItem(backupStorageKey, timestamp);
+    setLastBackupAt(timestamp);
+  };
 
   if (settings && !settings.onboarding_completed) {
     return <Onboarding refresh={refresh} />;
@@ -208,6 +226,7 @@ function App() {
             workoutExercises={workoutExercises}
             latestWeight={latestWeight}
             weightLogs={weightLogs}
+            backupInfo={backupInfo}
             setTab={(nextTab) => {
               setSettingsFocus(undefined);
               setTab(nextTab);
@@ -240,6 +259,8 @@ function App() {
             menuItems={menuItems}
             workoutTemplates={workoutTemplates}
             focus={settingsFocus}
+            backupInfo={backupInfo}
+            markBackupNow={markBackupNow}
             refresh={refresh}
             allData={{ foodEntries, weightLogs, workoutSessions, workoutExercises, workoutSets }}
           />
@@ -268,6 +289,7 @@ function HomeTab(props: {
   workoutExercises: WorkoutExercise[];
   latestWeight?: WeightLog;
   weightLogs: WeightLog[];
+  backupInfo: BackupInfo;
   setTab: (tab: Tab) => void;
   openAiReport: () => void;
   refresh: () => Promise<void>;
@@ -277,6 +299,13 @@ function HomeTab(props: {
   const average7 = movingAverage(props.weightLogs, 7);
   return (
     <div className="space-y-4">
+      {props.backupInfo.level !== "ok" && (
+        <button className={`compact-card w-full p-3 text-left ${props.backupInfo.level === "danger" ? "border-clay bg-clay/10" : "border-leaf bg-leaf/10"}`} onClick={() => props.setTab("settings")}>
+          <p className="text-sm font-bold">{props.backupInfo.level === "danger" ? "バックアップ推奨" : "そろそろバックアップ"}</p>
+          <p className="mt-1 text-xs text-moss">{backupMessage(props.backupInfo)} · タップでJSON保存へ</p>
+        </button>
+      )}
+
       <section className="compact-card p-4">
         <div className="flex items-start justify-between gap-3">
           <div>
@@ -373,6 +402,7 @@ function FoodTab(props: { menuItems: MenuItem[]; foodEntries: FoodEntry[]; appDa
   const results = useMemo(() => {
     const needle = query.trim().toLowerCase();
     const base = props.menuItems.filter((item) => {
+      if (mode === "favorite") return item.is_favorite;
       if (mode === "quick") return item.data_source === "quick_estimate";
       if (mode === "personal") return item.is_user_created;
       if (mode === "chain") return item.brand === brand;
@@ -479,12 +509,12 @@ function FoodTab(props: { menuItems: MenuItem[]; foodEntries: FoodEntry[]; appDa
     <div className="space-y-4">
       <div className="sticky top-[74px] z-10 -mx-4 bg-rice px-4 pb-2">
         <div className="relative">
-          <Search className="pointer-events-none absolute left-3 top-2.5 text-moss" size={18} />
-          <input className="w-full pl-10" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="食品・ブランド検索" />
+          <Search className="pointer-events-none absolute left-3 top-3.5 text-moss" size={20} />
+          <input className="h-12 w-full pl-10 text-base" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="食品・ブランド検索" />
         </div>
-        <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
-          {(["search", "chain", "category", "quick", "manual", "personal"] as FoodMode[]).map((item) => (
-            <button key={item} className={`chip ${mode === item ? "chip-active" : ""}`} onClick={() => setMode(item)}>
+        <div className="mt-2 grid grid-cols-3 gap-2">
+          {(["search", "favorite", "chain", "category", "quick", "manual", "personal"] as FoodMode[]).map((item) => (
+            <button key={item} className={`mode-button ${mode === item ? "mode-button-active" : ""}`} onClick={() => setMode(item)}>
               {foodModeLabel(item)}
             </button>
           ))}
@@ -493,15 +523,15 @@ function FoodTab(props: { menuItems: MenuItem[]; foodEntries: FoodEntry[]; appDa
 
       {mode === "chain" && (
         <section className="compact-card p-3">
-          <select className="w-full" value={chainCategory} onChange={(event) => {
+          <select className="h-12 w-full text-base" value={chainCategory} onChange={(event) => {
             setChainCategory(event.target.value);
             setBrand(chainCategories[event.target.value]?.[0] ?? "");
           }}>
             {Object.keys(chainCategories).map((item) => <option key={item}>{item}</option>)}
           </select>
-          <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
+          <div className="mt-2 grid grid-cols-2 gap-2">
             {chainCategories[chainCategory].map((item) => (
-              <button className={`chip ${brand === item ? "chip-active" : ""}`} key={item} onClick={() => setBrand(item)}>{item}</button>
+              <button className={`tap-tile ${brand === item ? "tap-tile-active" : ""}`} key={item} onClick={() => setBrand(item)}>{item}</button>
             ))}
           </div>
         </section>
@@ -509,9 +539,9 @@ function FoodTab(props: { menuItems: MenuItem[]; foodEntries: FoodEntry[]; appDa
 
       {mode === "category" && (
         <section className="compact-card p-3">
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 gap-2">
             {Object.keys(genericCategories).map((item) => (
-              <button className={`chip justify-center ${genericCategory === item ? "chip-active" : ""}`} key={item} onClick={() => setGenericCategory(item)}>{item}</button>
+              <button className={`tap-tile ${genericCategory === item ? "tap-tile-active" : ""}`} key={item} onClick={() => setGenericCategory(item)}>{item}</button>
             ))}
           </div>
         </section>
@@ -521,6 +551,9 @@ function FoodTab(props: { menuItems: MenuItem[]; foodEntries: FoodEntry[]; appDa
         <>
           {mode === "search" && (
             <QuickStrip title="Recent" items={recentItems} onPick={setSelected} fallback={favoriteItems} />
+          )}
+          {mode === "favorite" && favoriteItems.length === 0 && (
+            <section className="compact-card p-4 text-sm text-moss">食品行のハートを押すとここから呼び出せます。</section>
           )}
           <section className="compact-card divide-y divide-line overflow-hidden">
             <ListHeader title={foodModeLabel(mode)} value={`${results.length}件`} />
@@ -589,7 +622,7 @@ function WorkoutTab(props: {
   refresh: () => Promise<void>;
 }) {
   const [sessionId, setSessionId] = useState<string>();
-  const [mode, setMode] = useState<"preset" | "body" | "equipment" | "previous" | "search">("preset");
+  const [mode, setMode] = useState<WorkoutMode>("favorite");
   const [filter, setFilter] = useState("");
   const activeSession = props.workoutSessions.find((session) => session.id === sessionId);
   const activeExercises = props.workoutExercises
@@ -653,17 +686,17 @@ function WorkoutTab(props: {
 
   return (
     <div className="space-y-4">
-      <div className="flex gap-2 overflow-x-auto pb-1">
-        {(["preset", "body", "equipment", "previous", "search"] as const).map((item) => (
-          <button className={`chip ${mode === item ? "chip-active" : ""}`} key={item} onClick={() => setMode(item)}>{workoutModeLabel(item)}</button>
+      <div className="grid grid-cols-3 gap-2">
+        {(["favorite", "preset", "body", "equipment", "previous", "search"] as const).map((item) => (
+          <button className={`mode-button ${mode === item ? "mode-button-active" : ""}`} key={item} onClick={() => setMode(item)}>{workoutModeLabel(item)}</button>
         ))}
       </div>
 
-      {mode === "preset" && (
+      {(mode === "favorite" || mode === "preset") && (
         <section className="compact-card divide-y divide-line">
-          <ListHeader title="自分のプリセット" value={`${props.workoutTemplates.length}件`} />
+          <ListHeader title={mode === "favorite" ? "お気に入りワークアウト" : "自分のプリセット"} value={`${props.workoutTemplates.length}件`} />
           {props.workoutTemplates.map((template) => (
-            <button className="flex w-full items-center justify-between px-4 py-3 text-left" key={template.id} onClick={() => startFromTemplate(template)}>
+            <button className="flex w-full items-center justify-between px-4 py-4 text-left" key={template.id} onClick={() => startFromTemplate(template)}>
               <div>
                 <p className="text-sm font-bold">{template.name}</p>
                 <p className="text-xs text-moss">{template.body_parts.join(" / ")} · {template.exercises.length}種目</p>
@@ -671,6 +704,7 @@ function WorkoutTab(props: {
               <ChevronRight size={18} />
             </button>
           ))}
+          {props.workoutTemplates.length === 0 && <EmptyLine text="ワークアウト後に「現在の内容をプリセット保存」でここから呼び出せます" />}
         </section>
       )}
 
@@ -681,11 +715,11 @@ function WorkoutTab(props: {
       {(mode === "body" || mode === "equipment" || mode === "search") && (
         <section className="compact-card p-3">
           {mode === "search" ? (
-            <input className="w-full" value={filter} onChange={(event) => setFilter(event.target.value)} placeholder="種目検索" />
+            <input className="h-12 w-full text-base" value={filter} onChange={(event) => setFilter(event.target.value)} placeholder="種目検索" />
           ) : (
-            <div className="flex gap-2 overflow-x-auto pb-1">
+            <div className="grid grid-cols-2 gap-2">
               {unique(props.exercisePresets.map((item) => mode === "body" ? item.body_part : item.equipment_type)).map((item) => (
-                <button className={`chip ${filter === item ? "chip-active" : ""}`} key={item} onClick={() => setFilter(item)}>{item}</button>
+                <button className={`tap-tile ${filter === item ? "tap-tile-active" : ""}`} key={item} onClick={() => setFilter(item)}>{item}</button>
               ))}
             </div>
           )}
@@ -793,6 +827,8 @@ function SettingsTab(props: {
   menuItems: MenuItem[];
   workoutTemplates: WorkoutTemplate[];
   focus?: SettingsFocus;
+  backupInfo: BackupInfo;
+  markBackupNow: () => void;
   refresh: () => Promise<void>;
   allData: {
     foodEntries: FoodEntry[];
@@ -811,9 +847,11 @@ function SettingsTab(props: {
     manual_protein_g: props.activeGoal?.target_protein_g ?? 0,
   });
   const [presetDraft, setPresetDraft] = useState({ ...emptyManual, name: "", savePreset: true });
+  const [reportMode, setReportMode] = useState<ReportMode>("day");
   const [reportDays, setReportDays] = useState(14);
   const [question, setQuestion] = useState("");
   const [report, setReport] = useState("");
+  const [copiedReport, setCopiedReport] = useState(false);
 
   const calculated = props.profile
     ? calculateTargets({
@@ -833,14 +871,20 @@ function SettingsTab(props: {
         <h2 className="font-bold">AI相談レポート</h2>
         {props.focus === "ai" && <span className="rounded-md bg-leaf px-2 py-1 text-[11px] font-bold text-white">相談を作成</span>}
       </div>
-      <div className="mt-3 grid grid-cols-4 gap-2">
-        {[7, 14, 30].map((days) => <button className={`chip justify-center ${reportDays === days ? "chip-active" : ""}`} key={days} onClick={() => setReportDays(days)}>{days}日</button>)}
-        <button className="chip justify-center" onClick={() => setReportDays(14)}>標準</button>
+      <div className="mt-3 grid grid-cols-2 gap-2">
+        <button className={`mode-button ${reportMode === "day" ? "mode-button-active" : ""}`} onClick={() => setReportMode("day")}>1日</button>
+        <button className={`mode-button ${reportMode === "period" ? "mode-button-active" : ""}`} onClick={() => setReportMode("period")}>期間</button>
       </div>
+      {reportMode === "period" && (
+        <div className="mt-2 grid grid-cols-4 gap-2">
+          {[7, 14, 30].map((days) => <button className={`chip justify-center ${reportDays === days ? "chip-active" : ""}`} key={days} onClick={() => setReportDays(days)}>{days}日</button>)}
+          <button className="chip justify-center" onClick={() => setReportDays(14)}>標準</button>
+        </div>
+      )}
       <textarea className="mt-3 min-h-20 w-full" value={question} onChange={(event) => setQuestion(event.target.value)} placeholder="相談したいこと" />
       <button className="primary-button mt-3 w-full" onClick={async () => {
         const end = todayAppDate();
-        const start = addDays(end, -(reportDays - 1));
+        const start = reportMode === "day" ? end : addDays(end, -(reportDays - 1));
         const range = dateRange(start, end);
         const content = generateMarkdownReport({
           profile: props.profile,
@@ -855,12 +899,19 @@ function SettingsTab(props: {
           question,
         });
         setReport(content);
+        setCopiedReport(false);
         await db.ai_reports.put({ id: makeId("report"), period_start: start, period_end: end, format: "markdown", content, created_at: nowIso(), updated_at: nowIso() });
       }}><FileText size={17} />生成</button>
       {report && (
         <>
           <textarea className="mt-3 min-h-56 w-full font-mono text-xs" value={report} readOnly />
-          <button className="secondary-button mt-2 w-full" onClick={() => downloadText(`phase-log-report-${Date.now()}.md`, report, "text/markdown")}><FileDown size={17} />Markdown保存</button>
+          <div className="mt-2 grid grid-cols-2 gap-2">
+            <button className="primary-button" onClick={async () => {
+              await copyText(report);
+              setCopiedReport(true);
+            }}><Copy size={17} />{copiedReport ? "コピー済み" : "コピー"}</button>
+            <button className="secondary-button" onClick={() => downloadText(`phase-log-report-${Date.now()}.md`, report, "text/markdown")}><FileDown size={17} />MD保存</button>
+          </div>
         </>
       )}
     </section>
@@ -948,9 +999,15 @@ function SettingsTab(props: {
 
       <section className="compact-card p-4">
         <h2 className="font-bold">バックアップ</h2>
-        <p className="mt-2 rounded-md border border-clay/30 bg-clay/10 p-3 text-sm text-ink">ローカル保存のため、定期的にバックアップしてください</p>
+        <div className={`mt-2 rounded-md border p-3 text-sm ${props.backupInfo.level === "danger" ? "border-clay/40 bg-clay/10" : "border-leaf/40 bg-leaf/10"}`}>
+          <p className="font-semibold text-ink">{backupMessage(props.backupInfo)}</p>
+          <p className="mt-1 text-xs text-moss">目安は週1回。外食や筋トレを連日記録している時は、3-4日に1回保存しておくと安心です。</p>
+        </div>
         <div className="mt-3 grid gap-2">
-          <button className="secondary-button" onClick={async () => downloadText(`phase-log-backup-${Date.now()}.json`, JSON.stringify(await exportBackup(), null, 2))}><FileDown size={17} />JSONエクスポート</button>
+          <button className="secondary-button" onClick={async () => {
+            downloadText(`phase-log-backup-${Date.now()}.json`, JSON.stringify(await exportBackup(), null, 2));
+            props.markBackupNow();
+          }}><FileDown size={17} />JSONエクスポート</button>
           <label className="secondary-button cursor-pointer">
             <Archive size={17} />JSONインポート
             <input className="hidden" type="file" accept="application/json" onChange={async (event: ChangeEvent<HTMLInputElement>) => {
@@ -1373,6 +1430,7 @@ function unique(values: string[]) {
 function foodModeLabel(mode: FoodMode) {
   return {
     search: "検索",
+    favorite: "お気に入り",
     chain: "チェーン",
     category: "カテゴリ",
     quick: "見積",
@@ -1440,14 +1498,51 @@ function sourceRank(source: MenuItem["data_source"]) {
   return { official: 0, user: 1, estimated: 2, quick_estimate: 3 }[source];
 }
 
-function workoutModeLabel(mode: "preset" | "body" | "equipment" | "previous" | "search") {
+function workoutModeLabel(mode: WorkoutMode) {
   return {
+    favorite: "お気に入り",
     preset: "プリセット",
     body: "部位",
     equipment: "器具",
     previous: "前回",
     search: "検索",
   }[mode];
+}
+
+function getBackupInfo(lastBackupAt: string | undefined, trackedRecords: number): BackupInfo {
+  if (!trackedRecords) return { lastBackupAt, trackedRecords, level: "ok" };
+  if (!lastBackupAt) return { lastBackupAt, trackedRecords, level: trackedRecords >= 10 ? "danger" : "soon" };
+  const daysSinceBackup = Math.max(0, Math.floor((Date.now() - new Date(lastBackupAt).getTime()) / 86_400_000));
+  const level = daysSinceBackup >= 14 ? "danger" : daysSinceBackup >= 7 || (trackedRecords >= 80 && daysSinceBackup >= 3) ? "soon" : "ok";
+  return { lastBackupAt, daysSinceBackup, trackedRecords, level };
+}
+
+function backupMessage(info: BackupInfo) {
+  if (!info.trackedRecords) return "まだ記録が少ないので、初回バックアップは数日後で大丈夫です。";
+  if (!info.lastBackupAt) return `${info.trackedRecords}件の記録があります。初回バックアップを保存しておくと安心です。`;
+  const days = info.daysSinceBackup ?? 0;
+  if (info.level === "danger") return `最終バックアップから${days}日、記録は${info.trackedRecords}件です。今日JSON保存しておくのが安全です。`;
+  if (info.level === "soon") return `最終バックアップから${days}日です。今週中にJSON保存しておくと安心です。`;
+  return `最終バックアップから${days}日。今のところ安全圏です。`;
+}
+
+async function copyText(text: string) {
+  if (navigator.clipboard?.writeText) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return;
+    } catch {
+      // Fall back for older iOS/browser permission edge cases.
+    }
+  }
+  const textarea = document.createElement("textarea");
+  textarea.value = text;
+  textarea.style.position = "fixed";
+  textarea.style.opacity = "0";
+  document.body.append(textarea);
+  textarea.select();
+  document.execCommand("copy");
+  textarea.remove();
 }
 
 export default App;

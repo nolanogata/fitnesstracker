@@ -70,3 +70,19 @@ button {
 .chip-active {
   @apply border-moss bg-moss text-white;
 }
+
+.mode-button {
+  @apply inline-flex min-h-12 items-center justify-center rounded-md border border-line bg-white px-3 py-2 text-sm font-bold text-ink transition active:scale-[0.98];
+}
+
+.mode-button-active {
+  @apply border-ink bg-ink text-white;
+}
+
+.tap-tile {
+  @apply inline-flex min-h-12 items-center justify-center rounded-md border border-line bg-white px-3 py-2 text-sm font-semibold text-ink transition active:scale-[0.98];
+}
+
+.tap-tile-active {
+  @apply border-moss bg-moss text-white;
+}
