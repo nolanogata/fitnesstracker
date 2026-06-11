@@ -556,6 +556,7 @@ function HomeFoodLogRow({ entry, displayName }: { entry: FoodEntry; displayName:
 }
 
 function FoodTab(props: { menuItems: MenuItem[]; foodEntries: FoodEntry[]; appDate: string; refresh: () => Promise<void> }) {
+  const foodTopRef = useRef<HTMLDivElement | null>(null);
   const [mode, setMode] = useState<FoodMode>("search");
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<MenuItem>();
@@ -569,6 +570,13 @@ function FoodTab(props: { menuItems: MenuItem[]; foodEntries: FoodEntry[]; appDa
   const recentIds = new Set(props.foodEntries.slice(0, 20).map((entry) => entry.menu_item_id).filter(Boolean));
   const favoriteItems = props.menuItems.filter((item) => item.is_favorite);
   const recentItems = props.menuItems.filter((item) => recentIds.has(item.id));
+  const scrollToFoodTop = () => {
+    window.requestAnimationFrame(() => foodTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
+  };
+  const selectMode = (nextMode: FoodMode) => {
+    setMode(nextMode);
+    scrollToFoodTop();
+  };
   const results = useMemo(() => {
     const needle = query.trim().toLowerCase();
     const tokens = needle.split(/\s+/).filter(Boolean);
@@ -681,9 +689,9 @@ function FoodTab(props: { menuItems: MenuItem[]; foodEntries: FoodEntry[]; appDa
   };
 
   return (
-    <div className="space-y-4">
+    <div className="scroll-mt-24 space-y-4" ref={foodTopRef}>
       <div className="sticky top-[74px] z-10 -mx-4 space-y-3 bg-rice px-4 pb-2">
-        <form className="compact-card flex gap-2 p-2" onSubmit={(event) => { event.preventDefault(); setMode("search"); }}>
+        <form className="compact-card flex gap-2 p-2" onSubmit={(event) => { event.preventDefault(); selectMode("search"); }}>
           <div className="relative min-w-0 flex-1">
             <Search className="pointer-events-none absolute left-3 top-3.5 text-moss" size={20} />
             <input className="h-12 w-full pl-10 text-base" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="食品・ブランド検索" />
@@ -692,7 +700,7 @@ function FoodTab(props: { menuItems: MenuItem[]; foodEntries: FoodEntry[]; appDa
         </form>
         <div className="grid grid-cols-3 gap-2">
           {(["favorite", "personal", "manual", "chain", "category", "quick"] as FoodMode[]).map((item) => (
-            <button key={item} className={`mode-button ${mode === item ? "mode-button-active" : ""}`} onClick={() => setMode(item)}>
+            <button key={item} className={`mode-button ${mode === item ? "mode-button-active" : ""}`} onClick={() => selectMode(item)}>
               {foodModeLabel(item)}
             </button>
           ))}
@@ -710,6 +718,7 @@ function FoodTab(props: { menuItems: MenuItem[]; foodEntries: FoodEntry[]; appDa
                 onClick={() => {
                   setChainCategory(item);
                   setBrand(chainCategories[item]?.[0] ?? "");
+                  scrollToFoodTop();
                 }}
               >
                 {item}
@@ -719,7 +728,7 @@ function FoodTab(props: { menuItems: MenuItem[]; foodEntries: FoodEntry[]; appDa
           <p className="mb-2 mt-3 text-xs font-semibold text-moss">チェーン</p>
           <div className="grid grid-cols-2 gap-2">
             {chainCategories[chainCategory].map((item) => (
-              <button className={`tap-tile ${brand === item ? "tap-tile-active" : ""}`} key={item} onClick={() => setBrand(item)}>{item}</button>
+              <button className={`tap-tile ${brand === item ? "tap-tile-active" : ""}`} key={item} onClick={() => { setBrand(item); scrollToFoodTop(); }}>{item}</button>
             ))}
             {chainCategories[chainCategory].length === 0 && <p className="col-span-2 px-1 py-2 text-sm text-moss">該当するチェーンはまだ登録されていません。</p>}
           </div>
@@ -730,7 +739,7 @@ function FoodTab(props: { menuItems: MenuItem[]; foodEntries: FoodEntry[]; appDa
         <section className="compact-card p-3">
           <div className="grid grid-cols-2 gap-2">
             {Object.keys(genericCategories).map((item) => (
-              <button className={`tap-tile ${genericCategory === item ? "tap-tile-active" : ""}`} key={item} onClick={() => setGenericCategory(item)}>{item}</button>
+              <button className={`tap-tile ${genericCategory === item ? "tap-tile-active" : ""}`} key={item} onClick={() => { setGenericCategory(item); scrollToFoodTop(); }}>{item}</button>
             ))}
           </div>
         </section>
