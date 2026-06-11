@@ -219,6 +219,12 @@ function App() {
     localStorage.setItem(backupStorageKey, timestamp);
     setLastBackupAt(timestamp);
   };
+  const reloadLatestApp = async () => {
+    await refresh();
+    await updateServiceWorkers();
+    await clearAppCaches();
+    window.location.reload();
+  };
   const headerTitle = {
     home: "今日の記録",
     food: "Food",
@@ -275,6 +281,7 @@ function App() {
               setSettingsFocus("backup");
               setTab("settings");
             }}
+            reloadLatestApp={reloadLatestApp}
             refresh={refresh}
           />
         )}
@@ -346,10 +353,12 @@ function HomeTab(props: {
   setTab: (tab: Tab) => void;
   openAiReport: () => void;
   openBackup: () => void;
+  reloadLatestApp: () => Promise<void>;
   refresh: () => Promise<void>;
 }) {
   const [weight, setWeight] = useState(props.latestWeight?.weight_kg ?? props.profile?.current_weight_kg ?? 70);
   const [bodyFat, setBodyFat] = useState(props.latestWeight?.body_fat_percentage ?? props.profile?.body_fat_percentage ?? 20);
+  const [isReloadingLatest, setIsReloadingLatest] = useState(false);
   const remaining = (props.goal?.target_calories ?? 0) - props.dayTotals.calories;
   const calorieState = getCalorieState(remaining, props.goal?.target_calories ?? 0);
   const average7 = movingAverage(props.weightLogs, 7);
@@ -408,9 +417,23 @@ function HomeTab(props: {
         </div>
       </section>
 
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-3 gap-2">
         <button className="primary-button min-h-12" onClick={() => props.setTab("food")}><Plus size={17} />食事を記録</button>
         <button className="secondary-button min-h-12" onClick={() => props.setTab("workout")}><Plus size={17} />筋トレを記録</button>
+        <button
+          className="secondary-button min-h-12 px-2"
+          disabled={isReloadingLatest}
+          onClick={async () => {
+            setIsReloadingLatest(true);
+            try {
+              await props.reloadLatestApp();
+            } catch {
+              window.location.reload();
+            }
+          }}
+        >
+          <RotateCcw size={17} />{isReloadingLatest ? "更新中" : "最新へ更新"}
+        </button>
       </div>
       <div className="flex justify-center gap-4 text-xs font-bold text-moss">
         <button className="px-2 py-1" onClick={() => props.setTab("settings")}>ゴールを確認</button>
@@ -2797,6 +2820,21 @@ function formatFoodEntryName(entry: FoodEntry, menuItems: MenuItem[]) {
   const menuItem = menuItems.find((item) => item.id === entry.menu_item_id);
   if (!menuItem || entry.name !== menuItem.name) return entry.name;
   return formatMenuItemName(menuItem);
+}
+
+async function updateServiceWorkers() {
+  if (!("serviceWorker" in navigator)) return;
+  const registrations = await navigator.serviceWorker.getRegistrations();
+  await Promise.all(registrations.map((registration) => registration.update()));
+  registrations.forEach((registration) => {
+    registration.waiting?.postMessage({ type: "SKIP_WAITING" });
+  });
+}
+
+async function clearAppCaches() {
+  if (!("caches" in window)) return;
+  const keys = await caches.keys();
+  await Promise.all(keys.filter((key) => key.startsWith("phase-log-local")).map((key) => caches.delete(key)));
 }
 
 function getBackupInfo(lastBackupAt: string | undefined, trackedRecords: number): BackupInfo {
