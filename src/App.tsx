@@ -85,6 +85,9 @@ const chainCategories: Record<string, string[]> = {
   "牛丼・丼": ["松屋", "すき家", "吉野家", "なか卯"],
   "うどん・そば": ["丸亀製麺", "はなまるうどん", "ウエスト", "資さんうどん"],
   ファストフード: ["マクドナルド", "モスバーガー", "ケンタッキー", "バーガーキング", "サブウェイ"],
+  "カレー・弁当": ["CoCo壱番屋", "ほっともっと"],
+  "中華・麺": ["リンガーハット", "餃子の王将"],
+  天丼: ["天丼てんや"],
   定食: ["大戸屋", "やよい軒", "しんぱち食堂"],
   ファミレス: ["ガスト", "ロイヤルホスト", "サイゼリヤ", "オリーブの丘", "デニーズ", "ジョイフル", "ジョナサン", "華屋与兵衛", "藍屋"],
   カフェ: ["スターバックス", "ドトール", "タリーズ", "コメダ珈琲"],
@@ -421,6 +424,7 @@ function FoodTab(props: { menuItems: MenuItem[]; foodEntries: FoodEntry[]; appDa
   const recentItems = props.menuItems.filter((item) => recentIds.has(item.id));
   const results = useMemo(() => {
     const needle = query.trim().toLowerCase();
+    const tokens = needle.split(/\s+/).filter(Boolean);
     const base = props.menuItems.filter((item) => {
       if (mode === "favorite") return item.is_favorite;
       if (mode === "quick") return item.data_source === "quick_estimate";
@@ -432,7 +436,10 @@ function FoodTab(props: { menuItems: MenuItem[]; foodEntries: FoodEntry[]; appDa
     const sorted = dedupeMenuItemsBySource(base);
     if (!needle) return sorted.slice(0, 80);
     return sorted
-      .filter((item) => `${item.name} ${item.brand ?? ""} ${item.category} ${item.tags.join(" ")} ${item.serving_label ?? ""}`.toLowerCase().includes(needle))
+      .filter((item) => {
+        const haystack = `${item.name} ${item.brand ?? ""} ${item.category} ${item.tags.join(" ")} ${item.serving_label ?? ""}`.toLowerCase();
+        return tokens.every((token) => haystack.includes(token));
+      })
       .slice(0, 80);
   }, [props.menuItems, query, mode, brand, genericCategory]);
 
