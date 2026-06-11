@@ -3,6 +3,8 @@ import { dateRange } from "./date";
 import { phaseLabels } from "./goalCalculator";
 import { formatWeeklyWorkoutStatus, type WeeklyWorkoutStatus } from "./workoutStatus";
 
+type WorkoutGrouping = "day" | "week" | "month";
+
 export function generateMarkdownReport(input: {
   profile?: Profile;
   goal?: Goal;
@@ -14,6 +16,7 @@ export function generateMarkdownReport(input: {
   weeklyWorkoutStatus?: WeeklyWorkoutStatus;
   periodStart: string;
   periodEnd: string;
+  workoutGrouping?: WorkoutGrouping;
   question: string;
 }) {
   const dates = dateRange(input.periodStart, input.periodEnd);
@@ -73,6 +76,12 @@ export function generateMarkdownReport(input: {
     const cardio = activeCalories ? ` / active ${activeCalories}kcal` : "";
     return `- ${exercise.exercise_name}: ${sets.length} set${best ? ` / best ${best.weight_kg ?? "-"}kg x ${best.reps ?? "-"}` : ""}${cardio}`;
   });
+  const workoutSummaryLines = buildWorkoutSummaryLines({
+    grouping: input.workoutGrouping ?? "day",
+    sessions: input.workoutSessions,
+    exercises: scopedExercises,
+    sets: input.workoutSets,
+  });
 
   return `# ゴールトラッカー AI相談レポート
 
@@ -129,6 +138,13 @@ ${foodLines.join("\n") || "- 記録なし"}
 - 種目数: ${scopedExercises.length}
 - 今週の達成状況: ${input.weeklyWorkoutStatus ? formatWeeklyWorkoutStatus(input.weeklyWorkoutStatus) : "未計算"}
 - 今週の対象期間: ${input.weeklyWorkoutStatus ? `${input.weeklyWorkoutStatus.start} - ${input.weeklyWorkoutStatus.end}` : "-"}
+- 履歴粒度: ${groupingLabel(input.workoutGrouping ?? "day")}
+
+### ワークアウト要約
+
+${workoutSummaryLines.join("\n") || "- 記録なし"}
+
+### 種目詳細
 
 ${exerciseLines.join("\n") || "- 記録なし"}
 
@@ -136,6 +152,66 @@ ${exerciseLines.join("\n") || "- 記録なし"}
 
 ${input.question || "ここに質問を追記してください。"}
 `;
+}
+
+function buildWorkoutSummaryLines(input: {
+  grouping: WorkoutGrouping;
+  sessions: WorkoutSession[];
+  exercises: WorkoutExercise[];
+  sets: WorkoutSet[];
+}) {
+  const exercisesBySession = new Map<string, WorkoutExercise[]>();
+  input.exercises.forEach((exercise) => {
+    exercisesBySession.set(exercise.session_id, [...(exercisesBySession.get(exercise.session_id) ?? []), exercise]);
+  });
+  const setsByExercise = new Map<string, WorkoutSet[]>();
+  input.sets.forEach((set) => {
+    setsByExercise.set(set.workout_exercise_id, [...(setsByExercise.get(set.workout_exercise_id) ?? []), set]);
+  });
+
+  const groups = new Map<string, WorkoutSession[]>();
+  input.sessions.forEach((session) => {
+    const key = input.grouping === "day" ? session.app_date : input.grouping === "week" ? startOfWeek(session.app_date) : session.app_date.slice(0, 7);
+    groups.set(key, [...(groups.get(key) ?? []), session]);
+  });
+
+  return Array.from(groups.entries())
+    .sort(([a], [b]) => b.localeCompare(a))
+    .map(([key, sessions]) => {
+      const exerciseCount = sessions.reduce((sum, session) => sum + (exercisesBySession.get(session.id)?.length ?? 0), 0);
+      const setCount = sessions.reduce((sum, session) => {
+        const sessionExercises = exercisesBySession.get(session.id) ?? [];
+        return sum + sessionExercises.reduce((setSum, exercise) => setSum + (setsByExercise.get(exercise.id)?.length ?? 0), 0);
+      }, 0);
+      const titles = sessions.map((session) => session.title).join(" / ");
+      return `- ${formatGroupingKey(key, input.grouping)}: ${sessions.length}回 / ${exerciseCount}種目 / ${setCount}セット (${titles})`;
+    });
+}
+
+function groupingLabel(grouping: WorkoutGrouping) {
+  if (grouping === "week") return "週別";
+  if (grouping === "month") return "月別";
+  return "日別";
+}
+
+function startOfWeek(dateString: string) {
+  const date = new Date(`${dateString}T12:00:00`);
+  const day = date.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  date.setDate(date.getDate() + diff);
+  return date.toISOString().slice(0, 10);
+}
+
+function addDays(dateString: string, days: number) {
+  const date = new Date(`${dateString}T12:00:00`);
+  date.setDate(date.getDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
+function formatGroupingKey(key: string, grouping: WorkoutGrouping) {
+  if (grouping === "week") return `${key} - ${addDays(key, 6)}`;
+  if (grouping === "month") return key;
+  return key;
 }
 
 function formatDiff(value: number, unit: string) {

@@ -39,6 +39,12 @@ button {
   -webkit-tap-highlight-color: transparent;
 }
 
+.app-shell {
+  background:
+    linear-gradient(180deg, rgba(143, 180, 142, 0.14) 0, rgba(247, 246, 242, 0) 230px),
+    #f7f6f2;
+}
+
 .safe-bottom {
   padding-bottom: max(1rem, env(safe-area-inset-bottom));
 }
@@ -48,7 +54,7 @@ button {
 }
 
 .compact-card {
-  @apply rounded-lg border border-line bg-surface shadow-soft;
+  @apply rounded-lg border border-line/90 bg-surface/95 shadow-soft;
 }
 
 .calorie-card {
@@ -72,7 +78,7 @@ button {
 }
 
 .icon-button {
-  @apply inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-line bg-surface text-ink transition active:scale-95;
+  @apply inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-line bg-surface text-ink transition hover:border-leaf/60 active:scale-95;
 }
 
 .primary-button {
@@ -120,7 +126,7 @@ button {
 }
 
 .mode-button {
-  @apply inline-flex min-h-12 items-center justify-center rounded-md border border-line bg-surface px-3 py-2 text-sm font-bold text-ink transition active:scale-[0.98];
+  @apply inline-flex min-h-12 items-center justify-center rounded-md border border-line bg-surface/95 px-3 py-2 text-sm font-bold text-ink transition hover:border-leaf/60 active:scale-[0.98];
 }
 
 .mode-button-active {
@@ -128,7 +134,7 @@ button {
 }
 
 .tap-tile {
-  @apply inline-flex min-h-12 items-center justify-center rounded-md border border-line bg-surface px-3 py-2 text-sm font-semibold text-ink transition active:scale-[0.98];
+  @apply inline-flex min-h-12 items-center justify-center rounded-md border border-line bg-surface/95 px-3 py-2 text-sm font-semibold text-ink transition hover:border-leaf/60 active:scale-[0.98];
 }
 
 .tap-tile-active {
