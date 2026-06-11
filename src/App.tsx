@@ -351,6 +351,12 @@ function HomeTab(props: {
   const caloriePercent = props.goal?.target_calories ? Math.min(100, Math.round((props.dayTotals.calories / props.goal.target_calories) * 100)) : 0;
   const calorieHeadline = props.goal?.target_calories && remaining < 0 ? "超過" : "残り";
   const backupTitle = props.backupInfo.level === "danger" ? "バックアップ推奨" : "そろそろバックアップ";
+
+  useEffect(() => {
+    setWeight(props.latestWeight?.weight_kg ?? props.profile?.current_weight_kg ?? 70);
+    setBodyFat(clampBodyFat(props.latestWeight?.body_fat_percentage ?? props.profile?.body_fat_percentage ?? 20));
+  }, [props.latestWeight?.weight_kg, props.latestWeight?.body_fat_percentage, props.profile?.current_weight_kg, props.profile?.body_fat_percentage]);
+
   return (
     <div className="space-y-3">
       {props.backupInfo.level !== "ok" && (
