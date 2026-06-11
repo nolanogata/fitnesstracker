@@ -416,7 +416,7 @@ function FoodTab(props: { menuItems: MenuItem[]; foodEntries: FoodEntry[]; appDa
       if (mode === "category") return item.category === genericCategory || item.tags.some((tag) => genericCategories[genericCategory]?.includes(tag));
       return true;
     });
-    const sorted = [...base].sort((a, b) => sourceRank(a.data_source) - sourceRank(b.data_source));
+    const sorted = dedupeMenuItemsBySource(base);
     if (!needle) return sorted.slice(0, 80);
     return sorted
       .filter((item) => `${item.name} ${item.brand ?? ""} ${item.category} ${item.tags.join(" ")} ${item.serving_label ?? ""}`.toLowerCase().includes(needle))
@@ -1554,7 +1554,7 @@ function toManualDraft(item: MenuItem, mealType: MealType = "lunch"): ManualFood
     fat_g: String(item.fat_g),
     carbs_g: String(item.carbs_g),
     salt_g: item.salt_g === undefined ? "" : String(item.salt_g),
-    note: item.data_source === "estimated" ? "推定メニューから編集" : "",
+    note: item.data_source === "estimated" ? "推定メニューから編集" : item.data_source === "unofficial" ? "非公式メニューから編集" : "",
     savePreset: true,
     favorite: item.is_favorite,
   };
@@ -1596,18 +1596,31 @@ function draftNumber(value: string) {
 }
 
 function sourceRank(source: MenuItem["data_source"]) {
-  return { official: 0, user: 1, estimated: 2, quick_estimate: 3 }[source];
+  return { official: 0, user: 1, unofficial: 2, estimated: 3, quick_estimate: 4 }[source];
 }
 
 function sourceLabel(source: MenuItem["data_source"], confidence: MenuItem["confidence"]) {
   const sourceText = {
     official: "公式値",
+    unofficial: "非公式値",
     estimated: "推定値",
     quick_estimate: "ざっくり概算",
     user: "自分で入力",
   }[source];
   const confidenceText = confidence === "low" ? "一部不明" : confidence === "medium" ? "確認推奨" : "";
   return [sourceText, confidenceText].filter(Boolean).join(" · ");
+}
+
+function dedupeMenuItemsBySource(items: MenuItem[]) {
+  const seen = new Set<string>();
+  return [...items]
+    .sort((a, b) => sourceRank(a.data_source) - sourceRank(b.data_source))
+    .filter((item) => {
+      const key = [item.brand ?? "", item.name, item.serving_label ?? ""].join("|");
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
 }
 
 function workoutModeLabel(mode: WorkoutMode) {

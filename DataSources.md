@@ -1,8 +1,9 @@
 # Food Data Source Policy
 
-ゴールトラッカー keeps bundled food data in two layers:
+ゴールトラッカー keeps bundled food data with these source quality labels:
 
 - `official/high`: copied from a brand's official nutrition page or PDF, with `source_url` and `fetched_at`.
+- `unofficial/medium`: copied from a third-party nutrition database when official P/F/C was not verified. The app must show this as `非公式値`.
 - `estimated/medium` or `quick_estimate/low`: practical logging fallback, never presented as verified.
 
 ## Priority Official Sources
@@ -28,6 +29,8 @@
 - Protein bars/drinks:
   - Asahi 一本満足バー and Meiji SAVAS product pages were checked on 2026-06-12. Added selected items as `official/high` when kcal/P/F/C/salt were directly shown as single values.
   - Morinaga in jelly/bar pages were checked on 2026-06-12. Added selected items as `estimated/medium` where values are ranged or only product names were available in the current pass.
+- External nutrition fallback:
+  - FatSecret Japan was checked on 2026-06-12. Added selected Starbucks, Komeda, Gusto, and Saizeriya rows as `unofficial/medium` only when menu name and serving unit matched closely enough. Non-exact matches were skipped.
 - 丸亀製麺: official menu and allergen pages were verified. Official P/F/C table was not found in the current pass.
 - ウエスト: official menu page is store-scoped. Official P/F/C table was not verified in the current pass.
 - 資さんうどん: official menu page is store-scoped. Official P/F/C table was not verified in the current pass.

@@ -24,6 +24,9 @@ export const estimated = (input: Omit<SeedInput, "data_source" | "confidence">) 
 export const official = (input: Omit<SeedInput, "data_source" | "confidence">) =>
   makeMenuSeed({ ...input, data_source: "official", confidence: "high" });
 
+export const unofficial = (input: Omit<SeedInput, "data_source" | "confidence">) =>
+  makeMenuSeed({ ...input, data_source: "unofficial", confidence: "medium" });
+
 export const quick = (input: Omit<SeedInput, "data_source" | "confidence" | "category">) =>
   makeMenuSeed({
     ...input,
