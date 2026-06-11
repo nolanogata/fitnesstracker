@@ -1,6 +1,10 @@
 const CACHE_PREFIX = "phase-log-local";
-const CACHE_NAME = `${CACHE_PREFIX}-v2`;
+const CACHE_NAME = `${CACHE_PREFIX}-v3`;
 const APP_SHELL = ["./manifest.webmanifest"];
+
+self.addEventListener("message", (event) => {
+  if (event.data?.type === "SKIP_WAITING") self.skipWaiting();
+});
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)));
