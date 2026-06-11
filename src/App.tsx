@@ -370,7 +370,7 @@ function HomeTab(props: {
 
       <div className="grid grid-cols-2 gap-2">
         <button className="primary-button" onClick={() => props.setTab("food")}><Utensils size={17} />食事を追加</button>
-        <button className="secondary-button" onClick={() => props.setTab("workout")}><Dumbbell size={17} />筋トレ</button>
+        <button className="secondary-button" onClick={() => props.setTab("workout")}><Dumbbell size={17} />筋トレを追加</button>
         <button className="secondary-button" onClick={() => props.setTab("settings")}><Activity size={17} />ゴール</button>
         <button className="secondary-button" onClick={props.openAiReport}><FileText size={17} />AI相談レポート</button>
       </div>
