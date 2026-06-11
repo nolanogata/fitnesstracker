@@ -32,8 +32,17 @@ export function generateMarkdownReport(input: {
   const eatingOut = input.foodEntries.filter((entry) => entry.entry_source !== "user" && entry.brand).length;
   const sweets = input.foodEntries.filter((entry) => /スイーツ|ケーキ|アイス|チョコ|プリン/.test(entry.name)).length;
   const drinking = input.foodEntries.filter((entry) => /飲み会|ビール|アルコール/.test(`${entry.name} ${entry.note ?? ""}`)).length;
+  const sessionIds = new Set(input.workoutSessions.map((session) => session.id));
+  const scopedExercises = input.workoutExercises.filter((exercise) => sessionIds.has(exercise.session_id));
+  const isDaily = input.periodStart === input.periodEnd;
 
-  const exerciseLines = input.workoutExercises.map((exercise) => {
+  const foodLines = input.foodEntries.map((entry) => {
+    const brand = entry.brand ? `${entry.brand} / ` : "";
+    const note = entry.note ? ` / ${entry.note}` : "";
+    return `- ${entry.app_date} ${entry.meal_type}: ${brand}${entry.name} ${entry.calories}kcal / P${entry.protein_g} F${entry.fat_g} C${entry.carbs_g}${note}`;
+  });
+
+  const exerciseLines = scopedExercises.map((exercise) => {
     const sets = input.workoutSets.filter((set) => set.workout_exercise_id === exercise.id);
     const activeCalories = sets.reduce((sum, set) => sum + (set.active_calories ?? 0), 0);
     const best = sets
@@ -45,7 +54,7 @@ export function generateMarkdownReport(input: {
 
   return `# Phase Log AI相談レポート
 
-期間: ${input.periodStart} - ${input.periodEnd}
+${isDaily ? `対象日: ${input.periodStart}` : `期間: ${input.periodStart} - ${input.periodEnd}`}
 
 ## 現在のゴール
 
@@ -79,10 +88,14 @@ export function generateMarkdownReport(input: {
     Math.round((input.foodEntries.filter((entry) => entry.confidence !== "high").length / Math.max(input.foodEntries.length, 1)) * 100)
   }%
 
+## 食事ログ
+
+${foodLines.join("\n") || "- 記録なし"}
+
 ## ワークアウト
 
 - セッション数: ${input.workoutSessions.length}
-- 種目数: ${input.workoutExercises.length}
+- 種目数: ${scopedExercises.length}
 
 ${exerciseLines.join("\n") || "- 記録なし"}
 
