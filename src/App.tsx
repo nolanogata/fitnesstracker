@@ -63,7 +63,7 @@ import { makeId } from "./lib/ids";
 import { activityLabels, buildGoal, calculateTargets, phaseLabels } from "./lib/goalCalculator";
 import { downloadText, exportBackup, importBackup, resetLocalData } from "./lib/backup";
 import { generateMarkdownReport } from "./lib/report";
-import { formatWeeklyWorkoutStatus, getWeeklyWorkoutStatus, type WeeklyWorkoutStatus } from "./lib/workoutStatus";
+import { getWeeklyWorkoutStatus, type WeeklyWorkoutStatus } from "./lib/workoutStatus";
 
 type Tab = "home" | "food" | "workout" | "records" | "settings";
 type FoodMode = "search" | "favorite" | "chain" | "category" | "quick" | "rough" | "manual" | "personal";
@@ -223,6 +223,15 @@ function App() {
     localStorage.setItem(backupStorageKey, timestamp);
     setLastBackupAt(timestamp);
   };
+  const headerTitle = {
+    home: "今日の記録",
+    food: "Food",
+    workout: "Workout",
+    records: "History",
+    settings: "Settings",
+  }[tab];
+  const headerSubtext = tab === "home" ? formatHomeDate(appDate) : formatJapaneseDate(appDate);
+  const statusWeight = latestWeight?.weight_kg ?? profile?.current_weight_kg;
 
   if (settings && !settings.onboarding_completed) {
     return <Onboarding refresh={refresh} />;
@@ -233,12 +242,11 @@ function App() {
       <header className="safe-top sticky top-0 z-20 border-b border-line bg-rice/95 px-4 pb-3 backdrop-blur">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-xs font-semibold text-moss">{formatJapaneseDate(appDate)}</p>
-            <h1 className="text-xl font-bold tracking-normal">ゴールトラッカー</h1>
+            <h1 className="text-2xl font-bold tracking-normal">{headerTitle}</h1>
+            <p className="mt-1 text-xs font-normal text-moss">{headerSubtext}</p>
           </div>
-          <div className="rounded-md border border-leaf/20 bg-leaf/10 px-3 py-2 text-right text-xs shadow-soft">
-            <p className="font-semibold">{activeGoal ? phaseLabels[activeGoal.phase] : "未設定"}</p>
-            <p className="text-moss">{latestWeight?.weight_kg ?? profile?.current_weight_kg ?? "-"}kg</p>
+          <div className="rounded-full border border-line bg-surface px-3 py-1.5 text-xs font-bold text-moss">
+            {activeGoal ? phaseLabels[activeGoal.phase] : "未設定"} / {typeof statusWeight === "number" ? `${statusWeight}kg` : "-"}
           </div>
         </div>
       </header>
@@ -306,7 +314,7 @@ function App() {
         )}
       </section>
 
-      <nav className="safe-bottom fixed inset-x-0 bottom-0 z-30 mx-auto max-w-[430px] border-t border-line bg-white px-3 pt-2">
+      <nav className="safe-bottom fixed inset-x-0 bottom-0 z-30 mx-auto max-w-[430px] border-t border-line bg-surface/95 px-3 pt-1.5 backdrop-blur">
         <div className="grid grid-cols-5 gap-1">
           <TabButton active={tab === "home"} icon={<Home size={19} />} label="Home" onClick={() => { setSettingsFocus(undefined); setTab("home"); }} />
           <TabButton active={tab === "food"} icon={<Utensils size={19} />} label="Food" onClick={() => { setSettingsFocus(undefined); setTab("food"); }} />
@@ -340,114 +348,162 @@ function HomeTab(props: {
   const remaining = (props.goal?.target_calories ?? 0) - props.dayTotals.calories;
   const calorieState = getCalorieState(remaining, props.goal?.target_calories ?? 0);
   const average7 = movingAverage(props.weightLogs, 7);
+  const caloriePercent = props.goal?.target_calories ? Math.min(100, Math.round((props.dayTotals.calories / props.goal.target_calories) * 100)) : 0;
+  const calorieHeadline = props.goal?.target_calories && remaining < 0 ? "超過" : "残り";
+  const backupTitle = props.backupInfo.level === "danger" ? "バックアップ推奨" : "そろそろバックアップ";
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {props.backupInfo.level !== "ok" && (
-        <button className={`compact-card w-full p-3 text-left ${props.backupInfo.level === "danger" ? "border-clay bg-clay/10" : "border-leaf bg-leaf/10"}`} onClick={() => props.setTab("settings")}>
-          <p className="text-sm font-bold">{props.backupInfo.level === "danger" ? "バックアップ推奨" : "そろそろバックアップ"}</p>
-          <p className="mt-1 text-xs text-moss">{backupMessage(props.backupInfo)} · タップでJSON保存へ</p>
+        <button className="compact-card flex w-full items-center gap-3 px-4 py-3 text-left" onClick={() => props.setTab("settings")}>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-bold">{backupTitle}</p>
+            <p className="mt-1 text-xs leading-relaxed text-moss">{backupMessage(props.backupInfo)}</p>
+          </div>
+          <ChevronRight className="shrink-0 text-muted" size={18} />
         </button>
       )}
 
       <section className={`calorie-card ${calorieState.cardClass}`}>
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <div className="flex items-center gap-2">
-              <p className="text-xs font-bold text-moss">残りカロリー</p>
-              <span className={`rounded-full px-2 py-0.5 text-[11px] font-black ${calorieState.badgeClass}`}>{calorieState.label}</span>
-            </div>
-            <p className={`mt-1 text-4xl font-black tracking-normal ${calorieState.valueClass}`}>
-              {calorieState.displayValue}
-              {props.goal?.target_calories ? <span className="ml-1 text-base">kcal</span> : null}
-            </p>
-            <p className="mt-1 text-xs text-moss">摂取 {props.dayTotals.calories} kcal / 目標 {props.goal?.target_calories ?? "-"} kcal</p>
-          </div>
-          <div className="grid gap-1 text-right text-xs">
-            <MacroLine label="P" value={props.dayTotals.protein} target={props.goal?.target_protein_g ?? 0} color="#526a57" />
-            <MacroLine label="F" value={props.dayTotals.fat} target={props.goal?.target_fat_g ?? 0} color="#c76f51" warnOnOver />
-            <MacroLine label="C" value={props.dayTotals.carbs} target={props.goal?.target_carbs_g ?? 0} color="#d9a441" warnOnOver />
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-[15px] font-bold">今日のカロリー</h2>
+          <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${calorieState.badgeClass}`}>{calorieState.label}</span>
+        </div>
+        <div className="mt-4">
+          <p className={`text-[42px] font-bold leading-none tracking-normal ${calorieState.valueClass}`}>
+            {calorieHeadline} {calorieState.displayValue}
+            {props.goal?.target_calories ? <span className="ml-1 text-base font-bold">kcal</span> : null}
+          </p>
+          <p className="mt-2 text-xs text-moss">摂取 {props.dayTotals.calories} / 目標 {props.goal?.target_calories ?? "-"} kcal</p>
+          <div className="mt-4 h-2 overflow-hidden rounded-full bg-oat">
+            <div className="h-full rounded-full bg-moss" style={{ width: `${caloriePercent}%` }} />
           </div>
         </div>
-      </section>
-
-      <section className="compact-card p-4">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <p className="text-sm font-bold">今週の運動目標</p>
-            <p className="text-xs text-moss">{props.weeklyWorkoutStatus.start} - {props.weeklyWorkoutStatus.end}</p>
-          </div>
-          <p className="text-right text-sm font-black text-moss">{formatWeeklyWorkoutStatus(props.weeklyWorkoutStatus)}</p>
-        </div>
-        <div className="mt-3 grid grid-cols-2 gap-2">
-          <WorkoutGoalProgress label="筋トレ" done={props.weeklyWorkoutStatus.strengthDone} target={props.weeklyWorkoutStatus.strengthTarget} />
-          <WorkoutGoalProgress label="有酸素" done={props.weeklyWorkoutStatus.cardioDone} target={props.weeklyWorkoutStatus.cardioTarget} />
+        <div className="mt-4 grid gap-2">
+          <MacroLine label="P" value={props.dayTotals.protein} target={props.goal?.target_protein_g ?? 0} color="#4F6B55" />
+          <MacroLine label="F" value={props.dayTotals.fat} target={props.goal?.target_fat_g ?? 0} color="#4F6B55" warnOnOver />
+          <MacroLine label="C" value={props.dayTotals.carbs} target={props.goal?.target_carbs_g ?? 0} color="#4F6B55" warnOnOver />
         </div>
       </section>
 
       <div className="grid grid-cols-2 gap-2">
-        <button className="primary-button" onClick={() => props.setTab("food")}><Utensils size={17} />食事を追加</button>
-        <button className="secondary-button" onClick={() => props.setTab("workout")}><Dumbbell size={17} />筋トレを追加</button>
-        <button className="secondary-button" onClick={() => props.setTab("settings")}><Activity size={17} />ゴール</button>
-        <button className="secondary-button" onClick={props.openAiReport}><FileText size={17} />AI相談レポート</button>
+        <button className="primary-button min-h-12" onClick={() => props.setTab("food")}><Plus size={17} />食事を記録</button>
+        <button className="secondary-button min-h-12" onClick={() => props.setTab("workout")}><Plus size={17} />筋トレを記録</button>
+      </div>
+      <div className="flex justify-center gap-4 text-xs font-bold text-moss">
+        <button className="px-2 py-1" onClick={() => props.setTab("settings")}>ゴール</button>
+        <button className="px-2 py-1 text-muted" onClick={props.openAiReport}>AI相談レポート</button>
       </div>
 
       <section className="compact-card p-4">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <p className="text-sm font-bold">今日の体重</p>
-            <p className="text-xs text-moss">7日平均 {average7 ? `${average7}kg` : "-"}</p>
+            <p className="text-[15px] font-bold">今日のチェックイン</p>
+            <p className="mt-1 text-xs text-moss">7日平均 {average7 ? `${average7}kg` : "-"}</p>
           </div>
-          <div className="grid min-w-0 flex-1 gap-2">
-            <div className="grid grid-cols-[64px_1fr] items-center gap-2">
-              <span className="text-xs font-semibold text-moss">kg</span>
-              <Stepper value={weight} suffix="kg" step={0.1} onChange={setWeight} />
-            </div>
-            <div className="grid grid-cols-[64px_1fr] items-center gap-2">
-              <span className="text-xs font-semibold text-moss">体脂肪%</span>
-              <Stepper value={bodyFat} suffix="%" step={0.5} onChange={(value) => setBodyFat(clampBodyFat(value))} />
-            </div>
-            <button className="primary-button h-10 justify-self-end px-3 py-2" aria-label="体重と体脂肪を保存" onClick={async () => {
-              const timestamp = nowIso();
-              const normalizedBodyFat = clampBodyFat(bodyFat);
-              await db.weight_logs.put({
-                id: makeId("weight"),
-                app_date: props.appDate,
-                logged_at: timestamp,
-                weight_kg: weight,
-                body_fat_percentage: normalizedBodyFat,
-                lean_body_mass_kg: round1(weight * (1 - normalizedBodyFat / 100)),
-                created_at: timestamp,
-                updated_at: timestamp,
-              });
-              if (props.profile) await db.profile.update(props.profile.id, { current_weight_kg: weight, body_fat_percentage: normalizedBodyFat, updated_at: timestamp });
-              setBodyFat(normalizedBodyFat);
-              await props.refresh();
-            }}><Save size={16} />保存</button>
-          </div>
+          <button className="primary-button h-10 px-3 py-2" aria-label="体重と体脂肪を保存" onClick={async () => {
+            const timestamp = nowIso();
+            const normalizedBodyFat = clampBodyFat(bodyFat);
+            await db.weight_logs.put({
+              id: makeId("weight"),
+              app_date: props.appDate,
+              logged_at: timestamp,
+              weight_kg: weight,
+              body_fat_percentage: normalizedBodyFat,
+              lean_body_mass_kg: round1(weight * (1 - normalizedBodyFat / 100)),
+              created_at: timestamp,
+              updated_at: timestamp,
+            });
+            if (props.profile) await db.profile.update(props.profile.id, { current_weight_kg: weight, body_fat_percentage: normalizedBodyFat, updated_at: timestamp });
+            setBodyFat(normalizedBodyFat);
+            await props.refresh();
+          }}><Save size={16} />保存</button>
+        </div>
+        <div className="mt-4 grid grid-cols-2 gap-3">
+          <CheckInStepper label="体重" value={weight} suffix="kg" step={0.1} onChange={setWeight} />
+          <CheckInStepper label="体脂肪" value={bodyFat} suffix="%" step={0.5} onChange={(value) => setBodyFat(clampBodyFat(value))} />
         </div>
       </section>
 
-      <section className="compact-card divide-y divide-line">
+      <section className="compact-card p-4">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-[15px] font-bold">今週の運動目標</h2>
+          <p className="text-xs font-semibold text-muted">{props.weeklyWorkoutStatus.start} - {props.weeklyWorkoutStatus.end}</p>
+        </div>
+        <div className="mt-4 grid grid-cols-2 gap-5">
+          <WorkoutGoalProgress label="筋トレ" done={props.weeklyWorkoutStatus.strengthDone} target={props.weeklyWorkoutStatus.strengthTarget} />
+          <WorkoutGoalProgress label="有酸素" done={props.weeklyWorkoutStatus.cardioDone} target={props.weeklyWorkoutStatus.cardioTarget} />
+        </div>
+      </section>
+
+      <section className="compact-card divide-y divide-line overflow-hidden">
         <ListHeader title="今日の食事" value={`${props.todayEntries.length}件`} />
-        {props.todayEntries.slice(0, 6).map((entry) => (
-          <FoodLogRow entry={entry} key={entry.id} />
+        {props.todayEntries.slice(0, 1).map((entry) => (
+          <button className="w-full text-left" key={entry.id} onClick={() => props.setTab("food")}>
+            <HomeFoodLogRow entry={entry} />
+          </button>
         ))}
         {props.todayEntries.length === 0 && <EmptyLine text="まだ食事ログなし" />}
       </section>
 
-      <section className="compact-card divide-y divide-line">
+      <section className="compact-card divide-y divide-line overflow-hidden">
         <ListHeader title="今日の筋トレ" value={`${props.todayWorkouts.length}件`} />
-        {props.todayWorkouts.map((session) => (
-          <div className="flex items-center gap-3 px-4 py-3" key={session.id}>
-            <Pictogram {...getWorkoutPictogram(session.body_parts.join(" "), session.workout_type)} />
-            <div>
-              <p className="text-sm font-semibold">{session.title}</p>
-              <p className="text-xs text-moss">{props.workoutExercises.filter((item) => item.session_id === session.id).length}種目</p>
+        {props.todayWorkouts.slice(0, 1).map((session) => (
+          <button className="w-full text-left" key={session.id} onClick={() => props.setTab("workout")}>
+            <div className="flex items-center gap-3 px-4 py-3.5">
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-semibold">{session.title}</p>
+                <p className="mt-1 text-xs text-moss">{props.workoutExercises.filter((item) => item.session_id === session.id).length}種目</p>
+              </div>
+              <ChevronRight className="shrink-0 text-muted" size={18} />
             </div>
-          </div>
+          </button>
         ))}
         {props.todayWorkouts.length === 0 && <EmptyLine text="まだワークアウトなし" />}
       </section>
+    </div>
+  );
+}
+
+function CheckInStepper({ label, value, suffix, step, onChange }: { label: string; value: number; suffix: string; step: number; onChange: (value: number) => void }) {
+  return (
+    <div>
+      <p className="text-xs font-semibold text-moss">{label}</p>
+      <div className="mt-2 flex items-center justify-between gap-2">
+        <button className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-line bg-surface text-moss" onClick={() => onChange(round1(Math.max(0, value - step)))} aria-label={`${label}を減らす`}>
+          <Minus size={14} />
+        </button>
+        <label className="min-w-0 flex-1">
+          <span className="sr-only">{label}</span>
+          <input
+            className="h-10 w-full rounded-xl border-line bg-rice px-1 text-center text-base font-semibold focus:ring-1 focus:ring-leaf"
+            type="number"
+            step={step}
+            value={value}
+            onChange={(event) => onChange(Number(event.target.value))}
+          />
+        </label>
+        <button className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-line bg-surface text-moss" onClick={() => onChange(round1(value + step))} aria-label={`${label}を増やす`}>
+          <Plus size={14} />
+        </button>
+      </div>
+      <p className="mt-1 text-center text-xs font-bold text-ink">{round1(value)} {suffix}</p>
+    </div>
+  );
+}
+
+function HomeFoodLogRow({ entry }: { entry: FoodEntry }) {
+  return (
+    <div className="flex items-center gap-3 px-4 py-3.5">
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-semibold">{entry.name}</p>
+        <p className="mt-1 text-xs text-moss">{mealLabels[entry.meal_type]} · {entry.calories} kcal</p>
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          <span className="rounded-full bg-oat px-2 py-1 text-[11px] font-semibold text-moss">P{entry.protein_g}</span>
+          <span className="rounded-full bg-oat px-2 py-1 text-[11px] font-semibold text-moss">F{entry.fat_g}</span>
+          <span className="rounded-full bg-oat px-2 py-1 text-[11px] font-semibold text-moss">C{entry.carbs_g}</span>
+        </div>
+      </div>
+      <ChevronRight className="shrink-0 text-muted" size={18} />
     </div>
   );
 }
@@ -1678,12 +1734,12 @@ function MacroLine({ label, value, target, color = "#8fb48e", warnOnOver = false
   const isOver = warnOnOver && target > 0 && value > target;
   const displayTarget = target || "-";
   return (
-    <div className={`w-32 rounded-md px-2 py-1 transition-colors ${isOver ? "bg-clay/10 text-clay" : "text-ink"}`}>
-      <div className="flex justify-between gap-2">
+    <div className={`transition-colors ${isOver ? "text-clay" : "text-ink"}`}>
+      <div className="flex justify-between gap-2 text-xs">
         <span className="font-bold">{label}{isOver ? <span className="ml-1 text-[10px]">超過</span> : null}</span>
-        <span className="whitespace-nowrap">{round1(value)}/{displayTarget}g</span>
+        <span className="whitespace-nowrap font-semibold">{round1(value)} / {displayTarget}g</span>
       </div>
-      <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-line"><div className="h-full" style={{ width: `${percent}%`, backgroundColor: isOver ? "#c76f51" : color }} /></div>
+      <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-oat"><div className="h-full rounded-full" style={{ width: `${percent}%`, backgroundColor: isOver ? "#C46A52" : color }} /></div>
     </div>
   );
 }
@@ -1749,13 +1805,13 @@ function WorkoutGoalProgress({ label, done, target }: { label: string; done: num
   const percent = target > 0 ? Math.min(100, Math.round((done / target) * 100)) : 0;
   const complete = target > 0 && done >= target;
   return (
-    <div className={`rounded-md border px-3 py-2 ${complete ? "border-leaf/40 bg-leaf/10" : "border-line bg-rice"}`}>
+    <div>
       <div className="flex items-center justify-between gap-2 text-xs">
-        <span className="font-bold">{label}</span>
-        <span className={complete ? "font-black text-moss" : "font-black text-ink"}>{done}/{target || "-"}</span>
+        <span className="font-bold text-ink">{label}</span>
+        <span className={complete ? "font-bold text-moss" : "font-bold text-ink"}>{done}/{target || "-"}</span>
       </div>
-      <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-line">
-        <div className={`h-full ${complete ? "bg-moss" : "bg-sun"}`} style={{ width: `${percent}%` }} />
+      <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-oat">
+        <div className={`h-full rounded-full ${complete ? "bg-moss" : "bg-sun"}`} style={{ width: `${percent}%` }} />
       </div>
     </div>
   );
@@ -1831,27 +1887,27 @@ function getCalorieState(remaining: number, target: number) {
       displayValue: "-",
       subtitle: "目標kcalを設定すると状態を表示します",
       cardClass: "calorie-card-neutral",
-      badgeClass: "bg-ink/5 text-moss",
+      badgeClass: "bg-oat text-moss",
       valueClass: "text-ink",
     };
   }
   if (remaining < 0) {
     return {
-      label: "オーバー",
+      label: "超過",
       displayValue: Math.abs(remaining),
       subtitle: `${Math.abs(remaining)} kcal超過`,
       cardClass: "calorie-card-over",
-      badgeClass: "bg-clay text-white",
+      badgeClass: "bg-[#F3D8CE] text-clay",
       valueClass: "text-clay",
     };
   }
   if (remaining <= 100) {
     return {
-      label: "ほぼ目標",
+      label: "適正",
       displayValue: remaining,
       subtitle: remaining === 0 ? "ぴったり目標" : `あと ${remaining} kcal`,
       cardClass: "calorie-card-on-track",
-      badgeClass: "bg-moss text-white",
+      badgeClass: "bg-leaf text-moss",
       valueClass: "text-moss",
     };
   }
@@ -1860,9 +1916,17 @@ function getCalorieState(remaining: number, target: number) {
     displayValue: remaining,
     subtitle: `あと ${remaining} kcal`,
     cardClass: "calorie-card-under",
-    badgeClass: "bg-sun text-white",
-    valueClass: "text-[#8a5d13]",
+    badgeClass: "bg-[#F4E5C8] text-[#8A5D13]",
+    valueClass: "text-ink",
   };
+}
+
+function formatHomeDate(dateString: string) {
+  return new Intl.DateTimeFormat("ja-JP", {
+    month: "numeric",
+    day: "numeric",
+    weekday: "long",
+  }).format(new Date(`${dateString}T12:00:00`));
 }
 
 function ListHeader({ title, value }: { title: string; value: string }) {
@@ -1880,7 +1944,7 @@ function EmptyLine({ text }: { text: string }) {
 
 function TabButton({ active, icon, label, onClick }: { active: boolean; icon: ReactNode; label: string; onClick: () => void }) {
   return (
-    <button className={`flex flex-col items-center gap-1 rounded-md px-2 py-2 text-[11px] font-bold ${active ? "bg-moss text-white" : "text-moss"}`} onClick={onClick}>
+    <button className={`flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl px-2 py-1.5 text-[11px] font-semibold transition ${active ? "bg-leaf text-moss" : "text-moss"}`} onClick={onClick}>
       {icon}
       <span>{label}</span>
     </button>
