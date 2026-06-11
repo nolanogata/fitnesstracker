@@ -22,9 +22,7 @@ export async function exportBackup(): Promise<BackupPayload> {
 }
 
 export async function importBackup(payload: BackupPayload) {
-  if (!payload || payload.schema_version !== SCHEMA_VERSION) {
-    throw new Error(`対応していないバックアップ形式です: schema_version ${payload?.schema_version ?? "unknown"}`);
-  }
+  validateBackupPayload(payload);
   await db.transaction(
     "rw",
     [
@@ -72,6 +70,44 @@ export async function importBackup(payload: BackupPayload) {
       ]);
     },
   );
+}
+
+function validateBackupPayload(payload: BackupPayload) {
+  if (!payload || payload.schema_version !== SCHEMA_VERSION) {
+    throw new Error(`対応していないバックアップ形式です: schema_version ${payload?.schema_version ?? "unknown"}`);
+  }
+
+  const tables = [
+    "profile",
+    "settings",
+    "goals",
+    "menu_items",
+    "food_entries",
+    "weight_logs",
+    "exercise_presets",
+    "workout_templates",
+    "workout_sessions",
+    "workout_exercises",
+    "workout_sets",
+    "ai_reports",
+  ] as const;
+
+  tables.forEach((table) => {
+    const rows = payload[table];
+    if (!Array.isArray(rows)) {
+      throw new Error(`バックアップ内の ${table} が壊れています`);
+    }
+    const ids = new Set<string>();
+    rows.forEach((row, index) => {
+      if (!row || typeof row.id !== "string" || !row.id) {
+        throw new Error(`バックアップ内の ${table}[${index}] にIDがありません`);
+      }
+      if (ids.has(row.id)) {
+        throw new Error(`バックアップ内の ${table} に重複IDがあります: ${row.id}`);
+      }
+      ids.add(row.id);
+    });
+  });
 }
 
 export async function resetLocalData() {
