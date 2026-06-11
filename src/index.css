@@ -71,6 +71,30 @@ button {
   @apply border-moss bg-moss text-white;
 }
 
+.source-badge {
+  @apply inline-flex w-fit items-center rounded-full border px-2 py-0.5 text-[11px] font-bold leading-tight;
+}
+
+.source-badge-official {
+  @apply border-moss bg-moss text-white shadow-[0_4px_10px_rgba(82,106,87,0.16)];
+}
+
+.source-badge-estimated {
+  @apply border-sun/40 bg-sun/15 text-[#8a5d13];
+}
+
+.source-badge-unofficial {
+  @apply border-clay/30 bg-clay/10 text-clay;
+}
+
+.source-badge-quick {
+  @apply border-sky/35 bg-sky/10 text-sky;
+}
+
+.source-badge-user {
+  @apply border-ink/20 bg-ink/5 text-ink;
+}
+
 .mode-button {
   @apply inline-flex min-h-12 items-center justify-center rounded-md border border-line bg-surface px-3 py-2 text-sm font-bold text-ink transition active:scale-[0.98];
 }
