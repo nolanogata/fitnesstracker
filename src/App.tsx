@@ -66,7 +66,7 @@ import { generateMarkdownReport } from "./lib/report";
 import { getWeeklyWorkoutStatus, type WeeklyWorkoutStatus } from "./lib/workoutStatus";
 
 type Tab = "home" | "food" | "workout" | "records" | "settings";
-type FoodMode = "search" | "favorite" | "chain" | "category" | "quick" | "rough" | "manual" | "personal";
+type FoodMode = "search" | "favorite" | "chain" | "category" | "quick" | "manual" | "personal";
 type WorkoutMode = "favorite" | "preset" | "body" | "equipment" | "previous" | "search";
 type SettingsFocus = "ai" | undefined;
 type HistoryGrouping = "day" | "week" | "month";
@@ -147,12 +147,6 @@ const emptyManual: ManualFoodDraft = {
   note: "",
   savePreset: false,
   favorite: false,
-};
-
-const emptyRough: ManualFoodDraft = {
-  ...emptyManual,
-  category: "その他",
-  subcategory: "不明",
 };
 
 const backupStorageKey = "phase-log-last-backup-at";
@@ -521,7 +515,6 @@ function FoodTab(props: { menuItems: MenuItem[]; foodEntries: FoodEntry[]; appDa
   const [mealType, setMealType] = useState<MealType>("lunch");
   const [multiplier, setMultiplier] = useState(1);
   const [manual, setManual] = useState(emptyManual);
-  const [rough, setRough] = useState(emptyRough);
   const [chainCategory, setChainCategory] = useState("牛丼・丼");
   const [brand, setBrand] = useState("松屋");
   const [genericCategory, setGenericCategory] = useState("ごはん・丼");
@@ -585,19 +578,20 @@ function FoodTab(props: { menuItems: MenuItem[]; foodEntries: FoodEntry[]; appDa
   };
 
   const saveManual = async () => {
-    if (!manual.name.trim()) return;
     const timestamp = nowIso();
     let menuItemId: string | undefined;
     const nutrition = draftNutrition(manual);
-    const tags = unique([manual.category, manual.subcategory, manual.brand, ...(nutrition.unknown.length ? ["栄養素一部不明"] : [])]);
+    const displayName = manual.name.trim() || `${mealLabels[manual.meal_type]}のマニュアル`;
+    const brand = manual.brand.trim();
+    const tags = unique([manual.category, manual.subcategory, brand, ...(nutrition.unknown.length ? ["栄養素一部不明"] : [])]);
     const note = unique([manual.note, nutrition.unknown.length ? `未入力: ${nutrition.unknown.join("/")}` : ""]).join(" / ") || undefined;
     const confidence = nutrition.unknown.length ? "low" : "high";
     if (manual.savePreset) {
       menuItemId = makeId("menu_user");
       await db.menu_items.put({
         id: menuItemId,
-        name: manual.name,
-        brand: manual.brand || undefined,
+        name: displayName,
+        brand: brand || undefined,
         category: manual.category,
         tags,
         calories: nutrition.calories,
@@ -620,8 +614,8 @@ function FoodTab(props: { menuItems: MenuItem[]; foodEntries: FoodEntry[]; appDa
       app_date: props.appDate,
       logged_at: timestamp,
       meal_type: manual.meal_type,
-      name: manual.name,
-      brand: manual.brand || undefined,
+      name: displayName,
+      brand: brand || undefined,
       calories: nutrition.calories,
       protein_g: nutrition.protein_g,
       fat_g: nutrition.fat_g,
@@ -639,36 +633,6 @@ function FoodTab(props: { menuItems: MenuItem[]; foodEntries: FoodEntry[]; appDa
     await props.refresh();
   };
 
-  const saveRough = async () => {
-    const timestamp = nowIso();
-    const nutrition = draftNutrition(rough);
-    const label = rough.note.trim() || "ざっくり";
-    const note = unique([
-      rough.note,
-      nutrition.unknown.length ? `未入力: ${nutrition.unknown.join("/")}` : "",
-    ]).join(" / ") || undefined;
-    await db.food_entries.put({
-      id: makeId("food"),
-      app_date: props.appDate,
-      logged_at: timestamp,
-      meal_type: rough.meal_type,
-      name: `${mealLabels[rough.meal_type]}の${label}`,
-      calories: nutrition.calories,
-      protein_g: nutrition.protein_g,
-      fat_g: nutrition.fat_g,
-      carbs_g: nutrition.carbs_g,
-      salt_g: nutrition.salt_g,
-      portion_multiplier: 1,
-      entry_source: "quick_estimate",
-      confidence: "low",
-      note,
-      created_at: timestamp,
-      updated_at: timestamp,
-    });
-    setRough({ ...emptyRough, meal_type: rough.meal_type });
-    await props.refresh();
-  };
-
   return (
     <div className="space-y-4">
       <div className="sticky top-[74px] z-10 -mx-4 space-y-3 bg-rice px-4 pb-2">
@@ -680,7 +644,7 @@ function FoodTab(props: { menuItems: MenuItem[]; foodEntries: FoodEntry[]; appDa
           <button type="submit" className={`${mode === "search" ? "primary-button" : "secondary-button"} h-12 px-4`}>検索</button>
         </form>
         <div className="grid grid-cols-3 gap-2">
-          {(["favorite", "personal", "rough", "chain", "category", "quick", "manual"] as FoodMode[]).map((item) => (
+          {(["favorite", "personal", "manual", "chain", "category", "quick"] as FoodMode[]).map((item) => (
             <button key={item} className={`mode-button ${mode === item ? "mode-button-active" : ""}`} onClick={() => setMode(item)}>
               {foodModeLabel(item)}
             </button>
@@ -714,7 +678,7 @@ function FoodTab(props: { menuItems: MenuItem[]; foodEntries: FoodEntry[]; appDa
         </section>
       )}
 
-      {mode !== "manual" && mode !== "rough" && (
+      {mode !== "manual" && (
         <>
           {mode === "search" && (
             <QuickStrip title="Recent" items={recentItems} onPick={setSelected} fallback={favoriteItems} />
@@ -732,10 +696,6 @@ function FoodTab(props: { menuItems: MenuItem[]; foodEntries: FoodEntry[]; appDa
 
       {mode === "manual" && (
         <ManualFoodForm manual={manual} setManual={setManual} onSave={saveManual} />
-      )}
-
-      {mode === "rough" && (
-        <RoughFoodForm rough={rough} setRough={setRough} onSave={saveRough} />
       )}
 
       <section className="compact-card divide-y divide-line">
@@ -1510,10 +1470,15 @@ function ManualFoodForm({ manual, setManual, onSave, compact = false }: {
   const subcategories = genericCategories[manual.category] ?? [];
   return (
     <section className={compact ? "" : "compact-card p-4"}>
-      {!compact && <h2 className="font-bold">手入力</h2>}
+      {!compact && (
+        <div>
+          <h2 className="font-bold">マニュアル</h2>
+          <p className="mt-1 text-xs leading-relaxed text-moss">名前・ブランドは空欄でも保存できます。名前が空なら食事タイミングから自動でラベルを付けます。</p>
+        </div>
+      )}
       <div className="mt-3 grid grid-cols-2 gap-2">
-        <input className="col-span-2" value={manual.name} onChange={(event) => setManual({ ...manual, name: event.target.value })} placeholder="名前" />
-        <input value={manual.brand} onChange={(event) => setManual({ ...manual, brand: event.target.value })} placeholder="ブランド" />
+        <input className="col-span-2" value={manual.name} onChange={(event) => setManual({ ...manual, name: event.target.value })} placeholder="名前（空欄OK）" />
+        <input value={manual.brand} onChange={(event) => setManual({ ...manual, brand: event.target.value })} placeholder="ブランド（空欄OK）" />
         <select value={manual.meal_type} onChange={(event) => setManual({ ...manual, meal_type: event.target.value as MealType })}>
           {Object.entries(mealLabels).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
         </select>
@@ -1542,38 +1507,6 @@ function ManualFoodForm({ manual, setManual, onSave, compact = false }: {
       <div className="mt-3 flex flex-wrap gap-2">
         <label className="chip"><input type="checkbox" checked={manual.savePreset} onChange={(event) => setManual({ ...manual, savePreset: event.target.checked })} />プリセット保存</label>
         <label className="chip"><input type="checkbox" checked={manual.favorite} onChange={(event) => setManual({ ...manual, favorite: event.target.checked })} />お気に入り</label>
-      </div>
-      <button className="primary-button mt-3 w-full" onClick={onSave}><Save size={17} />保存</button>
-    </section>
-  );
-}
-
-function RoughFoodForm({ rough, setRough, onSave }: {
-  rough: ManualFoodDraft;
-  setRough: (manual: ManualFoodDraft) => void;
-  onSave: () => void;
-}) {
-  return (
-    <section className="compact-card p-4">
-      <h2 className="font-bold">ざっくり</h2>
-      <div className="mt-3 grid grid-cols-4 gap-2">
-        {Object.entries(mealLabels).map(([key, label]) => (
-          <button
-            className={`tap-tile ${rough.meal_type === key ? "tap-tile-active" : ""}`}
-            key={key}
-            onClick={() => setRough({ ...rough, meal_type: key as MealType })}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-      <div className="mt-3 grid grid-cols-2 gap-2">
-        <PartialNumberInput label="kcal" value={rough.calories} onChange={(value) => setRough({ ...rough, calories: value })} />
-        <PartialNumberInput label="P" value={rough.protein_g} step={0.1} onChange={(value) => setRough({ ...rough, protein_g: value })} />
-        <PartialNumberInput label="F" value={rough.fat_g} step={0.1} onChange={(value) => setRough({ ...rough, fat_g: value })} />
-        <PartialNumberInput label="C" value={rough.carbs_g} step={0.1} onChange={(value) => setRough({ ...rough, carbs_g: value })} />
-        <input value={rough.salt_g} onChange={(event) => setRough({ ...rough, salt_g: event.target.value })} placeholder="塩分 optional" />
-        <input value={rough.note} onChange={(event) => setRough({ ...rough, note: event.target.value })} placeholder="メモ" />
       </div>
       <button className="primary-button mt-3 w-full" onClick={onSave}><Save size={17} />保存</button>
     </section>
@@ -2265,8 +2198,7 @@ function foodModeLabel(mode: FoodMode) {
     chain: "チェーン",
     category: "カテゴリ",
     quick: "一般",
-    rough: "ざっくり",
-    manual: "手入力",
+    manual: "マニュアル",
     personal: "マイメニュー",
   }[mode];
 }
@@ -2353,7 +2285,7 @@ function sourceDescription(source: MenuItem["data_source"], item?: MenuItem) {
     official: "公式値",
     unofficial: "非公式値",
     estimated: "推定値",
-    quick_estimate: "ざっくり概算",
+    quick_estimate: "概算",
     user: "自分で入力",
   }[source];
 }
