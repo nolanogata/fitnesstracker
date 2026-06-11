@@ -256,6 +256,7 @@ function App() {
             todayEntries={todayEntries}
             todayWorkouts={todayWorkouts}
             workoutExercises={workoutExercises}
+            workoutSets={workoutSets}
             weeklyWorkoutStatus={weeklyWorkoutStatus}
             latestWeight={latestWeight}
             weightLogs={weightLogs}
@@ -334,6 +335,7 @@ function HomeTab(props: {
   todayEntries: FoodEntry[];
   todayWorkouts: WorkoutSession[];
   workoutExercises: WorkoutExercise[];
+  workoutSets: WorkoutSet[];
   weeklyWorkoutStatus: WeeklyWorkoutStatus;
   latestWeight?: WeightLog;
   weightLogs: WeightLog[];
@@ -351,6 +353,17 @@ function HomeTab(props: {
   const caloriePercent = props.goal?.target_calories ? Math.min(100, Math.round((props.dayTotals.calories / props.goal.target_calories) * 100)) : 0;
   const calorieHeadline = props.goal?.target_calories && remaining < 0 ? "超過" : "残り";
   const backupTitle = props.backupInfo.level === "danger" ? "バックアップ推奨" : "そろそろバックアップ";
+  const deleteWorkoutSession = async (session: WorkoutSession) => {
+    if (!confirm(`${session.title}を削除しますか？このワークアウト内の種目とセットも削除されます。`)) return;
+    const exerciseIds = props.workoutExercises.filter((exercise) => exercise.session_id === session.id).map((exercise) => exercise.id);
+    const setIds = props.workoutSets.filter((set) => exerciseIds.includes(set.workout_exercise_id)).map((set) => set.id);
+    await db.transaction("rw", db.workout_sessions, db.workout_exercises, db.workout_sets, async () => {
+      if (setIds.length) await db.workout_sets.bulkDelete(setIds);
+      if (exerciseIds.length) await db.workout_exercises.bulkDelete(exerciseIds);
+      await db.workout_sessions.delete(session.id);
+    });
+    await props.refresh();
+  };
 
   useEffect(() => {
     setWeight(props.latestWeight?.weight_kg ?? props.profile?.current_weight_kg ?? 70);
@@ -455,15 +468,16 @@ function HomeTab(props: {
       <section className="compact-card divide-y divide-line overflow-hidden">
         <ListHeader title="今日の筋トレ" value={`${props.todayWorkouts.length}件`} />
         {props.todayWorkouts.slice(0, 1).map((session) => (
-          <button className="w-full text-left" key={session.id} onClick={() => props.setTab("workout")}>
-            <div className="flex items-center gap-3 px-4 py-3.5">
+          <div className="flex items-center gap-3 px-4 py-3.5" key={session.id}>
+            <button className="min-w-0 flex-1 text-left" onClick={() => props.setTab("workout")}>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-semibold">{session.title}</p>
                 <p className="mt-1 text-xs text-moss">{props.workoutExercises.filter((item) => item.session_id === session.id).length}種目</p>
               </div>
-              <ChevronRight className="shrink-0 text-muted" size={18} />
-            </div>
-          </button>
+            </button>
+            <button className="icon-button h-8 w-8 text-clay" aria-label={`${session.title}を削除`} onClick={() => deleteWorkoutSession(session)}><Trash2 size={14} /></button>
+            <ChevronRight className="shrink-0 text-muted" size={18} />
+          </div>
         ))}
         {props.todayWorkouts.length === 0 && <EmptyLine text="まだワークアウトなし" />}
       </section>
@@ -867,6 +881,37 @@ function WorkoutTab(props: {
     await props.refresh();
   };
 
+  const deleteWorkoutSession = async (session: WorkoutSession) => {
+    if (!confirm(`${session.title}を削除しますか？このワークアウト内の種目とセットも削除されます。`)) return;
+    const exerciseIds = props.workoutExercises.filter((exercise) => exercise.session_id === session.id).map((exercise) => exercise.id);
+    const setIds = props.workoutSets.filter((set) => exerciseIds.includes(set.workout_exercise_id)).map((set) => set.id);
+    await db.transaction("rw", db.workout_sessions, db.workout_exercises, db.workout_sets, async () => {
+      if (setIds.length) await db.workout_sets.bulkDelete(setIds);
+      if (exerciseIds.length) await db.workout_exercises.bulkDelete(exerciseIds);
+      await db.workout_sessions.delete(session.id);
+    });
+    if (sessionId === session.id) {
+      setSessionId(undefined);
+      setFocusedExerciseId(undefined);
+    }
+    await props.refresh();
+  };
+
+  const deleteWorkoutExercise = async (exercise: WorkoutExercise) => {
+    if (!confirm(`${exercise.exercise_name}を削除しますか？この種目のセットも削除されます。`)) return;
+    const setIds = props.workoutSets.filter((set) => set.workout_exercise_id === exercise.id).map((set) => set.id);
+    const remainingExercises = props.workoutExercises.filter((item) => item.session_id === exercise.session_id && item.id !== exercise.id);
+    await db.transaction("rw", db.workout_sessions, db.workout_exercises, db.workout_sets, async () => {
+      if (setIds.length) await db.workout_sets.bulkDelete(setIds);
+      await db.workout_exercises.delete(exercise.id);
+      await db.workout_sessions.update(exercise.session_id, {
+        body_parts: unique(remainingExercises.map((item) => item.body_part)),
+        updated_at: nowIso(),
+      });
+    });
+    await props.refresh();
+  };
+
   const scrollToWorkoutTop = () => {
     setFocusedExerciseId(undefined);
     workoutTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -1025,7 +1070,13 @@ function WorkoutTab(props: {
 
       {activeSession && (
         <section className="compact-card divide-y divide-line" ref={sessionSectionRef}>
-          <ListHeader title={activeSession.title} value={`${activeExercises.length}種目`} />
+          <div className="flex items-center justify-between gap-3 px-4 py-3">
+            <div className="min-w-0">
+              <h2 className="truncate text-sm font-bold">{activeSession.title}</h2>
+              <p className="mt-1 text-xs text-moss">{formatJapaneseDate(activeSession.app_date)} · {activeExercises.length}種目</p>
+            </div>
+            <button className="icon-button h-9 w-9 text-clay" aria-label={`${activeSession.title}を削除`} onClick={() => deleteWorkoutSession(activeSession)}><Trash2 size={14} /></button>
+          </div>
           {activeExercises.map((exercise) => (
             <div
               key={exercise.id}
@@ -1038,6 +1089,7 @@ function WorkoutTab(props: {
                 exercise={exercise}
                 sets={props.workoutSets.filter((set) => set.workout_exercise_id === exercise.id).sort((a, b) => a.set_order - b.set_order)}
                 bodyWeightKg={props.profile?.current_weight_kg ?? 70}
+                onDeleteExercise={() => deleteWorkoutExercise(exercise)}
                 onPickTemplate={props.workoutTemplates.length ? (item) => setTemplateTargetItem(item) : undefined}
                 refresh={props.refresh}
               />
@@ -1076,17 +1128,18 @@ function WorkoutTab(props: {
       <section className="compact-card divide-y divide-line">
         <ListHeader title="履歴" value={`${props.workoutSessions.length}件`} />
         {props.workoutSessions.slice(0, 12).map((session) => (
-          <button className="flex w-full items-center justify-between px-4 py-3 text-left" key={session.id} onClick={() => {
-            setSessionId(session.id);
-            setFocusedExerciseId(undefined);
-            setSessionScrollKey((key) => key + 1);
-          }}>
-            <div>
+          <div className="flex items-center justify-between gap-3 px-4 py-3" key={session.id}>
+            <button className="min-w-0 flex-1 text-left" onClick={() => {
+              setSessionId(session.id);
+              setFocusedExerciseId(undefined);
+              setSessionScrollKey((key) => key + 1);
+            }}>
               <p className="text-sm font-semibold">{session.title}</p>
               <p className="text-xs text-moss">{formatJapaneseDate(session.app_date)} · {session.body_parts.join(" / ")}</p>
-            </div>
+            </button>
+            <button className="icon-button h-8 w-8 text-clay" aria-label={`${session.title}を削除`} onClick={() => deleteWorkoutSession(session)}><Trash2 size={14} /></button>
             <ChevronRight size={17} />
-          </button>
+          </div>
         ))}
       </section>
 
@@ -1861,12 +1914,14 @@ function WorkoutExerciseEditor({
   exercise,
   sets,
   bodyWeightKg,
+  onDeleteExercise,
   onPickTemplate,
   refresh,
 }: {
   exercise: WorkoutExercise;
   sets: WorkoutSet[];
   bodyWeightKg: number;
+  onDeleteExercise: () => void | Promise<void>;
   onPickTemplate?: (item: { label: string; item: TemplateExercise }) => void;
   refresh: () => Promise<void>;
 }) {
@@ -1876,12 +1931,21 @@ function WorkoutExerciseEditor({
     <div className="p-4">
       <div className="flex items-start gap-3">
         <Pictogram {...pictogram} />
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-bold">{exercise.exercise_name}</p>
           <p className="text-xs text-moss">{exercise.body_part} · {exercise.equipment_type}</p>
         </div>
+        <button className="icon-button h-8 w-8 text-clay" aria-label={`${exercise.exercise_name}を削除`} onClick={onDeleteExercise}><Trash2 size={14} /></button>
       </div>
       <div className="mt-3 space-y-2">
+        {sets.length > 0 && (
+          <div className={isCardio ? "grid grid-cols-[28px_1fr_72px_36px] items-center gap-2 text-[11px] font-bold text-moss" : "grid grid-cols-[28px_1fr_1fr_36px] items-center gap-2 text-[11px] font-bold text-moss"}>
+            <span>Set</span>
+            <span>{isCardio ? "時間" : "重量"}</span>
+            <span>{isCardio ? "消費" : "回数"}</span>
+            <span />
+          </div>
+        )}
         {sets.map((set) => (
           <div className={isCardio ? "grid grid-cols-[28px_1fr_72px_36px] items-center gap-2" : "grid grid-cols-[28px_1fr_1fr_36px] items-center gap-2"} key={set.id}>
             <span className="text-xs font-bold text-moss">{set.set_order}</span>
@@ -1900,7 +1964,7 @@ function WorkoutExerciseEditor({
             ) : (
               <>
                 <Stepper value={set.weight_kg ?? 0} suffix="kg" step={2.5} onChange={async (value) => { await db.workout_sets.update(set.id, { weight_kg: value, updated_at: nowIso() }); await refresh(); }} />
-                <Stepper value={set.reps ?? 0} suffix="rep" step={1} onChange={async (value) => { await db.workout_sets.update(set.id, { reps: value, updated_at: nowIso() }); await refresh(); }} />
+                <Stepper value={set.reps ?? 0} suffix="回" step={1} onChange={async (value) => { await db.workout_sets.update(set.id, { reps: value, updated_at: nowIso() }); await refresh(); }} />
               </>
             )}
             <button className="icon-button h-9 w-9" aria-label="削除" onClick={async () => { await db.workout_sets.delete(set.id); await refresh(); }}><Trash2 size={14} /></button>
