@@ -301,6 +301,7 @@ function HomeTab(props: {
   refresh: () => Promise<void>;
 }) {
   const [weight, setWeight] = useState(props.latestWeight?.weight_kg ?? props.profile?.current_weight_kg ?? 70);
+  const [bodyFat, setBodyFat] = useState(props.latestWeight?.body_fat_percentage ?? props.profile?.body_fat_percentage ?? 20);
   const remaining = (props.goal?.target_calories ?? 0) - props.dayTotals.calories;
   const calorieState = getCalorieState(remaining, props.goal?.target_calories ?? 0);
   const average7 = movingAverage(props.weightLogs, 7);
@@ -340,30 +341,37 @@ function HomeTab(props: {
       </div>
 
       <section className="compact-card p-4">
-        <div className="flex items-center justify-between">
+        <div className="flex items-start justify-between gap-3">
           <div>
-            <p className="text-sm font-bold">体重</p>
+            <p className="text-sm font-bold">今日の体重</p>
             <p className="text-xs text-moss">7日平均 {average7 ? `${average7}kg` : "-"}</p>
           </div>
-          <div className="flex items-center gap-2">
-            <button className="icon-button" onClick={() => setWeight(round1(weight - 0.1))} aria-label="体重を下げる"><Minus size={16} /></button>
-            <input className="w-20 text-center" type="number" step="0.1" value={weight} onChange={(event) => setWeight(Number(event.target.value))} />
-            <button className="icon-button" onClick={() => setWeight(round1(weight + 0.1))} aria-label="体重を上げる"><Plus size={16} /></button>
-            <button className="icon-button bg-ink text-white" aria-label="保存" onClick={async () => {
+          <div className="grid min-w-0 flex-1 gap-2">
+            <div className="grid grid-cols-[64px_1fr] items-center gap-2">
+              <span className="text-xs font-semibold text-moss">kg</span>
+              <Stepper value={weight} suffix="kg" step={0.1} onChange={setWeight} />
+            </div>
+            <div className="grid grid-cols-[64px_1fr] items-center gap-2">
+              <span className="text-xs font-semibold text-moss">体脂肪%</span>
+              <Stepper value={bodyFat} suffix="%" step={0.5} onChange={(value) => setBodyFat(clampBodyFat(value))} />
+            </div>
+            <button className="primary-button h-10 justify-self-end px-3 py-2" aria-label="体重と体脂肪を保存" onClick={async () => {
               const timestamp = nowIso();
+              const normalizedBodyFat = clampBodyFat(bodyFat);
               await db.weight_logs.put({
                 id: makeId("weight"),
                 app_date: props.appDate,
                 logged_at: timestamp,
                 weight_kg: weight,
-                body_fat_percentage: props.profile?.body_fat_percentage,
-                lean_body_mass_kg: props.profile?.body_fat_percentage ? round1(weight * (1 - props.profile.body_fat_percentage / 100)) : undefined,
+                body_fat_percentage: normalizedBodyFat,
+                lean_body_mass_kg: round1(weight * (1 - normalizedBodyFat / 100)),
                 created_at: timestamp,
                 updated_at: timestamp,
               });
-              if (props.profile) await db.profile.update(props.profile.id, { current_weight_kg: weight, updated_at: timestamp });
+              if (props.profile) await db.profile.update(props.profile.id, { current_weight_kg: weight, body_fat_percentage: normalizedBodyFat, updated_at: timestamp });
+              setBodyFat(normalizedBodyFat);
               await props.refresh();
-            }}><Save size={16} /></button>
+            }}><Save size={16} />保存</button>
           </div>
         </div>
       </section>
@@ -1574,6 +1582,11 @@ function movingAverage(logs: WeightLog[], count: number) {
 
 function round1(value: number) {
   return Math.round(value * 10) / 10;
+}
+
+function clampBodyFat(value: number) {
+  if (!Number.isFinite(value)) return 0;
+  return Math.min(100, Math.max(0, Math.round(value * 2) / 2));
 }
 
 function unique(values: string[]) {
