@@ -21,6 +21,13 @@
   - ガスト, ジョナサン, 藍屋: official Skylark menu pages and embedded menu JSON were checked on 2026-06-12. Some kcal/salt values are present in JSON, but P/F/C is still estimated, so entries remain `estimated/medium`.
   - デニーズ: official menu category pages were checked on 2026-06-12. Added selected official-menu-name entries as `estimated/medium`.
   - ロイヤルホスト, ジョイフル, 華屋与兵衛, サイゼリヤ, オリーブの丘: official menu/category pages were checked on 2026-06-12. Added representative official-menu-name or official-category entries as `estimated/medium`; P/F/C values are not official.
+- Cafe chains:
+  - Starbucks: official menu API/list pages were checked on 2026-06-12. Added selected official-menu-name entries as `estimated/medium`.
+  - Doutor and Tully's: official menu pages were checked on 2026-06-12. Added selected official-menu-name entries as `estimated/medium`.
+  - Komeda: official menu and menu-allergy APIs were checked on 2026-06-12. Kcal values are official, but P/F/C is estimated, so entries remain `estimated/medium`.
+- Protein bars/drinks:
+  - Asahi 一本満足バー and Meiji SAVAS product pages were checked on 2026-06-12. Added selected items as `official/high` when kcal/P/F/C/salt were directly shown as single values.
+  - Morinaga in jelly/bar pages were checked on 2026-06-12. Added selected items as `estimated/medium` where values are ranged or only product names were available in the current pass.
 - 丸亀製麺: official menu and allergen pages were verified. Official P/F/C table was not found in the current pass.
 - ウエスト: official menu page is store-scoped. Official P/F/C table was not verified in the current pass.
 - 資さんうどん: official menu page is store-scoped. Official P/F/C table was not verified in the current pass.
