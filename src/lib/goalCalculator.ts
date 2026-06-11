@@ -42,10 +42,14 @@ export function calculateTargets(input: {
   sex: Sex;
   activity_level: ActivityLevel;
   phase: Phase;
+  target_weight_kg?: number;
   manual_target_calories?: number;
   manual_protein_g?: number;
+  manual_fat_g?: number;
+  manual_carbs_g?: number;
 }) {
   const weight = input.profile.current_weight_kg;
+  const macroWeight = input.target_weight_kg && input.target_weight_kg > 0 ? input.target_weight_kg : weight;
   const hasBodyFat = typeof input.profile.body_fat_percentage === "number";
   const bmr = hasBodyFat
     ? 370 + 21.6 * (weight * (1 - (input.profile.body_fat_percentage ?? 0) / 100))
@@ -56,10 +60,9 @@ export function calculateTargets(input: {
   const tdee = bmr * activityFactors[input.activity_level];
   const targetCalories =
     input.manual_target_calories ?? Math.round(tdee + phaseAdjustments[input.phase]);
-  const protein = input.manual_protein_g ?? Math.round(Math.max(weight * 1.6, weight * 2.0));
-  const fatBase = input.phase === "weight_loss" || input.phase === "slow_cut" ? 0.7 : 0.8;
-  const fat = Math.round(Math.max(weight * 0.6, weight * fatBase));
-  const carbs = Math.round((targetCalories - protein * 4 - fat * 9) / 4);
+  const protein = input.manual_protein_g ?? calculateProteinTarget(macroWeight, input.phase, input.activity_level, input.age);
+  const fat = input.manual_fat_g ?? calculateFatTarget(targetCalories, macroWeight, input.phase);
+  const carbs = input.manual_carbs_g ?? Math.round((targetCalories - protein * 4 - fat * 9) / 4);
   return {
     bmr: Math.round(bmr),
     tdee: Math.round(tdee),
@@ -79,6 +82,8 @@ export function buildGoal(input: {
   target_weight_kg?: number;
   manual_target_calories?: number;
   manual_protein_g?: number;
+  manual_fat_g?: number;
+  manual_carbs_g?: number;
   target_workouts_per_week?: number;
   target_cardio_sessions_per_week?: number;
 }): Goal {
@@ -102,4 +107,39 @@ export function buildGoal(input: {
     created_at: timestamp,
     updated_at: timestamp,
   };
+}
+
+function calculateProteinTarget(weightKg: number, phase: Phase, activityLevel: ActivityLevel, age: number) {
+  const baseByPhase: Record<Phase, number> = {
+    weight_loss: 2.1,
+    slow_cut: 2.0,
+    maintenance: 1.8,
+    recomposition: 2.0,
+    lean_bulk: 1.8,
+    strength_focus: 2.0,
+    custom: 1.8,
+  };
+  const activityBump: Record<ActivityLevel, number> = {
+    low: 0,
+    moderate: 0,
+    high: 0.1,
+    very_high: 0.15,
+  };
+  const ageBump = age >= 50 ? 0.1 : 0;
+  return Math.round(weightKg * (baseByPhase[phase] + activityBump[activityLevel] + ageBump));
+}
+
+function calculateFatTarget(targetCalories: number, weightKg: number, phase: Phase) {
+  const calorieRatioByPhase: Record<Phase, number> = {
+    weight_loss: 0.24,
+    slow_cut: 0.24,
+    maintenance: 0.27,
+    recomposition: 0.25,
+    lean_bulk: 0.25,
+    strength_focus: 0.26,
+    custom: 0.25,
+  };
+  const calorieBased = Math.round((targetCalories * calorieRatioByPhase[phase]) / 9);
+  const minimum = Math.round(weightKg * 0.6);
+  return Math.max(minimum, calorieBased);
 }

@@ -3,12 +3,22 @@ import {
   Activity,
   Archive,
   BarChart3,
+  Beef,
+  Bike,
+  BicepsFlexed,
+  CakeSlice,
+  Carrot,
   Check,
   ChevronRight,
+  Coffee,
   Copy,
+  Croissant,
+  CupSoda,
   Dumbbell,
+  EggFried,
   FileDown,
   FileText,
+  Fish,
   Heart,
   Home,
   Minus,
@@ -18,10 +28,15 @@ import {
   Save,
   Search,
   Settings,
+  ShoppingBag,
+  Soup,
+  Store,
   Trash2,
   Trophy,
   Utensils,
+  UtensilsCrossed,
   Weight,
+  type LucideIcon,
 } from "lucide-react";
 import { db } from "./db";
 import { initializeSeeds } from "./data/seedInit";
@@ -54,13 +69,14 @@ type Tab = "home" | "food" | "workout" | "records" | "settings";
 type FoodMode = "search" | "favorite" | "chain" | "category" | "quick" | "rough" | "manual" | "personal";
 type WorkoutMode = "favorite" | "preset" | "body" | "equipment" | "previous" | "search";
 type SettingsFocus = "ai" | undefined;
+type HistoryGrouping = "day" | "week" | "month";
 type BackupInfo = {
   lastBackupAt?: string;
   daysSinceBackup?: number;
   trackedRecords: number;
   level: "ok" | "soon" | "danger";
 };
-type ReportMode = "day" | "period";
+type ReportMode = HistoryGrouping;
 type ManualFoodDraft = {
   name: string;
   brand: string;
@@ -213,7 +229,7 @@ function App() {
   }
 
   return (
-    <main className="mx-auto min-h-screen max-w-[430px] bg-rice text-ink">
+    <main className="app-shell mx-auto min-h-screen max-w-[430px] text-ink">
       <header className="safe-top sticky top-0 z-20 border-b border-line bg-rice/95 px-4 pb-3 backdrop-blur">
         <div className="flex items-center justify-between">
           <div>
@@ -295,7 +311,7 @@ function App() {
           <TabButton active={tab === "home"} icon={<Home size={19} />} label="Home" onClick={() => { setSettingsFocus(undefined); setTab("home"); }} />
           <TabButton active={tab === "food"} icon={<Utensils size={19} />} label="Food" onClick={() => { setSettingsFocus(undefined); setTab("food"); }} />
           <TabButton active={tab === "workout"} icon={<Dumbbell size={19} />} label="Workout" onClick={() => { setSettingsFocus(undefined); setTab("workout"); }} />
-          <TabButton active={tab === "records"} icon={<BarChart3 size={19} />} label="記録" onClick={() => { setSettingsFocus(undefined); setTab("records"); }} />
+          <TabButton active={tab === "records"} icon={<BarChart3 size={19} />} label="History" onClick={() => { setSettingsFocus(undefined); setTab("records"); }} />
           <TabButton active={tab === "settings"} icon={<Settings size={19} />} label="Settings" onClick={() => { setSettingsFocus(undefined); setTab("settings"); }} />
         </div>
       </nav>
@@ -414,13 +430,7 @@ function HomeTab(props: {
       <section className="compact-card divide-y divide-line">
         <ListHeader title="今日の食事" value={`${props.todayEntries.length}件`} />
         {props.todayEntries.slice(0, 6).map((entry) => (
-          <div className="flex items-center justify-between px-4 py-3" key={entry.id}>
-            <div>
-              <p className="text-sm font-semibold">{entry.name}</p>
-              <p className="text-xs text-moss">{mealLabels[entry.meal_type]} · P{entry.protein_g} F{entry.fat_g} C{entry.carbs_g}</p>
-            </div>
-            <p className="font-bold">{entry.calories}</p>
-          </div>
+          <FoodLogRow entry={entry} key={entry.id} />
         ))}
         {props.todayEntries.length === 0 && <EmptyLine text="まだ食事ログなし" />}
       </section>
@@ -428,9 +438,12 @@ function HomeTab(props: {
       <section className="compact-card divide-y divide-line">
         <ListHeader title="今日の筋トレ" value={`${props.todayWorkouts.length}件`} />
         {props.todayWorkouts.map((session) => (
-          <div className="px-4 py-3" key={session.id}>
-            <p className="text-sm font-semibold">{session.title}</p>
-            <p className="text-xs text-moss">{props.workoutExercises.filter((item) => item.session_id === session.id).length}種目</p>
+          <div className="flex items-center gap-3 px-4 py-3" key={session.id}>
+            <Pictogram {...getWorkoutPictogram(session.body_parts.join(" "), session.workout_type)} />
+            <div>
+              <p className="text-sm font-semibold">{session.title}</p>
+              <p className="text-xs text-moss">{props.workoutExercises.filter((item) => item.session_id === session.id).length}種目</p>
+            </div>
           </div>
         ))}
         {props.todayWorkouts.length === 0 && <EmptyLine text="まだワークアウトなし" />}
@@ -666,19 +679,15 @@ function FoodTab(props: { menuItems: MenuItem[]; foodEntries: FoodEntry[]; appDa
       <section className="compact-card divide-y divide-line">
         <ListHeader title="今日の食事ログ" value={`${props.foodEntries.filter((entry) => entry.app_date === props.appDate).length}件`} />
         {props.foodEntries.filter((entry) => entry.app_date === props.appDate).map((entry) => (
-          <div className="flex items-center justify-between px-4 py-3" key={entry.id}>
-            <div>
-              <p className="text-sm font-semibold">{entry.name}</p>
-              <div className="mt-1 flex flex-wrap items-center gap-1.5">
-                <span className="text-xs text-moss">{mealLabels[entry.meal_type]}</span>
-                <SourceBadge source={entry.entry_source} confidence={entry.confidence} />
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <p className="text-sm font-bold">{entry.calories}</p>
-              <button className="icon-button h-8 w-8" aria-label="削除" onClick={async () => { await db.food_entries.delete(entry.id); await props.refresh(); }}><Trash2 size={14} /></button>
-            </div>
-          </div>
+          <FoodLogRow
+            entry={entry}
+            key={entry.id}
+            showSource
+            onDelete={async () => {
+              await db.food_entries.delete(entry.id);
+              await props.refresh();
+            }}
+          />
         ))}
       </section>
 
@@ -809,10 +818,11 @@ function WorkoutTab(props: {
         <section className="compact-card divide-y divide-line">
           <ListHeader title={mode === "favorite" ? "お気に入りワークアウト" : "自分のプリセット"} value={`${props.workoutTemplates.length}件`} />
           {props.workoutTemplates.map((template) => (
-            <button className="flex w-full items-center justify-between px-4 py-4 text-left" key={template.id} onClick={() => startFromTemplate(template)}>
-              <div>
-                <p className="text-sm font-bold">{template.name}</p>
-                <p className="text-xs text-moss">{template.body_parts.join(" / ")} · {template.exercises.length}種目</p>
+            <button className="flex w-full items-center justify-between gap-3 px-4 py-4 text-left transition-colors hover:bg-rice/70" key={template.id} onClick={() => startFromTemplate(template)}>
+              <Pictogram {...getWorkoutPictogram(template.body_parts.join(" "), template.exercises[0]?.equipment_type)} />
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-bold">{template.name}</p>
+                <p className="truncate text-xs text-moss">{template.body_parts.join(" / ")} · {template.exercises.length}種目</p>
               </div>
               <ChevronRight size={18} />
             </button>
@@ -837,8 +847,10 @@ function WorkoutTab(props: {
             </div>
           )}
           <div className="mt-3 divide-y divide-line">
-            {exerciseResults.map((exercise) => (
-              <button className="flex w-full items-center justify-between py-3 text-left" key={exercise.id} onClick={async () => {
+            {exerciseResults.map((exercise) => {
+              const pictogram = getWorkoutPictogram(exercise.body_part, exercise.equipment_type);
+              return (
+              <button className="flex w-full items-center justify-between gap-3 py-3 text-left transition-colors hover:bg-rice/70" key={exercise.id} onClick={async () => {
                 let targetSessionId = sessionId;
                 if (!targetSessionId) {
                   targetSessionId = makeId("session");
@@ -867,13 +879,15 @@ function WorkoutTab(props: {
                 await props.refresh();
                 setFocusedExerciseId(addedExerciseId);
               }}>
-                <div>
-                  <p className="text-sm font-semibold">{exercise.name}</p>
-                  <p className="text-xs text-moss">{exercise.body_part} · {exercise.equipment_type}</p>
+                <Pictogram {...pictogram} />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold">{exercise.name}</p>
+                  <p className="truncate text-xs text-moss">{exercise.body_part} · {exercise.equipment_type}</p>
                 </div>
                 <Plus size={17} />
               </button>
-            ))}
+              );
+            })}
           </div>
         </section>
       )}
@@ -947,12 +961,14 @@ function RecordsTab(props: {
   workoutExercises: WorkoutExercise[];
   workoutSets: WorkoutSet[];
 }) {
+  const [historyGrouping, setHistoryGrouping] = useState<HistoryGrouping>("day");
   const sortedWeightLogs = [...props.weightLogs].sort((a, b) => a.logged_at.localeCompare(b.logged_at));
   const latestWeight = sortedWeightLogs.at(-1);
   const firstWeight = sortedWeightLogs[0];
   const latestBodyFat = [...sortedWeightLogs].reverse().find((log) => typeof log.body_fat_percentage === "number");
   const firstBodyFat = sortedWeightLogs.find((log) => typeof log.body_fat_percentage === "number");
   const workoutHistory = buildWorkoutHistory(props.workoutSessions, props.workoutExercises, props.workoutSets);
+  const workoutGroups = groupWorkoutHistory(workoutHistory, historyGrouping);
   const recentPrs = workoutHistory.flatMap((session) => session.prs.map((pr) => ({ ...pr, app_date: session.app_date }))).slice(0, 8);
 
   return (
@@ -1004,24 +1020,46 @@ function RecordsTab(props: {
       </section>
 
       <section className="compact-card divide-y divide-line">
-        <ListHeader title="ワークアウト履歴" value={`${workoutHistory.length}件`} />
-        {workoutHistory.slice(0, 20).map((session) => (
-          <div className="px-4 py-3" key={session.id}>
+        <div className="p-4">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h2 className="text-sm font-bold">ワークアウト履歴</h2>
+              <p className="mt-1 text-xs text-moss">{workoutHistory.length}セッション / {workoutGroups.length}期間</p>
+            </div>
+          </div>
+          <div className="mt-3 grid grid-cols-3 gap-2">
+            {[
+              ["day", "日別"],
+              ["week", "週別"],
+              ["month", "月別"],
+            ].map(([key, label]) => (
+              <button
+                className={`mode-button min-h-10 ${historyGrouping === key ? "mode-button-active" : ""}`}
+                key={key}
+                onClick={() => setHistoryGrouping(key as HistoryGrouping)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+        {workoutGroups.slice(0, 20).map((group) => (
+          <div className="px-4 py-3" key={group.id}>
             <div className="flex items-start justify-between gap-3">
               <div>
-                <p className="text-sm font-bold">{session.title}</p>
-                <p className="text-xs text-moss">{formatJapaneseDate(session.app_date)} · {session.exerciseCount}種目 · {session.setCount}セット</p>
+                <p className="text-sm font-bold">{group.label}</p>
+                <p className="text-xs text-moss">{group.sessionCount}回 · {group.exerciseCount}種目 · {group.setCount}セット</p>
               </div>
-              {session.prs.length > 0 && <span className="rounded-full bg-sun/20 px-2 py-0.5 text-[11px] font-black text-[#8a5d13]">PR {session.prs.length}</span>}
+              {group.prs.length > 0 && <span className="rounded-full bg-sun/20 px-2 py-0.5 text-[11px] font-black text-[#8a5d13]">PR {group.prs.length}</span>}
             </div>
             <div className="mt-2 space-y-1">
-              {session.lines.slice(0, 4).map((line) => (
-                <div className="flex items-center justify-between gap-2 text-xs" key={line.exerciseName}>
-                  <span className="truncate text-ink">{line.exerciseName}</span>
+              {group.lines.slice(0, historyGrouping === "day" ? 5 : 6).map((line, index) => (
+                <div className="flex items-center justify-between gap-2 text-xs" key={`${group.id}-${line.exerciseName}-${index}`}>
+                  <span className="truncate text-ink">{line.prefix ? `${line.prefix}: ` : ""}{line.exerciseName}</span>
                   <span className={line.isPr ? "shrink-0 font-bold text-clay" : "shrink-0 text-moss"}>{line.isPr ? "PR " : ""}{line.label}</span>
                 </div>
               ))}
-              {session.lines.length > 4 && <p className="text-xs text-moss">ほか {session.lines.length - 4}種目</p>}
+              {group.lines.length > (historyGrouping === "day" ? 5 : 6) && <p className="text-xs text-moss">ほか {group.lines.length - (historyGrouping === "day" ? 5 : 6)}件</p>}
             </div>
           </div>
         ))}
@@ -1057,12 +1095,13 @@ function SettingsTab(props: {
     target_weight_kg: props.activeGoal?.target_weight_kg ?? props.profile?.current_weight_kg ?? 70,
     manual_target_calories: 0,
     manual_protein_g: 0,
+    manual_fat_g: 0,
+    manual_carbs_g: 0,
     target_workouts_per_week: props.activeGoal?.target_workouts_per_week ?? 3,
     target_cardio_sessions_per_week: props.activeGoal?.target_cardio_sessions_per_week ?? 1,
   });
   const [presetDraft, setPresetDraft] = useState({ ...emptyManual, name: "", savePreset: true });
   const [reportMode, setReportMode] = useState<ReportMode>("day");
-  const [reportDays, setReportDays] = useState(14);
   const [question, setQuestion] = useState("");
   const [report, setReport] = useState("");
   const [copiedReport, setCopiedReport] = useState(false);
@@ -1075,8 +1114,11 @@ function SettingsTab(props: {
         sex: props.profile.sex,
         activity_level: goalDraft.activity_level,
         phase: goalDraft.phase,
+        target_weight_kg: goalDraft.target_weight_kg,
         manual_target_calories: goalDraft.manual_target_calories || undefined,
         manual_protein_g: goalDraft.manual_protein_g || undefined,
+        manual_fat_g: goalDraft.manual_fat_g || undefined,
+        manual_carbs_g: goalDraft.manual_carbs_g || undefined,
       })
     : undefined;
 
@@ -1086,20 +1128,16 @@ function SettingsTab(props: {
         <h2 className="font-bold">AI相談レポート</h2>
         {props.focus === "ai" && <span className="rounded-md bg-leaf px-2 py-1 text-[11px] font-bold text-white">相談を作成</span>}
       </div>
-      <div className="mt-3 grid grid-cols-2 gap-2">
-        <button className={`mode-button ${reportMode === "day" ? "mode-button-active" : ""}`} onClick={() => setReportMode("day")}>1日</button>
-        <button className={`mode-button ${reportMode === "period" ? "mode-button-active" : ""}`} onClick={() => setReportMode("period")}>期間</button>
+      <div className="mt-3 grid grid-cols-3 gap-2">
+        <button className={`mode-button ${reportMode === "day" ? "mode-button-active" : ""}`} onClick={() => setReportMode("day")}>日別</button>
+        <button className={`mode-button ${reportMode === "week" ? "mode-button-active" : ""}`} onClick={() => setReportMode("week")}>週別</button>
+        <button className={`mode-button ${reportMode === "month" ? "mode-button-active" : ""}`} onClick={() => setReportMode("month")}>月別</button>
       </div>
-      {reportMode === "period" && (
-        <div className="mt-2 grid grid-cols-4 gap-2">
-          {[7, 14, 30].map((days) => <button className={`chip justify-center ${reportDays === days ? "chip-active" : ""}`} key={days} onClick={() => setReportDays(days)}>{days}日</button>)}
-          <button className="chip justify-center" onClick={() => setReportDays(14)}>標準</button>
-        </div>
-      )}
+      <p className="mt-2 text-xs text-moss">{reportMode === "day" ? "今日1日分を参照します。" : reportMode === "week" ? "直近7日分を週別の相談材料としてまとめます。" : "直近30日分を月別の相談材料としてまとめます。"}</p>
       <textarea className="mt-3 min-h-20 w-full" value={question} onChange={(event) => setQuestion(event.target.value)} placeholder="AIにコピーして相談できるレポートを生成します。特に相談したいことがあれば記入してください。なければそのまま生成を押してください" />
       <button className="primary-button mt-3 w-full" onClick={async () => {
         const end = todayAppDate();
-        const start = reportMode === "day" ? end : addDays(end, -(reportDays - 1));
+        const start = reportMode === "day" ? end : addDays(end, reportMode === "week" ? -6 : -29);
         const range = dateRange(start, end);
         const content = generateMarkdownReport({
           profile: props.profile,
@@ -1112,6 +1150,7 @@ function SettingsTab(props: {
           weeklyWorkoutStatus: props.weeklyWorkoutStatus,
           periodStart: start,
           periodEnd: end,
+          workoutGrouping: reportMode,
           question,
         });
         setReport(content);
@@ -1140,20 +1179,27 @@ function SettingsTab(props: {
       <section className="compact-card p-4">
         <h2 className="font-bold">ゴール設定</h2>
         <div className="mt-3 grid grid-cols-2 gap-2">
-          <select value={goalDraft.phase} onChange={(event) => setGoalDraft({ ...goalDraft, phase: event.target.value as Phase })}>
-            {Object.entries(phaseLabels).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
-          </select>
-          <select value={goalDraft.activity_level} onChange={(event) => setGoalDraft({ ...goalDraft, activity_level: event.target.value as ActivityLevel })}>
-            {Object.entries(activityLabels).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
-          </select>
+          <SelectField label="フェーズ" hint="体重・筋量をどう動かしたいか">
+            <select value={goalDraft.phase} onChange={(event) => setGoalDraft({ ...goalDraft, phase: event.target.value as Phase })}>
+              {Object.entries(phaseLabels).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
+            </select>
+          </SelectField>
+          <SelectField label="運動強度" hint="日常活動込みの消費量補正">
+            <select value={goalDraft.activity_level} onChange={(event) => setGoalDraft({ ...goalDraft, activity_level: event.target.value as ActivityLevel })}>
+              {Object.entries(activityLabels).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
+            </select>
+          </SelectField>
           <NumberInput label="年齢" value={goalDraft.age} onChange={(value) => setGoalDraft({ ...goalDraft, age: value })} />
           <NumberInput label="目標体重" value={goalDraft.target_weight_kg} step={0.1} onChange={(value) => setGoalDraft({ ...goalDraft, target_weight_kg: value })} />
           <NumberInput label="筋トレ/週" value={goalDraft.target_workouts_per_week} onChange={(value) => setGoalDraft({ ...goalDraft, target_workouts_per_week: value })} />
           <NumberInput label="有酸素/週" value={goalDraft.target_cardio_sessions_per_week} onChange={(value) => setGoalDraft({ ...goalDraft, target_cardio_sessions_per_week: value })} />
           <NumberInput label="kcal上書き (0=自動)" value={goalDraft.manual_target_calories} onChange={(value) => setGoalDraft({ ...goalDraft, manual_target_calories: value })} />
           <NumberInput label="P上書き (0=自動)" value={goalDraft.manual_protein_g} onChange={(value) => setGoalDraft({ ...goalDraft, manual_protein_g: value })} />
+          <NumberInput label="F上書き (0=自動)" value={goalDraft.manual_fat_g} onChange={(value) => setGoalDraft({ ...goalDraft, manual_fat_g: value })} />
+          <NumberInput label="C上書き (0=自動)" value={goalDraft.manual_carbs_g} onChange={(value) => setGoalDraft({ ...goalDraft, manual_carbs_g: value })} />
         </div>
         <p className="mt-3 rounded-md bg-rice p-3 text-sm">計算: {calculated?.target_calories ?? "-"} kcal / P{calculated?.target_protein_g ?? "-"} F{calculated?.target_fat_g ?? "-"} C{calculated?.target_carbs_g ?? "-"}</p>
+        <p className="mt-2 text-xs text-moss">自動計算は現在体重から消費カロリーを出し、目標体重・フェーズ・運動強度・総カロリーからP/F/Cを配分します。AI相談後はkcal/P/F/Cを個別に上書きできます。</p>
         <button className="primary-button mt-3 w-full" onClick={async () => {
           if (!props.profile) return;
           const timestamp = nowIso();
@@ -1166,6 +1212,8 @@ function SettingsTab(props: {
             target_weight_kg: goalDraft.target_weight_kg,
             manual_target_calories: goalDraft.manual_target_calories || undefined,
             manual_protein_g: goalDraft.manual_protein_g || undefined,
+            manual_fat_g: goalDraft.manual_fat_g || undefined,
+            manual_carbs_g: goalDraft.manual_carbs_g || undefined,
             target_workouts_per_week: goalDraft.target_workouts_per_week,
             target_cardio_sessions_per_week: goalDraft.target_cardio_sessions_per_week,
           });
@@ -1176,7 +1224,7 @@ function SettingsTab(props: {
       </section>
 
       <section className="compact-card p-4">
-        <h2 className="font-bold">個人メニューを追加</h2>
+        <h2 className="font-bold">マイメニューを追加</h2>
         <ManualFoodForm manual={presetDraft} setManual={setPresetDraft} compact onSave={async () => {
           if (!presetDraft.name.trim()) return;
           const timestamp = nowIso();
@@ -1276,6 +1324,8 @@ function Onboarding({ refresh }: { refresh: () => Promise<void> }) {
     target_weight_kg: 70,
     target_calories: 0,
     target_protein_g: 0,
+    target_fat_g: 0,
+    target_carbs_g: 0,
     workouts: 3,
     cardio: 1,
   });
@@ -1298,8 +1348,11 @@ function Onboarding({ refresh }: { refresh: () => Promise<void> }) {
     sex: draft.sex,
     activity_level: draft.activity_level,
     phase: draft.phase,
+    target_weight_kg: draft.target_weight_kg,
     manual_target_calories: draft.target_calories || undefined,
     manual_protein_g: draft.target_protein_g || undefined,
+    manual_fat_g: draft.target_fat_g || undefined,
+    manual_carbs_g: draft.target_carbs_g || undefined,
   });
 
   return (
@@ -1340,20 +1393,27 @@ function Onboarding({ refresh }: { refresh: () => Promise<void> }) {
             <option value="male">男性</option>
             <option value="female">女性</option>
           </select>
-          <select value={draft.phase} onChange={(event) => setDraft({ ...draft, phase: event.target.value as Phase })}>
-            {Object.entries(phaseLabels).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
-          </select>
-          <select value={draft.activity_level} onChange={(event) => setDraft({ ...draft, activity_level: event.target.value as ActivityLevel })}>
-            {Object.entries(activityLabels).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
-          </select>
+          <SelectField label="フェーズ" hint="体重・筋量の方向">
+            <select value={draft.phase} onChange={(event) => setDraft({ ...draft, phase: event.target.value as Phase })}>
+              {Object.entries(phaseLabels).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
+            </select>
+          </SelectField>
+          <SelectField label="運動強度" hint="消費量の補正">
+            <select value={draft.activity_level} onChange={(event) => setDraft({ ...draft, activity_level: event.target.value as ActivityLevel })}>
+              {Object.entries(activityLabels).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
+            </select>
+          </SelectField>
           <NumberInput label="目標体重" value={draft.target_weight_kg} step={0.1} onChange={(value) => setDraft({ ...draft, target_weight_kg: value })} />
           <NumberInput label="筋トレ/週" value={draft.workouts} onChange={(value) => setDraft({ ...draft, workouts: value })} />
           <NumberInput label="有酸素/週" value={draft.cardio} onChange={(value) => setDraft({ ...draft, cardio: value })} />
           <NumberInput label="kcal上書き (0=自動)" value={draft.target_calories} onChange={(value) => setDraft({ ...draft, target_calories: value })} />
           <NumberInput label="P上書き (0=自動)" value={draft.target_protein_g} onChange={(value) => setDraft({ ...draft, target_protein_g: value })} />
+          <NumberInput label="F上書き (0=自動)" value={draft.target_fat_g} onChange={(value) => setDraft({ ...draft, target_fat_g: value })} />
+          <NumberInput label="C上書き (0=自動)" value={draft.target_carbs_g} onChange={(value) => setDraft({ ...draft, target_carbs_g: value })} />
         </div>
         <p className="mt-3 rounded-md bg-surface p-3 text-xs text-moss">初回設定後は、Settingsのバックアップから週1回くらいJSONエクスポートしておくと、次にこの画面が出ても復元できます。</p>
         <p className="mt-4 rounded-md bg-rice p-3 text-sm">目標: {calculated.target_calories} kcal / P{calculated.target_protein_g} F{calculated.target_fat_g} C{calculated.target_carbs_g}</p>
+        <p className="mt-2 text-xs text-moss">カロリーは現在体重の消費量、自動PFCは目標体重・フェーズ・運動強度・総カロリーをもとに計算します。</p>
         <button className="primary-button mt-4 w-full" onClick={async () => {
           const timestamp = nowIso();
           await db.profile.put(profile);
@@ -1365,6 +1425,8 @@ function Onboarding({ refresh }: { refresh: () => Promise<void> }) {
             target_weight_kg: draft.target_weight_kg,
             manual_target_calories: draft.target_calories || undefined,
             manual_protein_g: draft.target_protein_g || undefined,
+            manual_fat_g: draft.target_fat_g || undefined,
+            manual_carbs_g: draft.target_carbs_g || undefined,
             target_workouts_per_week: draft.workouts,
             target_cardio_sessions_per_week: draft.cardio,
           });
@@ -1457,8 +1519,10 @@ function RoughFoodForm({ rough, setRough, onSave }: {
 }
 
 function FoodItemRow({ item, onPick, onClone, refresh }: { item: MenuItem; onPick: (item: MenuItem) => void; onClone: (item: MenuItem) => void; refresh: () => Promise<void> }) {
+  const pictogram = getFoodPictogram(item);
   return (
-    <div className="flex items-center justify-between gap-2 px-4 py-3">
+    <div className="flex items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-rice/70">
+      <Pictogram {...pictogram} />
       <button className="min-w-0 flex-1 text-left" onClick={() => onPick(item)}>
         <p className="truncate text-sm font-semibold">{item.name}</p>
         <p className="truncate text-xs text-moss">{item.brand ?? item.category} · {item.calories}kcal · P{item.protein_g} F{item.fat_g} C{item.carbs_g}</p>
@@ -1475,6 +1539,26 @@ function FoodItemRow({ item, onPick, onClone, refresh }: { item: MenuItem; onPic
   );
 }
 
+function FoodLogRow({ entry, showSource = false, onDelete }: { entry: FoodEntry; showSource?: boolean; onDelete?: () => Promise<void> }) {
+  const pictogram = getFoodPictogram(entry);
+  return (
+    <div className="flex items-center justify-between gap-3 px-4 py-3">
+      <Pictogram {...pictogram} />
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-semibold">{entry.name}</p>
+        <div className="mt-1 flex flex-wrap items-center gap-1.5">
+          <span className="text-xs text-moss">{mealLabels[entry.meal_type]} · P{entry.protein_g} F{entry.fat_g} C{entry.carbs_g}</span>
+          {showSource && <SourceBadge source={entry.entry_source} confidence={entry.confidence} />}
+        </div>
+      </div>
+      <div className="flex items-center gap-2">
+        <p className="text-sm font-bold">{entry.calories}</p>
+        {onDelete && <button className="icon-button h-8 w-8" aria-label="削除" onClick={onDelete}><Trash2 size={14} /></button>}
+      </div>
+    </div>
+  );
+}
+
 function WorkoutExerciseEditor({
   exercise,
   sets,
@@ -1487,10 +1571,16 @@ function WorkoutExerciseEditor({
   refresh: () => Promise<void>;
 }) {
   const isCardio = exercise.body_part === "有酸素" || exercise.equipment_type === "有酸素";
+  const pictogram = getWorkoutPictogram(exercise.body_part, exercise.equipment_type);
   return (
     <div className="p-4">
-      <p className="text-sm font-bold">{exercise.exercise_name}</p>
-      <p className="text-xs text-moss">{exercise.body_part} · {exercise.equipment_type}</p>
+      <div className="flex items-start gap-3">
+        <Pictogram {...pictogram} />
+        <div className="min-w-0">
+          <p className="truncate text-sm font-bold">{exercise.exercise_name}</p>
+          <p className="text-xs text-moss">{exercise.body_part} · {exercise.equipment_type}</p>
+        </div>
+      </div>
       <div className="mt-3 space-y-2">
         {sets.map((set) => (
           <div className={isCardio ? "grid grid-cols-[28px_1fr_72px_36px] items-center gap-2" : "grid grid-cols-[28px_1fr_1fr_36px] items-center gap-2"} key={set.id}>
@@ -1564,6 +1654,16 @@ function NumberInput({ label, value, step = 1, onChange }: { label: string; valu
   );
 }
 
+function SelectField({ label, hint, children }: { label: string; hint: string; children: ReactNode }) {
+  return (
+    <label className="text-xs font-semibold">
+      <span>{label}</span>
+      <span className="ml-1 font-normal text-moss">{hint}</span>
+      <div className="mt-1">{children}</div>
+    </label>
+  );
+}
+
 function PartialNumberInput({ label, value, step = 1, onChange }: { label: string; value: string; step?: number; onChange: (value: string) => void }) {
   return (
     <label className="text-xs font-semibold">
@@ -1595,6 +1695,54 @@ function MetricPill({ label, value }: { label: string; value: string }) {
       <p className="mt-0.5 text-sm font-black">{value}</p>
     </div>
   );
+}
+
+type PictogramTone = "moss" | "leaf" | "clay" | "sun" | "sky" | "blush" | "ink";
+
+const pictogramToneClasses: Record<PictogramTone, string> = {
+  moss: "border-moss/20 bg-moss/10 text-moss",
+  leaf: "border-leaf/30 bg-leaf/15 text-moss",
+  clay: "border-clay/25 bg-clay/10 text-clay",
+  sun: "border-sun/35 bg-sun/15 text-[#8a5d13]",
+  sky: "border-sky/30 bg-sky/10 text-sky",
+  blush: "border-blush/30 bg-blush/10 text-blush",
+  ink: "border-ink/15 bg-ink/5 text-ink",
+};
+
+function Pictogram({ icon: Icon, tone = "moss" }: { icon: LucideIcon; tone?: PictogramTone }) {
+  return (
+    <span className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border ${pictogramToneClasses[tone]}`} aria-hidden="true">
+      <Icon size={18} strokeWidth={2.25} />
+    </span>
+  );
+}
+
+function getFoodPictogram(item: { name: string; brand?: string; category?: string; tags?: string[]; meal_type?: MealType }) {
+  const text = [item.name, item.brand, item.category, ...(item.tags ?? [])].filter(Boolean).join(" ");
+  if (/カフェ|コーヒー|ラテ|ドトール|スターバックス|タリーズ|コメダ/.test(text)) return { icon: Coffee, tone: "sky" as PictogramTone };
+  if (/ドリンク|ジュース|プロテインドリンク|ソーダ|牛乳|ミルク/.test(text)) return { icon: CupSoda, tone: "sky" as PictogramTone };
+  if (/スイーツ|ケーキ|アイス|チョコ|プリン|デザート|甘味|ドーナツ|クレープ/.test(text)) return { icon: CakeSlice, tone: "blush" as PictogramTone };
+  if (/サラダ|野菜|ベジ|キャベツ|トマト/.test(text)) return { icon: Carrot, tone: "leaf" as PictogramTone };
+  if (/魚|鮭|サバ|ほっけ|刺身|寿司|海鮮|まぐろ|うなぎ/.test(text)) return { icon: Fish, tone: "sky" as PictogramTone };
+  if (/肉|牛|豚|鶏|チキン|唐揚|から揚|カツ|ステーキ|ハンバーグ|焼肉/.test(text)) return { icon: Beef, tone: "clay" as PictogramTone };
+  if (/ラーメン|うどん|そば|パスタ|麺|冷麺|スープ/.test(text)) return { icon: Soup, tone: "sun" as PictogramTone };
+  if (/パン|サンド|バーガー|トースト|ベーグル|クロワッサン/.test(text)) return { icon: Croissant, tone: "sun" as PictogramTone };
+  if (/卵|玉子|たまご|エッグ|オム/.test(text)) return { icon: EggFried, tone: "sun" as PictogramTone };
+  if (/コンビニ|セブン|ファミリーマート|ローソン|ミニストップ|弁当|おにぎり/.test(text)) return { icon: ShoppingBag, tone: "sky" as PictogramTone };
+  if (/チェーン|外食|定食|丼|カレー|ごはん|ライス/.test(text)) return { icon: UtensilsCrossed, tone: "moss" as PictogramTone };
+  if (item.brand) return { icon: Store, tone: "ink" as PictogramTone };
+  if (item.meal_type === "breakfast") return { icon: Coffee, tone: "sky" as PictogramTone };
+  return { icon: Utensils, tone: "moss" as PictogramTone };
+}
+
+function getWorkoutPictogram(bodyPart = "", equipmentType = "") {
+  const text = `${bodyPart} ${equipmentType}`;
+  if (/有酸素|バイク|トレッドミル|ランニング|ウォーキング|クロストレーナー|ローイング/.test(text)) return { icon: Bike, tone: "sky" as PictogramTone };
+  if (/胸|肩|腕|上腕|三頭|二頭/.test(text)) return { icon: BicepsFlexed, tone: "clay" as PictogramTone };
+  if (/脚|下半身|尻|ヒップ/.test(text)) return { icon: Dumbbell, tone: "sun" as PictogramTone };
+  if (/背中|広背|ロー|プル/.test(text)) return { icon: Activity, tone: "moss" as PictogramTone };
+  if (/腹|体幹|コア/.test(text)) return { icon: Weight, tone: "leaf" as PictogramTone };
+  return { icon: Dumbbell, tone: "moss" as PictogramTone };
 }
 
 function WorkoutGoalProgress({ label, done, target }: { label: string; done: number; target: number }) {
@@ -1858,6 +2006,20 @@ type WorkoutHistoryItem = {
   prs: WorkoutPr[];
 };
 
+type WorkoutHistoryGroupLine = WorkoutHistoryLine & {
+  prefix?: string;
+};
+
+type WorkoutHistoryGroup = {
+  id: string;
+  label: string;
+  sessionCount: number;
+  exerciseCount: number;
+  setCount: number;
+  lines: WorkoutHistoryGroupLine[];
+  prs: WorkoutPr[];
+};
+
 function buildWorkoutHistory(sessions: WorkoutSession[], exercises: WorkoutExercise[], sets: WorkoutSet[]): WorkoutHistoryItem[] {
   const exercisesBySession = new Map<string, WorkoutExercise[]>();
   const setsByExercise = new Map<string, WorkoutSet[]>();
@@ -1906,6 +2068,46 @@ function buildWorkoutHistory(sessions: WorkoutSession[], exercises: WorkoutExerc
   }).reverse();
 }
 
+function groupWorkoutHistory(history: WorkoutHistoryItem[], grouping: HistoryGrouping): WorkoutHistoryGroup[] {
+  if (grouping === "day") {
+    return history.map((session) => ({
+      id: session.id,
+      label: `${formatJapaneseDate(session.app_date)} ${session.title}`,
+      sessionCount: 1,
+      exerciseCount: session.exerciseCount,
+      setCount: session.setCount,
+      lines: session.lines,
+      prs: session.prs,
+    }));
+  }
+
+  const groups = new Map<string, WorkoutHistoryItem[]>();
+  history.forEach((session) => {
+    const key = grouping === "week" ? weekKey(session.app_date) : monthKey(session.app_date);
+    groups.set(key, [...(groups.get(key) ?? []), session]);
+  });
+
+  return Array.from(groups.entries()).map(([key, sessions]) => {
+    const sortedSessions = [...sessions].sort((a, b) => b.app_date.localeCompare(a.app_date));
+    const exerciseCount = sortedSessions.reduce((sum, session) => sum + session.exerciseCount, 0);
+    const setCount = sortedSessions.reduce((sum, session) => sum + session.setCount, 0);
+    return {
+      id: key,
+      label: grouping === "week" ? formatWeekLabel(key) : formatMonthLabel(key),
+      sessionCount: sortedSessions.length,
+      exerciseCount,
+      setCount,
+      lines: sortedSessions.flatMap((session) =>
+        session.lines.map((line) => ({
+          ...line,
+          prefix: formatJapaneseDate(session.app_date),
+        })),
+      ),
+      prs: sortedSessions.flatMap((session) => session.prs),
+    };
+  });
+}
+
 function pickBestWorkoutSet(exercise: WorkoutExercise, sets: WorkoutSet[]) {
   const candidates = sets
     .map((set) => {
@@ -1942,6 +2144,35 @@ function movingAverage(logs: WeightLog[], count: number) {
   const recent = logs.slice(-count);
   if (!recent.length) return undefined;
   return round1(recent.reduce((sum, log) => sum + log.weight_kg, 0) / recent.length);
+}
+
+function weekKey(dateString: string) {
+  return startOfWeek(dateString);
+}
+
+function monthKey(dateString: string) {
+  return dateString.slice(0, 7);
+}
+
+function startOfWeek(dateString: string) {
+  const date = new Date(`${dateString}T12:00:00`);
+  const day = date.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  date.setDate(date.getDate() + diff);
+  return date.toISOString().slice(0, 10);
+}
+
+function endOfWeek(dateString: string) {
+  return addDays(startOfWeek(dateString), 6);
+}
+
+function formatWeekLabel(weekStart: string) {
+  return `${formatJapaneseDate(weekStart)} - ${formatJapaneseDate(endOfWeek(weekStart))}`;
+}
+
+function formatMonthLabel(month: string) {
+  const [year, monthNumber] = month.split("-");
+  return `${year}年${Number(monthNumber)}月`;
 }
 
 function round1(value: number) {
