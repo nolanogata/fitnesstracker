@@ -207,7 +207,7 @@ function App() {
             <p className="text-xs font-semibold text-moss">{formatJapaneseDate(appDate)}</p>
             <h1 className="text-xl font-bold tracking-normal">Phase Log</h1>
           </div>
-          <div className="rounded-md bg-white px-3 py-2 text-right text-xs shadow-soft">
+          <div className="rounded-md border border-leaf/20 bg-leaf/10 px-3 py-2 text-right text-xs shadow-soft">
             <p className="font-semibold">{activeGoal ? phaseLabels[activeGoal.phase] : "未設定"}</p>
             <p className="text-moss">{latestWeight?.weight_kg ?? profile?.current_weight_kg ?? "-"}kg</p>
           </div>
@@ -314,9 +314,9 @@ function HomeTab(props: {
             <p className="text-sm text-moss">{props.dayTotals.calories} / {props.goal?.target_calories ?? "-"} kcal</p>
           </div>
           <div className="grid gap-1 text-right text-xs">
-            <MacroLine label="P" value={props.dayTotals.protein} target={props.goal?.target_protein_g ?? 0} />
-            <MacroLine label="F" value={props.dayTotals.fat} target={props.goal?.target_fat_g ?? 0} />
-            <MacroLine label="C" value={props.dayTotals.carbs} target={props.goal?.target_carbs_g ?? 0} />
+            <MacroLine label="P" value={props.dayTotals.protein} target={props.goal?.target_protein_g ?? 0} color="#526a57" />
+            <MacroLine label="F" value={props.dayTotals.fat} target={props.goal?.target_fat_g ?? 0} color="#c76f51" />
+            <MacroLine label="C" value={props.dayTotals.carbs} target={props.goal?.target_carbs_g ?? 0} color="#d9a441" />
           </div>
         </div>
       </section>
@@ -1284,12 +1284,12 @@ function PartialNumberInput({ label, value, step = 1, onChange }: { label: strin
   );
 }
 
-function MacroLine({ label, value, target }: { label: string; value: number; target: number }) {
+function MacroLine({ label, value, target, color = "#8fb48e" }: { label: string; value: number; target: number; color?: string }) {
   const percent = target ? Math.min(100, Math.round((value / target) * 100)) : 0;
   return (
     <div className="w-28">
       <div className="flex justify-between"><span>{label}</span><span>{round1(value)}/{target}</span></div>
-      <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-line"><div className="h-full bg-leaf" style={{ width: `${percent}%` }} /></div>
+      <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-line"><div className="h-full" style={{ width: `${percent}%`, backgroundColor: color }} /></div>
     </div>
   );
 }
@@ -1309,7 +1309,7 @@ function EmptyLine({ text }: { text: string }) {
 
 function TabButton({ active, icon, label, onClick }: { active: boolean; icon: ReactNode; label: string; onClick: () => void }) {
   return (
-    <button className={`flex flex-col items-center gap-1 rounded-md px-2 py-2 text-[11px] font-bold ${active ? "bg-ink text-white" : "text-moss"}`} onClick={onClick}>
+    <button className={`flex flex-col items-center gap-1 rounded-md px-2 py-2 text-[11px] font-bold ${active ? "bg-moss text-white" : "text-moss"}`} onClick={onClick}>
       {icon}
       <span>{label}</span>
     </button>
