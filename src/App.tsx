@@ -1445,7 +1445,7 @@ function SettingsTab(props: {
         </div>
         <div className="mt-3 grid gap-2">
           <button className="secondary-button" onClick={async () => {
-            downloadText(`phase-log-backup-${Date.now()}.json`, JSON.stringify(await exportBackup(), null, 2));
+            downloadText(`fitness-tracker-backup-${todayAppDate()}.json`, JSON.stringify(await exportBackup(), null, 2));
             props.markBackupNow();
           }}><FileDown size={17} />JSONエクスポート</button>
           <label className="secondary-button cursor-pointer">
