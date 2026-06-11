@@ -354,7 +354,7 @@ function HomeTab(props: {
   const calorieHeadline = props.goal?.target_calories && remaining < 0 ? "超過" : "残り";
   const backupTitle = props.backupInfo.level === "danger" ? "バックアップ推奨" : "そろそろバックアップ";
   const deleteWorkoutSession = async (session: WorkoutSession) => {
-    if (!confirm(`${session.title}を削除しますか？このワークアウト内の種目とセットも削除されます。`)) return;
+    if (!confirm(`この日の記録から「${session.title}」を削除しますか？ワークアウトメニュー・プリセット本体は残ります。`)) return;
     const exerciseIds = props.workoutExercises.filter((exercise) => exercise.session_id === session.id).map((exercise) => exercise.id);
     const setIds = props.workoutSets.filter((set) => exerciseIds.includes(set.workout_exercise_id)).map((set) => set.id);
     await db.transaction("rw", db.workout_sessions, db.workout_exercises, db.workout_sets, async () => {
@@ -475,7 +475,7 @@ function HomeTab(props: {
                 <p className="mt-1 text-xs text-moss">{props.workoutExercises.filter((item) => item.session_id === session.id).length}種目</p>
               </div>
             </button>
-            <button className="icon-button h-8 w-8 text-clay" aria-label={`${session.title}を削除`} onClick={() => deleteWorkoutSession(session)}><Trash2 size={14} /></button>
+            <button className="icon-button h-8 w-8 text-clay" aria-label={`${session.title}をこの日の記録から削除`} onClick={() => deleteWorkoutSession(session)}><Trash2 size={14} /></button>
             <ChevronRight className="shrink-0 text-muted" size={18} />
           </div>
         ))}
@@ -882,7 +882,7 @@ function WorkoutTab(props: {
   };
 
   const deleteWorkoutSession = async (session: WorkoutSession) => {
-    if (!confirm(`${session.title}を削除しますか？このワークアウト内の種目とセットも削除されます。`)) return;
+    if (!confirm(`この日の記録から「${session.title}」を削除しますか？ワークアウトメニュー・プリセット本体は残ります。`)) return;
     const exerciseIds = props.workoutExercises.filter((exercise) => exercise.session_id === session.id).map((exercise) => exercise.id);
     const setIds = props.workoutSets.filter((set) => exerciseIds.includes(set.workout_exercise_id)).map((set) => set.id);
     await db.transaction("rw", db.workout_sessions, db.workout_exercises, db.workout_sets, async () => {
@@ -898,7 +898,7 @@ function WorkoutTab(props: {
   };
 
   const deleteWorkoutExercise = async (exercise: WorkoutExercise) => {
-    if (!confirm(`${exercise.exercise_name}を削除しますか？この種目のセットも削除されます。`)) return;
+    if (!confirm(`この日の記録から「${exercise.exercise_name}」を削除しますか？種目メニュー本体は残ります。`)) return;
     const setIds = props.workoutSets.filter((set) => set.workout_exercise_id === exercise.id).map((set) => set.id);
     const remainingExercises = props.workoutExercises.filter((item) => item.session_id === exercise.session_id && item.id !== exercise.id);
     await db.transaction("rw", db.workout_sessions, db.workout_exercises, db.workout_sets, async () => {
@@ -1075,7 +1075,7 @@ function WorkoutTab(props: {
               <h2 className="truncate text-sm font-bold">{activeSession.title}</h2>
               <p className="mt-1 text-xs text-moss">{formatJapaneseDate(activeSession.app_date)} · {activeExercises.length}種目</p>
             </div>
-            <button className="icon-button h-9 w-9 text-clay" aria-label={`${activeSession.title}を削除`} onClick={() => deleteWorkoutSession(activeSession)}><Trash2 size={14} /></button>
+            <button className="secondary-button border-clay px-3 py-2 text-xs text-clay" aria-label={`${activeSession.title}をこの日の記録から削除`} onClick={() => deleteWorkoutSession(activeSession)}><Trash2 size={14} />記録から削除</button>
           </div>
           {activeExercises.map((exercise) => (
             <div
@@ -1137,7 +1137,7 @@ function WorkoutTab(props: {
               <p className="text-sm font-semibold">{session.title}</p>
               <p className="text-xs text-moss">{formatJapaneseDate(session.app_date)} · {session.body_parts.join(" / ")}</p>
             </button>
-            <button className="icon-button h-8 w-8 text-clay" aria-label={`${session.title}を削除`} onClick={() => deleteWorkoutSession(session)}><Trash2 size={14} /></button>
+            <button className="icon-button h-8 w-8 text-clay" aria-label={`${session.title}をこの日の記録から削除`} onClick={() => deleteWorkoutSession(session)}><Trash2 size={14} /></button>
             <ChevronRight size={17} />
           </div>
         ))}
@@ -1935,7 +1935,7 @@ function WorkoutExerciseEditor({
           <p className="truncate text-sm font-bold">{exercise.exercise_name}</p>
           <p className="text-xs text-moss">{exercise.body_part} · {exercise.equipment_type}</p>
         </div>
-        <button className="icon-button h-8 w-8 text-clay" aria-label={`${exercise.exercise_name}を削除`} onClick={onDeleteExercise}><Trash2 size={14} /></button>
+        <button className="icon-button h-8 w-8 text-clay" aria-label={`${exercise.exercise_name}をこの日の記録から削除`} onClick={onDeleteExercise}><Trash2 size={14} /></button>
       </div>
       <div className="mt-3 space-y-2">
         {sets.length > 0 && (
