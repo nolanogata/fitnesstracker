@@ -146,6 +146,7 @@ export type TemplateExercise = {
 export type WorkoutTemplate = {
   id: string;
   name: string;
+  icon_key?: WorkoutTemplateIconKey;
   body_parts: string[];
   exercises: TemplateExercise[];
   is_public_preset: boolean;
@@ -153,6 +154,8 @@ export type WorkoutTemplate = {
   created_at: string;
   updated_at: string;
 };
+
+export type WorkoutTemplateIconKey = "strength" | "upper" | "legs" | "back" | "core" | "cardio";
 
 export type WorkoutSession = {
   id: string;

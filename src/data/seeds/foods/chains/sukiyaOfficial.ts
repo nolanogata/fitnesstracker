@@ -31,9 +31,31 @@ const sukiya = (name: string, rows: readonly NutritionRow[], tags: string[] = []
     }),
   );
 
+const sukiyaCurry = (name: string, rows: readonly NutritionRow[], tags: string[] = []) =>
+  rows.map(([serving_label, calories, protein_g, fat_g, carbs_g, salt_g]) =>
+    official({
+      brand: "すき家",
+      name,
+      category: "チェーン店",
+      tags: ["カレー", "すき家", "公式", name, serving_label, ...tags],
+      calories,
+      protein_g,
+      fat_g,
+      carbs_g,
+      salt_g,
+      serving_label,
+      default_meal_type: "lunch",
+      source_url: sourceUrl,
+      fetched_at: fetchedAt,
+    }),
+  );
+
 const sizes = ["ミニ", "並盛", "中盛", "大盛", "特盛", "メガ"] as const;
 const rows = (values: readonly (readonly [number, number, number, number, number])[]): NutritionRow[] =>
   values.map((value, index) => [sizes[index], ...value]);
+const currySizes = ["ミニ", "並盛", "大盛", "メガ"] as const;
+const curryRows = (values: readonly (readonly [number, number, number, number, number])[]): NutritionRow[] =>
+  values.map((value, index) => [currySizes[index], ...value]);
 
 export const sukiyaOfficialFoods = [
   ...sukiya("牛丼", rows([
@@ -92,4 +114,34 @@ export const sukiyaOfficialFoods = [
     [1200, 39.4, 53.7, 139.2, 6.7],
     [1465, 52.4, 74.4, 145.9, 8.1],
   ]), ["高菜", "明太", "マヨ"]),
+  ...sukiyaCurry("ほうれん草カレー", curryRows([
+    [390, 7.5, 8.1, 72.0, 2.0],
+    [653, 12.8, 15.7, 115.2, 3.6],
+    [967, 19.0, 23.5, 170.3, 5.2],
+    [1311, 25.6, 31.4, 231.8, 7.7],
+  ]), ["ほうれん草"]),
+  ...sukiyaCurry("牛カレー", curryRows([
+    [474, 14.3, 13.8, 72.1, 2.2],
+    [737, 19.6, 21.5, 115.4, 3.8],
+    [1051, 25.8, 29.2, 170.5, 5.4],
+    [1395, 32.4, 37.2, 231.9, 7.9],
+  ]), ["牛", "カレー"]),
+  ...sukiyaCurry("とろ～りチーズカレー", curryRows([
+    [650, 25.5, 27.1, 75.1, 3.3],
+    [913, 30.8, 34.8, 118.4, 4.9],
+    [1227, 37.0, 42.5, 173.5, 6.5],
+    [1571, 43.6, 50.5, 234.9, 9.0],
+  ]), ["チーズ"]),
+  ...sukiyaCurry("おんたまカレー", curryRows([
+    [760, 28.4, 42.8, 75.9, 3.4],
+    [1023, 33.7, 44.0, 123.7, 5.9],
+    [1337, 39.9, 51.8, 178.7, 7.4],
+    [1681, 46.5, 59.7, 240.2, 10.0],
+  ]), ["温玉"]),
+  ...sukiyaCurry("チーズ牛カレー", curryRows([
+    [817, 29.4, 43.4, 78.1, 4.9],
+    [1080, 34.7, 51.1, 121.4, 6.5],
+    [1394, 40.8, 58.8, 176.5, 8.1],
+    [1738, 47.4, 66.8, 237.9, 10.6],
+  ]), ["チーズ", "牛"]),
 ];
