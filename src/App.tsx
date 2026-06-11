@@ -617,7 +617,10 @@ function FoodTab(props: { menuItems: MenuItem[]; foodEntries: FoodEntry[]; appDa
           <div className="flex items-center justify-between px-4 py-3" key={entry.id}>
             <div>
               <p className="text-sm font-semibold">{entry.name}</p>
-              <p className="text-xs text-moss">{mealLabels[entry.meal_type]} · {sourceLabel(entry.entry_source, entry.confidence)}</p>
+              <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                <span className="text-xs text-moss">{mealLabels[entry.meal_type]}</span>
+                <SourceBadge source={entry.entry_source} confidence={entry.confidence} />
+              </div>
             </div>
             <div className="flex items-center gap-2">
               <p className="text-sm font-bold">{entry.calories}</p>
@@ -632,7 +635,9 @@ function FoodTab(props: { menuItems: MenuItem[]; foodEntries: FoodEntry[]; appDa
           <div className="compact-card w-full p-4">
             <p className="text-lg font-bold">{selected.name}</p>
             <p className="text-sm text-moss">{selected.brand ?? selected.category} · {Math.round(selected.calories * multiplier)} kcal</p>
-            <p className="mt-1 text-xs font-semibold text-clay">{sourceLabel(selected.data_source, selected.confidence)}</p>
+            <div className="mt-2">
+              <SourceBadge source={selected.data_source} confidence={selected.confidence} />
+            </div>
             <div className="mt-3 grid grid-cols-4 gap-2">
               {Object.entries(mealLabels).map(([key, label]) => (
                 <button key={key} className={`chip justify-center ${mealType === key ? "chip-active" : ""}`} onClick={() => setMealType(key as MealType)}>{label}</button>
@@ -1275,7 +1280,9 @@ function FoodItemRow({ item, onPick, onClone, refresh }: { item: MenuItem; onPic
       <button className="min-w-0 flex-1 text-left" onClick={() => onPick(item)}>
         <p className="truncate text-sm font-semibold">{item.name}</p>
         <p className="truncate text-xs text-moss">{item.brand ?? item.category} · {item.calories}kcal · P{item.protein_g} F{item.fat_g} C{item.carbs_g}</p>
-        <p className="text-[11px] font-semibold text-clay">{sourceLabel(item.data_source, item.confidence)}</p>
+        <div className="mt-1">
+          <SourceBadge source={item.data_source} confidence={item.confidence} />
+        </div>
       </button>
       <button className="icon-button h-8 w-8" aria-label="編集して個人メニュー化" onClick={() => onClone(item)}><Pencil size={14} /></button>
       <button className="icon-button h-8 w-8" aria-label="お気に入り" onClick={async () => {
@@ -1609,6 +1616,24 @@ function sourceLabel(source: MenuItem["data_source"], confidence: MenuItem["conf
   }[source];
   const confidenceText = confidence === "low" ? "一部不明" : confidence === "medium" ? "確認推奨" : "";
   return [sourceText, confidenceText].filter(Boolean).join(" · ");
+}
+
+function SourceBadge({ source, confidence }: { source: MenuItem["data_source"]; confidence: MenuItem["confidence"] }) {
+  return (
+    <span className={`source-badge ${sourceBadgeClass(source)}`}>
+      {sourceLabel(source, confidence)}
+    </span>
+  );
+}
+
+function sourceBadgeClass(source: MenuItem["data_source"]) {
+  return {
+    official: "source-badge-official",
+    unofficial: "source-badge-unofficial",
+    estimated: "source-badge-estimated",
+    quick_estimate: "source-badge-quick",
+    user: "source-badge-user",
+  }[source];
 }
 
 function dedupeMenuItemsBySource(items: MenuItem[]) {
