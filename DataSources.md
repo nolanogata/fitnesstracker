@@ -17,6 +17,10 @@
 - すき家: official menu pages and nutrition list links.
 - 大戸屋: official menu page is store-scoped and warns menus differ by store. Added selected official-menu-name entries as `estimated/medium` only; P/F/C values are not official.
 - しんぱち食堂: official site menu lists fish set meals. Added selected official-menu-name entries as `estimated/medium` only; P/F/C values are not official.
+- Family restaurants:
+  - ガスト, ジョナサン, 藍屋: official Skylark menu pages and embedded menu JSON were checked on 2026-06-12. Some kcal/salt values are present in JSON, but P/F/C is still estimated, so entries remain `estimated/medium`.
+  - デニーズ: official menu category pages were checked on 2026-06-12. Added selected official-menu-name entries as `estimated/medium`.
+  - ロイヤルホスト, ジョイフル, 華屋与兵衛, サイゼリヤ, オリーブの丘: official menu/category pages were checked on 2026-06-12. Added representative official-menu-name or official-category entries as `estimated/medium`; P/F/C values are not official.
 - 丸亀製麺: official menu and allergen pages were verified. Official P/F/C table was not found in the current pass.
 - ウエスト: official menu page is store-scoped. Official P/F/C table was not verified in the current pass.
 - 資さんうどん: official menu page is store-scoped. Official P/F/C table was not verified in the current pass.
