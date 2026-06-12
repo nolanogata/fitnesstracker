@@ -176,6 +176,15 @@ const staleAppPromptDelayMs = 6 * 60 * 60 * 1000;
 const weightStepOptions = [1, 2.5, 5, 10];
 const appUpdates: AppUpdate[] = [
   {
+    id: "2026-06-12-chain-filter-scroll-flow",
+    title: "チェーンメニュー選択時の移動を調整",
+    date: "2026-06-12",
+    items: [
+      "食事メニューのチェーン検索で、ジャンル選択後はチェーン一覧へ、チェーン選択後はメニュー一覧へ移動するようにしました。",
+      "メニュー一覧を見ている途中でチェーンボタンを押し直した場合は、チェーン検索の上部へ戻るようにしました。",
+    ],
+  },
+  {
     id: "2026-06-12-food-category-scroll-results",
     title: "食事カテゴリ選択後の移動を改善",
     date: "2026-06-12",
@@ -794,6 +803,7 @@ function HomeFoodLogRow({ entry, displayName }: { entry: FoodEntry; displayName:
 
 function FoodTab(props: { menuItems: MenuItem[]; foodEntries: FoodEntry[]; appDate: string; refresh: () => Promise<void> }) {
   const foodTopRef = useRef<HTMLDivElement | null>(null);
+  const chainListRef = useRef<HTMLDivElement | null>(null);
   const foodResultsRef = useRef<HTMLElement | null>(null);
   const [mode, setMode] = useState<FoodMode>("search");
   const [query, setQuery] = useState("");
@@ -813,6 +823,9 @@ function FoodTab(props: { menuItems: MenuItem[]; foodEntries: FoodEntry[]; appDa
   };
   const scrollToFoodResults = () => {
     window.setTimeout(() => foodResultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
+  };
+  const scrollToChainList = () => {
+    window.setTimeout(() => chainListRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
   };
   const selectFoodItem = (item: MenuItem) => {
     setMultiplier(1);
@@ -964,7 +977,7 @@ function FoodTab(props: { menuItems: MenuItem[]; foodEntries: FoodEntry[]; appDa
                 onClick={() => {
                   setChainCategory(item);
                   setBrand(chainCategories[item]?.[0] ?? "");
-                  scrollToFoodResults();
+                  scrollToChainList();
                 }}
               >
                 {item}
@@ -972,7 +985,7 @@ function FoodTab(props: { menuItems: MenuItem[]; foodEntries: FoodEntry[]; appDa
             ))}
           </div>
           <p className="mb-2 mt-3 text-xs font-semibold text-moss">チェーン</p>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 gap-2 scroll-mt-24" ref={chainListRef}>
             {chainCategories[chainCategory].map((item) => (
               <button className={`tap-tile ${brand === item ? "tap-tile-active" : ""}`} key={item} onClick={() => { setBrand(item); scrollToFoodResults(); }}>{item}</button>
             ))}
