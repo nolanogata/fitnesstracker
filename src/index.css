@@ -160,20 +160,20 @@ button {
 
 .home-hero-over {
   background:
-    radial-gradient(circle at 86% 22%, rgba(217, 100, 76, 0.17), transparent 25%),
+    linear-gradient(180deg, rgba(217, 100, 76, 0.16) 0%, rgba(255, 255, 255, 0.66) 46%, rgba(255, 255, 255, 0.54) 100%),
     rgba(255, 255, 255, 0.58);
 }
 
 .home-hero-on-track {
   background:
-    radial-gradient(circle at 86% 22%, rgba(79, 107, 85, 0.14), transparent 25%),
+    linear-gradient(180deg, rgba(79, 107, 85, 0.14) 0%, rgba(255, 255, 255, 0.66) 46%, rgba(255, 255, 255, 0.54) 100%),
     rgba(255, 255, 255, 0.58);
 }
 
 .home-hero-left,
 .home-hero-neutral {
   background:
-    radial-gradient(circle at 86% 22%, rgba(218, 154, 61, 0.13), transparent 25%),
+    linear-gradient(180deg, rgba(218, 154, 61, 0.14) 0%, rgba(255, 255, 255, 0.66) 46%, rgba(255, 255, 255, 0.54) 100%),
     rgba(255, 255, 255, 0.58);
 }
 
