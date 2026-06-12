@@ -3489,10 +3489,19 @@ function QuickStrip({ title, items, fallback, onPick }: { title: string; items: 
   const visible = items.length ? items : fallback;
   if (!visible.length) return null;
   return (
-    <section className="compact-card p-3">
-      <p className="mb-2 text-xs font-bold text-moss">{title}</p>
-      <div className="flex gap-2 overflow-x-auto pb-1">
-        {visible.slice(0, 10).map((item) => <button className="chip" key={item.id} onClick={() => onPick(item)}>{formatMenuItemName(item)}</button>)}
+    <section className="compact-card overflow-hidden">
+      <ListHeader title={title} value={`${visible.length}件`} />
+      <div className="divide-y divide-line">
+        {visible.slice(0, 5).map((item) => (
+          <button className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-rice/70" key={item.id} onClick={() => onPick(item)}>
+            <Pictogram {...getFoodPictogram(item)} />
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-bold">{formatMenuItemName(item)}</p>
+              <p className="truncate text-xs text-moss">{item.brand ?? item.category} · {item.calories}kcal · P{item.protein_g} F{item.fat_g} C{item.carbs_g}</p>
+            </div>
+            <ChevronRight className="shrink-0 text-muted" size={16} />
+          </button>
+        ))}
       </div>
     </section>
   );
