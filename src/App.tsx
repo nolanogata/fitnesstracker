@@ -177,6 +177,16 @@ const staleAppPromptDelayMs = 6 * 60 * 60 * 1000;
 const weightStepOptions = [1, 2.5, 5, 10];
 const appUpdates: AppUpdate[] = [
   {
+    id: "2026-06-12-workout-add-wizard",
+    title: "ワークアウト追加を複数ステップ化",
+    date: "2026-06-12",
+    items: [
+      "筋トレは重量・回数、セット数、確認の順に進む追加フローに変更しました。",
+      "重量はスライダー、手入力、プラス・マイナス、重量刻みボタンで調整できます。",
+      "単発追加画面から段階セット入力を外し、有酸素も分数入力から確認へ進む流れにしました。",
+    ],
+  },
+  {
     id: "2026-06-12-italian-chain-menu-expansion",
     title: "イタリアンチェーンのメニューを追加",
     date: "2026-06-12",
@@ -1276,25 +1286,38 @@ function WorkoutTab(props: {
 
   const openExerciseDraft = (exercise: ExercisePreset) => {
     const isCardio = isCardioWorkoutItem(exercise);
-    const defaultSetSchemeText = formatWorkoutSetPatternText(exercise.default_set_scheme, isCardio);
-    const sets = exercise.default_sets ?? 3;
-    const reps = exercise.default_reps ?? (isCardio ? 0 : 10);
-    const weight = exercise.default_weight_kg ?? 0;
-    const duration = exercise.default_duration_min ?? 20;
+    const firstSet = exercise.default_set_scheme?.[0];
+    const sets = isCardio ? 1 : Math.min(5, Math.max(1, Math.round(exercise.default_sets ?? exercise.default_set_scheme?.length ?? 3)));
+    const reps = Math.max(0, Math.round(exercise.default_reps ?? firstSet?.reps ?? (isCardio ? 0 : 10)));
+    const weight = round1(Math.max(0, exercise.default_weight_kg ?? firstSet?.weight_kg ?? 0));
+    const duration = Math.max(0, Math.round(exercise.default_duration_min ?? firstSet?.duration_min ?? 20));
     setExerciseDraft({
       exercise,
       sets,
       reps,
       weight_kg: weight,
       duration_min: duration,
-      setSchemeText: defaultSetSchemeText || (isCardio ? `${duration}分` : `${weight}×${reps}×${sets}`),
+      setSchemeText: "",
     });
   };
 
   const addPresetExercise = async (draft: WorkoutExerciseDraft) => {
     const { exercise } = draft;
     const isCardio = isCardioWorkoutItem(exercise);
-    const parsedSetScheme = parseWorkoutSetScheme(draft.setSchemeText, isCardio, exercise.name, props.profile?.current_weight_kg ?? 70);
+    const setCount = isCardio ? 1 : Math.min(5, Math.max(1, Math.round(draft.sets)));
+    const reps = isCardio ? 0 : Math.max(0, Math.round(draft.reps));
+    const weightKg = isCardio ? undefined : round1(Math.max(0, draft.weight_kg));
+    const durationMin = isCardio ? Math.max(0, Math.round(draft.duration_min)) : undefined;
+    const setScheme: WorkoutSetPattern[] = isCardio
+      ? [{
+        reps: 0,
+        duration_min: durationMin ?? 0,
+        active_calories: estimateActiveCalories(exercise.name, durationMin ?? 0, props.profile?.current_weight_kg ?? 70),
+      }]
+      : Array.from({ length: setCount }, () => ({
+        reps,
+        weight_kg: weightKg ?? 0,
+      }));
     let targetSessionId = sessionId;
     if (!targetSessionId) {
       targetSessionId = makeId("session");
@@ -1315,18 +1338,17 @@ function WorkoutTab(props: {
       targetSessionId,
       {
         ...exercisePresetToTemplateExercise(exercise),
-        sets: parsedSetScheme.length || Math.max(1, Math.round(draft.sets)),
-        reps: parsedSetScheme[0]?.reps ?? draft.reps,
-        weight_kg: parsedSetScheme[0]?.weight_kg ?? draft.weight_kg,
-        duration_min: parsedSetScheme[0]?.duration_min ?? draft.duration_min,
-        set_scheme: parsedSetScheme.length ? parsedSetScheme : exercise.default_set_scheme,
+        sets: setCount,
+        reps,
+        weight_kg: weightKg,
+        duration_min: durationMin,
+        set_scheme: setScheme,
       },
       props.workoutExercises.filter((item) => item.session_id === targetSessionId).length,
       props.workoutSets,
       props.workoutExercises,
       { bodyWeightKg: props.profile?.current_weight_kg ?? 70, preferItemValues: true },
     );
-    setExerciseDraft(undefined);
     await props.refresh();
     setFocusedExerciseId(addedExerciseId);
   };
@@ -2642,6 +2664,27 @@ function ExerciseAddModal({ draft, setDraft, onClose, onSave }: {
   const isCardio = draft.exercise.body_part === "有酸素" || draft.exercise.equipment_type === "有酸素";
   const pictogram = getWorkoutPictogram(draft.exercise.body_part, draft.exercise.equipment_type);
   const [weightStep, setWeightStep] = useState(() => inferWeightStep(draft.exercise));
+  const [step, setStep] = useState<"load" | "sets" | "confirm" | "done">(isCardio ? "load" : "load");
+  const [isSaving, setIsSaving] = useState(false);
+  const setCount = Math.min(5, Math.max(1, Math.round(draft.sets)));
+  const summary = isCardio
+    ? `${Math.max(0, Math.round(draft.duration_min))}分`
+    : `${formatControlValue(Math.max(0, draft.weight_kg))}kg × ${Math.max(0, Math.round(draft.reps))}回 × ${setCount}set`;
+  const stepLabel = step === "done"
+    ? "追加完了"
+    : isCardio
+      ? `${step === "load" ? 1 : 2}/2`
+      : `${step === "load" ? 1 : step === "sets" ? 2 : 3}/3`;
+  const handleSave = async () => {
+    if (isSaving) return;
+    setIsSaving(true);
+    try {
+      await onSave();
+      setStep("done");
+    } finally {
+      setIsSaving(false);
+    }
+  };
   return (
     <div className="fixed inset-0 z-40 flex items-end bg-ink/30 px-4 pb-4">
       <div className="compact-card w-full p-4">
@@ -2651,87 +2694,103 @@ function ExerciseAddModal({ draft, setDraft, onClose, onSave }: {
             <p className="truncate text-lg font-bold">{draft.exercise.name}</p>
             <p className="mt-1 text-sm text-moss">{draft.exercise.body_part} · {draft.exercise.equipment_type}</p>
           </div>
+          <p className="rounded-md bg-rice px-2 py-1 text-xs font-bold text-moss">{stepLabel}</p>
           <button className="icon-button h-9 w-9" aria-label="閉じる" onClick={onClose}>×</button>
         </div>
 
-        {isCardio ? (
-          <div className="mt-4">
-            <TapSliderControl
+        {step === "done" ? (
+          <div className="mt-5 space-y-4">
+            <div className="rounded-md bg-rice p-4">
+              <p className="text-sm font-bold">追加しました</p>
+              <p className="mt-2 text-lg font-bold text-ink">{summary}</p>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <button className="secondary-button" onClick={onClose}>次の種目を追加</button>
+              <button className="primary-button" onClick={onClose}>終了</button>
+            </div>
+          </div>
+        ) : isCardio && step === "load" ? (
+          <div className="mt-4 space-y-4">
+            <WizardNumberControl
               label="分数"
               value={draft.duration_min}
               suffix="min"
               step={5}
               min={0}
               max={120}
-              onChange={(duration_min) => setDraft({ ...draft, duration_min, setSchemeText: `${duration_min}分` })}
+              onChange={(duration_min) => setDraft({ ...draft, duration_min })}
             />
+            <div className="grid grid-cols-2 gap-2">
+              <button className="secondary-button" onClick={onClose}>閉じる</button>
+              <button className="primary-button" onClick={() => setStep("confirm")}>次へ</button>
+            </div>
           </div>
-        ) : (
-          <div className="mt-4 space-y-3">
-            <TapSliderControl
-              label="セット"
-              value={draft.sets}
-              suffix="set"
-              step={1}
-              min={1}
-              max={10}
-              onChange={(sets) => {
-                const nextSets = Math.max(1, Math.round(sets));
-                setDraft({ ...draft, sets: nextSets, setSchemeText: `${draft.weight_kg}×${draft.reps}×${nextSets}` });
-              }}
-            />
+        ) : !isCardio && step === "load" ? (
+          <div className="mt-4 space-y-4">
             <div className="rounded-md bg-rice p-3">
-              <div className="flex items-center justify-between gap-2">
+              <div className="mb-3 flex items-center justify-between gap-2">
                 <p className="text-xs font-bold text-moss">重量刻み</p>
                 <div className="flex gap-1">
-                  {weightStepOptions.map((step) => (
-                    <button className={`mini-chip ${weightStep === step ? "mini-chip-active" : ""}`} key={step} onClick={() => setWeightStep(step)}>{step}</button>
+                  {weightStepOptions.map((stepOption) => (
+                    <button className={`mini-chip ${weightStep === stepOption ? "mini-chip-active" : ""}`} key={stepOption} onClick={() => setWeightStep(stepOption)}>{stepOption}</button>
                   ))}
                 </div>
               </div>
-              <div className="mt-3">
-                <TapSliderControl
-                  label="重量"
-                  value={draft.weight_kg}
-                  suffix="kg"
-                  step={weightStep}
-                  min={0}
-                  max={sliderMax(draft.weight_kg, 200, weightStep)}
-                  onChange={(weight_kg) => {
-                    setDraft({ ...draft, weight_kg, setSchemeText: `${weight_kg}×${draft.reps}×${draft.sets}` });
-                  }}
-                />
-              </div>
+              <WizardNumberControl
+                label="重量"
+                value={draft.weight_kg}
+                suffix="kg"
+                step={weightStep}
+                min={0}
+                max={sliderMax(draft.weight_kg, 200, weightStep)}
+                onChange={(weight_kg) => setDraft({ ...draft, weight_kg })}
+              />
             </div>
-            <TapSliderControl
+            <WizardNumberControl
               label="回数"
               value={draft.reps}
               suffix="回"
               step={1}
               min={0}
               max={50}
-              onChange={(reps) => {
-                const nextReps = Math.max(0, Math.round(reps));
-                setDraft({ ...draft, reps: nextReps, setSchemeText: `${draft.weight_kg}×${nextReps}×${draft.sets}` });
-              }}
+              onChange={(reps) => setDraft({ ...draft, reps: Math.max(0, Math.round(reps)) })}
             />
+            <div className="grid grid-cols-2 gap-2">
+              <button className="secondary-button" onClick={onClose}>閉じる</button>
+              <button className="primary-button" onClick={() => setStep("sets")}>次へ</button>
+            </div>
+          </div>
+        ) : !isCardio && step === "sets" ? (
+          <div className="mt-4 space-y-4">
+            <div className="grid grid-cols-5 gap-2">
+              {[1, 2, 3, 4, 5].map((sets) => (
+                <button
+                  key={sets}
+                  className={`choice-button ${setCount === sets ? "choice-button-active" : ""}`}
+                  onClick={() => setDraft({ ...draft, sets })}
+                >
+                  {sets}
+                </button>
+              ))}
+            </div>
+            <div className="rounded-md bg-rice p-3 text-sm font-bold">{summary}</div>
+            <div className="grid grid-cols-2 gap-2">
+              <button className="secondary-button" onClick={() => setStep("load")}>戻る</button>
+              <button className="primary-button" onClick={() => setStep("confirm")}>次へ</button>
+            </div>
+          </div>
+        ) : (
+          <div className="mt-4 space-y-4">
+            <div className="rounded-md bg-rice p-4">
+              <p className="text-xs font-bold text-moss">追加内容</p>
+              <p className="mt-2 text-lg font-bold text-ink">{summary}</p>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <button className="secondary-button" onClick={() => setStep(isCardio ? "load" : "sets")}>戻る</button>
+              <button className="primary-button" disabled={isSaving} onClick={handleSave}><Plus size={17} />{isSaving ? "追加中" : "ワークアウト追加"}</button>
+            </div>
           </div>
         )}
-
-        <label className="mt-4 block text-xs font-semibold text-moss">
-          段階セット
-          <textarea
-            className="mt-2 min-h-20 w-full text-sm"
-            value={draft.setSchemeText}
-            onChange={(event) => setDraft({ ...draft, setSchemeText: event.target.value })}
-            placeholder={isCardio ? "例: 25分 または 25〜30分" : "例: 47×10 / 54×10 / 61×10 / 68×10 または 20×10×3"}
-          />
-        </label>
-
-        <div className="mt-4 grid grid-cols-2 gap-2">
-          <button className="secondary-button" onClick={onClose}>閉じる</button>
-          <button className="primary-button" onClick={onSave}><Plus size={17} />追加</button>
-        </div>
       </div>
     </div>
   );
@@ -2987,6 +3046,54 @@ function Stepper({ value, suffix, step, onChange }: { value: number; suffix: str
       <button className="h-9" onClick={() => onChange(round1(Math.max(0, value - step)))} aria-label="減らす"><Minus size={14} className="mx-auto" /></button>
       <input className="h-9 rounded-none border-0 px-1 text-center text-xs focus:ring-0" type="number" step={step} value={value} onChange={(event) => onChange(Number(event.target.value))} aria-label={suffix} />
       <button className="h-9" onClick={() => onChange(round1(value + step))} aria-label="増やす"><Plus size={14} className="mx-auto" /></button>
+    </div>
+  );
+}
+
+function WizardNumberControl({ label, value, suffix, step, min, max, onChange }: {
+  label: string;
+  value: number;
+  suffix: string;
+  step: number;
+  min: number;
+  max: number;
+  onChange: (value: number) => void;
+}) {
+  const normalized = clampToRange(value, min, max);
+  const commit = (nextValue: number) => {
+    onChange(roundToStep(clampToRange(nextValue, min, max), step));
+  };
+  return (
+    <div>
+      <div className="mb-1.5 flex items-center justify-between gap-2">
+        <p className="text-xs font-bold text-moss">{label}</p>
+        <p className="rounded-md bg-rice px-2 py-1 text-sm font-bold text-ink">{formatControlValue(normalized)}{suffix}</p>
+      </div>
+      <div className="grid grid-cols-[36px_1fr_74px_36px] items-center gap-2">
+        <button className="icon-button h-9 w-9 bg-surface" onClick={() => commit(normalized - step)} aria-label={`${label}を減らす`}><Minus size={14} /></button>
+        <input
+          className="h-9 w-full accent-moss"
+          type="range"
+          min={min}
+          max={max}
+          step={step}
+          value={normalized}
+          onChange={(event) => commit(Number(event.target.value))}
+          aria-label={label}
+        />
+        <input
+          className="h-9 w-full px-2 text-center text-sm font-bold"
+          type="number"
+          inputMode="decimal"
+          min={min}
+          max={max}
+          step={step}
+          value={normalized}
+          onChange={(event) => commit(Number(event.target.value))}
+          aria-label={`${label}を入力`}
+        />
+        <button className="icon-button h-9 w-9 bg-surface" onClick={() => commit(normalized + step)} aria-label={`${label}を増やす`}><Plus size={14} /></button>
+      </div>
     </div>
   );
 }
