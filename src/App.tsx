@@ -177,6 +177,16 @@ const staleAppPromptDelayMs = 6 * 60 * 60 * 1000;
 const weightStepOptions = [1, 2.5, 5, 10];
 const appUpdates: AppUpdate[] = [
   {
+    id: "2026-06-12-italian-chain-menu-expansion",
+    title: "イタリアンチェーンのメニューを追加",
+    date: "2026-06-12",
+    items: [
+      "カプリチョーザ、マンマパスタ、オリーブの丘の定番メニューを追加しました。",
+      "公式メニューで名称を確認し、栄養値は推定値として登録しました。",
+      "パスタ、ピッツァ、リゾット、ドリア、肉料理、前菜、デザートを検索しやすくしました。",
+    ],
+  },
+  {
     id: "2026-06-12-pre-workout-fuel-foods",
     title: "トレ前補給向けメニューを追加",
     date: "2026-06-12",
