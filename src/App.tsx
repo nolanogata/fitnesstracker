@@ -19,6 +19,7 @@ import {
   FileDown,
   FileText,
   Fish,
+  GripVertical,
   Heart,
   Home,
   Minus,
@@ -175,6 +176,15 @@ const updateSeenStorageKey = "phase-log-seen-update-id";
 const staleAppPromptDelayMs = 6 * 60 * 60 * 1000;
 const weightStepOptions = [1, 2.5, 5, 10];
 const appUpdates: AppUpdate[] = [
+  {
+    id: "2026-06-12-workout-template-reorder",
+    title: "ワークアウトプリセットの並べ替えを追加",
+    date: "2026-06-12",
+    items: [
+      "ワークアウトプリセットをドラッグして並べ替えられるようにしました。",
+      "並べ替えた順番は保存され、再読み込み後も維持されます。",
+    ],
+  },
   {
     id: "2026-06-12-workout-template-explicit-start",
     title: "ワークアウトプリセット開始を明確化",
@@ -354,7 +364,7 @@ function App() {
     setFoodEntries(nextFood);
     setWeightLogs(nextWeights);
     setExercisePresets(nextExercises);
-    setWorkoutTemplates(nextTemplates);
+    setWorkoutTemplates(sortWorkoutTemplates(nextTemplates));
     setWorkoutSessions(nextSessions);
     setWorkoutExercises(nextWorkoutExercises);
     setWorkoutSets(nextSets);
@@ -491,6 +501,7 @@ function App() {
             workoutSessions={workoutSessions}
             workoutExercises={workoutExercises}
             workoutSets={workoutSets}
+            setWorkoutTemplates={setWorkoutTemplates}
             refresh={refresh}
           />
         )}
@@ -1113,6 +1124,7 @@ function WorkoutTab(props: {
   workoutSessions: WorkoutSession[];
   workoutExercises: WorkoutExercise[];
   workoutSets: WorkoutSet[];
+  setWorkoutTemplates: (templates: WorkoutTemplate[]) => void;
   refresh: () => Promise<void>;
 }) {
   const [sessionId, setSessionId] = useState<string>();
@@ -1125,6 +1137,9 @@ function WorkoutTab(props: {
   const [templateTargetItem, setTemplateTargetItem] = useState<{ label: string; item: TemplateExercise }>();
   const [exerciseDraft, setExerciseDraft] = useState<WorkoutExerciseDraft>();
   const [templateSaveMessage, setTemplateSaveMessage] = useState("");
+  const [draggingTemplateId, setDraggingTemplateId] = useState<string>();
+  const draggingTemplateIdRef = useRef<string | undefined>(undefined);
+  const dragReorderLockRef = useRef(false);
   const exerciseEditorRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const workoutTopRef = useRef<HTMLDivElement | null>(null);
   const sessionSectionRef = useRef<HTMLElement | null>(null);
@@ -1147,6 +1162,32 @@ function WorkoutTab(props: {
     if (!sessionScrollKey || focusedExerciseId || !activeSession) return;
     sessionSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, [activeSession, focusedExerciseId, sessionScrollKey]);
+
+  useEffect(() => {
+    if (!draggingTemplateId) return;
+    const handlePointerMove = (event: PointerEvent) => {
+      const target = document.elementFromPoint(event.clientX, event.clientY)?.closest("[data-workout-template-id]") as HTMLElement | null;
+      const targetId = target?.dataset.workoutTemplateId;
+      const draggedId = draggingTemplateIdRef.current;
+      if (!targetId || !draggedId || targetId === draggedId || dragReorderLockRef.current) return;
+      dragReorderLockRef.current = true;
+      void reorderWorkoutTemplate(draggedId, targetId).finally(() => {
+        dragReorderLockRef.current = false;
+      });
+    };
+    const stopDragging = () => {
+      draggingTemplateIdRef.current = undefined;
+      setDraggingTemplateId(undefined);
+    };
+    document.addEventListener("pointermove", handlePointerMove);
+    document.addEventListener("pointerup", stopDragging, { once: true });
+    document.addEventListener("pointercancel", stopDragging, { once: true });
+    return () => {
+      document.removeEventListener("pointermove", handlePointerMove);
+      document.removeEventListener("pointerup", stopDragging);
+      document.removeEventListener("pointercancel", stopDragging);
+    };
+  }, [draggingTemplateId, props.workoutTemplates]);
 
   const openExerciseDraft = (exercise: ExercisePreset) => {
     const isCardio = isCardioWorkoutItem(exercise);
@@ -1245,6 +1286,33 @@ function WorkoutTab(props: {
     await props.refresh();
   };
 
+  const beginTemplateDrag = (template: WorkoutTemplate) => {
+    draggingTemplateIdRef.current = template.id;
+    setDraggingTemplateId(template.id);
+  };
+
+  const endTemplateDrag = () => {
+    draggingTemplateIdRef.current = undefined;
+    setDraggingTemplateId(undefined);
+  };
+
+  const reorderWorkoutTemplate = async (draggedId: string, targetId: string) => {
+    if (draggedId === targetId) return;
+    const ordered = sortWorkoutTemplates(props.workoutTemplates);
+    const draggedIndex = ordered.findIndex((template) => template.id === draggedId);
+    const targetIndex = ordered.findIndex((template) => template.id === targetId);
+    if (draggedIndex < 0 || targetIndex < 0) return;
+    const [dragged] = ordered.splice(draggedIndex, 1);
+    ordered.splice(targetIndex, 0, dragged);
+    const timestamp = nowIso();
+    const nextTemplates = ordered.map((template, index) => ({ ...template, display_order: index, updated_at: timestamp }));
+    props.setWorkoutTemplates(nextTemplates);
+    await Promise.all(ordered.map((template, index) => db.workout_templates.update(template.id, {
+      display_order: index,
+      updated_at: timestamp,
+    })));
+  };
+
   const deleteWorkoutTemplate = async (template: WorkoutTemplate) => {
     if (!confirm(`ワークアウトプリセット「${template.name}」を削除しますか？過去の記録は残ります。`)) return;
     const timestamp = nowIso();
@@ -1317,6 +1385,7 @@ function WorkoutTab(props: {
       exercises,
       is_public_preset: false,
       is_user_created: true,
+      display_order: props.workoutTemplates.length,
       created_at: timestamp,
       updated_at: timestamp,
     };
@@ -1427,6 +1496,7 @@ function WorkoutTab(props: {
             <ListHeader title="ワークアウトプリセット" value={`${props.workoutTemplates.length}件`} />
             {props.workoutTemplates.map((template) => (
               <WorkoutTemplateRow
+                isDragging={draggingTemplateId === template.id}
                 isEditing={editingTemplateId === template.id}
                 key={template.id}
                 onEdit={() => {
@@ -1435,6 +1505,11 @@ function WorkoutTab(props: {
                 }}
                 onStart={startFromTemplate}
                 onDelete={() => deleteWorkoutTemplate(template)}
+                onDragEnd={endTemplateDrag}
+                onDragEnter={(targetTemplate) => {
+                  if (draggingTemplateId) reorderWorkoutTemplate(draggingTemplateId, targetTemplate.id);
+                }}
+                onDragStart={beginTemplateDrag}
                 template={template}
               />
             ))}
@@ -2150,15 +2225,42 @@ function FoodItemRow({ item, onPick, onClone, refresh }: { item: MenuItem; onPic
   );
 }
 
-function WorkoutTemplateRow({ template, isEditing, onStart, onEdit, onDelete }: {
+function WorkoutTemplateRow({ template, isEditing, isDragging, onStart, onEdit, onDelete, onDragStart, onDragEnter, onDragEnd }: {
   template: WorkoutTemplate;
   isEditing: boolean;
+  isDragging: boolean;
   onStart: (template: WorkoutTemplate) => void | Promise<void>;
   onEdit: () => void;
   onDelete: () => void | Promise<void>;
+  onDragStart: (template: WorkoutTemplate) => void;
+  onDragEnter: (template: WorkoutTemplate) => void;
+  onDragEnd: () => void;
 }) {
   return (
-    <div className={`flex items-center justify-between gap-3 px-4 py-4 transition-colors hover:bg-rice/70 ${isEditing ? "bg-leaf/20" : ""}`}>
+    <div
+      className={`flex items-center justify-between gap-3 px-4 py-4 transition-colors hover:bg-rice/70 ${isEditing ? "bg-leaf/20" : ""} ${isDragging ? "opacity-60" : ""}`}
+      data-workout-template-id={template.id}
+      onDragEnter={(event) => {
+        event.preventDefault();
+        onDragEnter(template);
+      }}
+      onDragOver={(event) => event.preventDefault()}
+    >
+      <button
+        className="icon-button h-8 w-8 cursor-grab active:cursor-grabbing"
+        draggable
+        aria-label={`${template.name}を並べ替え`}
+        onDragStart={(event) => {
+          event.dataTransfer.effectAllowed = "move";
+          onDragStart(template);
+        }}
+        onDragEnd={onDragEnd}
+        onPointerDown={() => onDragStart(template)}
+        onPointerUp={onDragEnd}
+        onPointerCancel={onDragEnd}
+      >
+        <GripVertical size={14} />
+      </button>
       <Pictogram {...getWorkoutTemplatePictogram(template)} />
       <button className="min-w-0 flex-1 text-left" onClick={onEdit}>
         <p className="truncate text-sm font-bold">{template.name}</p>
@@ -3524,6 +3626,15 @@ function workoutExerciseToTemplateExercise(exercise: WorkoutExercise, sets: Work
     duration_min: firstSet?.duration_min,
     set_scheme: sets.length ? workoutSetsToPattern(sets) : undefined,
   };
+}
+
+function sortWorkoutTemplates(templates: WorkoutTemplate[]) {
+  return [...templates].sort((a, b) => {
+    const orderA = a.display_order ?? Number.MAX_SAFE_INTEGER;
+    const orderB = b.display_order ?? Number.MAX_SAFE_INTEGER;
+    if (orderA !== orderB) return orderA - orderB;
+    return a.created_at.localeCompare(b.created_at) || a.name.localeCompare(b.name);
+  });
 }
 
 function templateBodyParts(exercises: TemplateExercise[]) {
