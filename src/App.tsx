@@ -176,6 +176,14 @@ const staleAppPromptDelayMs = 6 * 60 * 60 * 1000;
 const weightStepOptions = [1, 2.5, 5, 10];
 const appUpdates: AppUpdate[] = [
   {
+    id: "2026-06-12-ai-report-generated-at",
+    title: "AI相談レポートに生成時刻を追加",
+    date: "2026-06-12",
+    items: [
+      "AI相談レポートに生成日時を明記し、当日途中のレポートである可能性をAIに伝えるようにしました。",
+    ],
+  },
+  {
     id: "2026-06-12-workout-template-save-fix",
     title: "ワークアウトプリセット保存を修正",
     date: "2026-06-12",
@@ -1750,6 +1758,7 @@ function SettingsTab(props: {
       <p className="mt-2 text-xs text-moss">{reportMode === "day" ? "今日1日分を参照します。" : reportMode === "week" ? "直近7日分を週別の相談材料としてまとめます。" : "直近30日分を月別の相談材料としてまとめます。"}</p>
       <textarea className="mt-3 min-h-20 w-full" value={question} onChange={(event) => setQuestion(event.target.value)} placeholder="AIにコピーして相談できるレポートを生成します。特に相談したいことがあれば記入してください。なければそのまま生成を押してください" />
       <button className="primary-button mt-3 w-full" onClick={async () => {
+        const generatedAt = nowIso();
         const end = props.appDate;
         const start = reportMode === "day" ? end : addDays(end, reportMode === "week" ? -6 : -29);
         const range = dateRange(start, end);
@@ -1764,12 +1773,14 @@ function SettingsTab(props: {
           weeklyWorkoutStatus: props.weeklyWorkoutStatus,
           periodStart: start,
           periodEnd: end,
+          generatedAt,
+          currentAppDate: props.appDate,
           workoutGrouping: reportMode,
           question,
         });
         setReport(content);
         setCopiedReport(false);
-        await db.ai_reports.put({ id: makeId("report"), period_start: start, period_end: end, format: "markdown", content, created_at: nowIso(), updated_at: nowIso() });
+        await db.ai_reports.put({ id: makeId("report"), period_start: start, period_end: end, format: "markdown", content, created_at: generatedAt, updated_at: generatedAt });
       }}><FileText size={17} />生成</button>
       {report && (
         <>

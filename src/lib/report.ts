@@ -16,6 +16,8 @@ export function generateMarkdownReport(input: {
   weeklyWorkoutStatus?: WeeklyWorkoutStatus;
   periodStart: string;
   periodEnd: string;
+  generatedAt: string;
+  currentAppDate: string;
   workoutGrouping?: WorkoutGrouping;
   question: string;
 }) {
@@ -87,14 +89,22 @@ export function generateMarkdownReport(input: {
     exercises: scopedExercises,
     sets: input.workoutSets,
   });
+  const isCurrentDailySnapshot = isDaily && input.periodEnd === input.currentAppDate;
 
   return `# ゴールトラッカー AI相談レポート
 
 ${isDaily ? `対象日: ${input.periodStart}` : `期間: ${input.periodStart} - ${input.periodEnd}`}
 
+## レポート情報
+
+- 生成日時: ${formatReportDateTime(input.generatedAt)}
+- 対象範囲の状態: ${isCurrentDailySnapshot ? "当日途中の記録である可能性があります" : "対象期間終了後または過去期間の記録です"}
+${isCurrentDailySnapshot ? "- 注意: このレポートは1日の途中経過として扱い、最終的な摂取量・運動量とは限らない前提で判断してください。" : ""}
+
 ## AIへの依頼
 
 - このレポート、これまでの会話、AI側で把握している追加情報を踏まえて、現在の目標に対する適正な目標カロリーとP/F/Cを算定してください。
+- 対象範囲の状態が当日途中の場合は、途中経過であることを明記し、その時点までの傾向として評価してください。
 - 体重、体脂肪率、活動量、トレーニング頻度、生活リズムなどについて、AI側にこのレポートより詳細または新しい情報がある場合は、その情報を優先して判断してください。
 - AI側で判断した適正値が、現在トラッカーに設定されている kcal / P / F / C と違う場合は、トラッカー側の値を編集する前提で修正後の数値を明示してください。
 - 体重・体脂肪率・運動強度・フェーズ・週の運動目標など、PFC以外にもトラッカー側で直した方がよい項目があれば併せて示してください。
@@ -269,6 +279,17 @@ function groupingLabel(grouping: WorkoutGrouping) {
   if (grouping === "week") return "週別";
   if (grouping === "month") return "月別";
   return "日別";
+}
+
+function formatReportDateTime(isoString: string) {
+  return new Intl.DateTimeFormat("ja-JP", {
+    year: "numeric",
+    month: "numeric",
+    day: "numeric",
+    weekday: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(isoString));
 }
 
 function startOfWeek(dateString: string) {
