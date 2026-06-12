@@ -173,6 +173,15 @@ const updateSeenStorageKey = "phase-log-seen-update-id";
 const staleAppPromptDelayMs = 6 * 60 * 60 * 1000;
 const appUpdates: AppUpdate[] = [
   {
+    id: "2026-06-12-daily-ai-report-details",
+    title: "日別AI相談レポートを詳細化",
+    date: "2026-06-12",
+    items: [
+      "AI相談レポートの日別生成で、その日の食事とワークアウトの詳細を渡せるようにしました。",
+      "日別レポートでは週次要約ではなく、当日の種目・セット内容を中心に出力するようにしました。",
+    ],
+  },
+  {
     id: "2026-06-12-food-menu-modal-dismiss",
     title: "食事メニュー選択を閉じやすく改善",
     date: "2026-06-12",
@@ -424,6 +433,7 @@ function App() {
             profile={profile}
             goals={goals}
             activeGoal={activeGoal}
+            appDate={appDate}
             weeklyWorkoutStatus={weeklyWorkoutStatus}
             menuItems={menuItems}
             workoutTemplates={workoutTemplates}
@@ -1579,6 +1589,7 @@ function SettingsTab(props: {
   profile?: Profile;
   goals: Goal[];
   activeGoal?: Goal;
+  appDate: string;
   weeklyWorkoutStatus: WeeklyWorkoutStatus;
   menuItems: MenuItem[];
   workoutTemplates: WorkoutTemplate[];
@@ -1652,7 +1663,7 @@ function SettingsTab(props: {
       <p className="mt-2 text-xs text-moss">{reportMode === "day" ? "今日1日分を参照します。" : reportMode === "week" ? "直近7日分を週別の相談材料としてまとめます。" : "直近30日分を月別の相談材料としてまとめます。"}</p>
       <textarea className="mt-3 min-h-20 w-full" value={question} onChange={(event) => setQuestion(event.target.value)} placeholder="AIにコピーして相談できるレポートを生成します。特に相談したいことがあれば記入してください。なければそのまま生成を押してください" />
       <button className="primary-button mt-3 w-full" onClick={async () => {
-        const end = todayAppDate();
+        const end = props.appDate;
         const start = reportMode === "day" ? end : addDays(end, reportMode === "week" ? -6 : -29);
         const range = dateRange(start, end);
         const content = generateMarkdownReport({
