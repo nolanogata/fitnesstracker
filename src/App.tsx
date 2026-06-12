@@ -901,17 +901,20 @@ function FoodTab(props: { menuItems: MenuItem[]; foodEntries: FoodEntry[]; appDa
     scrollToFoodTop();
   };
   const portionOptions = selected ? getPortionOptions(selected) : [];
+  const isGlobalSearch = query.trim().length > 0;
   const results = useMemo(() => {
     const needle = query.trim().toLowerCase();
     const tokens = needle.split(/\s+/).filter(Boolean);
-    const base = props.menuItems.filter((item) => {
-      if (mode === "favorite") return item.is_favorite;
-      if (mode === "quick") return item.data_source === "quick_estimate";
-      if (mode === "personal") return item.is_user_created;
-      if (mode === "chain") return item.brand === brand;
-      if (mode === "category") return item.category === genericCategory || item.tags.some((tag) => genericCategories[genericCategory]?.includes(tag));
-      return true;
-    });
+    const base = needle
+      ? props.menuItems
+      : props.menuItems.filter((item) => {
+        if (mode === "favorite") return item.is_favorite;
+        if (mode === "quick") return item.data_source === "quick_estimate";
+        if (mode === "personal") return item.is_user_created;
+        if (mode === "chain") return item.brand === brand;
+        if (mode === "category") return item.category === genericCategory || item.tags.some((tag) => genericCategories[genericCategory]?.includes(tag));
+        return true;
+      });
     const sorted = dedupeMenuItemsBySource(base);
     if (!needle) return sorted.slice(0, 80);
     return sorted
@@ -1020,7 +1023,7 @@ function FoodTab(props: { menuItems: MenuItem[]; foodEntries: FoodEntry[]; appDa
             <Search className="pointer-events-none absolute left-3 top-3.5 text-moss" size={20} />
             <input className="h-12 w-full pl-10 text-base" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="食品・ブランド検索" />
           </div>
-          <button type="submit" className={`${mode === "search" ? "primary-button" : "secondary-button"} h-12 px-4`}>検索</button>
+          <button type="submit" className={`${mode === "search" || isGlobalSearch ? "primary-button" : "secondary-button"} h-12 px-4`}>検索</button>
         </form>
         <div className="grid grid-cols-3 gap-2">
           {(["favorite", "personal", "manual", "chain", "category", "quick"] as FoodMode[]).map((item) => (
@@ -1074,16 +1077,16 @@ function FoodTab(props: { menuItems: MenuItem[]; foodEntries: FoodEntry[]; appDa
           {mode === "search" && (
             <QuickStrip title="Recent" items={recentItems} onPick={selectFoodItem} fallback={favoriteItems} />
           )}
-          {mode === "favorite" && favoriteItems.length === 0 && (
+          {mode === "favorite" && !isGlobalSearch && favoriteItems.length === 0 && (
             <section className="compact-card p-4 text-sm text-moss">食品行のハートを押すとここから呼び出せます。</section>
           )}
-          {mode === "personal" && (
+          {mode === "personal" && !isGlobalSearch && (
             <section className="compact-card p-3">
               <button className="primary-button w-full" onClick={props.openMyMenuSettings}><Plus size={17} />マイメニューを登録</button>
             </section>
           )}
           <section className="compact-card divide-y divide-line overflow-hidden scroll-mt-24" ref={foodResultsRef}>
-            <ListHeader title={foodModeLabel(mode)} value={`${results.length}件`} />
+            <ListHeader title={isGlobalSearch ? "検索結果" : foodModeLabel(mode)} value={`${results.length}件`} />
             {results.map((item) => <FoodItemRow key={item.id} item={item} onPick={selectFoodItem} onClone={setManualFromItem(setManual, setMode)} refresh={props.refresh} />)}
             {results.length === 0 && <EmptyLine text="見つかりません" />}
           </section>
