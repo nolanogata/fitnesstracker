@@ -176,6 +176,14 @@ const staleAppPromptDelayMs = 6 * 60 * 60 * 1000;
 const weightStepOptions = [1, 2.5, 5, 10];
 const appUpdates: AppUpdate[] = [
   {
+    id: "2026-06-12-food-category-scroll-results",
+    title: "食事カテゴリ選択後の移動を改善",
+    date: "2026-06-12",
+    items: [
+      "食事メニューでカテゴリやチェーンを選んだ後、候補一覧まで自動でスクロールするようにしました。",
+    ],
+  },
+  {
     id: "2026-06-12-workout-tap-slider-inputs",
     title: "ワークアウト入力をタップ・スライダー中心に改善",
     date: "2026-06-12",
@@ -786,6 +794,7 @@ function HomeFoodLogRow({ entry, displayName }: { entry: FoodEntry; displayName:
 
 function FoodTab(props: { menuItems: MenuItem[]; foodEntries: FoodEntry[]; appDate: string; refresh: () => Promise<void> }) {
   const foodTopRef = useRef<HTMLDivElement | null>(null);
+  const foodResultsRef = useRef<HTMLElement | null>(null);
   const [mode, setMode] = useState<FoodMode>("search");
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<MenuItem>();
@@ -801,6 +810,9 @@ function FoodTab(props: { menuItems: MenuItem[]; foodEntries: FoodEntry[]; appDa
   const recentItems = props.menuItems.filter((item) => recentIds.has(item.id));
   const scrollToFoodTop = () => {
     window.requestAnimationFrame(() => foodTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
+  };
+  const scrollToFoodResults = () => {
+    window.setTimeout(() => foodResultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
   };
   const selectFoodItem = (item: MenuItem) => {
     setMultiplier(1);
@@ -952,7 +964,7 @@ function FoodTab(props: { menuItems: MenuItem[]; foodEntries: FoodEntry[]; appDa
                 onClick={() => {
                   setChainCategory(item);
                   setBrand(chainCategories[item]?.[0] ?? "");
-                  scrollToFoodTop();
+                  scrollToFoodResults();
                 }}
               >
                 {item}
@@ -962,7 +974,7 @@ function FoodTab(props: { menuItems: MenuItem[]; foodEntries: FoodEntry[]; appDa
           <p className="mb-2 mt-3 text-xs font-semibold text-moss">チェーン</p>
           <div className="grid grid-cols-2 gap-2">
             {chainCategories[chainCategory].map((item) => (
-              <button className={`tap-tile ${brand === item ? "tap-tile-active" : ""}`} key={item} onClick={() => { setBrand(item); scrollToFoodTop(); }}>{item}</button>
+              <button className={`tap-tile ${brand === item ? "tap-tile-active" : ""}`} key={item} onClick={() => { setBrand(item); scrollToFoodResults(); }}>{item}</button>
             ))}
             {chainCategories[chainCategory].length === 0 && <p className="col-span-2 px-1 py-2 text-sm text-moss">該当するチェーンはまだ登録されていません。</p>}
           </div>
@@ -973,7 +985,7 @@ function FoodTab(props: { menuItems: MenuItem[]; foodEntries: FoodEntry[]; appDa
         <section className="compact-card p-3">
           <div className="grid grid-cols-2 gap-2">
             {Object.keys(genericCategories).map((item) => (
-              <button className={`tap-tile ${genericCategory === item ? "tap-tile-active" : ""}`} key={item} onClick={() => { setGenericCategory(item); scrollToFoodTop(); }}>{item}</button>
+              <button className={`tap-tile ${genericCategory === item ? "tap-tile-active" : ""}`} key={item} onClick={() => { setGenericCategory(item); scrollToFoodResults(); }}>{item}</button>
             ))}
           </div>
         </section>
@@ -987,7 +999,7 @@ function FoodTab(props: { menuItems: MenuItem[]; foodEntries: FoodEntry[]; appDa
           {mode === "favorite" && favoriteItems.length === 0 && (
             <section className="compact-card p-4 text-sm text-moss">食品行のハートを押すとここから呼び出せます。</section>
           )}
-          <section className="compact-card divide-y divide-line overflow-hidden">
+          <section className="compact-card divide-y divide-line overflow-hidden scroll-mt-24" ref={foodResultsRef}>
             <ListHeader title={foodModeLabel(mode)} value={`${results.length}件`} />
             {results.map((item) => <FoodItemRow key={item.id} item={item} onPick={selectFoodItem} onClone={setManualFromItem(setManual, setMode)} refresh={props.refresh} />)}
             {results.length === 0 && <EmptyLine text="見つかりません" />}
