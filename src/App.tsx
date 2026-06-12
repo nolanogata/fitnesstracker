@@ -177,6 +177,15 @@ const staleAppPromptDelayMs = 6 * 60 * 60 * 1000;
 const weightStepOptions = [1, 2.5, 5, 10];
 const appUpdates: AppUpdate[] = [
   {
+    id: "2026-06-12-convenience-official-nutrition",
+    title: "コンビニ定番メニューの公式栄養値を反映",
+    date: "2026-06-12",
+    items: [
+      "ファミチキ、スパイシーチキン、クリスピーチキン、からあげクン、Lチキなどの公式栄養値を反映しました。",
+      "セブンイレブンとミニストップの一部ホットスナックも公式栄養値へ置き換えました。",
+    ],
+  },
+  {
     id: "2026-06-12-convenience-menu-expansion",
     title: "コンビニメニューを拡充",
     date: "2026-06-12",

@@ -1,4 +1,4 @@
-import { estimated } from "../helpers";
+import { estimated, official } from "../helpers";
 
 const fetchedAt = "2026-06-12T00:00:00.000Z";
 
@@ -20,10 +20,12 @@ type ConvenienceInput = {
   tags: string[];
   meal?: "breakfast" | "lunch" | "dinner" | "snack";
   serving?: string;
+  source_url?: string;
+  verified?: boolean;
 };
 
 const convenience = (input: ConvenienceInput) =>
-  estimated({
+  (input.verified ? official : estimated)({
     brand: input.brand,
     name: input.name,
     category: "コンビニ",
@@ -35,12 +37,12 @@ const convenience = (input: ConvenienceInput) =>
     salt_g: input.salt_g,
     serving_label: input.serving ?? "1品",
     default_meal_type: input.meal ?? "lunch",
-    source_url: sourceUrls[input.brand],
+    source_url: input.source_url ?? sourceUrls[input.brand],
     fetched_at: fetchedAt,
   });
 
 const items: ConvenienceInput[] = [
-  { brand: "セブンイレブン", name: "手巻おにぎり ツナマヨネーズ", calories: 235, protein_g: 4.8, fat_g: 9.1, carbs_g: 35.0, salt_g: 1.1, tags: ["おにぎり", "ツナマヨ"] },
+  { brand: "セブンイレブン", name: "直巻おむすび 和風ツナマヨネーズ", calories: 232, protein_g: 5.3, fat_g: 6.8, carbs_g: 38.1, salt_g: 1.5, tags: ["おにぎり", "ツナマヨ", "公式栄養"], source_url: "https://www.sej.co.jp/products/a/item/041728/", verified: true },
   { brand: "セブンイレブン", name: "手巻おにぎり 熟成紅しゃけ", calories: 180, protein_g: 5.6, fat_g: 1.7, carbs_g: 36.0, salt_g: 1.3, tags: ["おにぎり", "鮭"] },
   { brand: "セブンイレブン", name: "手巻おにぎり 紀州南高梅", calories: 166, protein_g: 3.3, fat_g: 0.5, carbs_g: 37.0, salt_g: 1.4, tags: ["おにぎり", "梅"] },
   { brand: "セブンイレブン", name: "手巻おにぎり 昆布", calories: 176, protein_g: 3.7, fat_g: 0.7, carbs_g: 39.0, salt_g: 1.2, tags: ["おにぎり", "昆布"] },
@@ -65,20 +67,23 @@ const items: ConvenienceInput[] = [
   { brand: "セブンイレブン", name: "コールスローサラダ", calories: 130, protein_g: 2.0, fat_g: 9.0, carbs_g: 11.0, salt_g: 1.0, tags: ["サラダ", "野菜"], meal: "snack" },
   { brand: "セブンイレブン", name: "ギリシャヨーグルト", calories: 100, protein_g: 10.0, fat_g: 0.5, carbs_g: 12.0, salt_g: 0.1, tags: ["ヨーグルト", "高たんぱく"], meal: "snack" },
   { brand: "セブンイレブン", name: "プロテインドリンク", calories: 140, protein_g: 20.0, fat_g: 2.0, carbs_g: 10.0, salt_g: 0.3, tags: ["プロテイン", "高たんぱく", "ドリンク"], meal: "snack" },
-  { brand: "セブンイレブン", name: "ななチキ", calories: 220, protein_g: 13.0, fat_g: 14.0, carbs_g: 11.0, salt_g: 1.4, tags: ["ホットスナック", "チキン"], meal: "snack" },
+  { brand: "セブンイレブン", name: "ななチキ", calories: 220, protein_g: 13.0, fat_g: 14.0, carbs_g: 11.0, salt_g: 1.4, tags: ["ホットスナック", "チキン", "栄養推定"], meal: "snack" },
   { brand: "セブンイレブン", name: "揚げ鶏", calories: 185, protein_g: 12.0, fat_g: 12.0, carbs_g: 7.0, salt_g: 1.1, tags: ["ホットスナック", "チキン"], meal: "snack" },
-  { brand: "セブンイレブン", name: "カレーパン", calories: 320, protein_g: 7.0, fat_g: 18.0, carbs_g: 34.0, salt_g: 1.6, tags: ["パン", "カレー"], meal: "snack" },
+  { brand: "セブンイレブン", name: "お店で揚げたカレーパン", calories: 352, protein_g: 6.6, fat_g: 21.5, carbs_g: 34.3, salt_g: 1.4, tags: ["パン", "カレー", "公式栄養"], meal: "snack", source_url: "https://www.sej.co.jp/products/a/item/150125/", verified: true },
+  { brand: "セブンイレブン", name: "スパイスチキン", calories: 200, protein_g: 14.2, fat_g: 11.0, carbs_g: 11.2, salt_g: 1.3, tags: ["ホットスナック", "チキン", "公式栄養"], meal: "snack", source_url: "https://www.sej.co.jp/products/a/item/150071/", verified: true },
+  { brand: "セブンイレブン", name: "スパイスチキンレッド", calories: 225, protein_g: 14.4, fat_g: 13.5, carbs_g: 11.6, salt_g: 1.3, tags: ["ホットスナック", "チキン", "辛い", "公式栄養"], meal: "snack", source_url: "https://www.sej.co.jp/products/a/item/150370/", verified: true },
 
   { brand: "ファミリーマート", name: "手巻 シーチキンマヨネーズ", calories: 232, protein_g: 4.8, fat_g: 8.5, carbs_g: 35.0, salt_g: 1.1, tags: ["おむすび", "おにぎり", "ツナマヨ"] },
   { brand: "ファミリーマート", name: "手巻 紅しゃけ", calories: 183, protein_g: 5.4, fat_g: 1.8, carbs_g: 36.0, salt_g: 1.2, tags: ["おむすび", "おにぎり", "鮭"] },
-  { brand: "ファミリーマート", name: "手巻 辛子明太子", calories: 170, protein_g: 4.7, fat_g: 0.8, carbs_g: 36.0, salt_g: 1.5, tags: ["おむすび", "おにぎり", "明太子"] },
+  { brand: "ファミリーマート", name: "手巻 辛子明太子", calories: 175, protein_g: 4.1, fat_g: 1.4, carbs_g: 36.7, salt_g: 1.2, tags: ["おむすび", "おにぎり", "明太子", "公式栄養"], source_url: "https://www.family.co.jp/goods/omusubi/0410120.html", verified: true },
   { brand: "ファミリーマート", name: "直巻 和風ツナマヨネーズ", calories: 240, protein_g: 5.0, fat_g: 8.8, carbs_g: 36.0, salt_g: 1.4, tags: ["おむすび", "おにぎり", "ツナマヨ"] },
+  { brand: "ファミリーマート", name: "シーチキン®炊き込みごはんおむすび", calories: 215, protein_g: 3.6, fat_g: 5.4, carbs_g: 38.1, salt_g: 1.3, tags: ["おむすび", "おにぎり", "シーチキン", "公式栄養"], source_url: "https://www.family.co.jp/goods/omusubi/0411448.html", verified: true },
   { brand: "ファミリーマート", name: "たまごサンド", calories: 350, protein_g: 12.5, fat_g: 22.0, carbs_g: 27.0, salt_g: 1.6, tags: ["サンドイッチ", "卵"], meal: "breakfast" },
   { brand: "ファミリーマート", name: "ハムチーズたまごサンド", calories: 310, protein_g: 14.0, fat_g: 17.0, carbs_g: 27.0, salt_g: 2.0, tags: ["サンドイッチ", "卵", "チーズ"], meal: "breakfast" },
   { brand: "ファミリーマート", name: "グリルチキン ブラックペッパー", calories: 113, protein_g: 21.0, fat_g: 2.3, carbs_g: 2.0, salt_g: 1.5, tags: ["高たんぱく", "チキン"], meal: "snack" },
   { brand: "ファミリーマート", name: "サラダチキン プレーン", calories: 115, protein_g: 24.0, fat_g: 1.5, carbs_g: 1.0, salt_g: 1.4, tags: ["サラダチキン", "高たんぱく", "チキン"], meal: "snack" },
-  { brand: "ファミリーマート", name: "ファミチキ", calories: 251, protein_g: 12.7, fat_g: 15.7, carbs_g: 14.8, salt_g: 1.4, tags: ["ホットスナック", "チキン"], meal: "snack" },
-  { brand: "ファミリーマート", name: "スパイシーチキン", calories: 201, protein_g: 10.0, fat_g: 12.0, carbs_g: 13.0, salt_g: 1.3, tags: ["ホットスナック", "チキン", "辛い"], meal: "snack" },
+  { brand: "ファミリーマート", name: "ファミチキ", calories: 251.7, protein_g: 12.7, fat_g: 15.7, carbs_g: 14.8, salt_g: 1.3, tags: ["ホットスナック", "チキン", "公式栄養"], meal: "snack", source_url: "https://www.family.co.jp/goods/friedfoods/0253116.html", verified: true },
+  { brand: "ファミリーマート", name: "スパイシーチキン", calories: 207, protein_g: 9.5, fat_g: 12.2, carbs_g: 14.7, salt_g: 1.2, tags: ["ホットスナック", "チキン", "辛い", "公式栄養"], meal: "snack", source_url: "https://www.family.co.jp/goods/friedfoods/0252102.html", verified: true },
   { brand: "ファミリーマート", name: "炙り焼鮭弁当", calories: 520, protein_g: 24.0, fat_g: 12.0, carbs_g: 78.0, salt_g: 3.0, tags: ["弁当", "鮭"] },
   { brand: "ファミリーマート", name: "3色そぼろ&チキン南蛮弁当", calories: 760, protein_g: 29.0, fat_g: 24.0, carbs_g: 104.0, salt_g: 3.8, tags: ["弁当", "チキン"] },
   { brand: "ファミリーマート", name: "冷しぶっかけうどん", calories: 370, protein_g: 12.0, fat_g: 4.0, carbs_g: 72.0, salt_g: 4.0, tags: ["うどん", "麺類"] },
@@ -89,23 +94,23 @@ const items: ConvenienceInput[] = [
   { brand: "ファミリーマート", name: "親子丼", calories: 620, protein_g: 26.0, fat_g: 16.0, carbs_g: 91.0, salt_g: 3.5, tags: ["丼", "卵", "チキン"] },
   { brand: "ファミリーマート", name: "冷し中華", calories: 510, protein_g: 20.0, fat_g: 11.0, carbs_g: 83.0, salt_g: 5.0, tags: ["冷し中華", "麺類"] },
   { brand: "ファミリーマート", name: "だし香る冷しそば", calories: 350, protein_g: 15.0, fat_g: 3.0, carbs_g: 67.0, salt_g: 3.6, tags: ["そば", "麺類"] },
-  { brand: "ファミリーマート", name: "クリスピーチキン プレーン", calories: 145, protein_g: 11.0, fat_g: 8.0, carbs_g: 8.0, salt_g: 1.1, tags: ["ホットスナック", "チキン"], meal: "snack" },
+  { brand: "ファミリーマート", name: "クリスピーチキン プレーン", calories: 183.1, protein_g: 12.2, fat_g: 9.6, carbs_g: 11.9, salt_g: 1.4, tags: ["ホットスナック", "チキン", "公式栄養"], meal: "snack", source_url: "https://www.family.co.jp/goods/friedfoods/0250610.html", verified: true },
   { brand: "ファミリーマート", name: "焼鳥ももタレ", calories: 120, protein_g: 12.0, fat_g: 5.0, carbs_g: 7.0, salt_g: 1.2, tags: ["焼鳥", "チキン", "高たんぱく"], meal: "snack" },
   { brand: "ファミリーマート", name: "サラダチキンバー", calories: 65, protein_g: 13.0, fat_g: 1.0, carbs_g: 1.0, salt_g: 0.8, tags: ["サラダチキン", "高たんぱく", "チキン"], meal: "snack" },
   { brand: "ファミリーマート", name: "プロテインドリンク", calories: 140, protein_g: 20.0, fat_g: 2.0, carbs_g: 10.0, salt_g: 0.3, tags: ["プロテイン", "高たんぱく", "ドリンク"], meal: "snack" },
   { brand: "ファミリーマート", name: "バウムクーヘン", calories: 250, protein_g: 4.0, fat_g: 14.0, carbs_g: 28.0, salt_g: 0.3, tags: ["焼き菓子", "スイーツ"], meal: "snack" },
   { brand: "ファミリーマート", name: "どら焼き", calories: 220, protein_g: 5.0, fat_g: 3.0, carbs_g: 44.0, salt_g: 0.3, tags: ["和菓子", "スイーツ"], meal: "snack" },
 
-  { brand: "ローソン", name: "金しゃりおにぎり 焼さけハラミ", calories: 215, protein_g: 6.5, fat_g: 4.0, carbs_g: 38.0, salt_g: 1.4, tags: ["おにぎり", "鮭"] },
-  { brand: "ローソン", name: "手巻おにぎり シーチキンマヨネーズ", calories: 235, protein_g: 4.8, fat_g: 8.8, carbs_g: 35.0, salt_g: 1.1, tags: ["おにぎり", "ツナマヨ"] },
-  { brand: "ローソン", name: "手巻おにぎり 熟成紀州南高梅", calories: 166, protein_g: 3.3, fat_g: 0.5, carbs_g: 37.0, salt_g: 1.5, tags: ["おにぎり", "梅"] },
+  { brand: "ローソン", name: "プレミアムおにぎり 焼さけハラミ", calories: 204, protein_g: 6.6, fat_g: 3.3, carbs_g: 37.5, salt_g: 1.5, tags: ["おにぎり", "鮭", "公式栄養"], source_url: "https://www.lawson.co.jp/recommend/original/detail/1507092_1996.html", verified: true },
+  { brand: "ローソン", name: "手巻おにぎり シーチキンマヨネーズ", calories: 226, protein_g: 4.2, fat_g: 7.7, carbs_g: 35.7, salt_g: 1.18, tags: ["おにぎり", "ツナマヨ", "公式栄養"], source_url: "https://www.lawson.co.jp/recommend/original/detail/1507601_1996.html", verified: true },
+  { brand: "ローソン", name: "手巻おにぎり 熟成紀州南高梅", calories: 167, protein_g: 3.0, fat_g: 1.1, carbs_g: 36.8, salt_g: 1.57, tags: ["おにぎり", "梅", "公式栄養"], source_url: "https://www.lawson.co.jp/recommend/original/detail/1528789_1996.html", verified: true },
   { brand: "ローソン", name: "おにぎりセット", calories: 450, protein_g: 13.0, fat_g: 12.0, carbs_g: 72.0, salt_g: 2.7, tags: ["おにぎり", "セット"] },
   { brand: "ローソン", name: "たまごサンド", calories: 340, protein_g: 12.0, fat_g: 21.0, carbs_g: 27.0, salt_g: 1.7, tags: ["サンドイッチ", "卵"], meal: "breakfast" },
   { brand: "ローソン", name: "ミックスサンド", calories: 320, protein_g: 13.0, fat_g: 16.0, carbs_g: 31.0, salt_g: 2.1, tags: ["サンドイッチ"], meal: "breakfast" },
   { brand: "ローソン", name: "サラダチキン プレーン", calories: 114, protein_g: 23.0, fat_g: 1.8, carbs_g: 1.0, salt_g: 1.4, tags: ["サラダチキン", "高たんぱく", "チキン"], meal: "snack" },
-  { brand: "ローソン", name: "からあげクン レギュラー", calories: 225, protein_g: 14.0, fat_g: 15.0, carbs_g: 9.0, salt_g: 1.7, tags: ["ホットスナック", "チキン"], meal: "snack" },
-  { brand: "ローソン", name: "からあげクン レッド", calories: 230, protein_g: 14.0, fat_g: 15.0, carbs_g: 10.0, salt_g: 1.8, tags: ["ホットスナック", "チキン", "辛い"], meal: "snack" },
-  { brand: "ローソン", name: "Lチキ レギュラー", calories: 250, protein_g: 13.0, fat_g: 16.0, carbs_g: 14.0, salt_g: 1.4, tags: ["ホットスナック", "チキン"], meal: "snack" },
+  { brand: "ローソン", name: "からあげクン レギュラー", calories: 226, protein_g: 14.4, fat_g: 15.4, carbs_g: 7.8, salt_g: 1.5, tags: ["ホットスナック", "チキン", "公式栄養"], meal: "snack", source_url: "https://www.lawson.co.jp/recommend/original/detail/1390563_1996.html", verified: true },
+  { brand: "ローソン", name: "からあげクン レッド", calories: 225, protein_g: 14.3, fat_g: 15.1, carbs_g: 8.1, salt_g: 1.7, tags: ["ホットスナック", "チキン", "辛い", "公式栄養"], meal: "snack", source_url: "https://www.lawson.co.jp/recommend/original/detail/1390564_1996.html", verified: true },
+  { brand: "ローソン", name: "Lチキ レギュラー", calories: 255, protein_g: 13.7, fat_g: 16.6, carbs_g: 12.8, salt_g: 1.6, tags: ["ホットスナック", "チキン", "公式栄養"], meal: "snack", source_url: "https://www.lawson.co.jp/recommend/original/detail/1390578_1996.html", verified: true },
   { brand: "ローソン", name: "ブランパン 2個入", calories: 130, protein_g: 12.0, fat_g: 5.0, carbs_g: 16.0, salt_g: 0.8, tags: ["パン", "低糖質", "高たんぱく"], meal: "breakfast", serving: "2個" },
   { brand: "ローソン", name: "これがのり弁当", calories: 770, protein_g: 23.0, fat_g: 24.0, carbs_g: 112.0, salt_g: 4.0, tags: ["弁当", "のり弁"] },
   { brand: "ローソン", name: "これがチキン南蛮弁当", calories: 800, protein_g: 27.0, fat_g: 28.0, carbs_g: 108.0, salt_g: 3.8, tags: ["弁当", "チキン"] },
@@ -129,9 +134,9 @@ const items: ConvenienceInput[] = [
   { brand: "ミニストップ", name: "店内手づくりおにぎり 鮭", calories: 220, protein_g: 6.5, fat_g: 2.8, carbs_g: 43.0, salt_g: 1.5, tags: ["おにぎり", "店内手づくり", "鮭"] },
   { brand: "ミニストップ", name: "たまごサンド", calories: 350, protein_g: 12.0, fat_g: 22.0, carbs_g: 27.0, salt_g: 1.7, tags: ["サンドイッチ", "卵"], meal: "breakfast" },
   { brand: "ミニストップ", name: "ミックスサンド", calories: 320, protein_g: 13.0, fat_g: 16.0, carbs_g: 31.0, salt_g: 2.1, tags: ["サンドイッチ"], meal: "breakfast" },
-  { brand: "ミニストップ", name: "ジューシーチキン プレーン", calories: 260, protein_g: 14.0, fat_g: 17.0, carbs_g: 13.0, salt_g: 1.4, tags: ["ホットスナック", "チキン"], meal: "snack" },
-  { brand: "ミニストップ", name: "クランキーチキン", calories: 290, protein_g: 13.0, fat_g: 18.0, carbs_g: 18.0, salt_g: 1.7, tags: ["ホットスナック", "チキン"], meal: "snack" },
-  { brand: "ミニストップ", name: "Xフライドポテト", calories: 410, protein_g: 5.0, fat_g: 22.0, carbs_g: 48.0, salt_g: 1.9, tags: ["ホットスナック", "ポテト"], meal: "snack" },
+  { brand: "ミニストップ", name: "ジューシーチキン プレーン", calories: 284, protein_g: 14.6, fat_g: 19.2, carbs_g: 13.2, salt_g: 2.2, tags: ["ホットスナック", "チキン", "公式栄養"], meal: "snack", source_url: "https://www.ministop.co.jp/syohin/products/detail013004.html", verified: true },
+  { brand: "ミニストップ", name: "クランキーチキン", calories: 290, protein_g: 13.0, fat_g: 18.0, carbs_g: 18.0, salt_g: 1.7, tags: ["ホットスナック", "チキン", "栄養推定"], meal: "snack" },
+  { brand: "ミニストップ", name: "Xフライドポテト", calories: 410, protein_g: 5.0, fat_g: 22.0, carbs_g: 48.0, salt_g: 1.9, tags: ["ホットスナック", "ポテト", "栄養推定"], meal: "snack" },
   { brand: "ミニストップ", name: "ホットドッグ", calories: 310, protein_g: 11.0, fat_g: 16.0, carbs_g: 31.0, salt_g: 2.0, tags: ["ホットスナック", "パン"], meal: "snack" },
   { brand: "ミニストップ", name: "のり弁当", calories: 720, protein_g: 22.0, fat_g: 22.0, carbs_g: 105.0, salt_g: 3.8, tags: ["弁当", "のり弁"] },
   { brand: "ミニストップ", name: "幕の内弁当", calories: 650, protein_g: 25.0, fat_g: 18.0, carbs_g: 95.0, salt_g: 3.7, tags: ["弁当"] },
@@ -140,9 +145,9 @@ const items: ConvenienceInput[] = [
   { brand: "ミニストップ", name: "北海道ミルクソフト", calories: 185, protein_g: 4.0, fat_g: 7.0, carbs_g: 27.0, salt_g: 0.2, tags: ["ソフトクリーム", "スイーツ"], meal: "snack" },
   { brand: "ミニストップ", name: "ハロハロ", calories: 300, protein_g: 4.0, fat_g: 6.0, carbs_g: 58.0, salt_g: 0.2, tags: ["ハロハロ", "スイーツ"], meal: "snack" },
   { brand: "ミニストップ", name: "なめらかプリンパフェ", calories: 320, protein_g: 6.0, fat_g: 13.0, carbs_g: 45.0, salt_g: 0.3, tags: ["パフェ", "スイーツ"], meal: "snack" },
-  { brand: "ミニストップ", name: "辛口ジューシーチキン", calories: 270, protein_g: 14.0, fat_g: 17.0, carbs_g: 14.0, salt_g: 1.6, tags: ["ホットスナック", "チキン", "辛い"], meal: "snack" },
+  { brand: "ミニストップ", name: "辛口ジューシーチキン", calories: 319, protein_g: 13.4, fat_g: 22.3, carbs_g: 16.1, salt_g: 3.0, tags: ["ホットスナック", "チキン", "辛い", "公式栄養"], meal: "snack", source_url: "https://www.ministop.co.jp/syohin/products/detail013047.html", verified: true },
   { brand: "ミニストップ", name: "十勝ハッシュドポテト", calories: 230, protein_g: 3.0, fat_g: 13.0, carbs_g: 25.0, salt_g: 1.1, tags: ["ホットスナック", "ポテト"], meal: "snack" },
-  { brand: "ミニストップ", name: "チーズハットグ", calories: 330, protein_g: 10.0, fat_g: 16.0, carbs_g: 36.0, salt_g: 1.7, tags: ["ホットスナック", "チーズ"], meal: "snack" },
+  { brand: "ミニストップ", name: "チーズハットグ", calories: 354, protein_g: 9.5, fat_g: 21.2, carbs_g: 31.2, salt_g: 1.8, tags: ["ホットスナック", "チーズ", "公式栄養"], meal: "snack", source_url: "https://www.ministop.co.jp/syohin/products/detail050114.html", verified: true },
   { brand: "ミニストップ", name: "まぜてのむほろにがコーヒーゼリー", calories: 230, protein_g: 5.0, fat_g: 6.0, carbs_g: 39.0, salt_g: 0.3, tags: ["ドリンク", "スイーツ", "コーヒー"], meal: "snack" },
   { brand: "ミニストップ", name: "サラダチキン プレーン", calories: 115, protein_g: 24.0, fat_g: 1.5, carbs_g: 1.0, salt_g: 1.4, tags: ["サラダチキン", "高たんぱく", "チキン"], meal: "snack" },
   { brand: "ミニストップ", name: "プロテインバー", calories: 200, protein_g: 15.0, fat_g: 8.0, carbs_g: 18.0, salt_g: 0.4, tags: ["プロテイン", "高たんぱく"], meal: "snack" },
