@@ -173,6 +173,15 @@ const updateSeenStorageKey = "phase-log-seen-update-id";
 const staleAppPromptDelayMs = 6 * 60 * 60 * 1000;
 const appUpdates: AppUpdate[] = [
   {
+    id: "2026-06-12-favorite-menu-persistence",
+    title: "お気に入りメニューの保持を修正",
+    date: "2026-06-12",
+    items: [
+      "アプリ更新や再読み込みで食事メニューのお気に入りが外れる問題を修正しました。",
+      "食品メニューの初期データ更新時も、登録済みのお気に入り状態を引き継ぐようにしました。",
+    ],
+  },
+  {
     id: "2026-06-12-home-workout-refresh-flow",
     title: "ホーム表示・ワークアウト追加・更新促進を改善",
     date: "2026-06-12",
