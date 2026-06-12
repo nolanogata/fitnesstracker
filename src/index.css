@@ -133,6 +133,40 @@ button {
   -webkit-backdrop-filter: blur(24px);
 }
 
+.home-header-reload {
+  display: inline-flex;
+  width: 2.75rem;
+  height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.62);
+  background: rgba(255, 255, 255, 0.58);
+  color: #526a57;
+  box-shadow: 0 12px 30px rgba(40, 48, 36, 0.07);
+  transition: transform 180ms ease, opacity 180ms ease;
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+}
+
+.home-header-reload:active {
+  transform: scale(0.96);
+}
+
+.home-header-reload:disabled {
+  opacity: 0.72;
+}
+
+.home-header-reload-loading {
+  animation: home-spin 900ms linear infinite;
+}
+
+@keyframes home-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .home-glass-card,
 .home-hero-card,
 .home-notice,
@@ -245,6 +279,23 @@ button {
   background: #da9a3d;
 }
 
+.home-checkin-edit {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  display: inline-flex;
+  width: 2rem;
+  height: 2rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.62);
+  background: rgba(255, 255, 255, 0.54);
+  color: #526a57;
+  box-shadow: 0 8px 20px rgba(40, 48, 36, 0.06);
+  pointer-events: none;
+}
+
 .home-action-row {
   display: grid;
   grid-template-columns: minmax(0, 1.18fr) minmax(0, 0.92fr);
@@ -310,6 +361,8 @@ button {
   .app-status-pill,
   .sticky-panel,
   .home-status-pill,
+  .home-header-reload,
+  .home-checkin-edit,
   .home-glass-card,
   .home-hero-card,
   .home-notice,
