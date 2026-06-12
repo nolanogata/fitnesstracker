@@ -11,6 +11,9 @@ export async function initializeSeeds() {
     const existingExercises = await db.exercise_presets.toArray();
     const existingWorkoutTemplates = await db.workout_templates.toArray();
     const favoriteMenuItemIds = new Set(existingMenuItems.filter((item) => item.is_favorite).map((item) => item.id));
+    const favoriteMenuItemKeys = new Set(existingMenuItems
+      .filter((item) => item.is_favorite)
+      .map((item) => `${item.brand ?? ""}|${item.name}`));
     const favoriteExerciseIds = new Set(existingExercises.filter((exercise) => exercise.is_favorite).map((exercise) => exercise.id));
     const workoutTemplateOrders = new Map(existingWorkoutTemplates.map((template) => [template.id, template.display_order]));
     const officialFoodReplacementNames = new Set([
@@ -70,10 +73,14 @@ export async function initializeSeeds() {
       .filter((item) => {
         if (item.is_user_created) return false;
         if (["大戸屋", "はなまるうどん"].includes(item.brand ?? "") && item.data_source === "estimated") return true;
+        if (["ケンタッキー", "モスバーガー"].includes(item.brand ?? "") && item.data_source === "official") return true;
         return officialFoodReplacementNames.has(`${item.brand ?? ""}|${item.name}`);
       })
       .map((item) => item.id));
-    await db.menu_items.bulkPut(foodSeeds.map((item) => ({ ...item, is_favorite: item.is_favorite || favoriteMenuItemIds.has(item.id) })));
+    await db.menu_items.bulkPut(foodSeeds.map((item) => ({
+      ...item,
+      is_favorite: item.is_favorite || favoriteMenuItemIds.has(item.id) || favoriteMenuItemKeys.has(`${item.brand ?? ""}|${item.name}`),
+    })));
     await db.exercise_presets.bulkPut(exerciseSeeds.map((exercise) => ({ ...exercise, is_favorite: favoriteExerciseIds.has(exercise.id) })));
     const hiddenWorkoutTemplateIds = new Set(settings?.hidden_workout_template_ids ?? []);
     await db.workout_templates.bulkPut(workoutTemplateSeeds
