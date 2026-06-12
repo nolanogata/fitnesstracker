@@ -82,6 +82,11 @@ export function generateMarkdownReport(input: {
     exercises: scopedExercises,
     sets: input.workoutSets,
   });
+  const dailyWorkoutDetailLines = buildDailyWorkoutDetailLines({
+    sessions: input.workoutSessions,
+    exercises: scopedExercises,
+    sets: input.workoutSets,
+  });
 
   return `# ゴールトラッカー AI相談レポート
 
@@ -137,11 +142,17 @@ ${isDaily ? `対象日: ${input.periodStart}` : `期間: ${input.periodStart} - 
 - C: ${macroDiffs ? formatDiff(macroDiffs.carbs, "g") : "目標未設定"}
 - F/C超過: ${fcWarnings.join(" / ") || "なし"}
 
-## 食事ログ
+${isDaily ? "## その日の食事詳細" : "## 食事ログ"}
 
 ${foodLines.join("\n") || "- 記録なし"}
 
-## ワークアウト
+${isDaily ? `## その日のワークアウト詳細
+
+- セッション数: ${input.workoutSessions.length}
+- 種目数: ${scopedExercises.length}
+- セット数: ${dailyWorkoutDetailLines.setCount}
+
+${dailyWorkoutDetailLines.lines.join("\n") || "- 記録なし"}` : `## ワークアウト
 
 - セッション数: ${input.workoutSessions.length}
 - 種目数: ${scopedExercises.length}
@@ -155,7 +166,7 @@ ${workoutSummaryLines.join("\n") || "- 記録なし"}
 
 ### 種目詳細
 
-${exerciseLines.join("\n") || "- 記録なし"}
+${exerciseLines.join("\n") || "- 記録なし"}`}
 
 ## 相談したいこと
 
@@ -195,6 +206,63 @@ function buildWorkoutSummaryLines(input: {
       const titles = sessions.map((session) => session.title).join(" / ");
       return `- ${formatGroupingKey(key, input.grouping)}: ${sessions.length}回 / ${exerciseCount}種目 / ${setCount}セット (${titles})`;
     });
+}
+
+function buildDailyWorkoutDetailLines(input: {
+  sessions: WorkoutSession[];
+  exercises: WorkoutExercise[];
+  sets: WorkoutSet[];
+}) {
+  const exercisesBySession = new Map<string, WorkoutExercise[]>();
+  input.exercises.forEach((exercise) => {
+    exercisesBySession.set(exercise.session_id, [...(exercisesBySession.get(exercise.session_id) ?? []), exercise]);
+  });
+  const setsByExercise = new Map<string, WorkoutSet[]>();
+  input.sets.forEach((set) => {
+    setsByExercise.set(set.workout_exercise_id, [...(setsByExercise.get(set.workout_exercise_id) ?? []), set]);
+  });
+
+  let setCount = 0;
+  const lines = [...input.sessions]
+    .sort((a, b) => a.logged_at.localeCompare(b.logged_at))
+    .flatMap((session) => {
+      const sessionExercises = [...(exercisesBySession.get(session.id) ?? [])].sort((a, b) => a.order - b.order);
+      const sessionLines = [
+        `- セッション: ${session.title} (${session.body_parts.join(" / ") || session.workout_type}${session.note ? ` / ${session.note}` : ""})`,
+      ];
+      if (!sessionExercises.length) {
+        sessionLines.push("  - 種目なし");
+        return sessionLines;
+      }
+      sessionExercises.forEach((exercise) => {
+        const exerciseSets = [...(setsByExercise.get(exercise.id) ?? [])].sort((a, b) => a.set_order - b.set_order);
+        setCount += exerciseSets.length;
+        sessionLines.push(`  - ${exercise.exercise_name}: ${exercise.body_part} / ${exercise.equipment_type}${exercise.note ? ` / ${exercise.note}` : ""}`);
+        if (!exerciseSets.length) {
+          sessionLines.push("    - セット記録なし");
+          return;
+        }
+        exerciseSets.forEach((set) => {
+          sessionLines.push(`    - ${set.set_order}セット目: ${formatWorkoutSetDetail(set)}`);
+        });
+      });
+      return sessionLines;
+    });
+
+  return { lines, setCount };
+}
+
+function formatWorkoutSetDetail(set: WorkoutSet) {
+  const parts: string[] = [];
+  if (typeof set.duration_min === "number") parts.push(`${set.duration_min}分`);
+  if (typeof set.weight_kg === "number" || typeof set.reps === "number") {
+    parts.push(`${typeof set.weight_kg === "number" ? `${set.weight_kg}kg` : "重量未記録"} x ${typeof set.reps === "number" ? `${set.reps}回` : "回数未記録"}`);
+  }
+  if (typeof set.active_calories === "number") parts.push(`${set.active_calories}kcal`);
+  if (set.intensity) parts.push(`強度:${set.intensity}`);
+  if (set.is_warmup) parts.push("ウォームアップ");
+  if (set.note) parts.push(set.note);
+  return parts.join(" / ") || "内容未記録";
 }
 
 function groupingLabel(grouping: WorkoutGrouping) {
