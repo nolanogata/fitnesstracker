@@ -88,6 +88,13 @@ type PortionOption = {
   label: string;
   value: number;
 };
+type WorkoutExerciseDraft = {
+  exercise: ExercisePreset;
+  sets: number;
+  reps: number;
+  weight_kg: number;
+  duration_min: number;
+};
 type ManualFoodDraft = {
   name: string;
   brand: string;
@@ -942,6 +949,7 @@ function WorkoutTab(props: {
   const [editingTemplateId, setEditingTemplateId] = useState<string>();
   const [templateExerciseQuery, setTemplateExerciseQuery] = useState("");
   const [templateTargetItem, setTemplateTargetItem] = useState<{ label: string; item: TemplateExercise }>();
+  const [exerciseDraft, setExerciseDraft] = useState<WorkoutExerciseDraft>();
   const exerciseEditorRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const workoutTopRef = useRef<HTMLDivElement | null>(null);
   const sessionSectionRef = useRef<HTMLElement | null>(null);
@@ -965,7 +973,18 @@ function WorkoutTab(props: {
     sessionSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, [activeSession, focusedExerciseId, sessionScrollKey]);
 
-  const addPresetExercise = async (exercise: ExercisePreset) => {
+  const openExerciseDraft = (exercise: ExercisePreset) => {
+    setExerciseDraft({
+      exercise,
+      sets: exercise.default_sets ?? 3,
+      reps: exercise.default_reps ?? (exercise.body_part === "有酸素" ? 0 : 10),
+      weight_kg: exercise.default_weight_kg ?? 0,
+      duration_min: exercise.default_duration_min ?? 20,
+    });
+  };
+
+  const addPresetExercise = async (draft: WorkoutExerciseDraft) => {
+    const { exercise } = draft;
     let targetSessionId = sessionId;
     if (!targetSessionId) {
       targetSessionId = makeId("session");
@@ -984,11 +1003,19 @@ function WorkoutTab(props: {
     }
     const addedExerciseId = await addExerciseToSession(
       targetSessionId,
-      exercisePresetToTemplateExercise(exercise),
+      {
+        ...exercisePresetToTemplateExercise(exercise),
+        sets: Math.max(1, Math.round(draft.sets)),
+        reps: draft.reps,
+        weight_kg: draft.weight_kg,
+        duration_min: draft.duration_min,
+      },
       props.workoutExercises.filter((item) => item.session_id === targetSessionId).length,
       props.workoutSets,
       props.workoutExercises,
+      { bodyWeightKg: props.profile?.current_weight_kg ?? 70, preferItemValues: true },
     );
+    setExerciseDraft(undefined);
     await props.refresh();
     setFocusedExerciseId(addedExerciseId);
   };
@@ -1166,7 +1193,7 @@ function WorkoutTab(props: {
               exercise={exercise}
               isFavorite={!!exercise.is_favorite}
               key={exercise.id}
-              onAdd={addPresetExercise}
+              onAdd={openExerciseDraft}
               onToggleFavorite={toggleExerciseFavorite}
               onPickTemplate={props.workoutTemplates.length ? (item) => setTemplateTargetItem({ label: item.name, item: exercisePresetToTemplateExercise(item) }) : undefined}
             />
@@ -1233,7 +1260,7 @@ function WorkoutTab(props: {
                 exercise={exercise}
                 isFavorite={!!exercise.is_favorite}
                 key={exercise.id}
-                onAdd={addPresetExercise}
+                onAdd={openExerciseDraft}
                 onToggleFavorite={toggleExerciseFavorite}
                 onPickTemplate={props.workoutTemplates.length ? (item) => setTemplateTargetItem({ label: item.name, item: exercisePresetToTemplateExercise(item) }) : undefined}
               />
@@ -1338,6 +1365,15 @@ function WorkoutTab(props: {
             </div>
           </div>
         </div>
+      )}
+
+      {exerciseDraft && (
+        <ExerciseAddModal
+          draft={exerciseDraft}
+          setDraft={setExerciseDraft}
+          onClose={() => setExerciseDraft(undefined)}
+          onSave={() => addPresetExercise(exerciseDraft)}
+        />
       )}
     </div>
   );
@@ -2066,11 +2102,11 @@ function ExercisePresetRow({ exercise, isFavorite, onAdd, onToggleFavorite, onPi
   return (
     <div className="flex items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-rice/70">
       <Pictogram {...pictogram} />
-      <div className="min-w-0 flex-1">
+      <button className="min-w-0 flex-1 text-left" onClick={() => onAdd(exercise)}>
         <p className="truncate text-sm font-semibold">{exercise.name}</p>
         <p className="truncate text-xs text-moss">{exercise.body_part} · {exercise.equipment_type}</p>
-      </div>
-      <button className="icon-button h-8 w-8" aria-label={`${exercise.name}を追加`} onClick={() => onAdd(exercise)}><Plus size={14} /></button>
+      </button>
+      <button className="icon-button h-8 w-8" aria-label={`${exercise.name}の内容を設定して追加`} onClick={() => onAdd(exercise)}><Plus size={14} /></button>
       {onPickTemplate && <button className="icon-button h-8 w-8" aria-label={`${exercise.name}をプリセットへ追加`} onClick={() => onPickTemplate(exercise)}><Archive size={14} /></button>}
       <button
         className={`icon-button h-8 w-8 ${isFavorite ? "border-sun/50 text-[#8a5d13]" : ""}`}
@@ -2079,6 +2115,48 @@ function ExercisePresetRow({ exercise, isFavorite, onAdd, onToggleFavorite, onPi
       >
         <Heart size={14} fill={isFavorite ? "currentColor" : "none"} />
       </button>
+    </div>
+  );
+}
+
+function ExerciseAddModal({ draft, setDraft, onClose, onSave }: {
+  draft: WorkoutExerciseDraft;
+  setDraft: (draft: WorkoutExerciseDraft) => void;
+  onClose: () => void;
+  onSave: () => void | Promise<void>;
+}) {
+  const isCardio = draft.exercise.body_part === "有酸素" || draft.exercise.equipment_type === "有酸素";
+  const pictogram = getWorkoutPictogram(draft.exercise.body_part, draft.exercise.equipment_type);
+  return (
+    <div className="fixed inset-0 z-40 flex items-end bg-ink/30 px-4 pb-4">
+      <div className="compact-card w-full p-4">
+        <div className="flex items-start gap-3">
+          <Pictogram {...pictogram} />
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-lg font-bold">{draft.exercise.name}</p>
+            <p className="mt-1 text-sm text-moss">{draft.exercise.body_part} · {draft.exercise.equipment_type}</p>
+          </div>
+          <button className="icon-button h-9 w-9" aria-label="閉じる" onClick={onClose}>×</button>
+        </div>
+
+        {isCardio ? (
+          <div className="mt-4">
+            <p className="mb-2 text-xs font-bold text-moss">分数</p>
+            <Stepper value={draft.duration_min} suffix="min" step={5} onChange={(duration_min) => setDraft({ ...draft, duration_min })} />
+          </div>
+        ) : (
+          <div className="mt-4 grid grid-cols-3 gap-3">
+            <NumberInput label="セット" value={draft.sets} onChange={(sets) => setDraft({ ...draft, sets: Math.max(1, sets) })} />
+            <NumberInput label="重量kg" value={draft.weight_kg} step={2.5} onChange={(weight_kg) => setDraft({ ...draft, weight_kg })} />
+            <NumberInput label="回数" value={draft.reps} onChange={(reps) => setDraft({ ...draft, reps: Math.max(0, reps) })} />
+          </div>
+        )}
+
+        <div className="mt-4 grid grid-cols-2 gap-2">
+          <button className="secondary-button" onClick={onClose}>閉じる</button>
+          <button className="primary-button" onClick={onSave}><Plus size={17} />追加</button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -2554,6 +2632,7 @@ async function addExerciseToSession(
   order: number,
   allSets: WorkoutSet[],
   allExercises: WorkoutExercise[],
+  options: { bodyWeightKg?: number; preferItemValues?: boolean } = {},
 ): Promise<string> {
   const timestamp = nowIso();
   const exercise: WorkoutExercise = {
@@ -2572,7 +2651,7 @@ async function addExerciseToSession(
     .filter((candidate) => candidate.exercise_name === item.exercise_name)
     .sort((a, b) => b.created_at.localeCompare(a.created_at))[0];
   const previousSets = previousExercise ? allSets.filter((set) => set.workout_exercise_id === previousExercise.id).sort((a, b) => a.set_order - b.set_order) : [];
-  const setCount = previousSets.length || item.sets || 3;
+  const setCount = options.preferItemValues ? item.sets || previousSets.length || 3 : previousSets.length || item.sets || 3;
   const sets = Array.from({ length: setCount }, (_, index) => {
     const previous = previousSets[index] ?? previousSets.at(-1);
     const durationMin = item.duration_min ?? previous?.duration_min;
@@ -2580,10 +2659,10 @@ async function addExerciseToSession(
       id: makeId("set"),
       workout_exercise_id: exercise.id,
       set_order: index + 1,
-      weight_kg: previous?.weight_kg ?? item.weight_kg ?? 0,
-      reps: previous?.reps ?? item.reps ?? 10,
+      weight_kg: options.preferItemValues ? item.weight_kg ?? previous?.weight_kg ?? 0 : previous?.weight_kg ?? item.weight_kg ?? 0,
+      reps: options.preferItemValues ? item.reps ?? previous?.reps ?? 10 : previous?.reps ?? item.reps ?? 10,
       duration_min: durationMin,
-      active_calories: item.body_part === "有酸素" && durationMin ? estimateActiveCalories(item.exercise_name, durationMin, 70) : undefined,
+      active_calories: item.body_part === "有酸素" && durationMin ? estimateActiveCalories(item.exercise_name, durationMin, options.bodyWeightKg ?? 70) : undefined,
       is_warmup: false,
       created_at: timestamp,
       updated_at: timestamp,
