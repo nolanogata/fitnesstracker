@@ -2066,10 +2066,10 @@ function ExercisePresetRow({ exercise, isFavorite, onAdd, onToggleFavorite, onPi
   return (
     <div className="flex items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-rice/70">
       <Pictogram {...pictogram} />
-      <button className="min-w-0 flex-1 text-left" onClick={() => onAdd(exercise)}>
+      <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-semibold">{exercise.name}</p>
         <p className="truncate text-xs text-moss">{exercise.body_part} · {exercise.equipment_type}</p>
-      </button>
+      </div>
       <button className="icon-button h-8 w-8" aria-label={`${exercise.name}を追加`} onClick={() => onAdd(exercise)}><Plus size={14} /></button>
       {onPickTemplate && <button className="icon-button h-8 w-8" aria-label={`${exercise.name}をプリセットへ追加`} onClick={() => onPickTemplate(exercise)}><Archive size={14} /></button>}
       <button
