@@ -67,16 +67,6 @@ export const externalNutritionFoods = [
   }),
   fatSecret({
     brand: "スターバックス",
-    name: "ニューヨークチーズケーキ",
-    calories: 414,
-    protein_g: 6.6,
-    fat_g: 29.9,
-    carbs_g: 30.1,
-    tags: ["カフェ", "ケーキ"],
-    source_url: "https://www.fatsecret.jp/%E3%82%AB%E3%83%AD%E3%83%AA%E3%83%BC-%E6%A0%84%E9%A4%8A/%E3%82%B9%E3%82%BF%E3%83%BC%E3%83%90%E3%83%83%E3%82%AF%E3%82%B9/%E3%83%8B%E3%83%A5%E3%83%BC%E3%83%A8%E3%83%BC%E3%82%AF%E3%83%81%E3%83%BC%E3%82%BA%E3%82%B1%E3%83%BC%E3%82%AD/1%E5%80%8B",
-  }),
-  fatSecret({
-    brand: "スターバックス",
     name: "シュガードーナツ",
     calories: 360,
     protein_g: 4.5,
