@@ -56,6 +56,7 @@ import type {
   WorkoutExercise,
   WorkoutSession,
   WorkoutSet,
+  WorkoutSetPattern,
   WorkoutTemplate,
   WorkoutTemplateIconKey,
 } from "./types";
@@ -94,6 +95,7 @@ type WorkoutExerciseDraft = {
   reps: number;
   weight_kg: number;
   duration_min: number;
+  setSchemeText: string;
 };
 type ManualFoodDraft = {
   name: string;
@@ -172,6 +174,16 @@ const backupStorageKey = "phase-log-last-backup-at";
 const updateSeenStorageKey = "phase-log-seen-update-id";
 const staleAppPromptDelayMs = 6 * 60 * 60 * 1000;
 const appUpdates: AppUpdate[] = [
+  {
+    id: "2026-06-12-workout-set-schemes",
+    title: "段階セットの記録と保存を追加",
+    date: "2026-06-12",
+    items: [
+      "筋トレ種目で 47×10 / 54×10 のような段階セットをまとめて入力・反映できるようにしました。",
+      "記録した段階セットをカスタム種目として保存したり、任意のワークアウトプリセットへ追加できるようにしました。",
+      "プリセットから開始した場合も、保存済みの段階セットをそのまま記録へ反映するようにしました。",
+    ],
+  },
   {
     id: "2026-06-12-daily-ai-report-details",
     title: "日別AI相談レポートを詳細化",
@@ -1066,17 +1078,26 @@ function WorkoutTab(props: {
   }, [activeSession, focusedExerciseId, sessionScrollKey]);
 
   const openExerciseDraft = (exercise: ExercisePreset) => {
+    const isCardio = isCardioWorkoutItem(exercise);
+    const defaultSetSchemeText = formatWorkoutSetPatternText(exercise.default_set_scheme, isCardio);
+    const sets = exercise.default_sets ?? 3;
+    const reps = exercise.default_reps ?? (isCardio ? 0 : 10);
+    const weight = exercise.default_weight_kg ?? 0;
+    const duration = exercise.default_duration_min ?? 20;
     setExerciseDraft({
       exercise,
-      sets: exercise.default_sets ?? 3,
-      reps: exercise.default_reps ?? (exercise.body_part === "有酸素" ? 0 : 10),
-      weight_kg: exercise.default_weight_kg ?? 0,
-      duration_min: exercise.default_duration_min ?? 20,
+      sets,
+      reps,
+      weight_kg: weight,
+      duration_min: duration,
+      setSchemeText: defaultSetSchemeText || (isCardio ? `${duration}分` : `${weight}×${reps}×${sets}`),
     });
   };
 
   const addPresetExercise = async (draft: WorkoutExerciseDraft) => {
     const { exercise } = draft;
+    const isCardio = isCardioWorkoutItem(exercise);
+    const parsedSetScheme = parseWorkoutSetScheme(draft.setSchemeText, isCardio, exercise.name, props.profile?.current_weight_kg ?? 70);
     let targetSessionId = sessionId;
     if (!targetSessionId) {
       targetSessionId = makeId("session");
@@ -1097,10 +1118,11 @@ function WorkoutTab(props: {
       targetSessionId,
       {
         ...exercisePresetToTemplateExercise(exercise),
-        sets: Math.max(1, Math.round(draft.sets)),
-        reps: draft.reps,
-        weight_kg: draft.weight_kg,
-        duration_min: draft.duration_min,
+        sets: parsedSetScheme.length || Math.max(1, Math.round(draft.sets)),
+        reps: parsedSetScheme[0]?.reps ?? draft.reps,
+        weight_kg: parsedSetScheme[0]?.weight_kg ?? draft.weight_kg,
+        duration_min: parsedSetScheme[0]?.duration_min ?? draft.duration_min,
+        set_scheme: parsedSetScheme.length ? parsedSetScheme : exercise.default_set_scheme,
       },
       props.workoutExercises.filter((item) => item.session_id === targetSessionId).length,
       props.workoutSets,
@@ -1397,16 +1419,10 @@ function WorkoutTab(props: {
                 name: `${activeSession.title} preset`,
                 body_parts: activeSession.body_parts,
                 icon_key: inferWorkoutTemplateIconKey({ body_parts: activeSession.body_parts, exercises: [] }),
-                exercises: sessionExercises.map((exercise) => ({
-                  exercise_id: exercise.exercise_id,
-                  exercise_name: exercise.exercise_name,
-                  body_part: exercise.body_part,
-                  equipment_type: exercise.equipment_type,
-                  sets: props.workoutSets.filter((set) => set.workout_exercise_id === exercise.id).length || 3,
-                  reps: props.workoutSets.find((set) => set.workout_exercise_id === exercise.id)?.reps,
-                  weight_kg: props.workoutSets.find((set) => set.workout_exercise_id === exercise.id)?.weight_kg,
-                  duration_min: props.workoutSets.find((set) => set.workout_exercise_id === exercise.id)?.duration_min,
-                })),
+                exercises: sessionExercises.map((exercise) => workoutExerciseToTemplateExercise(
+                  exercise,
+                  props.workoutSets.filter((set) => set.workout_exercise_id === exercise.id).sort((a, b) => a.set_order - b.set_order),
+                )),
                 is_public_preset: false,
                 is_user_created: true,
                 created_at: nowIso(),
@@ -2165,6 +2181,7 @@ function TemplateExerciseRow({ exercise, index, onRemove, onUpdate }: {
 }) {
   const pictogram = getWorkoutPictogram(exercise.body_part, exercise.equipment_type);
   const isCardio = exercise.body_part === "有酸素" || exercise.equipment_type === "有酸素";
+  const setSchemeLabel = formatWorkoutSetPatternText(exercise.set_scheme, isCardio);
   return (
     <div className="flex items-start justify-between gap-3 px-4 py-3">
       <Pictogram {...pictogram} />
@@ -2173,9 +2190,14 @@ function TemplateExerciseRow({ exercise, index, onRemove, onUpdate }: {
         <p className="truncate text-xs text-moss">
           {exercise.body_part} · {exercise.equipment_type} · {exercise.sets}セット{isCardio ? ` · ${exercise.duration_min ?? 20}分` : ""}
         </p>
+        {setSchemeLabel && <p className="mt-1 truncate text-xs font-semibold text-moss">{setSchemeLabel}</p>}
         {isCardio && (
           <div className="mt-2 max-w-[170px]">
-            <Stepper value={exercise.duration_min ?? 20} suffix="min" step={5} onChange={(value) => onUpdate(index, { ...exercise, duration_min: value })} />
+            <Stepper value={exercise.duration_min ?? exercise.set_scheme?.[0]?.duration_min ?? 20} suffix="min" step={5} onChange={(value) => onUpdate(index, {
+              ...exercise,
+              duration_min: value,
+              set_scheme: exercise.set_scheme?.length ? exercise.set_scheme.map((pattern) => ({ ...pattern, duration_min: value, active_calories: undefined })) : exercise.set_scheme,
+            })} />
           </div>
         )}
       </div>
@@ -2235,15 +2257,33 @@ function ExerciseAddModal({ draft, setDraft, onClose, onSave }: {
         {isCardio ? (
           <div className="mt-4">
             <p className="mb-2 text-xs font-bold text-moss">分数</p>
-            <Stepper value={draft.duration_min} suffix="min" step={5} onChange={(duration_min) => setDraft({ ...draft, duration_min })} />
+            <Stepper value={draft.duration_min} suffix="min" step={5} onChange={(duration_min) => setDraft({ ...draft, duration_min, setSchemeText: `${duration_min}分` })} />
           </div>
         ) : (
           <div className="mt-4 grid grid-cols-3 gap-3">
-            <NumberInput label="セット" value={draft.sets} onChange={(sets) => setDraft({ ...draft, sets: Math.max(1, sets) })} />
-            <NumberInput label="重量kg" value={draft.weight_kg} step={2.5} onChange={(weight_kg) => setDraft({ ...draft, weight_kg })} />
-            <NumberInput label="回数" value={draft.reps} onChange={(reps) => setDraft({ ...draft, reps: Math.max(0, reps) })} />
+            <NumberInput label="セット" value={draft.sets} onChange={(sets) => {
+              const nextSets = Math.max(1, sets);
+              setDraft({ ...draft, sets: nextSets, setSchemeText: `${draft.weight_kg}×${draft.reps}×${nextSets}` });
+            }} />
+            <NumberInput label="重量kg" value={draft.weight_kg} step={2.5} onChange={(weight_kg) => {
+              setDraft({ ...draft, weight_kg, setSchemeText: `${weight_kg}×${draft.reps}×${draft.sets}` });
+            }} />
+            <NumberInput label="回数" value={draft.reps} onChange={(reps) => {
+              const nextReps = Math.max(0, reps);
+              setDraft({ ...draft, reps: nextReps, setSchemeText: `${draft.weight_kg}×${nextReps}×${draft.sets}` });
+            }} />
           </div>
         )}
+
+        <label className="mt-4 block text-xs font-semibold text-moss">
+          段階セット
+          <textarea
+            className="mt-2 min-h-20 w-full text-sm"
+            value={draft.setSchemeText}
+            onChange={(event) => setDraft({ ...draft, setSchemeText: event.target.value })}
+            placeholder={isCardio ? "例: 25分 または 25〜30分" : "例: 47×10 / 54×10 / 61×10 / 68×10 または 20×10×3"}
+          />
+        </label>
 
         <div className="mt-4 grid grid-cols-2 gap-2">
           <button className="secondary-button" onClick={onClose}>閉じる</button>
@@ -2291,6 +2331,12 @@ function WorkoutExerciseEditor({
 }) {
   const isCardio = exercise.body_part === "有酸素" || exercise.equipment_type === "有酸素";
   const pictogram = getWorkoutPictogram(exercise.body_part, exercise.equipment_type);
+  const setSignature = sets.map((set) => [set.set_order, set.weight_kg, set.reps, set.duration_min, set.active_calories, set.note].join(":")).join("|");
+  const [setSchemeText, setSetSchemeText] = useState("");
+  const [setSchemeStatus, setSetSchemeStatus] = useState("");
+  useEffect(() => {
+    setSetSchemeText(formatWorkoutSetText(sets, isCardio));
+  }, [isCardio, setSignature]);
   const updateCardioDuration = async (value: number) => {
     const timestamp = nowIso();
     if (!sets.length) {
@@ -2313,6 +2359,50 @@ function WorkoutExerciseEditor({
       })));
     }
     await refresh();
+  };
+  const applySetScheme = async () => {
+    const scheme = parseWorkoutSetScheme(setSchemeText, isCardio, exercise.exercise_name, bodyWeightKg);
+    if (!scheme.length) {
+      setSetSchemeStatus("入力を読み取れませんでした");
+      return;
+    }
+    await replaceWorkoutSetsWithScheme(exercise.id, scheme);
+    await refresh();
+    setSetSchemeStatus(`${scheme.length}セットを反映しました`);
+  };
+  const saveCustomExercise = async () => {
+    const parsedScheme = parseWorkoutSetScheme(setSchemeText, isCardio, exercise.exercise_name, bodyWeightKg);
+    const scheme = parsedScheme.length ? parsedScheme : workoutSetsToPattern(sets);
+    if (!scheme.length) {
+      setSetSchemeStatus("保存できるセットがありません");
+      return;
+    }
+    const timestamp = nowIso();
+    const first = scheme[0];
+    const customName = `${exercise.exercise_name}（段階）`;
+    const existing = await db.exercise_presets.filter((preset) => preset.is_user_created && preset.name === customName).first();
+    await db.exercise_presets.put({
+      id: existing?.id ?? makeId("exercise_user"),
+      name: customName,
+      body_part: exercise.body_part,
+      equipment_type: exercise.equipment_type,
+      movement_pattern: "custom",
+      machine_name: exercise.machine_name,
+      default_sets: scheme.length,
+      default_reps: first.reps,
+      default_weight_kg: first.weight_kg,
+      default_duration_min: first.duration_min,
+      default_set_scheme: scheme,
+      intensity_default: first.intensity,
+      is_public_preset: false,
+      is_user_created: true,
+      is_favorite: true,
+      preset_pack: "custom",
+      created_at: existing?.created_at ?? timestamp,
+      updated_at: timestamp,
+    });
+    await refresh();
+    setSetSchemeStatus("カスタム種目に保存しました");
   };
   return (
     <div className="p-4">
@@ -2363,6 +2453,25 @@ function WorkoutExerciseEditor({
             <button className="icon-button h-9 w-9" aria-label="削除" onClick={async () => { await db.workout_sets.delete(set.id); await refresh(); }}><Trash2 size={14} /></button>
           </div>
         ))}
+      </div>
+      <div className="mt-3 rounded-md bg-rice p-3">
+        <label className="block text-xs font-bold text-moss">
+          段階セット
+          <textarea
+            className="mt-2 min-h-20 w-full text-sm"
+            value={setSchemeText}
+            onChange={(event) => {
+              setSetSchemeText(event.target.value);
+              setSetSchemeStatus("");
+            }}
+            placeholder={isCardio ? "例: 25分 または 25〜30分" : "例: 47×10 / 54×10 / 61×10 / 68×10 または 20×10×3"}
+          />
+        </label>
+        <div className="mt-2 grid grid-cols-2 gap-2">
+          <button className="secondary-button" onClick={applySetScheme}><Check size={16} />一括反映</button>
+          <button className="secondary-button" onClick={saveCustomExercise}><Save size={16} />カスタム種目保存</button>
+        </div>
+        {setSchemeStatus && <p className="mt-2 text-xs font-semibold text-moss">{setSchemeStatus}</p>}
       </div>
       <div className="mt-3 grid grid-cols-2 gap-2">
         <button className="secondary-button" onClick={async () => {
@@ -2719,6 +2828,102 @@ function QuickStrip({ title, items, fallback, onPick }: { title: string; items: 
   );
 }
 
+function isCardioWorkoutItem(item: { body_part: string; equipment_type: string }) {
+  return item.body_part === "有酸素" || item.equipment_type === "有酸素";
+}
+
+function parseWorkoutSetScheme(text: string, isCardio: boolean, exerciseName: string, bodyWeightKg: number): WorkoutSetPattern[] {
+  const normalizedText = text
+    .replace(/[／]/g, "/")
+    .replace(/[，、]/g, "/")
+    .replace(/\n+/g, "/");
+  return normalizedText
+    .split("/")
+    .map((segment) => segment.trim())
+    .filter(Boolean)
+    .flatMap((segment) => parseWorkoutSetSegment(segment, isCardio, exerciseName, bodyWeightKg))
+    .slice(0, 20);
+}
+
+function parseWorkoutSetSegment(segment: string, isCardio: boolean, exerciseName: string, bodyWeightKg: number): WorkoutSetPattern[] {
+  const [, afterColon = segment] = segment.match(/[:：](.+)$/) ?? [];
+  let target = afterColon.trim();
+  const notes = Array.from(target.matchAll(/[（(]([^）)]+)[）)]/g)).map((match) => match[1].trim()).filter(Boolean);
+  target = target.replace(/[（(][^）)]+[）)]/g, "").trim();
+  const note = notes.join(" / ") || undefined;
+  const numbers = target.match(/\d+(?:\.\d+)?/g)?.map(Number) ?? [];
+  if (!numbers.length) return [];
+
+  if (isCardio || /分/.test(target)) {
+    const duration = /[〜~\-－]/.test(target) && numbers.length > 1 ? numbers[1] : numbers[0];
+    return [{
+      reps: 0,
+      duration_min: duration,
+      active_calories: estimateActiveCalories(exerciseName, duration, bodyWeightKg),
+      note,
+    }];
+  }
+
+  if (numbers.length < 2) return [];
+  const repeat = Math.max(1, Math.min(10, Math.round(numbers[2] ?? 1)));
+  return Array.from({ length: repeat }, () => ({
+    weight_kg: numbers[0],
+    reps: Math.round(numbers[1]),
+    note,
+  }));
+}
+
+function workoutSetsToPattern(sets: WorkoutSet[]): WorkoutSetPattern[] {
+  return [...sets]
+    .sort((a, b) => a.set_order - b.set_order)
+    .map((set) => ({
+      weight_kg: set.weight_kg,
+      reps: set.reps,
+      duration_min: set.duration_min,
+      active_calories: set.active_calories,
+      intensity: set.intensity,
+      note: set.note,
+    }));
+}
+
+function formatWorkoutSetPatternText(patterns: WorkoutSetPattern[] | undefined, isCardio: boolean) {
+  if (!patterns?.length) return "";
+  return patterns.map((pattern) => formatWorkoutSetPatternToken(pattern, isCardio)).join(" / ");
+}
+
+function formatWorkoutSetText(sets: WorkoutSet[], isCardio: boolean) {
+  return formatWorkoutSetPatternText(workoutSetsToPattern(sets), isCardio);
+}
+
+function formatWorkoutSetPatternToken(pattern: WorkoutSetPattern, isCardio: boolean) {
+  if (isCardio || typeof pattern.duration_min === "number") {
+    return `${pattern.duration_min ?? 0}分${pattern.note ? `（${pattern.note}）` : ""}`;
+  }
+  return `${pattern.weight_kg ?? 0}×${pattern.reps ?? 0}${pattern.note ? `（${pattern.note}）` : ""}`;
+}
+
+async function replaceWorkoutSetsWithScheme(workoutExerciseId: string, scheme: WorkoutSetPattern[]) {
+  const timestamp = nowIso();
+  const existing = await db.workout_sets.where("workout_exercise_id").equals(workoutExerciseId).toArray();
+  await db.transaction("rw", db.workout_sets, async () => {
+    if (existing.length) await db.workout_sets.bulkDelete(existing.map((set) => set.id));
+    await db.workout_sets.bulkPut(scheme.map((pattern, index) => ({
+      id: makeId("set"),
+      workout_exercise_id: workoutExerciseId,
+      set_order: index + 1,
+      weight_kg: pattern.weight_kg,
+      reps: pattern.reps,
+      duration_min: pattern.duration_min,
+      active_calories: pattern.active_calories,
+      intensity: pattern.intensity,
+      note: pattern.note,
+      is_warmup: false,
+      created_at: timestamp,
+      updated_at: timestamp,
+    })));
+  });
+}
+
 async function addExerciseToSession(
   sessionId: string,
   item: TemplateExercise,
@@ -2744,11 +2949,26 @@ async function addExerciseToSession(
     .filter((candidate) => candidate.exercise_name === item.exercise_name)
     .sort((a, b) => b.created_at.localeCompare(a.created_at))[0];
   const previousSets = previousExercise ? allSets.filter((set) => set.workout_exercise_id === previousExercise.id).sort((a, b) => a.set_order - b.set_order) : [];
-  const setCount = options.preferItemValues ? item.sets || previousSets.length || 3 : previousSets.length || item.sets || 3;
-  const sets = Array.from({ length: setCount }, (_, index) => {
-    const previous = previousSets[index] ?? previousSets.at(-1);
-    const durationMin = item.duration_min ?? previous?.duration_min;
-    return {
+  const setScheme = item.set_scheme?.length ? item.set_scheme : undefined;
+  const sets = setScheme
+    ? setScheme.map((pattern, index) => ({
+      id: makeId("set"),
+      workout_exercise_id: exercise.id,
+      set_order: index + 1,
+      weight_kg: pattern.weight_kg,
+      reps: pattern.reps,
+      duration_min: pattern.duration_min,
+      active_calories: pattern.active_calories ?? (item.body_part === "有酸素" && pattern.duration_min ? estimateActiveCalories(item.exercise_name, pattern.duration_min, options.bodyWeightKg ?? 70) : undefined),
+      intensity: pattern.intensity,
+      note: pattern.note,
+      is_warmup: false,
+      created_at: timestamp,
+      updated_at: timestamp,
+    }))
+    : Array.from({ length: options.preferItemValues ? item.sets || previousSets.length || 3 : previousSets.length || item.sets || 3 }, (_, index) => {
+      const previous = previousSets[index] ?? previousSets.at(-1);
+      const durationMin = item.duration_min ?? previous?.duration_min;
+      return {
       id: makeId("set"),
       workout_exercise_id: exercise.id,
       set_order: index + 1,
@@ -2759,8 +2979,8 @@ async function addExerciseToSession(
       is_warmup: false,
       created_at: timestamp,
       updated_at: timestamp,
-    };
-  });
+      };
+    });
   await db.workout_sets.bulkPut(sets);
   return exercise.id;
 }
@@ -3057,6 +3277,7 @@ function exercisePresetToTemplateExercise(exercise: ExercisePreset): TemplateExe
     reps: exercise.default_reps,
     weight_kg: exercise.default_weight_kg,
     duration_min: exercise.default_duration_min,
+    set_scheme: exercise.default_set_scheme,
   };
 }
 
@@ -3071,6 +3292,7 @@ function workoutExerciseToTemplateExercise(exercise: WorkoutExercise, sets: Work
     reps: firstSet?.reps,
     weight_kg: firstSet?.weight_kg,
     duration_min: firstSet?.duration_min,
+    set_scheme: sets.length ? workoutSetsToPattern(sets) : undefined,
   };
 }
 

@@ -124,6 +124,7 @@ export type ExercisePreset = {
   default_reps?: number;
   default_weight_kg?: number;
   default_duration_min?: number;
+  default_set_scheme?: WorkoutSetPattern[];
   intensity_default?: string;
   is_public_preset: boolean;
   is_user_created: boolean;
@@ -142,6 +143,16 @@ export type TemplateExercise = {
   reps?: number;
   weight_kg?: number;
   duration_min?: number;
+  set_scheme?: WorkoutSetPattern[];
+};
+
+export type WorkoutSetPattern = {
+  weight_kg?: number;
+  reps?: number;
+  duration_min?: number;
+  active_calories?: number;
+  intensity?: string;
+  note?: string;
 };
 
 export type WorkoutTemplate = {
