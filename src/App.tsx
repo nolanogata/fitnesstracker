@@ -173,6 +173,18 @@ const updateSeenStorageKey = "phase-log-seen-update-id";
 const staleAppPromptDelayMs = 6 * 60 * 60 * 1000;
 const appUpdates: AppUpdate[] = [
   {
+    id: "2026-06-12-home-workout-refresh-flow",
+    title: "ホーム表示・ワークアウト追加・更新促進を改善",
+    date: "2026-06-12",
+    items: [
+      "ホームの今日の食事と今日の筋トレで、件数をタップすると当日の全件を確認できるようにしました。",
+      "ワークアウト種目は、セット数・重量・回数または分数を入力してから追加する流れにしました。",
+      "アプリを長時間開きっぱなしにした場合、ホームに更新ボタンを促すバナーを表示するようにしました。",
+      "サプリカテゴリにクレアチン、マルチビタミン、EAA/BCAAなどの筋トレ系サプリを追加しました。",
+      "亀田製菓 うすやきせんべい えび味を食品メニューに追加しました。",
+    ],
+  },
+  {
     id: "2026-06-12-workout-template-cardio-updates",
     title: "ワークアウト操作と更新履歴を改善",
     date: "2026-06-12",
