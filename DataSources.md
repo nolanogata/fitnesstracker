@@ -37,6 +37,7 @@ UI confidence labels:
   - ガスト, ジョナサン, 藍屋: official Skylark menu pages and embedded menu JSON were checked on 2026-06-12. Some kcal/salt values are present in JSON, but P/F/C is still estimated, so entries remain `estimated/medium`.
   - デニーズ: official menu category pages were checked on 2026-06-12. Added selected official-menu-name entries as `estimated/medium`.
   - ロイヤルホスト, ジョイフル, 華屋与兵衛, サイゼリヤ, オリーブの丘: official menu/category pages were checked on 2026-06-12. Added representative official-menu-name or official-category entries as `estimated/medium`; P/F/C values are not official.
+- モンスーンカフェ: official site and store PDF menus were checked on 2026-06-12. Added representative official-menu-name entries from grand, weekday lunch, and takeout menus as `estimated/medium`; P/F/C values are not official.
 - Cafe chains:
   - Starbucks: official menu API/list pages were checked on 2026-06-12. Added selected official-menu-name entries as `estimated/medium`.
   - Doutor and Tully's: official menu pages were checked on 2026-06-12. Added selected official-menu-name entries as `estimated/medium`.
