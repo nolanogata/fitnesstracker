@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ChangeEvent, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ChangeEvent, type ReactNode, type RefObject } from "react";
 import {
   Activity,
   Archive,
@@ -179,6 +179,15 @@ const workoutWeightPresetStorageKey = "phase-log-workout-weight-presets";
 const staleAppPromptDelayMs = 6 * 60 * 60 * 1000;
 const weightStepOptions = [1, 2.5, 5, 10];
 const appUpdates: AppUpdate[] = [
+  {
+    id: "2026-06-12-preset-scroll-and-general-foods",
+    title: "プリセット編集スクロールと一般メニューを追加",
+    date: "2026-06-12",
+    items: [
+      "ワークアウトプリセットをタップした時、プリセット内容の編集欄へ自動スクロールするようにしました。",
+      "ゆで卵、目玉焼き、チーズトースト、オートミールなど日常的な一般メニューを追加しました。",
+    ],
+  },
   {
     id: "2026-06-12-home-food-log-jump",
     title: "ホームから今日の食事ログへ直接移動",
@@ -1341,6 +1350,7 @@ function WorkoutTab(props: {
   const dragReorderLockRef = useRef(false);
   const exerciseEditorRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const workoutTopRef = useRef<HTMLDivElement | null>(null);
+  const templateEditorRef = useRef<HTMLElement | null>(null);
   const sessionSectionRef = useRef<HTMLElement | null>(null);
   const activeSession = props.workoutSessions.find((session) => session.id === sessionId);
   const editingTemplate = props.workoutTemplates.find((template) => template.id === editingTemplateId);
@@ -1524,6 +1534,14 @@ function WorkoutTab(props: {
       display_order: index,
       updated_at: timestamp,
     })));
+  };
+
+  const openTemplateEditor = (template: WorkoutTemplate) => {
+    setEditingTemplateId(template.id);
+    setTemplateExerciseQuery("");
+    window.setTimeout(() => {
+      templateEditorRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 80);
   };
 
   const deleteWorkoutTemplate = async (template: WorkoutTemplate) => {
@@ -1715,10 +1733,7 @@ function WorkoutTab(props: {
                 isDragging={draggingTemplateId === template.id}
                 isEditing={editingTemplateId === template.id}
                 key={template.id}
-                onEdit={() => {
-                  setEditingTemplateId(editingTemplateId === template.id ? undefined : template.id);
-                  setTemplateExerciseQuery("");
-                }}
+                onEdit={() => openTemplateEditor(template)}
                 onStart={startFromTemplate}
                 onDelete={() => deleteWorkoutTemplate(template)}
                 onDragEnd={endTemplateDrag}
@@ -1734,6 +1749,7 @@ function WorkoutTab(props: {
 
           {editingTemplate && (
             <WorkoutTemplateEditor
+              editorRef={templateEditorRef}
               exercisePresets={props.exercisePresets}
               bodyWeightKg={props.profile?.current_weight_kg ?? 70}
               onAddExercise={(exercise) => addExerciseToTemplate(editingTemplate.id, exercisePresetToTemplateExercise(exercise))}
@@ -2501,12 +2517,13 @@ function WorkoutTemplateRow({ template, isEditing, isDragging, onStart, onEdit, 
   );
 }
 
-function WorkoutTemplateEditor({ template, exercisePresets, bodyWeightKg, query, setQuery, onStart, onDelete, onAddExercise, onRemoveExercise, onUpdateExercise, onUpdateDetails }: {
+function WorkoutTemplateEditor({ template, exercisePresets, bodyWeightKg, query, setQuery, editorRef, onStart, onDelete, onAddExercise, onRemoveExercise, onUpdateExercise, onUpdateDetails }: {
   template: WorkoutTemplate;
   exercisePresets: ExercisePreset[];
   bodyWeightKg: number;
   query: string;
   setQuery: (query: string) => void;
+  editorRef: RefObject<HTMLElement | null>;
   onStart: () => void | Promise<void>;
   onDelete: () => void | Promise<void>;
   onAddExercise: (exercise: ExercisePreset) => void | Promise<void>;
@@ -2529,7 +2546,7 @@ function WorkoutTemplateEditor({ template, exercisePresets, bodyWeightKg, query,
     setIconDraft(template.icon_key ?? inferWorkoutTemplateIconKey(template));
   }, [template.id, template.name, template.icon_key, template.body_parts.join("|"), template.exercises.length]);
   return (
-    <section className="compact-card divide-y divide-line overflow-hidden">
+    <section className="compact-card divide-y divide-line overflow-hidden scroll-mt-24" ref={editorRef}>
       <div className="px-4 py-3">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
