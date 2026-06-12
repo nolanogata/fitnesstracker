@@ -868,6 +868,7 @@ function HomeFoodLogRow({ entry, displayName }: { entry: FoodEntry; displayName:
 
 function FoodTab(props: { menuItems: MenuItem[]; foodEntries: FoodEntry[]; appDate: string; openMyMenuSettings: () => void; refresh: () => Promise<void> }) {
   const foodTopRef = useRef<HTMLDivElement | null>(null);
+  const chainSectionRef = useRef<HTMLElement | null>(null);
   const chainListRef = useRef<HTMLDivElement | null>(null);
   const foodResultsRef = useRef<HTMLElement | null>(null);
   const [mode, setMode] = useState<FoodMode>("search");
@@ -889,6 +890,9 @@ function FoodTab(props: { menuItems: MenuItem[]; foodEntries: FoodEntry[]; appDa
   const scrollToFoodResults = () => {
     window.setTimeout(() => foodResultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
   };
+  const scrollToChainSection = () => {
+    window.setTimeout(() => chainSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
+  };
   const scrollToChainList = () => {
     window.setTimeout(() => chainListRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
   };
@@ -898,6 +902,11 @@ function FoodTab(props: { menuItems: MenuItem[]; foodEntries: FoodEntry[]; appDa
   };
   const selectMode = (nextMode: FoodMode) => {
     setMode(nextMode);
+    if (nextMode !== "search") setQuery("");
+    if (nextMode === "chain") {
+      scrollToChainSection();
+      return;
+    }
     scrollToFoodTop();
   };
   const portionOptions = selected ? getPortionOptions(selected) : [];
@@ -1035,7 +1044,7 @@ function FoodTab(props: { menuItems: MenuItem[]; foodEntries: FoodEntry[]; appDa
       </div>
 
       {mode === "chain" && (
-        <section className="compact-card p-3">
+        <section className="compact-card scroll-mt-24 p-3" ref={chainSectionRef}>
           <p className="mb-2 text-xs font-semibold text-moss">ジャンル</p>
           <div className="grid grid-cols-2 gap-2">
             {Object.keys(chainCategories).map((item) => (
