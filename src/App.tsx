@@ -226,8 +226,9 @@ function App() {
   const [seenUpdateId, setSeenUpdateId] = useState<string | undefined>(() => localStorage.getItem(updateSeenStorageKey) || undefined);
   const [isUpdateNotesOpen, setIsUpdateNotesOpen] = useState(false);
   const [showStaleAppPrompt, setShowStaleAppPrompt] = useState(false);
+  const [currentTime, setCurrentTime] = useState(() => new Date());
   const appOpenedAtRef = useRef(Date.now());
-  const appDate = todayAppDate(settings?.day_boundary_hour ?? 3);
+  const appDate = todayAppDate(settings?.day_boundary_hour ?? 3, currentTime);
   const activeGoal = goals.find((goal) => goal.is_active);
   const latestUpdate = appUpdates[0];
 
@@ -266,6 +267,16 @@ function App() {
   useEffect(() => {
     localStorage.setItem("phase-log-tab", tab);
   }, [tab]);
+
+  useEffect(() => {
+    const refreshCurrentTime = () => setCurrentTime(new Date());
+    const interval = window.setInterval(refreshCurrentTime, 60_000);
+    document.addEventListener("visibilitychange", refreshCurrentTime);
+    return () => {
+      window.clearInterval(interval);
+      document.removeEventListener("visibilitychange", refreshCurrentTime);
+    };
+  }, []);
 
   useEffect(() => {
     const updatePromptState = () => {
