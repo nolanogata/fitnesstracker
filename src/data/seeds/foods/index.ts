@@ -22,6 +22,7 @@ import { kfcOfficialFoods } from "./chains/kfcOfficial";
 import { matsuyaOfficialFoods } from "./chains/matsuyaOfficial";
 import { mcdonaldsOfficialFoods } from "./chains/mcdonaldsOfficial";
 import { monsoonCafeMenuFoods } from "./chains/monsoonCafeMenu";
+import { mosOfficialFoods } from "./chains/mosOfficial";
 import { nakauOfficialFoods } from "./chains/nakauOfficial";
 import { ootoyaMenuFoods } from "./chains/ootoyaMenu";
 import { shinpachiMenuFoods } from "./chains/shinpachiMenu";
@@ -48,11 +49,12 @@ export const foodSeeds = [
   ...ootoyaMenuFoods,
   ...shinpachiMenuFoods,
   ...yayoikenOfficialFoods,
-  ...fastFoodFoods,
+  ...mosOfficialFoods,
   ...kfcOfficialFoods,
   ...mcdonaldsOfficialFoods,
   ...subwayOfficialFoods,
   ...dailyChainOfficialFoods,
+  ...fastFoodFoods,
   ...bamiyanMenuFoods,
   ...italianRestaurantMenuFoods,
   ...monsoonCafeMenuFoods,

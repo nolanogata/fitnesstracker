@@ -4,17 +4,21 @@ Generated: 2026-06-12T00:00:00.000Z
 
 ## Summary
 
-This pass materializes the verified first-pass official inventory supplied in the handoff files. It applies safe full-official records only where kcal, protein, fat, carbohydrate, and salt are all source-backed. Partial official kcal/salt rows remain in manual review.
+This pass expands the verified official chain coverage. It applies only rows where kcal, protein, fat, carbohydrate, and salt are all source-backed by official nutrition tables. Partial official kcal/salt rows and ambiguous PDF regions remain in manual review.
 
 | Brand | Source type | Official inventory | Existing before expansion | Missing add records | Replace records | Manual review |
 | --- | --- | ---: | ---: | ---: | ---: | ---: |
 | バーガーキング | official_full | 78 | 12 | 66 | 12 | 0 |
 | スターバックス | official_full | 9 | 9 | 0 | 9 | 0 |
-| Other supported chains | mixed/not extracted in this artifact | 0 | 0 | 0 | 0 | 30 |
+| ケンタッキー | official_full | 35 | 18 | 17 | 18 | 0 |
+| モスバーガー | official_full | 157 | 17 | 37 | 12 | 108 |
+| Other supported chains | mixed/not extracted in this artifact | 0 | 0 | 0 | 0 | 28 |
 
 ## Applied expansion
 
-- Burger King official PDF rows are represented as add/replace records in `food_seed_coverage_diff.json`; the 66 add records are also emitted in `food_seed_missing_items_patch.ts`.
+- Burger King official PDF rows remain represented as add/replace records in `food_seed_coverage_diff.json`; the add records are emitted in `food_seed_missing_items_patch.ts`.
+- KFC official PDF rows now refresh the prior 18 seed rows and add 17 missing official rows, including limited-time style burgers and current side variants.
+- MOS official PDF rows now add 37 safely extracted burger/natsumi/soy/rice/hotdog records. Existing official MOS side rows that were outside the stable extraction segment are retained separately.
 - Starbucks food rows in the supplied batch are replace records only; no new Starbucks add records were present in the handoff.
 - Records with only official calories/salt, or ambiguous PDF table extraction, are not promoted to `official()`.
 
@@ -30,9 +34,7 @@ This pass materializes the verified first-pass official inventory supplied in th
 - 汎用カフェ: スターバックス公式 seed と重複。ブランド別公式が入るものは非表示または優先度低下推奨。
 - 丸亀製麺・ウエスト・資さんうどん汎用: 公式/第三者値の確認が必要。
 - やよい軒・しんぱち食堂汎用: やよい軒公式と重複しうる。公式 seed 優先。
-- モスバーガー: Phase 1: Chains with official kcal/P/F/C/salt can be bulk-added as official() after exact table extraction and diffing.
 - マクドナルド: Phase 1: Chains with official kcal/P/F/C/salt can be bulk-added as official() after exact table extraction and diffing.
-- ケンタッキー: Phase 1: Chains with official kcal/P/F/C/salt can be bulk-added as official() after exact table extraction and diffing.
 - サブウェイ: Phase 1: Chains with official kcal/P/F/C/salt can be bulk-added as official() after exact table extraction and diffing.
 - ドトール: Phase 1: Chains with official kcal/P/F/C/salt can be bulk-added as official() after exact table extraction and diffing.
 - タリーズ: Phase 1: Chains with official kcal/P/F/C/salt can be bulk-added as official() after exact table extraction and diffing.
@@ -50,9 +52,10 @@ This pass materializes the verified first-pass official inventory supplied in th
 - しんぱち食堂: Phase 3: Chains where official nutrition may be absent. Use secondary sources only with clear source_url and confidence downgrade.
 - Monsoon Cafe: Phase 3: Chains where official nutrition may be absent. Use secondary sources only with clear source_url and confidence downgrade.
 - その他ローカル定食系: Phase 3: Chains where official nutrition may be absent. Use secondary sources only with clear source_url and confidence downgrade.
+- モスバーガー PDF remainder: 108 candidate rows after the stable first section need manual table validation before official() promotion.
 
 ## Notes
 
-- This is not yet a completed all-chain source-of-truth crawl. It is a structured first expansion pass from the verified handoff data.
-- The remaining high-priority full official adapters should next extract MOS, McDonald's, KFC, Subway, Doutor, Tullys, Sukiya, Yoshinoya, Matsuya, Nakau, Hanamaru, and Yayoiken source inventories and append their own brand sections to `food_seed_coverage_diff.json`.
+- This is still an incremental source-of-truth crawl, not yet a completed all-chain inventory.
+- Remaining high-priority adapters should next focus on McDonald's, Subway, Doutor, Tullys, Sukiya, Yoshinoya, Matsuya, Nakau, Hanamaru, and Yayoiken source inventories.
 - Existing app search already ranks `official` above `unofficial`, `estimated`, and generic templates.
