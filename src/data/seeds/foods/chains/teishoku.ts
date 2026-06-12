@@ -1,6 +1,6 @@
 import { estimated } from "../helpers";
 
-const brands = ["大戸屋", "やよい軒", "しんぱち食堂"];
+const brands = ["やよい軒", "しんぱち食堂"];
 const items = [
   ["焼き魚定食", 760, 36, 22, 102],
   ["さば定食", 820, 38, 32, 92],

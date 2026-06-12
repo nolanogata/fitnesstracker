@@ -177,6 +177,16 @@ const staleAppPromptDelayMs = 6 * 60 * 60 * 1000;
 const weightStepOptions = [1, 2.5, 5, 10];
 const appUpdates: AppUpdate[] = [
   {
+    id: "2026-06-12-ootoya-official-nutrition",
+    title: "大戸屋メニューを公式栄養値で拡充",
+    date: "2026-06-12",
+    items: [
+      "大戸屋の定食、サイド、ご飯量、麺セット、キッズ・デザート、弁当を公式栄養値で追加しました。",
+      "炭水化物は公式ページの糖質と食物繊維を合算して記録するようにしました。",
+      "古い推定版の大戸屋メニューは、ユーザー作成メニューを残したまま整理します。",
+    ],
+  },
+  {
     id: "2026-06-12-convenience-official-nutrition",
     title: "コンビニ定番メニューの公式栄養値を反映",
     date: "2026-06-12",
