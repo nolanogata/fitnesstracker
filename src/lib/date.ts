@@ -1,15 +1,22 @@
 export const nowIso = () => new Date().toISOString();
 
+const toLocalDateString = (date: Date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
 export const todayAppDate = (boundaryHour = 3, date = new Date()) => {
   const shifted = new Date(date);
   shifted.setHours(shifted.getHours() - boundaryHour);
-  return shifted.toISOString().slice(0, 10);
+  return toLocalDateString(shifted);
 };
 
 export const addDays = (dateString: string, days: number) => {
   const date = new Date(`${dateString}T12:00:00`);
   date.setDate(date.getDate() + days);
-  return date.toISOString().slice(0, 10);
+  return toLocalDateString(date);
 };
 
 export const dateRange = (start: string, end: string) => {
