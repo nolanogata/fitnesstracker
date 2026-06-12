@@ -1,6 +1,6 @@
 import { estimated } from "../helpers";
 
-const brands = ["丸亀製麺", "はなまるうどん", "ウエスト", "資さんうどん"];
+const brands = ["丸亀製麺", "ウエスト", "資さんうどん"];
 const brandAliases: Record<string, string[]> = {
   ウエスト: ["ウェスト", "WEST"],
   資さんうどん: ["資さん", "すけさん"],
