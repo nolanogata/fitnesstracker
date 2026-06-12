@@ -27,7 +27,7 @@ import { monsoonCafeMenuFoods } from "./chains/monsoonCafeMenu";
 import { mosOfficialFoods } from "./chains/mosOfficial";
 import { nakauOfficialFoods } from "./chains/nakauOfficial";
 import { ootoyaMenuFoods } from "./chains/ootoyaMenu";
-import { shinpachiMenuFoods } from "./chains/shinpachiMenu";
+import { shinpachiAllEstimatedFoods } from "./chains/shinpachiEstimated";
 import { subwayOfficialFoods } from "./chains/subwayOfficial";
 import { sukiyaOfficialFoods } from "./chains/sukiyaOfficial";
 import { yayoikenOfficialFoods } from "./chains/yayoikenOfficial";
@@ -49,7 +49,7 @@ export const foodSeeds = [
   ...udonFoods,
   ...teishokuFoods,
   ...ootoyaMenuFoods,
-  ...shinpachiMenuFoods,
+  ...shinpachiAllEstimatedFoods,
   ...yayoikenOfficialFoods,
   ...mosOfficialFoods,
   ...kfcOfficialFoods,

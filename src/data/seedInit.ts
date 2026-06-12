@@ -74,6 +74,7 @@ export async function initializeSeeds() {
       .filter((item) => {
         if (item.is_user_created) return false;
         if (["大戸屋", "はなまるうどん"].includes(item.brand ?? "") && item.data_source === "estimated") return true;
+        if (item.brand === "しんぱち食堂" && item.data_source === "estimated") return true;
         if (["ケンタッキー", "モスバーガー", "サブウェイ"].includes(item.brand ?? "") && item.data_source === "official") return true;
         return officialFoodReplacementNames.has(`${item.brand ?? ""}|${item.name}`);
       })

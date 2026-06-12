@@ -20,7 +20,8 @@ This pass expands the verified official chain coverage. It applies only rows whe
 | 松屋 | official_full | 41 | 10 | 31 | 0 | 0 |
 | やよい軒 | official_full | 39 | 15 | 24 | 0 | 0 |
 | 大戸屋 | official_full/add_if_missing | 162 | 159 | 3 | 0 | 0 |
-| Other supported chains | mixed/not extracted in this artifact | 0 | 0 | 0 | 0 | 22 |
+| しんぱち食堂 | official_menu_plus_supplemental_estimated | 43 | 14 | 29 | 14 | 0 |
+| Other supported chains | mixed/not extracted in this artifact | 0 | 0 | 0 | 0 | 21 |
 
 ## Applied expansion
 
@@ -29,6 +30,7 @@ This pass expands the verified official chain coverage. It applies only rows whe
 - MOS official PDF rows now cover all safely extracted rows from the 2026-05-20 nutrition table, including burgers, sides, drinks, sweets, kids, breakfast, and MOS cafe items.
 - Subway official PDF rows now cover 120 safely attached rows from the 2026-06-10 nutrition table, including sandwiches, potatoes, breads, toppings, morning/kids/sweets, drinks, condiments, and floats.
 - The 2026-06-12 handoff batch adds McDonald's, KFC add-on, Sukiya, Yoshinoya, Matsuya, Yayoiken, and Ootoya official coverage. McDonald's existing fries seed is canonicalized to `マックフライポテト S`.
+- Shinpachi Shokudo common official menu coverage and supplemental store/menu-size rows are added as `estimated()` only. No row is promoted to `official()` because official kcal/PFC/salt values were not found.
 - Starbucks food rows in the supplied batch are replace records only; no new Starbucks add records were present in the handoff.
 - Records with only official calories/salt, or ambiguous PDF table extraction, are not promoted to `official()`.
 
@@ -39,7 +41,6 @@ This pass expands the verified official chain coverage. It applies only rows whe
 - ガスト・ロイヤルホスト・サイゼリヤ・デニーズ・ジョイフル等: 全体が estimated。公式が kcal/塩分のみのチェーンが多く、PFC 補完方針の決定が必要。
 - 餃子の王将 subset: 同ファイル内で王将のみ estimated。公式 PFC の有無確認が必要。
 - Monsoon Cafe: 公式メニュー PDF は確認できても栄養成分表が見つからない可能性が高い。代替ソースで unofficial 化候補。
-- しんぱち食堂: 全量 estimated。焼魚定食は魚種・ご飯量で乖離しやすいため優先レビュー。
 - 汎用ファストフード: バーガーキング等の公式 seed と重複。公式 seed を優先し、汎用推定はブランド名なしのクイック見積へ寄せる。
 - 汎用カフェ: スターバックス公式 seed と重複。ブランド別公式が入るものは非表示または優先度低下推奨。
 - 丸亀製麺・ウエスト・資さんうどん汎用: 公式/第三者値の確認が必要。
@@ -53,7 +54,6 @@ This pass expands the verified official chain coverage. It applies only rows whe
 - サイゼリヤ: Phase 2: Chains whose official sources may expose only calories/salt or whose table extraction requires careful validation. Keep PFC provenance explicit.
 - コメダ珈琲: Phase 2: Chains whose official sources may expose only calories/salt or whose table extraction requires careful validation. Keep PFC provenance explicit.
 - 大戸屋: Phase 2: Chains whose official sources may expose only calories/salt or whose table extraction requires careful validation. Keep PFC provenance explicit.
-- しんぱち食堂: Phase 3: Chains where official nutrition may be absent. Use secondary sources only with clear source_url and confidence downgrade.
 - Monsoon Cafe: Phase 3: Chains where official nutrition may be absent. Use secondary sources only with clear source_url and confidence downgrade.
 - その他ローカル定食系: Phase 3: Chains where official nutrition may be absent. Use secondary sources only with clear source_url and confidence downgrade.
 - サブウェイ PDF ambiguous rows: 15 numeric-only or concatenated rows need table-layout extraction before official() promotion.
@@ -62,5 +62,5 @@ This pass expands the verified official chain coverage. It applies only rows whe
 ## Notes
 
 - This is still an incremental source-of-truth crawl, not yet a completed all-chain inventory.
-- Remaining high-priority adapters should next focus on Doutor, Tullys, Nakau, Hanamaru, and remaining partial/ambiguous chains.
+- Remaining high-priority adapters should next focus on Doutor, Tullys, Nakau, Hanamaru, Monsoon Cafe, and remaining partial/ambiguous chains.
 - Existing app search already ranks `official` above `unofficial`, `estimated`, and generic templates.
