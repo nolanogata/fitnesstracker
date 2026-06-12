@@ -180,6 +180,15 @@ const staleAppPromptDelayMs = 6 * 60 * 60 * 1000;
 const weightStepOptions = [1, 2.5, 5, 10];
 const appUpdates: AppUpdate[] = [
   {
+    id: "2026-06-12-generic-sweets-expansion",
+    title: "一般スイーツメニューを追加",
+    date: "2026-06-12",
+    items: [
+      "ケーキ類、クレープ、プリン、ゼリー、パフェ、シュークリームなどの一般スイーツを追加しました。",
+      "検索やスイーツカテゴリから、ブランド不明の一般的なデザートを記録しやすくしました。",
+    ],
+  },
+  {
     id: "2026-06-12-chain-menu-nutrition-expansion",
     title: "チェーン店メニューと公式栄養値を追加",
     date: "2026-06-12",
