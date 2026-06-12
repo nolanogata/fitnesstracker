@@ -3,7 +3,6 @@ import { estimated, official } from "../helpers";
 const fetchedAt = "2026-06-12T00:00:00.000Z";
 
 const sources = {
-  coco: "https://www.ichibanya.co.jp/menu/pdf/nutrition.pdf",
   tenya: "https://www.tenya.co.jp/pdf/allergen-shop.pdf",
   ringer: "https://www.ringerhut.jp/quality/allergy-nutrition_value/",
   hotto: "https://www.hottomotto.com/menu_list/info/13",
@@ -58,15 +57,6 @@ const ohshoEstimated = (input: Omit<OfficialChainInput, "brand" | "source_url">)
   });
 
 export const dailyChainOfficialFoods = [
-  chainOfficial({ brand: "CoCo壱番屋", name: "ポークカレー", calories: 701, protein_g: 11.0, fat_g: 18.3, carbs_g: 126.9, salt_g: 3.4, tags: ["カレー"], source_url: sources.coco }),
-  chainOfficial({ brand: "CoCo壱番屋", name: "ビーフカレー", calories: 823, protein_g: 17.3, fat_g: 29.6, carbs_g: 125.8, salt_g: 3.1, tags: ["カレー"], source_url: sources.coco }),
-  chainOfficial({ brand: "CoCo壱番屋", name: "チキンにこみカレー", calories: 769, protein_g: 24.4, fat_g: 19.7, carbs_g: 128.7, salt_g: 4.3, tags: ["カレー", "チキン"], source_url: sources.coco }),
-  chainOfficial({ brand: "CoCo壱番屋", name: "ロースカツカレー", calories: 1116, protein_g: 27.1, fat_g: 48.7, carbs_g: 149.3, salt_g: 4.3, tags: ["カレー", "カツ"], source_url: sources.coco }),
-  chainOfficial({ brand: "CoCo壱番屋", name: "パリパリチキンカレー", calories: 995, protein_g: 29.2, fat_g: 36.4, carbs_g: 139.1, salt_g: 4.8, tags: ["カレー", "チキン"], source_url: sources.coco }),
-  chainOfficial({ brand: "CoCo壱番屋", name: "チーズカレー", calories: 896, protein_g: 23.9, fat_g: 34.1, carbs_g: 128.3, salt_g: 4.4, tags: ["カレー", "チーズ"], source_url: sources.coco }),
-  chainOfficial({ brand: "CoCo壱番屋", name: "やさいカレー", calories: 783, protein_g: 12.8, fat_g: 20.1, carbs_g: 142.4, salt_g: 3.5, tags: ["カレー", "野菜"], source_url: sources.coco }),
-  chainOfficial({ brand: "CoCo壱番屋", name: "海の幸カレー", calories: 826, protein_g: 28.8, fat_g: 22.7, carbs_g: 132.2, salt_g: 4.5, tags: ["カレー", "魚介"], source_url: sources.coco }),
-
   chainOfficial({ brand: "天丼てんや", name: "元祖てんやの天丼（あおさ汁付き）", calories: 719, protein_g: 20.0, fat_g: 23.1, carbs_g: 111.6, salt_g: 4.6, tags: ["天丼"], source_url: sources.tenya }),
   chainOfficial({ brand: "天丼てんや", name: "てんやの上天丼（あおさ汁付き）", calories: 662, protein_g: 15.7, fat_g: 19.0, carbs_g: 111.4, salt_g: 4.2, tags: ["天丼"], source_url: sources.tenya }),
   chainOfficial({ brand: "天丼てんや", name: "てんやの特上天丼（あおさ汁付き）", calories: 705, protein_g: 19.2, fat_g: 21.8, carbs_g: 111.6, salt_g: 4.3, tags: ["天丼"], source_url: sources.tenya }),
