@@ -176,6 +176,15 @@ const staleAppPromptDelayMs = 6 * 60 * 60 * 1000;
 const weightStepOptions = [1, 2.5, 5, 10];
 const appUpdates: AppUpdate[] = [
   {
+    id: "2026-06-12-workout-template-save-fix",
+    title: "ワークアウトプリセット保存を修正",
+    date: "2026-06-12",
+    items: [
+      "記録中のワークアウトをプリセット保存した後、保存したプリセットをすぐ確認・編集できるようにしました。",
+      "現在の種目内容から部位とセット構成を作り直して保存し、空のプリセットが作られないようにしました。",
+    ],
+  },
+  {
     id: "2026-06-12-user-menu-imports",
     title: "独自メニューを全体メニューへ追加",
     date: "2026-06-12",
@@ -1098,6 +1107,7 @@ function WorkoutTab(props: {
   const [templateExerciseQuery, setTemplateExerciseQuery] = useState("");
   const [templateTargetItem, setTemplateTargetItem] = useState<{ label: string; item: TemplateExercise }>();
   const [exerciseDraft, setExerciseDraft] = useState<WorkoutExerciseDraft>();
+  const [templateSaveMessage, setTemplateSaveMessage] = useState("");
   const exerciseEditorRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const workoutTopRef = useRef<HTMLDivElement | null>(null);
   const sessionSectionRef = useRef<HTMLElement | null>(null);
@@ -1266,6 +1276,40 @@ function WorkoutTab(props: {
       });
     });
     await props.refresh();
+  };
+
+  const saveActiveSessionAsTemplate = async (session: WorkoutSession) => {
+    const sessionExercises = props.workoutExercises
+      .filter((exercise) => exercise.session_id === session.id)
+      .sort((a, b) => a.order - b.order);
+    if (!sessionExercises.length) {
+      setTemplateSaveMessage("保存できる種目がありません");
+      return;
+    }
+    const exercises = sessionExercises.map((exercise) => workoutExerciseToTemplateExercise(
+      exercise,
+      props.workoutSets.filter((set) => set.workout_exercise_id === exercise.id).sort((a, b) => a.set_order - b.set_order),
+    ));
+    const bodyParts = templateBodyParts(exercises);
+    const timestamp = nowIso();
+    const template: WorkoutTemplate = {
+      id: makeId("template_user"),
+      name: `${session.title} preset`,
+      body_parts: bodyParts,
+      icon_key: inferWorkoutTemplateIconKey({ body_parts: bodyParts, exercises }),
+      exercises,
+      is_public_preset: false,
+      is_user_created: true,
+      created_at: timestamp,
+      updated_at: timestamp,
+    };
+    await db.workout_templates.put(template);
+    await props.refresh();
+    setMode("preset");
+    setEditingTemplateId(template.id);
+    setTemplateExerciseQuery("");
+    setTemplateSaveMessage("プリセットに保存しました");
+    window.requestAnimationFrame(() => workoutTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
   };
 
   const scrollToWorkoutTop = () => {
@@ -1456,25 +1500,8 @@ function WorkoutTab(props: {
           ))}
           <div className="grid gap-2 p-3">
             <button className="secondary-button w-full" onClick={scrollToWorkoutTop}><Plus size={17} />他の種目を追加</button>
-            <button className="secondary-button w-full" onClick={async () => {
-              const sessionExercises = props.workoutExercises.filter((exercise) => exercise.session_id === activeSession.id);
-              const template: WorkoutTemplate = {
-                id: makeId("template_user"),
-                name: `${activeSession.title} preset`,
-                body_parts: activeSession.body_parts,
-                icon_key: inferWorkoutTemplateIconKey({ body_parts: activeSession.body_parts, exercises: [] }),
-                exercises: sessionExercises.map((exercise) => workoutExerciseToTemplateExercise(
-                  exercise,
-                  props.workoutSets.filter((set) => set.workout_exercise_id === exercise.id).sort((a, b) => a.set_order - b.set_order),
-                )),
-                is_public_preset: false,
-                is_user_created: true,
-                created_at: nowIso(),
-                updated_at: nowIso(),
-              };
-              await db.workout_templates.put(template);
-              await props.refresh();
-            }}><Archive size={17} />現在の内容をプリセット保存</button>
+            <button className="secondary-button w-full" onClick={() => saveActiveSessionAsTemplate(activeSession)}><Archive size={17} />現在の内容をプリセット保存</button>
+            {templateSaveMessage && <p className="text-center text-xs font-semibold text-moss">{templateSaveMessage}</p>}
           </div>
         </section>
       )}
