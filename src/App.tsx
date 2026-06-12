@@ -392,13 +392,13 @@ function App() {
     setIsUpdateNotesOpen(true);
   };
   const headerTitle = {
-    home: "今日の記録",
+    home: formatHomeDate(appDate),
     food: "Food",
     workout: "Workout",
     records: "History",
     settings: "Settings",
   }[tab];
-  const headerSubtext = tab === "home" ? formatHomeDate(appDate) : formatJapaneseDate(appDate);
+  const headerSubtext = tab === "home" ? "今日の記録" : formatJapaneseDate(appDate);
   const statusWeight = latestWeight?.weight_kg ?? profile?.current_weight_kg;
 
   if (settings && !settings.onboarding_completed) {
