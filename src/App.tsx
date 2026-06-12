@@ -176,6 +176,14 @@ const staleAppPromptDelayMs = 6 * 60 * 60 * 1000;
 const weightStepOptions = [1, 2.5, 5, 10];
 const appUpdates: AppUpdate[] = [
   {
+    id: "2026-06-12-user-menu-imports",
+    title: "独自メニューを全体メニューへ追加",
+    date: "2026-06-12",
+    items: [
+      "バックアップ内の独自メニューから、イオン せせりとむねからを全体の食事メニューへ追加しました。",
+    ],
+  },
+  {
     id: "2026-06-12-chain-filter-scroll-flow",
     title: "チェーンメニュー選択時の移動を調整",
     date: "2026-06-12",
