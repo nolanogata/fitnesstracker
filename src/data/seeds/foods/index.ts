@@ -17,10 +17,12 @@ import { cafeFoods } from "./chains/cafe";
 import { convenienceFoods } from "./chains/convenience";
 import { dailyChainOfficialFoods } from "./chains/dailyChainsOfficial";
 import { externalNutritionFoods } from "./externalNutrition";
+import { gyudonTeishokuOfficialCoverageFoods } from "./chains/gyudonTeishokuOfficialCoverage";
 import { italianRestaurantMenuFoods } from "./chains/italianRestaurantMenus";
 import { kfcOfficialFoods } from "./chains/kfcOfficial";
 import { matsuyaOfficialFoods } from "./chains/matsuyaOfficial";
 import { mcdonaldsOfficialFoods } from "./chains/mcdonaldsOfficial";
+import { mcdonaldsKfcOfficialCoverageFoods } from "./chains/mcdonaldsKfcOfficialCoverage";
 import { monsoonCafeMenuFoods } from "./chains/monsoonCafeMenu";
 import { mosOfficialFoods } from "./chains/mosOfficial";
 import { nakauOfficialFoods } from "./chains/nakauOfficial";
@@ -52,6 +54,8 @@ export const foodSeeds = [
   ...mosOfficialFoods,
   ...kfcOfficialFoods,
   ...mcdonaldsOfficialFoods,
+  ...mcdonaldsKfcOfficialCoverageFoods,
+  ...gyudonTeishokuOfficialCoverageFoods,
   ...subwayOfficialFoods,
   ...dailyChainOfficialFoods,
   ...fastFoodFoods,
