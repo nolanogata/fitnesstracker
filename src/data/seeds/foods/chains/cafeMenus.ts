@@ -1,4 +1,4 @@
-import { estimated } from "../helpers";
+import { estimated, official } from "../helpers";
 
 const fetchedAt = "2026-06-12T00:00:00.000Z";
 
@@ -7,6 +7,10 @@ const sources = {
   ドトール: "https://www.doutor.co.jp/dcs/menu/",
   タリーズ: "https://www.tullys.co.jp/menu/food/",
   コメダ珈琲: "https://www.komeda.co.jp/menu/",
+} as const;
+
+const officialSources = {
+  starbucks: "https://product.starbucks.co.jp/allergy/nutrient/",
 } as const;
 
 type CafeMenu = {
@@ -18,6 +22,11 @@ type CafeMenu = {
   carbs_g: number;
   tags: string[];
   serving_label?: string;
+};
+
+type OfficialCafeMenu = CafeMenu & {
+  salt_g: number;
+  source_url: string;
 };
 
 const item = (input: CafeMenu) =>
@@ -36,8 +45,36 @@ const item = (input: CafeMenu) =>
     fetched_at: fetchedAt,
   });
 
+const officialItem = (input: OfficialCafeMenu) =>
+  official({
+    brand: input.brand,
+    name: input.name,
+    category: "チェーン店",
+    tags: ["カフェ", input.brand, "公式", ...input.tags],
+    calories: input.calories,
+    protein_g: input.protein_g,
+    fat_g: input.fat_g,
+    carbs_g: input.carbs_g,
+    salt_g: input.salt_g,
+    serving_label: input.serving_label ?? "1品",
+    default_meal_type: "snack",
+    source_url: input.source_url,
+    fetched_at: fetchedAt,
+  });
+
 export const cafeMenuFoods = [
-  item({ brand: "スターバックス", name: "ニューヨークチーズケーキ", calories: 420, protein_g: 7, fat_g: 28, carbs_g: 35, tags: ["デザート", "ケーキ"] }),
+  officialItem({
+    brand: "スターバックス",
+    name: "ニューヨークチーズケーキ",
+    calories: 414,
+    protein_g: 6.6,
+    fat_g: 29.9,
+    carbs_g: 30.1,
+    salt_g: 0.7,
+    tags: ["デザート", "ケーキ", "チーズケーキ"],
+    serving_label: "1個",
+    source_url: officialSources.starbucks,
+  }),
   item({ brand: "スターバックス", name: "シュガードーナツ", calories: 360, protein_g: 6, fat_g: 19, carbs_g: 42, tags: ["ドーナツ"] }),
   item({ brand: "スターバックス", name: "チョコレートチャンクスコーン", calories: 360, protein_g: 7, fat_g: 18, carbs_g: 46, tags: ["スコーン"] }),
   item({ brand: "スターバックス", name: "ベーコンとほうれん草のキッシュ", calories: 340, protein_g: 12, fat_g: 24, carbs_g: 20, tags: ["キッシュ"] }),
@@ -47,15 +84,16 @@ export const cafeMenuFoods = [
   item({ brand: "スターバックス", name: "根菜チキン サラダラップ", calories: 300, protein_g: 15, fat_g: 13, carbs_g: 34, tags: ["ラップ", "チキン"] }),
   item({ brand: "スターバックス", name: "ヨーグルト&バナナグラノーラ", calories: 280, protein_g: 9, fat_g: 8, carbs_g: 45, tags: ["ヨーグルト", "朝食"] }),
 
-  item({ brand: "ドトール", name: "ミラノサンドA 生ハム・ボンレスハム・ボローニャソーセージ", calories: 410, protein_g: 19, fat_g: 18, carbs_g: 43, tags: ["サンド"] }),
-  item({ brand: "ドトール", name: "爽やかレモン ミラノサンドB スモークサーモン・エビ・アボカド", calories: 430, protein_g: 22, fat_g: 19, carbs_g: 42, tags: ["サンド", "海老", "魚"] }),
-  item({ brand: "ドトール", name: "ジャーマンドック", calories: 310, protein_g: 11, fat_g: 15, carbs_g: 33, tags: ["ホットドッグ"] }),
-  item({ brand: "ドトール", name: "モーニング・セットA ハムタマゴサラダ", calories: 390, protein_g: 17, fat_g: 17, carbs_g: 43, tags: ["朝食", "サンド"], serving_label: "1食" }),
-  item({ brand: "ドトール", name: "モーニング・セットB アボカド＆ツナポテト", calories: 430, protein_g: 16, fat_g: 20, carbs_g: 47, tags: ["朝食", "サンド"], serving_label: "1食" }),
-  item({ brand: "ドトール", name: "ホットサンド 大豆のミート ～チーズ＆トマト～", calories: 420, protein_g: 19, fat_g: 19, carbs_g: 44, tags: ["ホットサンド", "大豆"] }),
-  item({ brand: "ドトール", name: "ホットサンド ツナチェダー", calories: 470, protein_g: 22, fat_g: 24, carbs_g: 41, tags: ["ホットサンド", "ツナ"] }),
-  item({ brand: "ドトール", name: "チーズトースト", calories: 360, protein_g: 13, fat_g: 15, carbs_g: 43, tags: ["トースト"] }),
-  item({ brand: "ドトール", name: "ミルクレープ", calories: 330, protein_g: 5, fat_g: 20, carbs_g: 32, tags: ["デザート", "ケーキ"] }),
+  officialItem({ brand: "ドトール", name: "ミラノサンドA 生ハム・ボンレスハム・ボローニャソーセージ", calories: 372, protein_g: 15.1, fat_g: 16.6, carbs_g: 40.7, salt_g: 2.56, tags: ["サンド", "サンドイッチ"], serving_label: "1個", source_url: "https://allergy.doutor.co.jp/allergy_check/doutor_coffee_shop/item/detail/11002001/" }),
+  officialItem({ brand: "ドトール", name: "爽やかレモン ミラノサンドB スモークサーモン・エビ・アボカド", calories: 339, protein_g: 12.1, fat_g: 13.7, carbs_g: 42.0, salt_g: 2.24, tags: ["サンド", "海老", "魚", "サンドイッチ"], serving_label: "1個", source_url: "https://allergy.doutor.co.jp/allergy_check/doutor_coffee_shop/item/detail/11002077/" }),
+  officialItem({ brand: "ドトール", name: "カマンベール in ミラノサンドB スモークサーモン・エビ・アボカド", calories: 374, protein_g: 14.5, fat_g: 16.4, carbs_g: 42.1, salt_g: 2.38, tags: ["サンド", "海老", "魚", "チーズ", "サンドイッチ"], serving_label: "1個", source_url: "https://allergy.doutor.co.jp/allergy_check/doutor_coffee_shop/item/detail/11002078/" }),
+  officialItem({ brand: "ドトール", name: "ジャーマンドック", calories: 284, protein_g: 10.5, fat_g: 15.1, carbs_g: 28.9, salt_g: 2.21, tags: ["ホットドッグ"], serving_label: "1個", source_url: "https://allergy.doutor.co.jp/allergy_check/doutor_coffee_shop/item/detail/11002018/" }),
+  officialItem({ brand: "ドトール", name: "モーニングセットA ハムタマゴサラダ", calories: 320, protein_g: 11.1, fat_g: 14.7, carbs_g: 36.3, salt_g: 1.8, tags: ["朝食", "サンド", "モーニング"], serving_label: "1食", source_url: "https://allergy.doutor.co.jp/allergy_check/doutor_coffee_shop/item/detail/11002021/" }),
+  officialItem({ brand: "ドトール", name: "モーニングセットB アボカド＆ツナポテト", calories: 315, protein_g: 8.7, fat_g: 13.5, carbs_g: 40.1, salt_g: 1.49, tags: ["朝食", "サンド", "モーニング"], serving_label: "1食", source_url: "https://allergy.doutor.co.jp/allergy_check/doutor_coffee_shop/item/detail/11002081/" }),
+  officialItem({ brand: "ドトール", name: "ホットサンド 大豆のミート ～チーズ＆トマト～", calories: 469, protein_g: 16.9, fat_g: 19.0, carbs_g: 57.5, salt_g: 3.0, tags: ["ホットサンド", "大豆"], serving_label: "1個", source_url: "https://allergy.doutor.co.jp/allergy_check/doutor_coffee_shop/item/detail/11002010/" }),
+  officialItem({ brand: "ドトール", name: "ホットサンド ツナチェダーチーズ", calories: 403, protein_g: 16.7, fat_g: 19.3, carbs_g: 40.9, salt_g: 2.16, tags: ["ホットサンド", "ツナ", "チーズ"], serving_label: "1個", source_url: "https://allergy.doutor.co.jp/allergy_check/doutor_coffee_shop/item/detail/11002009/" }),
+  officialItem({ brand: "ドトール", name: "チーズトースト", calories: 242, protein_g: 10.5, fat_g: 7.2, carbs_g: 33.8, salt_g: 1.1, tags: ["トースト", "チーズ"], serving_label: "1個", source_url: "https://allergy.doutor.co.jp/allergy_check/doutor_coffee_shop/item/detail/11002016/" }),
+  officialItem({ brand: "ドトール", name: "ミルクレープ", calories: 328, protein_g: 3.2, fat_g: 23.4, carbs_g: 25.9, salt_g: 0.18, tags: ["デザート", "ケーキ", "スイーツ"], serving_label: "1個", source_url: "https://allergy.doutor.co.jp/allergy_check/doutor_coffee_shop/item/detail/11003011/" }),
 
   item({ brand: "タリーズ", name: "チキンカツサンド ～粒マスタード＆デミソース～", calories: 520, protein_g: 24, fat_g: 22, carbs_g: 55, tags: ["サンド", "チキン"] }),
   item({ brand: "タリーズ", name: "３種のデリ風サラダサンド", calories: 330, protein_g: 11, fat_g: 15, carbs_g: 39, tags: ["サンド", "サラダ"] }),
