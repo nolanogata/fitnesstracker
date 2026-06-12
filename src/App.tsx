@@ -180,6 +180,16 @@ const staleAppPromptDelayMs = 6 * 60 * 60 * 1000;
 const weightStepOptions = [1, 2.5, 5, 10];
 const appUpdates: AppUpdate[] = [
   {
+    id: "2026-06-12-home-health-weather-redesign",
+    title: "HomeをApple Health / Weather寄りに整理",
+    date: "2026-06-12",
+    items: [
+      "Homeを要約中心にし、詳細なリストや大きなボタン群をタップ先へ移しました。",
+      "背景グラデーション、ガラス風カード、大きなカロリー数値で静かな情報階層に変更しました。",
+      "チェックインはHome直置き入力ではなく、タップして開く編集シートに変更しました。",
+    ],
+  },
+  {
     id: "2026-06-12-weekly-workout-date-linked",
     title: "今週の運動目標を日付連動に修正",
     date: "2026-06-12",
@@ -537,6 +547,14 @@ function App() {
   const latestWeight = weightLogs.at(-1);
   const dayTotals = sumFood(todayEntries);
   const target = activeGoal ?? defaultGoal(profile);
+  const targetCalories = target?.target_calories ?? 0;
+  const homeTone = targetCalories <= 0
+    ? "neutral"
+    : dayTotals.calories > targetCalories
+      ? "over"
+      : targetCalories - dayTotals.calories <= 100
+        ? "on-track"
+        : "under";
   const backupInfo = getBackupInfo(lastBackupAt, foodEntries.length + weightLogs.length + workoutSessions.length + workoutSets.length);
   const weeklyWorkoutStatus = getWeeklyWorkoutStatus(target, workoutSessions, workoutExercises, appDate);
   const markBackupNow = () => {
@@ -582,20 +600,20 @@ function App() {
   }
 
   return (
-    <main className="app-shell mx-auto min-h-screen max-w-[430px] text-ink">
-      <header className="safe-top sticky top-0 z-20 border-b border-line bg-rice/95 px-4 pb-3 backdrop-blur">
+    <main className={`app-shell mx-auto min-h-screen max-w-[430px] text-ink ${tab === "home" ? `home-shell home-shell-${homeTone}` : ""}`}>
+      <header className={`safe-top sticky top-0 z-20 px-4 pb-3 backdrop-blur ${tab === "home" ? "home-header" : "border-b border-line bg-rice/95"}`}>
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold tracking-normal">{headerTitle}</h1>
+            <h1 className={tab === "home" ? "text-[2.35rem] font-semibold leading-tight tracking-normal" : "text-2xl font-bold tracking-normal"}>{headerTitle}</h1>
             <p className="mt-1 text-xs font-normal text-moss">{headerSubtext}</p>
           </div>
-          <div className="rounded-full border border-line bg-surface px-3 py-1.5 text-xs font-bold text-moss">
+          <div className={tab === "home" ? "home-status-pill" : "rounded-full border border-line bg-surface px-3 py-1.5 text-xs font-bold text-moss"}>
             {activeGoal ? phaseLabels[activeGoal.phase] : "未設定"} / {typeof statusWeight === "number" ? `${statusWeight}kg` : "-"}
           </div>
         </div>
       </header>
 
-      <section className="px-4 pb-28 pt-4">
+      <section className={tab === "home" ? "px-4 pb-28 pt-2" : "px-4 pb-28 pt-4"}>
         {tab === "home" && (
           <HomeTab
             profile={profile}
@@ -701,7 +719,7 @@ function App() {
       {isUpdateNotesOpen && <UpdateNotesModal updates={appUpdates} onClose={() => setIsUpdateNotesOpen(false)} />}
       {toast && <QuickToast key={toast.id} text={toast.text} />}
 
-      <nav className="safe-bottom fixed inset-x-0 bottom-0 z-30 mx-auto max-w-[430px] border-t border-line bg-surface/95 px-3 pt-1.5 backdrop-blur">
+      <nav className="safe-bottom app-bottom-nav fixed inset-x-0 bottom-0 z-30 mx-auto max-w-[430px] px-3 pt-1.5">
         <div className="grid grid-cols-5 gap-1">
           <TabButton active={tab === "home"} icon={<Home size={19} />} label="Home" onClick={() => { setSettingsFocus(undefined); setFoodFocus(undefined); setTab("home"); }} />
           <TabButton active={tab === "food"} icon={<Utensils size={19} />} label="Food" onClick={() => { setSettingsFocus(undefined); setFoodFocus(undefined); setTab("food"); }} />
@@ -754,42 +772,55 @@ function HomeTab(props: {
   const [weight, setWeight] = useState(props.latestWeight?.weight_kg ?? props.profile?.current_weight_kg ?? 70);
   const [bodyFat, setBodyFat] = useState(props.latestWeight?.body_fat_percentage ?? props.profile?.body_fat_percentage ?? 20);
   const [isReloadingLatest, setIsReloadingLatest] = useState(false);
-  const [showAllFood, setShowAllFood] = useState(false);
-  const [showAllWorkouts, setShowAllWorkouts] = useState(false);
+  const [isCheckInOpen, setIsCheckInOpen] = useState(false);
   const remaining = (props.goal?.target_calories ?? 0) - props.dayTotals.calories;
   const calorieState = getCalorieState(remaining, props.goal?.target_calories ?? 0);
   const average7 = movingAverage(props.weightLogs, 7);
   const caloriePercent = props.goal?.target_calories ? Math.min(100, Math.round((props.dayTotals.calories / props.goal.target_calories) * 100)) : 0;
-  const calorieHeadline = props.goal?.target_calories && remaining < 0 ? "超過" : "残り";
   const backupTitle = props.backupInfo.level === "danger" ? "バックアップ推奨" : "そろそろバックアップ";
-  const deleteFoodEntry = async (entry: FoodEntry) => {
-    await db.food_entries.delete(entry.id);
-    await props.refresh();
-    props.showToast(`${formatFoodEntryName(entry, props.menuItems)}を今日の食事から削除しました`);
-  };
-  const deleteWorkoutSession = async (session: WorkoutSession) => {
-    if (!confirm(`この日の記録から「${session.title}」を削除しますか？ワークアウトメニュー・プリセット本体は残ります。`)) return;
-    const exerciseIds = props.workoutExercises.filter((exercise) => exercise.session_id === session.id).map((exercise) => exercise.id);
-    const setIds = props.workoutSets.filter((set) => exerciseIds.includes(set.workout_exercise_id)).map((set) => set.id);
-    await db.transaction("rw", db.workout_sessions, db.workout_exercises, db.workout_sets, async () => {
-      if (setIds.length) await db.workout_sets.bulkDelete(setIds);
-      if (exerciseIds.length) await db.workout_exercises.bulkDelete(exerciseIds);
-      await db.workout_sessions.delete(session.id);
+  const todayWorkoutExerciseIds = props.workoutExercises
+    .filter((exercise) => props.todayWorkouts.some((session) => session.id === exercise.session_id))
+    .map((exercise) => exercise.id);
+  const todayWorkoutCalories = props.workoutSets
+    .filter((set) => todayWorkoutExerciseIds.includes(set.workout_exercise_id))
+    .reduce((sum, set) => sum + (set.active_calories ?? 0), 0);
+  const previousWeight = props.weightLogs.length > 1 ? props.weightLogs.at(-2)?.weight_kg : undefined;
+  const weightDelta = typeof previousWeight === "number" ? round1(weight - previousWeight) : undefined;
+  const calorieDelta = props.goal?.target_calories ? props.dayTotals.calories - props.goal.target_calories : undefined;
+  const calorieDeltaText = typeof calorieDelta === "number" ? `${calorieDelta > 0 ? "+" : ""}${Math.round(calorieDelta)}` : "-";
+  const calorieMoodClass = typeof calorieDelta === "number" ? (calorieDelta > 0 ? "over" : Math.abs(calorieDelta) <= 100 ? "on-track" : "left") : "neutral";
+  const calorieMoodLabel = typeof calorieDelta === "number" ? (calorieDelta > 0 ? "over" : Math.abs(calorieDelta) <= 100 ? "on track" : "left") : calorieState.label;
+  const foodSummary = `${props.todayEntries.length}件 / ${props.dayTotals.calories} kcal`;
+  const workoutSummary = todayWorkoutCalories > 0 ? `${props.todayWorkouts.length}回 / ${todayWorkoutCalories} kcal` : `${props.todayWorkouts.length}回`;
+  const saveCheckIn = async () => {
+    const timestamp = nowIso();
+    const normalizedBodyFat = clampBodyFat(bodyFat);
+    await db.weight_logs.put({
+      id: makeId("weight"),
+      app_date: props.appDate,
+      logged_at: timestamp,
+      weight_kg: weight,
+      body_fat_percentage: normalizedBodyFat,
+      lean_body_mass_kg: round1(weight * (1 - normalizedBodyFat / 100)),
+      created_at: timestamp,
+      updated_at: timestamp,
     });
+    if (props.profile) await db.profile.update(props.profile.id, { current_weight_kg: weight, body_fat_percentage: normalizedBodyFat, updated_at: timestamp });
+    setBodyFat(normalizedBodyFat);
+    setIsCheckInOpen(false);
     await props.refresh();
+    props.showToast("チェックインを保存しました");
   };
 
   useEffect(() => {
     setWeight(props.latestWeight?.weight_kg ?? props.profile?.current_weight_kg ?? 70);
     setBodyFat(clampBodyFat(props.latestWeight?.body_fat_percentage ?? props.profile?.body_fat_percentage ?? 20));
   }, [props.latestWeight?.weight_kg, props.latestWeight?.body_fat_percentage, props.profile?.current_weight_kg, props.profile?.body_fat_percentage]);
-  const visibleFoodEntries = showAllFood ? props.todayEntries : props.todayEntries.slice(0, 1);
-  const visibleWorkouts = showAllWorkouts ? props.todayWorkouts : props.todayWorkouts.slice(0, 1);
 
   return (
-    <div className="space-y-3">
+    <div className="home-dashboard space-y-4">
       {props.latestUpdate && props.hasUnreadUpdate && (
-        <button className="compact-card flex w-full items-center gap-3 px-4 py-3 text-left" onClick={props.openUpdateNotes}>
+        <button className="home-notice flex w-full items-center gap-3 px-4 py-3 text-left" onClick={props.openUpdateNotes}>
           <div className="min-w-0 flex-1">
             <p className="text-sm font-bold">更新があります</p>
             <p className="mt-1 truncate text-xs text-moss">{props.latestUpdate.title}</p>
@@ -799,7 +830,7 @@ function HomeTab(props: {
       )}
 
       {props.showStaleAppPrompt && (
-        <div className="compact-card flex items-center gap-3 px-4 py-3">
+        <div className="home-notice flex items-center gap-3 px-4 py-3">
           <div className="min-w-0 flex-1">
             <p className="text-sm font-bold">長時間更新していません</p>
             <p className="mt-1 text-xs text-moss">最新のメニューや修正を反映するには更新してください。</p>
@@ -822,43 +853,39 @@ function HomeTab(props: {
       )}
 
       {props.backupInfo.level !== "ok" && (
-        <button className="compact-card flex w-full items-center gap-3 px-4 py-3 text-left" onClick={props.openBackup}>
+        <button className="home-notice flex w-full items-center gap-3 px-4 py-3 text-left" onClick={props.openBackup}>
           <div className="min-w-0 flex-1">
             <p className="text-sm font-bold">{backupTitle}</p>
             <p className="mt-1 text-xs leading-relaxed text-moss">{backupMessage(props.backupInfo)}</p>
-            <p className="mt-1 text-[11px] font-bold text-moss">タップでバックアップ保存へ</p>
           </div>
           <ChevronRight className="shrink-0 text-muted" size={18} />
         </button>
       )}
 
-      <section className={`calorie-card ${calorieState.cardClass}`}>
-        <div className="flex items-center justify-between gap-3">
-          <h2 className="text-[15px] font-bold">今日のカロリー</h2>
-          <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${calorieState.badgeClass}`}>{calorieState.label}</span>
-        </div>
-        <div className="mt-4">
-          <p className={`text-[42px] font-bold leading-none tracking-normal ${calorieState.valueClass}`}>
-            {calorieHeadline} {calorieState.displayValue}
-            {props.goal?.target_calories ? <span className="ml-1 text-base font-bold">kcal</span> : null}
+      <section className={`home-hero-card home-hero-${calorieMoodClass}`}>
+        <p className="text-sm font-semibold text-ink/80">今日のカロリー</p>
+        <div className="mt-6">
+          <p className={`text-[4.25rem] font-semibold leading-none tracking-normal ${calorieDelta && calorieDelta > 0 ? "text-clay" : "text-ink"}`}>
+            {calorieDeltaText}<span className="ml-2 text-xl font-semibold">kcal</span>
           </p>
-          <p className="mt-2 text-xs text-moss">摂取 {props.dayTotals.calories} / 目標 {props.goal?.target_calories ?? "-"} kcal</p>
-          <div className="mt-4 h-2 overflow-hidden rounded-full bg-oat">
-            <div className="h-full rounded-full bg-moss" style={{ width: `${caloriePercent}%` }} />
+          <p className="mt-2 text-sm font-semibold text-moss">{calorieMoodLabel}</p>
+          <p className="mt-1 text-sm text-moss">摂取 {props.dayTotals.calories} / 目標 {props.goal?.target_calories ?? "-"} kcal</p>
+          <div className="mt-6 h-2 overflow-hidden rounded-full bg-white/55">
+            <div className={`h-full rounded-full ${calorieDelta && calorieDelta > 0 ? "bg-clay" : "bg-moss"}`} style={{ width: `${caloriePercent}%` }} />
           </div>
         </div>
-        <div className="mt-4 grid gap-2">
-          <MacroLine label="P" value={props.dayTotals.protein} target={props.goal?.target_protein_g ?? 0} color="#4F6B55" />
-          <MacroLine label="F" value={props.dayTotals.fat} target={props.goal?.target_fat_g ?? 0} color="#4F6B55" warnOnOver />
-          <MacroLine label="C" value={props.dayTotals.carbs} target={props.goal?.target_carbs_g ?? 0} color="#4F6B55" warnOnOver />
-        </div>
+        <p className="mt-5 text-sm font-semibold text-ink/70">P {props.dayTotals.protein}g / F {props.dayTotals.fat}g / C {props.dayTotals.carbs}g</p>
       </section>
 
-      <div className="grid grid-cols-3 gap-2">
-        <button className="primary-button min-h-12" onClick={() => props.setTab("food")}><Plus size={17} />食事を記録</button>
-        <button className="secondary-button min-h-12" onClick={() => props.setTab("workout")}><Plus size={17} />筋トレを記録</button>
+      <div className="home-action-row">
+        <button className="home-primary-action" onClick={() => props.setTab("food")}>食事を記録 <ChevronRight size={17} /></button>
+        <button className="home-secondary-action" onClick={() => props.setTab("workout")}>筋トレを記録 <ChevronRight size={17} /></button>
+      </div>
+      <div className="flex justify-center gap-4 text-xs font-semibold text-moss/80">
+        <button className="px-2 py-1" onClick={() => props.setTab("settings")}>ゴールを確認</button>
+        <button className="px-2 py-1 text-moss/70" onClick={props.openAiReport}>AIレポート</button>
         <button
-          className="secondary-button min-h-12 px-2"
+          className="px-2 py-1 text-moss/70"
           disabled={isReloadingLatest}
           onClick={async () => {
             setIsReloadingLatest(true);
@@ -869,111 +896,78 @@ function HomeTab(props: {
             }
           }}
         >
-          <RotateCcw size={17} />{isReloadingLatest ? "更新中" : "最新へ更新"}
+          {isReloadingLatest ? "更新中" : "最新へ"}
         </button>
       </div>
-      <div className="flex justify-center gap-4 text-xs font-bold text-moss">
-        <button className="px-2 py-1" onClick={() => props.setTab("settings")}>ゴールを確認</button>
-        <button className="px-2 py-1 text-muted" onClick={props.openAiReport}>AI相談用のレポートを生成</button>
-      </div>
 
-      <section className="compact-card p-4">
+      <button className="home-glass-card w-full p-5 text-left" onClick={() => setIsCheckInOpen(true)}>
         <div className="flex items-start justify-between gap-3">
           <div>
-            <p className="text-[15px] font-bold">今日のチェックイン</p>
-            <p className="mt-1 text-xs text-moss">7日平均 {average7 ? `${average7}kg` : "-"}</p>
+            <p className="text-sm font-bold">今日のチェックイン</p>
+            <p className="mt-6 text-[2.6rem] font-semibold leading-none tracking-normal">{round1(weight)}<span className="ml-1 text-base font-semibold">kg</span></p>
+            <p className="mt-2 text-xs text-moss">7日平均 {average7 ? `${average7}kg` : "-"}{typeof weightDelta === "number" ? ` / 前日比 ${weightDelta > 0 ? "+" : ""}${weightDelta}kg` : ""}</p>
           </div>
-          <button className="primary-button h-10 px-3 py-2" aria-label="体重と体脂肪を保存" onClick={async () => {
-            const timestamp = nowIso();
-            const normalizedBodyFat = clampBodyFat(bodyFat);
-            await db.weight_logs.put({
-              id: makeId("weight"),
-              app_date: props.appDate,
-              logged_at: timestamp,
-              weight_kg: weight,
-              body_fat_percentage: normalizedBodyFat,
-              lean_body_mass_kg: round1(weight * (1 - normalizedBodyFat / 100)),
-              created_at: timestamp,
-              updated_at: timestamp,
-            });
-            if (props.profile) await db.profile.update(props.profile.id, { current_weight_kg: weight, body_fat_percentage: normalizedBodyFat, updated_at: timestamp });
-            setBodyFat(normalizedBodyFat);
-            await props.refresh();
-            props.showToast("チェックインを保存しました");
-          }}><Save size={16} />保存</button>
-        </div>
-        <div className="mt-4 grid grid-cols-2 gap-3">
-          <CheckInStepper label="体重" value={weight} suffix="kg" step={0.1} onChange={setWeight} />
-          <CheckInStepper label="体脂肪" value={bodyFat} suffix="%" step={0.5} onChange={(value) => setBodyFat(clampBodyFat(value))} />
-        </div>
-      </section>
-
-      <section className="compact-card p-4">
-        <div className="flex items-center justify-between gap-3">
-          <h2 className="text-[15px] font-bold">今週の運動目標</h2>
-          <p className="text-xs font-semibold text-muted">{props.weeklyWorkoutStatus.start} - {props.weeklyWorkoutStatus.end}</p>
-        </div>
-        <div className="mt-4 grid grid-cols-2 gap-5">
-          <WorkoutGoalProgress
-            appDate={props.appDate}
-            days={props.weeklyWorkoutStatus.days}
-            label="筋トレ"
-            done={props.weeklyWorkoutStatus.strengthDone}
-            target={props.weeklyWorkoutStatus.strengthTarget}
-            type="strength"
-          />
-          <WorkoutGoalProgress
-            appDate={props.appDate}
-            days={props.weeklyWorkoutStatus.days}
-            label="有酸素"
-            done={props.weeklyWorkoutStatus.cardioDone}
-            target={props.weeklyWorkoutStatus.cardioTarget}
-            type="cardio"
-          />
-        </div>
-      </section>
-
-      <section className="compact-card divide-y divide-line overflow-hidden">
-        <ExpandableListHeader
-          title="今日の食事"
-          value={`${props.todayEntries.length}件`}
-          expanded={showAllFood}
-          disabled={props.todayEntries.length <= 1}
-          onToggle={() => setShowAllFood((expanded) => !expanded)}
-        />
-        {visibleFoodEntries.map((entry) => (
-          <div className="flex items-center gap-2 pr-4" key={entry.id}>
-            <button className="min-w-0 flex-1 text-left" onClick={props.openTodayFoodLog}>
-              <HomeFoodLogRow entry={entry} displayName={formatFoodEntryName(entry, props.menuItems)} />
-            </button>
-            <button className="icon-button h-8 w-8 text-clay" aria-label={`${formatFoodEntryName(entry, props.menuItems)}を今日の食事から削除`} onClick={() => deleteFoodEntry(entry)}><Trash2 size={14} /></button>
+          <div className="text-right">
+            <p className="mt-8 text-[2.15rem] font-semibold leading-none tracking-normal">{round1(bodyFat)}<span className="ml-1 text-sm font-semibold">%</span></p>
+            <p className="mt-2 text-xs text-moss">体脂肪率</p>
           </div>
-        ))}
-        {props.todayEntries.length === 0 && <EmptyLine text="まだ食事ログなし" />}
-      </section>
+        </div>
+      </button>
 
-      <section className="compact-card divide-y divide-line overflow-hidden">
-        <ExpandableListHeader
-          title="今日の筋トレ"
-          value={`${props.todayWorkouts.length}件`}
-          expanded={showAllWorkouts}
-          disabled={props.todayWorkouts.length <= 1}
-          onToggle={() => setShowAllWorkouts((expanded) => !expanded)}
-        />
-        {visibleWorkouts.map((session) => (
-          <div className="flex items-center gap-3 px-4 py-3.5" key={session.id}>
-            <button className="min-w-0 flex-1 text-left" onClick={() => props.setTab("workout")}>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-semibold">{session.title}</p>
-                <p className="mt-1 text-xs text-moss">{props.workoutExercises.filter((item) => item.session_id === session.id).length}種目</p>
+      <div className="grid grid-cols-2 gap-3">
+        <section className="home-glass-card p-4">
+          <button className="w-full text-left" onClick={props.openTodayFoodLog}>
+            <p className="text-sm font-bold">今日の記録</p>
+            <div className="mt-5 space-y-4">
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-sm text-moss">食事</span>
+                <span className="text-right text-sm font-semibold">{foodSummary}</span>
               </div>
-            </button>
-            <button className="icon-button h-8 w-8 text-clay" aria-label={`${session.title}をこの日の記録から削除`} onClick={() => deleteWorkoutSession(session)}><Trash2 size={14} /></button>
-            <ChevronRight className="shrink-0 text-muted" size={18} />
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-sm text-moss">筋トレ</span>
+                <span className="text-right text-sm font-semibold">{workoutSummary}</span>
+              </div>
+            </div>
+          </button>
+        </section>
+
+        <section className="home-glass-card p-4">
+          <button className="w-full text-left" onClick={() => props.setTab("workout")}>
+            <p className="text-sm font-bold">今週の運動</p>
+            <div className="mt-5 space-y-4">
+              <WorkoutGoalProgress
+                label="筋トレ"
+                done={props.weeklyWorkoutStatus.strengthDone}
+                target={props.weeklyWorkoutStatus.strengthTarget}
+              />
+              <WorkoutGoalProgress
+                label="有酸素"
+                done={props.weeklyWorkoutStatus.cardioDone}
+                target={props.weeklyWorkoutStatus.cardioTarget}
+              />
+            </div>
+          </button>
+        </section>
+      </div>
+
+      {isCheckInOpen && (
+        <div className="fixed inset-0 z-50 flex items-end bg-ink/25 px-4 pb-4" onClick={() => setIsCheckInOpen(false)}>
+          <div className="home-sheet w-full p-5" onClick={(event) => event.stopPropagation()}>
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-lg font-bold">今日のチェックイン</p>
+                <p className="mt-1 text-xs text-moss">体重と体脂肪率を保存します。</p>
+              </div>
+              <button className="icon-button h-9 w-9" aria-label="閉じる" onClick={() => setIsCheckInOpen(false)}>×</button>
+            </div>
+            <div className="mt-5 grid grid-cols-2 gap-3">
+              <CheckInStepper label="体重" value={weight} suffix="kg" step={0.1} onChange={setWeight} />
+              <CheckInStepper label="体脂肪" value={bodyFat} suffix="%" step={0.5} onChange={(value) => setBodyFat(clampBodyFat(value))} />
+            </div>
+            <button className="primary-button mt-5 w-full" onClick={saveCheckIn}><Save size={16} />保存</button>
           </div>
-        ))}
-        {props.todayWorkouts.length === 0 && <EmptyLine text="まだワークアウトなし" />}
-      </section>
+        </div>
+      )}
     </div>
   );
 }
@@ -1028,23 +1022,6 @@ function CheckInStepper({ label, value, suffix, step, onChange }: { label: strin
         </button>
       </div>
       <p className="mt-1 text-center text-xs font-bold text-ink">{round1(value)} {suffix}</p>
-    </div>
-  );
-}
-
-function HomeFoodLogRow({ entry, displayName }: { entry: FoodEntry; displayName: string }) {
-  return (
-    <div className="flex items-center gap-3 px-4 py-3.5">
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-semibold">{displayName}</p>
-        <p className="mt-1 text-xs text-moss">{mealLabels[entry.meal_type]} · {entry.calories} kcal</p>
-        <div className="mt-2 flex flex-wrap gap-1.5">
-          <span className="rounded-full bg-oat px-2 py-1 text-[11px] font-semibold text-moss">P{entry.protein_g}</span>
-          <span className="rounded-full bg-oat px-2 py-1 text-[11px] font-semibold text-moss">F{entry.fat_g}</span>
-          <span className="rounded-full bg-oat px-2 py-1 text-[11px] font-semibold text-moss">C{entry.carbs_g}</span>
-        </div>
-      </div>
-      <ChevronRight className="shrink-0 text-muted" size={18} />
     </div>
   );
 }
@@ -3349,21 +3326,6 @@ function PartialNumberInput({ label, value, step = 1, onChange }: { label: strin
   );
 }
 
-function MacroLine({ label, value, target, color = "#8fb48e", warnOnOver = false }: { label: string; value: number; target: number; color?: string; warnOnOver?: boolean }) {
-  const percent = target ? Math.min(100, Math.round((value / target) * 100)) : 0;
-  const isOver = warnOnOver && target > 0 && value > target;
-  const displayTarget = target || "-";
-  return (
-    <div className={`transition-colors ${isOver ? "text-clay" : "text-ink"}`}>
-      <div className="flex justify-between gap-2 text-xs">
-        <span className="font-bold">{label}{isOver ? <span className="ml-1 text-[10px]">超過</span> : null}</span>
-        <span className="whitespace-nowrap font-semibold">{round1(value)} / {displayTarget}g</span>
-      </div>
-      <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-oat"><div className="h-full rounded-full" style={{ width: `${percent}%`, backgroundColor: isOver ? "#C46A52" : color }} /></div>
-    </div>
-  );
-}
-
 function MetricPill({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-md border border-line bg-rice px-3 py-2">
@@ -3456,21 +3418,7 @@ function inferWorkoutTemplateIconKey(template: Pick<WorkoutTemplate, "body_parts
   return "strength";
 }
 
-function WorkoutGoalProgress({
-  label,
-  done,
-  target,
-  days,
-  type,
-  appDate,
-}: {
-  label: string;
-  done: number;
-  target: number;
-  days: WeeklyWorkoutStatus["days"];
-  type: "strength" | "cardio";
-  appDate: string;
-}) {
+function WorkoutGoalProgress({ label, done, target }: { label: string; done: number; target: number }) {
   const percent = target > 0 ? Math.min(100, Math.round((done / target) * 100)) : 0;
   const complete = target > 0 && done >= target;
   return (
@@ -3482,33 +3430,8 @@ function WorkoutGoalProgress({
       <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-oat">
         <div className={`h-full rounded-full ${complete ? "bg-moss" : "bg-sun"}`} style={{ width: `${percent}%` }} />
       </div>
-      <div className="mt-2 grid grid-cols-7 gap-1">
-        {days.map((day) => {
-          const hasWorkout = type === "strength" ? day.hasStrength : day.hasCardio;
-          const isToday = day.date === appDate;
-          return (
-            <div
-              className={`rounded-md border px-1 py-1 text-center text-[10px] font-bold leading-tight ${
-                hasWorkout
-                  ? "border-moss bg-moss text-white"
-                  : isToday
-                    ? "border-sun bg-sun/20 text-ink"
-                    : "border-line bg-surface text-muted"
-              }`}
-              key={`${type}-${day.date}`}
-            >
-              <span className="block">{formatShortWeekday(day.date)}</span>
-              <span className="block">{Number(day.date.slice(8, 10))}</span>
-            </div>
-          );
-        })}
-      </div>
     </div>
   );
-}
-
-function formatShortWeekday(dateString: string) {
-  return new Intl.DateTimeFormat("ja-JP", { weekday: "short" }).format(new Date(`${dateString}T12:00:00`));
 }
 
 function HistoryLineChart({
@@ -3651,7 +3574,7 @@ function EmptyLine({ text }: { text: string }) {
 
 function TabButton({ active, icon, label, onClick }: { active: boolean; icon: ReactNode; label: string; onClick: () => void }) {
   return (
-    <button className={`flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl px-2 py-1.5 text-[11px] font-semibold transition ${active ? "bg-leaf text-moss" : "text-moss"}`} onClick={onClick}>
+    <button className={`flex min-h-12 flex-col items-center justify-center gap-0.5 rounded-2xl px-2 py-1 text-[10px] font-semibold transition duration-200 ${active ? "bg-white/60 text-moss shadow-[0_8px_22px_rgba(40,48,36,0.08)]" : "text-moss/75"}`} onClick={onClick}>
       {icon}
       <span>{label}</span>
     </button>

@@ -43,6 +43,170 @@ button {
   background: #f7f4ec;
 }
 
+.home-shell {
+  position: relative;
+  overflow-x: hidden;
+  background:
+    radial-gradient(circle at 20% 0%, rgba(218, 154, 61, 0.16), transparent 36%),
+    radial-gradient(circle at 90% 10%, rgba(79, 107, 85, 0.14), transparent 34%),
+    linear-gradient(180deg, #fbf7ee 0%, #f6f1e8 100%);
+}
+
+.home-shell-over {
+  background:
+    radial-gradient(circle at 18% 0%, rgba(217, 100, 76, 0.12), transparent 34%),
+    radial-gradient(circle at 92% 10%, rgba(79, 107, 85, 0.11), transparent 34%),
+    linear-gradient(180deg, #fbf7ee 0%, #f6f1e8 100%);
+}
+
+.home-shell-under {
+  background:
+    radial-gradient(circle at 20% 0%, rgba(218, 154, 61, 0.15), transparent 36%),
+    radial-gradient(circle at 90% 12%, rgba(88, 122, 95, 0.12), transparent 34%),
+    linear-gradient(180deg, #fbf7ee 0%, #f6f1e8 100%);
+}
+
+.home-shell-on-track {
+  background:
+    radial-gradient(circle at 18% 0%, rgba(79, 107, 85, 0.16), transparent 36%),
+    radial-gradient(circle at 88% 10%, rgba(218, 154, 61, 0.1), transparent 34%),
+    linear-gradient(180deg, #fbf7ee 0%, #f5f0e7 100%);
+}
+
+.home-header {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.36);
+  background: rgba(251, 247, 238, 0.5);
+}
+
+.home-status-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.5rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.58);
+  padding: 0.5rem 0.85rem;
+  color: #526a57;
+  font-size: 0.75rem;
+  font-weight: 700;
+  box-shadow: 0 12px 30px rgba(40, 48, 36, 0.07);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+}
+
+.home-glass-card,
+.home-hero-card,
+.home-notice,
+.home-sheet {
+  border: 1px solid rgba(255, 255, 255, 0.56);
+  background: rgba(255, 255, 255, 0.58);
+  box-shadow: 0 12px 40px rgba(40, 48, 36, 0.08);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+}
+
+.home-glass-card,
+.home-hero-card {
+  border-radius: 24px;
+}
+
+.home-notice {
+  border-radius: 20px;
+}
+
+.home-hero-card {
+  min-height: 22rem;
+  padding: 1.5rem;
+}
+
+.home-hero-over {
+  background:
+    radial-gradient(circle at 86% 22%, rgba(217, 100, 76, 0.17), transparent 25%),
+    rgba(255, 255, 255, 0.58);
+}
+
+.home-hero-on-track {
+  background:
+    radial-gradient(circle at 86% 22%, rgba(79, 107, 85, 0.14), transparent 25%),
+    rgba(255, 255, 255, 0.58);
+}
+
+.home-hero-left,
+.home-hero-neutral {
+  background:
+    radial-gradient(circle at 86% 22%, rgba(218, 154, 61, 0.13), transparent 25%),
+    rgba(255, 255, 255, 0.58);
+}
+
+.home-action-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.18fr) minmax(0, 0.92fr);
+  gap: 0.75rem;
+}
+
+.home-primary-action,
+.home-secondary-action {
+  display: inline-flex;
+  min-height: 3.6rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  border-radius: 22px;
+  padding: 0.8rem 1rem;
+  font-size: 0.95rem;
+  font-weight: 800;
+  transition: transform 180ms ease, box-shadow 180ms ease, background-color 180ms ease;
+}
+
+.home-primary-action {
+  background: rgba(79, 107, 85, 0.94);
+  color: #fff;
+  box-shadow: 0 14px 32px rgba(40, 74, 52, 0.18);
+}
+
+.home-secondary-action {
+  border: 1px solid rgba(255, 255, 255, 0.58);
+  background: rgba(255, 255, 255, 0.54);
+  color: #526a57;
+  box-shadow: 0 10px 28px rgba(40, 48, 36, 0.07);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.home-primary-action:active,
+.home-secondary-action:active {
+  transform: scale(0.985);
+}
+
+.home-sheet {
+  border-radius: 28px;
+}
+
+.app-bottom-nav {
+  border-top: 1px solid rgba(255, 255, 255, 0.56);
+  background: rgba(255, 255, 255, 0.65);
+  box-shadow: 0 -10px 30px rgba(40, 48, 36, 0.08);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+}
+
+.app-bottom-nav svg {
+  width: 1.05rem;
+  height: 1.05rem;
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .home-status-pill,
+  .home-glass-card,
+  .home-hero-card,
+  .home-notice,
+  .home-sheet,
+  .home-secondary-action,
+  .app-bottom-nav {
+    background: rgba(255, 255, 255, 0.9);
+  }
+}
+
 .safe-bottom {
   padding-bottom: max(1rem, env(safe-area-inset-bottom));
 }
