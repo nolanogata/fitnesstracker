@@ -180,6 +180,15 @@ const staleAppPromptDelayMs = 6 * 60 * 60 * 1000;
 const weightStepOptions = [1, 2.5, 5, 10];
 const appUpdates: AppUpdate[] = [
   {
+    id: "2026-06-12-ai-report-estimated-food-notes",
+    title: "AI相談レポートの推定値表示を改善",
+    date: "2026-06-12",
+    items: [
+      "AI相談レポートの食事詳細で、公式値・推定値・クイック見積・非公式値・ユーザー入力を明記するようにしました。",
+      "推定値を含む場合は、AI側で公式サイトや商品ページなどから正しい栄養値の取得を試みる依頼を自動で追加します。",
+    ],
+  },
+  {
     id: "2026-06-12-snack-drink-chain-expansion",
     title: "グミ・飲料とチェーン店メニューを追加",
     date: "2026-06-12",
