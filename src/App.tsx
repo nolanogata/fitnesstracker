@@ -180,6 +180,15 @@ const staleAppPromptDelayMs = 6 * 60 * 60 * 1000;
 const weightStepOptions = [1, 2.5, 5, 10];
 const appUpdates: AppUpdate[] = [
   {
+    id: "2026-06-12-all-tabs-glass-theme",
+    title: "各タブの色合いをHomeのテーマに統一",
+    date: "2026-06-12",
+    items: [
+      "Food、Workout、History、Settingsのカード・ボタン・入力をHomeに近い淡いガラス調へ寄せました。",
+      "既存機能は変更せず、背景、余白、境界線、下部ナビとの見た目の連続性を整えました。",
+    ],
+  },
+  {
     id: "2026-06-12-home-pfc-status-colors",
     title: "HomeのPFC達成率を色で確認可能に",
     date: "2026-06-12",
@@ -610,13 +619,13 @@ function App() {
 
   return (
     <main className={`app-shell mx-auto min-h-screen max-w-[430px] text-ink ${tab === "home" ? `home-shell home-shell-${homeTone}` : ""}`}>
-      <header className={`safe-top sticky top-0 z-20 px-4 pb-3 backdrop-blur ${tab === "home" ? "home-header" : "border-b border-line bg-rice/95"}`}>
+      <header className={`safe-top app-header sticky top-0 z-20 px-4 pb-3 ${tab === "home" ? "home-header" : ""}`}>
         <div className="flex items-center justify-between">
           <div>
             <h1 className={tab === "home" ? "text-[2.35rem] font-semibold leading-tight tracking-normal" : "text-2xl font-bold tracking-normal"}>{headerTitle}</h1>
             <p className="mt-1 text-xs font-normal text-moss">{headerSubtext}</p>
           </div>
-          <div className={tab === "home" ? "home-status-pill" : "rounded-full border border-line bg-surface px-3 py-1.5 text-xs font-bold text-moss"}>
+          <div className={tab === "home" ? "home-status-pill" : "app-status-pill"}>
             {activeGoal ? phaseLabels[activeGoal.phase] : "未設定"} / {typeof statusWeight === "number" ? `${statusWeight}kg` : "-"}
           </div>
         </div>
@@ -1224,7 +1233,7 @@ function FoodTab(props: { menuItems: MenuItem[]; foodEntries: FoodEntry[]; appDa
 
   return (
     <div className="scroll-mt-24 space-y-4" ref={foodTopRef}>
-      <div className="sticky top-[74px] z-10 -mx-4 space-y-3 bg-rice px-4 pb-2">
+      <div className="sticky-panel sticky top-[74px] z-10 -mx-4 space-y-3 px-4 pb-2">
         <form className="compact-card flex gap-2 p-2" onSubmit={(event) => { event.preventDefault(); selectMode("search"); }}>
           <div className="relative min-w-0 flex-1">
             <Search className="pointer-events-none absolute left-3 top-3.5 text-moss" size={20} />
