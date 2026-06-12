@@ -180,6 +180,16 @@ const staleAppPromptDelayMs = 6 * 60 * 60 * 1000;
 const weightStepOptions = [1, 2.5, 5, 10];
 const appUpdates: AppUpdate[] = [
   {
+    id: "2026-06-12-weekly-workout-date-linked",
+    title: "今週の運動目標を日付連動に修正",
+    date: "2026-06-12",
+    items: [
+      "ホームの今週の運動目標を、ワークアウト記録数ではなく週内の日付単位で集計するようにしました。",
+      "同じ日に複数回記録しても、週目標上は1日分として扱います。",
+      "筋トレ・有酸素それぞれの日付別達成状態をホームに表示しました。",
+    ],
+  },
+  {
     id: "2026-06-12-preset-scroll-and-general-foods",
     title: "プリセット編集スクロールと一般メニューを追加",
     date: "2026-06-12",
@@ -904,8 +914,22 @@ function HomeTab(props: {
           <p className="text-xs font-semibold text-muted">{props.weeklyWorkoutStatus.start} - {props.weeklyWorkoutStatus.end}</p>
         </div>
         <div className="mt-4 grid grid-cols-2 gap-5">
-          <WorkoutGoalProgress label="筋トレ" done={props.weeklyWorkoutStatus.strengthDone} target={props.weeklyWorkoutStatus.strengthTarget} />
-          <WorkoutGoalProgress label="有酸素" done={props.weeklyWorkoutStatus.cardioDone} target={props.weeklyWorkoutStatus.cardioTarget} />
+          <WorkoutGoalProgress
+            appDate={props.appDate}
+            days={props.weeklyWorkoutStatus.days}
+            label="筋トレ"
+            done={props.weeklyWorkoutStatus.strengthDone}
+            target={props.weeklyWorkoutStatus.strengthTarget}
+            type="strength"
+          />
+          <WorkoutGoalProgress
+            appDate={props.appDate}
+            days={props.weeklyWorkoutStatus.days}
+            label="有酸素"
+            done={props.weeklyWorkoutStatus.cardioDone}
+            target={props.weeklyWorkoutStatus.cardioTarget}
+            type="cardio"
+          />
         </div>
       </section>
 
@@ -3432,7 +3456,21 @@ function inferWorkoutTemplateIconKey(template: Pick<WorkoutTemplate, "body_parts
   return "strength";
 }
 
-function WorkoutGoalProgress({ label, done, target }: { label: string; done: number; target: number }) {
+function WorkoutGoalProgress({
+  label,
+  done,
+  target,
+  days,
+  type,
+  appDate,
+}: {
+  label: string;
+  done: number;
+  target: number;
+  days: WeeklyWorkoutStatus["days"];
+  type: "strength" | "cardio";
+  appDate: string;
+}) {
   const percent = target > 0 ? Math.min(100, Math.round((done / target) * 100)) : 0;
   const complete = target > 0 && done >= target;
   return (
@@ -3444,8 +3482,33 @@ function WorkoutGoalProgress({ label, done, target }: { label: string; done: num
       <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-oat">
         <div className={`h-full rounded-full ${complete ? "bg-moss" : "bg-sun"}`} style={{ width: `${percent}%` }} />
       </div>
+      <div className="mt-2 grid grid-cols-7 gap-1">
+        {days.map((day) => {
+          const hasWorkout = type === "strength" ? day.hasStrength : day.hasCardio;
+          const isToday = day.date === appDate;
+          return (
+            <div
+              className={`rounded-md border px-1 py-1 text-center text-[10px] font-bold leading-tight ${
+                hasWorkout
+                  ? "border-moss bg-moss text-white"
+                  : isToday
+                    ? "border-sun bg-sun/20 text-ink"
+                    : "border-line bg-surface text-muted"
+              }`}
+              key={`${type}-${day.date}`}
+            >
+              <span className="block">{formatShortWeekday(day.date)}</span>
+              <span className="block">{Number(day.date.slice(8, 10))}</span>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
+}
+
+function formatShortWeekday(dateString: string) {
+  return new Intl.DateTimeFormat("ja-JP", { weekday: "short" }).format(new Date(`${dateString}T12:00:00`));
 }
 
 function HistoryLineChart({
