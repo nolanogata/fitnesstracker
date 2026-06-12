@@ -13,7 +13,14 @@ This pass expands the verified official chain coverage. It applies only rows whe
 | ケンタッキー | official_full | 35 | 18 | 17 | 18 | 0 |
 | モスバーガー | official_full | 184 | 54 | 132 | 52 | 0 |
 | サブウェイ | official_full | 120 | 20 | 100 | 20 | 15 |
-| Other supported chains | mixed/not extracted in this artifact | 0 | 0 | 0 | 0 | 27 |
+| マクドナルド | official_full | 71 | 20 | 51 | 1 | 0 |
+| KFC coverage add-on | official_full | 50 | 35 | 15 | 0 | 0 |
+| すき家 | official_full | 129 | 62 | 67 | 0 | 1 |
+| 吉野家 | official_full | 69 | 6 | 63 | 0 | 0 |
+| 松屋 | official_full | 41 | 10 | 31 | 0 | 0 |
+| やよい軒 | official_full | 39 | 15 | 24 | 0 | 0 |
+| 大戸屋 | official_full/add_if_missing | 162 | 159 | 3 | 0 | 0 |
+| Other supported chains | mixed/not extracted in this artifact | 0 | 0 | 0 | 0 | 22 |
 
 ## Applied expansion
 
@@ -21,6 +28,7 @@ This pass expands the verified official chain coverage. It applies only rows whe
 - KFC official PDF rows refresh the prior 18 seed rows and add current missing official rows.
 - MOS official PDF rows now cover all safely extracted rows from the 2026-05-20 nutrition table, including burgers, sides, drinks, sweets, kids, breakfast, and MOS cafe items.
 - Subway official PDF rows now cover 120 safely attached rows from the 2026-06-10 nutrition table, including sandwiches, potatoes, breads, toppings, morning/kids/sweets, drinks, condiments, and floats.
+- The 2026-06-12 handoff batch adds McDonald's, KFC add-on, Sukiya, Yoshinoya, Matsuya, Yayoiken, and Ootoya official coverage. McDonald's existing fries seed is canonicalized to `マックフライポテト S`.
 - Starbucks food rows in the supplied batch are replace records only; no new Starbucks add records were present in the handoff.
 - Records with only official calories/salt, or ambiguous PDF table extraction, are not promoted to `official()`.
 
@@ -36,15 +44,10 @@ This pass expands the verified official chain coverage. It applies only rows whe
 - 汎用カフェ: スターバックス公式 seed と重複。ブランド別公式が入るものは非表示または優先度低下推奨。
 - 丸亀製麺・ウエスト・資さんうどん汎用: 公式/第三者値の確認が必要。
 - やよい軒・しんぱち食堂汎用: やよい軒公式と重複しうる。公式 seed 優先。
-- マクドナルド: Phase 1: Chains with official kcal/P/F/C/salt can be bulk-added as official() after exact table extraction and diffing.
 - ドトール: Phase 1: Chains with official kcal/P/F/C/salt can be bulk-added as official() after exact table extraction and diffing.
 - タリーズ: Phase 1: Chains with official kcal/P/F/C/salt can be bulk-added as official() after exact table extraction and diffing.
-- すき家: Phase 1: Chains with official kcal/P/F/C/salt can be bulk-added as official() after exact table extraction and diffing.
-- 吉野家: Phase 1: Chains with official kcal/P/F/C/salt can be bulk-added as official() after exact table extraction and diffing.
-- 松屋: Phase 1: Chains with official kcal/P/F/C/salt can be bulk-added as official() after exact table extraction and diffing.
 - なか卯: Phase 1: Chains with official kcal/P/F/C/salt can be bulk-added as official() after exact table extraction and diffing.
 - はなまるうどん: Phase 1: Chains with official kcal/P/F/C/salt can be bulk-added as official() after exact table extraction and diffing.
-- やよい軒: Phase 1: Chains with official kcal/P/F/C/salt can be bulk-added as official() after exact table extraction and diffing.
 - ガスト: Phase 2: Chains whose official sources may expose only calories/salt or whose table extraction requires careful validation. Keep PFC provenance explicit.
 - バーミヤン: Phase 2: Chains whose official sources may expose only calories/salt or whose table extraction requires careful validation. Keep PFC provenance explicit.
 - サイゼリヤ: Phase 2: Chains whose official sources may expose only calories/salt or whose table extraction requires careful validation. Keep PFC provenance explicit.
@@ -54,9 +57,10 @@ This pass expands the verified official chain coverage. It applies only rows whe
 - Monsoon Cafe: Phase 3: Chains where official nutrition may be absent. Use secondary sources only with clear source_url and confidence downgrade.
 - その他ローカル定食系: Phase 3: Chains where official nutrition may be absent. Use secondary sources only with clear source_url and confidence downgrade.
 - サブウェイ PDF ambiguous rows: 15 numeric-only or concatenated rows need table-layout extraction before official() promotion.
+- すき家カレー系追加候補: PDF text extraction can misalign product names and values; keep the listed curry additions in manual review until table-layout validation is available.
 
 ## Notes
 
 - This is still an incremental source-of-truth crawl, not yet a completed all-chain inventory.
-- Remaining high-priority adapters should next focus on McDonald's, Doutor, Tullys, Sukiya, Yoshinoya, Matsuya, Nakau, Hanamaru, and Yayoiken source inventories.
+- Remaining high-priority adapters should next focus on Doutor, Tullys, Nakau, Hanamaru, and remaining partial/ambiguous chains.
 - Existing app search already ranks `official` above `unofficial`, `estimated`, and generic templates.

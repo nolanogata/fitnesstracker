@@ -17,7 +17,7 @@ const products = [
   ["7070", "エグチ (エッグチーズバーガー)", 390, 22.4, 19.0, 31.2, 2.1, "バーガー"],
   ["1010", "ハンバーガー", 259, 13.0, 9.5, 30.3, 1.4, "バーガー"],
   ["1020", "チーズバーガー", 310, 15.9, 13.5, 31.0, 1.9, "バーガー"],
-  ["2010", "マックフライポテト", 224, 3.0, 10.9, 28.7, 0.4, "ポテト"],
+  ["2010", "マックフライポテト S", 224, 3.0, 10.9, 28.7, 0.4, "ポテト", "S"],
   ["1610", "チキンマックナゲット 5ピース", 262, 15.3, 15.9, 14.4, 1.2, "ナゲット"],
   ["9030", "チキンマックナゲット 15ピース", 786, 46.0, 47.8, 43.2, 3.5, "ナゲット"],
   ["2200", "サイドサラダ", 10, 0.5, 0.1, 2.3, 0.0, "サラダ"],
@@ -26,7 +26,7 @@ const products = [
   ["5010", "ハッシュポテト", 157, 1.4, 10.2, 14.8, 0.8, "ポテト"],
 ] as const;
 
-export const mcdonaldsOfficialFoods = products.map(([id, name, calories, protein_g, fat_g, carbs_g, salt_g, tag]) =>
+export const mcdonaldsOfficialFoods = products.map(([id, name, calories, protein_g, fat_g, carbs_g, salt_g, tag, serving_label]) =>
   official({
     brand: "マクドナルド",
     name,
@@ -37,7 +37,7 @@ export const mcdonaldsOfficialFoods = products.map(([id, name, calories, protein
     fat_g,
     carbs_g,
     salt_g,
-    serving_label: "1個",
+    serving_label: serving_label ?? "1個",
     default_meal_type: tag === "ポテト" || tag === "ナゲット" || tag === "サイド" || tag === "チキン" ? "snack" : "lunch",
     source_url: `https://www.mcdonalds.co.jp/products/${id}/`,
     fetched_at: fetchedAt,
