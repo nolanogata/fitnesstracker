@@ -1544,6 +1544,7 @@ function WorkoutTab(props: {
           {editingTemplate && (
             <WorkoutTemplateEditor
               exercisePresets={props.exercisePresets}
+              bodyWeightKg={props.profile?.current_weight_kg ?? 70}
               onAddExercise={(exercise) => addExerciseToTemplate(editingTemplate.id, exercisePresetToTemplateExercise(exercise))}
               onRemoveExercise={(index) => removeExerciseFromTemplate(editingTemplate, index)}
               onStart={() => startFromTemplate(editingTemplate)}
@@ -2306,9 +2307,10 @@ function WorkoutTemplateRow({ template, isEditing, isDragging, onStart, onEdit, 
   );
 }
 
-function WorkoutTemplateEditor({ template, exercisePresets, query, setQuery, onStart, onDelete, onAddExercise, onRemoveExercise, onUpdateExercise, onUpdateDetails }: {
+function WorkoutTemplateEditor({ template, exercisePresets, bodyWeightKg, query, setQuery, onStart, onDelete, onAddExercise, onRemoveExercise, onUpdateExercise, onUpdateDetails }: {
   template: WorkoutTemplate;
   exercisePresets: ExercisePreset[];
+  bodyWeightKg: number;
   query: string;
   setQuery: (query: string) => void;
   onStart: () => void | Promise<void>;
@@ -2338,7 +2340,7 @@ function WorkoutTemplateEditor({ template, exercisePresets, query, setQuery, onS
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <p className="truncate text-sm font-bold">{template.name}を編集</p>
-            <p className="mt-1 text-xs text-moss">プリセット内の種目を削除・追加できます。</p>
+            <p className="mt-1 text-xs text-moss">プリセット内の種目を削除・追加・セット編集できます。</p>
           </div>
           <div className="flex shrink-0 gap-2">
             <button className="icon-button h-10 w-10 text-clay" aria-label={`${template.name}を削除`} onClick={onDelete}><Trash2 size={16} /></button>
@@ -2372,7 +2374,14 @@ function WorkoutTemplateEditor({ template, exercisePresets, query, setQuery, onS
       <div>
         <ListHeader title="登録中の種目" value={`${template.exercises.length}件`} />
         {template.exercises.map((exercise, index) => (
-          <TemplateExerciseRow exercise={exercise} index={index} key={`${exercise.exercise_name}-${index}`} onRemove={onRemoveExercise} onUpdate={onUpdateExercise} />
+          <TemplateExerciseRow
+            bodyWeightKg={bodyWeightKg}
+            exercise={exercise}
+            index={index}
+            key={`${exercise.exercise_name}-${index}`}
+            onRemove={onRemoveExercise}
+            onUpdate={onUpdateExercise}
+          />
         ))}
         {template.exercises.length === 0 && <EmptyLine text="まだ種目がありません。下から追加できます" />}
       </div>
@@ -2399,35 +2408,139 @@ function WorkoutTemplateEditor({ template, exercisePresets, query, setQuery, onS
   );
 }
 
-function TemplateExerciseRow({ exercise, index, onRemove, onUpdate }: {
+function TemplateExerciseRow({ exercise, index, bodyWeightKg, onRemove, onUpdate }: {
   exercise: TemplateExercise;
   index: number;
+  bodyWeightKg: number;
   onRemove: (index: number) => void | Promise<void>;
   onUpdate: (index: number, exercise: TemplateExercise) => void | Promise<void>;
 }) {
   const pictogram = getWorkoutPictogram(exercise.body_part, exercise.equipment_type);
   const isCardio = exercise.body_part === "有酸素" || exercise.equipment_type === "有酸素";
   const setSchemeLabel = formatWorkoutSetPatternText(exercise.set_scheme, isCardio);
+  const firstPattern = exercise.set_scheme?.[0];
+  const [weightStep, setWeightStep] = useState(() => inferWeightStep(exercise));
+  const [setSchemeText, setSetSchemeText] = useState(() => setSchemeLabel || templateExerciseFallbackSetText(exercise, isCardio));
+  const setsValue = exercise.set_scheme?.length || exercise.sets || 3;
+  const weightValue = exercise.weight_kg ?? firstPattern?.weight_kg ?? 0;
+  const repsValue = exercise.reps ?? firstPattern?.reps ?? 10;
+  const durationValue = exercise.duration_min ?? firstPattern?.duration_min ?? 20;
+
+  useEffect(() => {
+    setWeightStep(inferWeightStep(exercise));
+    setSetSchemeText(formatWorkoutSetPatternText(exercise.set_scheme, isCardio) || templateExerciseFallbackSetText(exercise, isCardio));
+  }, [exercise.exercise_name, exercise.body_part, exercise.equipment_type, exercise.sets, exercise.reps, exercise.weight_kg, exercise.duration_min, exercise.set_scheme, isCardio]);
+
+  const updateCardioDuration = (duration_min: number) => {
+    onUpdate(index, {
+      ...exercise,
+      sets: 1,
+      reps: 0,
+      duration_min,
+      set_scheme: [{ reps: 0, duration_min, active_calories: estimateActiveCalories(exercise.exercise_name, duration_min, bodyWeightKg) }],
+    });
+  };
+
+  const updateStrengthDefaults = (next: { sets?: number; weight_kg?: number; reps?: number }) => {
+    const sets = Math.max(1, Math.round(next.sets ?? setsValue));
+    const weight_kg = round1(next.weight_kg ?? weightValue);
+    const reps = Math.max(0, Math.round(next.reps ?? repsValue));
+    const set_scheme = Array.from({ length: sets }, () => ({ weight_kg, reps }));
+    onUpdate(index, { ...exercise, sets, weight_kg, reps, set_scheme });
+  };
+
+  const saveSetSchemeText = () => {
+    const scheme = parseWorkoutSetScheme(setSchemeText, isCardio, exercise.exercise_name, bodyWeightKg);
+    if (!scheme.length) return;
+    const first = scheme[0];
+    onUpdate(index, {
+      ...exercise,
+      sets: scheme.length,
+      reps: first.reps,
+      weight_kg: first.weight_kg,
+      duration_min: first.duration_min,
+      set_scheme: scheme,
+    });
+  };
+
   return (
-    <div className="flex items-start justify-between gap-3 px-4 py-3">
-      <Pictogram {...pictogram} />
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-semibold">{exercise.exercise_name}</p>
-        <p className="truncate text-xs text-moss">
-          {exercise.body_part} · {exercise.equipment_type} · {exercise.sets}セット{isCardio ? ` · ${exercise.duration_min ?? 20}分` : ""}
-        </p>
-        {setSchemeLabel && <p className="mt-1 truncate text-xs font-semibold text-moss">{setSchemeLabel}</p>}
-        {isCardio && (
-          <div className="mt-2 max-w-[170px]">
-            <Stepper value={exercise.duration_min ?? exercise.set_scheme?.[0]?.duration_min ?? 20} suffix="min" step={5} onChange={(value) => onUpdate(index, {
-              ...exercise,
-              duration_min: value,
-              set_scheme: exercise.set_scheme?.length ? exercise.set_scheme.map((pattern) => ({ ...pattern, duration_min: value, active_calories: undefined })) : exercise.set_scheme,
-            })} />
-          </div>
-        )}
+    <div className="px-4 py-3">
+      <div className="flex items-start justify-between gap-3">
+        <Pictogram {...pictogram} />
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-semibold">{exercise.exercise_name}</p>
+          <p className="truncate text-xs text-moss">
+            {exercise.body_part} · {exercise.equipment_type} · {setsValue}セット{isCardio ? ` · ${durationValue}分` : ""}
+          </p>
+          {setSchemeLabel && <p className="mt-1 truncate text-xs font-semibold text-moss">{setSchemeLabel}</p>}
+        </div>
+        <button className="icon-button h-8 w-8 text-clay" aria-label={`${exercise.exercise_name}をプリセットから削除`} onClick={() => onRemove(index)}><Trash2 size={14} /></button>
       </div>
-      <button className="icon-button h-8 w-8 text-clay" aria-label={`${exercise.exercise_name}をプリセットから削除`} onClick={() => onRemove(index)}><Trash2 size={14} /></button>
+
+      {isCardio ? (
+        <div className="mt-3">
+          <TapSliderControl
+            label="分数"
+            value={durationValue}
+            suffix="min"
+            step={5}
+            min={0}
+            max={120}
+            onChange={updateCardioDuration}
+          />
+        </div>
+      ) : (
+        <div className="mt-3 space-y-3 rounded-md bg-rice p-3">
+          <TapSliderControl
+            label="セット"
+            value={setsValue}
+            suffix="set"
+            step={1}
+            min={1}
+            max={10}
+            onChange={(sets) => updateStrengthDefaults({ sets })}
+          />
+          <div>
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <p className="text-xs font-bold text-moss">重量刻み</p>
+              <div className="flex gap-1">
+                {weightStepOptions.map((step) => (
+                  <button className={`mini-chip ${weightStep === step ? "mini-chip-active" : ""}`} key={step} onClick={() => setWeightStep(step)}>{step}</button>
+                ))}
+              </div>
+            </div>
+            <TapSliderControl
+              label="重量"
+              value={weightValue}
+              suffix="kg"
+              step={weightStep}
+              min={0}
+              max={sliderMax(weightValue, 200, weightStep)}
+              onChange={(weight_kg) => updateStrengthDefaults({ weight_kg })}
+            />
+          </div>
+          <TapSliderControl
+            label="回数"
+            value={repsValue}
+            suffix="回"
+            step={1}
+            min={0}
+            max={50}
+            onChange={(reps) => updateStrengthDefaults({ reps })}
+          />
+        </div>
+      )}
+
+      <label className="mt-3 block text-xs font-semibold text-moss">
+        段階セット
+        <textarea
+          className="mt-2 min-h-16 w-full text-sm"
+          value={setSchemeText}
+          onChange={(event) => setSetSchemeText(event.target.value)}
+          placeholder={isCardio ? "例: 25分 または 25〜30分" : "例: 47×10 / 54×10 / 61×10 / 68×10 または 20×10×3"}
+        />
+      </label>
+      <button className="secondary-button mt-2 w-full" onClick={saveSetSchemeText}><Save size={15} />このセット内容を保存</button>
     </div>
   );
 }
@@ -3227,6 +3340,11 @@ function workoutSetsToPattern(sets: WorkoutSet[]): WorkoutSetPattern[] {
 function formatWorkoutSetPatternText(patterns: WorkoutSetPattern[] | undefined, isCardio: boolean) {
   if (!patterns?.length) return "";
   return patterns.map((pattern) => formatWorkoutSetPatternToken(pattern, isCardio)).join(" / ");
+}
+
+function templateExerciseFallbackSetText(exercise: TemplateExercise, isCardio: boolean) {
+  if (isCardio) return `${exercise.duration_min ?? exercise.set_scheme?.[0]?.duration_min ?? 20}分`;
+  return `${exercise.weight_kg ?? exercise.set_scheme?.[0]?.weight_kg ?? 0}×${exercise.reps ?? exercise.set_scheme?.[0]?.reps ?? 10}×${exercise.set_scheme?.length || exercise.sets || 3}`;
 }
 
 function formatWorkoutSetText(sets: WorkoutSet[], isCardio: boolean) {
