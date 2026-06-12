@@ -24,6 +24,7 @@ This pass continues the official-source food seed expansion. It still promotes r
 | 大戸屋 | official_full/add_if_missing | 162 | 159 | 3 | 0 | 0 |
 | ドトール | official_full | 116 | 10 | 106 | 10 | 0 |
 | タリーズ | official_full | 10 | 9 | 1 | 9 | 0 |
+| CoCo壱番屋 | official_full | 189 | 8 | 181 | 8 | 0 |
 | しんぱち食堂 | official_menu_plus_supplemental_estimated | 43 | 14 | 29 | 14 | 0 |
 | Other supported chains | mixed/not fully extracted | 0 | 0 | 0 | 0 | 16 |
 
@@ -34,6 +35,7 @@ This pass continues the official-source food seed expansion. It still promotes r
 - Nakau official PDF rows now add 209 records across bowls, noodles, set meals, breakfast, rice, and sides. PDF rows with `W` size variants are preserved as distinct serving labels.
 - Hanamaru official PDF rows now add 74 safely extracted udon, curry, and rice records.
 - Subway ambiguous PDF rows are resolved into 34 additional official rows; the prior 15-row manual queue is cleared.
+- CoCo Ichibanya official nutrition PDF rows now add 189 records across limited items, curry plates, sides, toppings, salads, kids meals, drinks, desserts, and sauces. The previous 8 daily-chain rows are removed from the loaded seed path to avoid duplicates.
 - Existing app ranking still puts `official` rows above `unofficial`, `estimated`, and generic templates. Seed initialization also clears old estimated brand rows for chains now covered by official sources.
 
 ## Manual review queue

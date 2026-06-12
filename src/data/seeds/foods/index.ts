@@ -15,6 +15,7 @@ import { cafeMenuFoods } from "./chains/cafeMenus";
 import { familyRestaurantMenuFoods } from "./chains/familyRestaurantMenus";
 import { cafeFoods } from "./chains/cafe";
 import { convenienceFoods } from "./chains/convenience";
+import { cocoichiOfficialFoods } from "./chains/cocoichiOfficial";
 import { dailyChainOfficialFoods } from "./chains/dailyChainsOfficial";
 import { doutorOfficialFoods } from "./chains/doutorOfficial";
 import { externalNutritionFoods } from "./externalNutrition";
@@ -61,6 +62,7 @@ export const foodSeeds = [
   ...subwayOfficialFoods,
   ...doutorOfficialFoods,
   ...tullysOfficialFoods,
+  ...cocoichiOfficialFoods,
   ...dailyChainOfficialFoods,
   ...fastFoodFoods,
   ...bamiyanMenuFoods,
