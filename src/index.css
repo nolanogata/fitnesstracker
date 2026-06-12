@@ -95,6 +95,14 @@ button {
   @apply border-moss bg-moss text-white;
 }
 
+.mini-chip {
+  @apply inline-flex min-h-8 min-w-8 items-center justify-center rounded-md border border-line bg-surface px-2 text-[11px] font-bold text-moss transition active:scale-[0.98];
+}
+
+.mini-chip-active {
+  @apply border-moss bg-moss text-white;
+}
+
 .source-badge {
   @apply inline-flex w-fit items-center rounded-full border px-2 py-0.5 text-[11px] font-bold leading-tight;
 }

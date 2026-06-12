@@ -173,7 +173,18 @@ const emptyManual: ManualFoodDraft = {
 const backupStorageKey = "phase-log-last-backup-at";
 const updateSeenStorageKey = "phase-log-seen-update-id";
 const staleAppPromptDelayMs = 6 * 60 * 60 * 1000;
+const weightStepOptions = [1, 2.5, 5, 10];
 const appUpdates: AppUpdate[] = [
+  {
+    id: "2026-06-12-workout-tap-slider-inputs",
+    title: "ワークアウト入力をタップ・スライダー中心に改善",
+    date: "2026-06-12",
+    items: [
+      "筋トレの重量・回数・セット数を、手入力中心ではなくタップとスライダーで調整しやすくしました。",
+      "マシンごとの重量刻みに合わせられるよう、1kg / 2.5kg / 5kg / 10kg の切り替えを追加しました。",
+      "有酸素の分数もスライダーとタップで調整しやすくしました。",
+    ],
+  },
   {
     id: "2026-06-12-workout-set-schemes",
     title: "段階セットの記録と保存を追加",
@@ -2242,6 +2253,7 @@ function ExerciseAddModal({ draft, setDraft, onClose, onSave }: {
 }) {
   const isCardio = draft.exercise.body_part === "有酸素" || draft.exercise.equipment_type === "有酸素";
   const pictogram = getWorkoutPictogram(draft.exercise.body_part, draft.exercise.equipment_type);
+  const [weightStep, setWeightStep] = useState(() => inferWeightStep(draft.exercise));
   return (
     <div className="fixed inset-0 z-40 flex items-end bg-ink/30 px-4 pb-4">
       <div className="compact-card w-full p-4">
@@ -2256,22 +2268,65 @@ function ExerciseAddModal({ draft, setDraft, onClose, onSave }: {
 
         {isCardio ? (
           <div className="mt-4">
-            <p className="mb-2 text-xs font-bold text-moss">分数</p>
-            <Stepper value={draft.duration_min} suffix="min" step={5} onChange={(duration_min) => setDraft({ ...draft, duration_min, setSchemeText: `${duration_min}分` })} />
+            <TapSliderControl
+              label="分数"
+              value={draft.duration_min}
+              suffix="min"
+              step={5}
+              min={0}
+              max={120}
+              onChange={(duration_min) => setDraft({ ...draft, duration_min, setSchemeText: `${duration_min}分` })}
+            />
           </div>
         ) : (
-          <div className="mt-4 grid grid-cols-3 gap-3">
-            <NumberInput label="セット" value={draft.sets} onChange={(sets) => {
-              const nextSets = Math.max(1, sets);
-              setDraft({ ...draft, sets: nextSets, setSchemeText: `${draft.weight_kg}×${draft.reps}×${nextSets}` });
-            }} />
-            <NumberInput label="重量kg" value={draft.weight_kg} step={2.5} onChange={(weight_kg) => {
-              setDraft({ ...draft, weight_kg, setSchemeText: `${weight_kg}×${draft.reps}×${draft.sets}` });
-            }} />
-            <NumberInput label="回数" value={draft.reps} onChange={(reps) => {
-              const nextReps = Math.max(0, reps);
-              setDraft({ ...draft, reps: nextReps, setSchemeText: `${draft.weight_kg}×${nextReps}×${draft.sets}` });
-            }} />
+          <div className="mt-4 space-y-3">
+            <TapSliderControl
+              label="セット"
+              value={draft.sets}
+              suffix="set"
+              step={1}
+              min={1}
+              max={10}
+              onChange={(sets) => {
+                const nextSets = Math.max(1, Math.round(sets));
+                setDraft({ ...draft, sets: nextSets, setSchemeText: `${draft.weight_kg}×${draft.reps}×${nextSets}` });
+              }}
+            />
+            <div className="rounded-md bg-rice p-3">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-xs font-bold text-moss">重量刻み</p>
+                <div className="flex gap-1">
+                  {weightStepOptions.map((step) => (
+                    <button className={`mini-chip ${weightStep === step ? "mini-chip-active" : ""}`} key={step} onClick={() => setWeightStep(step)}>{step}</button>
+                  ))}
+                </div>
+              </div>
+              <div className="mt-3">
+                <TapSliderControl
+                  label="重量"
+                  value={draft.weight_kg}
+                  suffix="kg"
+                  step={weightStep}
+                  min={0}
+                  max={sliderMax(draft.weight_kg, 200, weightStep)}
+                  onChange={(weight_kg) => {
+                    setDraft({ ...draft, weight_kg, setSchemeText: `${weight_kg}×${draft.reps}×${draft.sets}` });
+                  }}
+                />
+              </div>
+            </div>
+            <TapSliderControl
+              label="回数"
+              value={draft.reps}
+              suffix="回"
+              step={1}
+              min={0}
+              max={50}
+              onChange={(reps) => {
+                const nextReps = Math.max(0, Math.round(reps));
+                setDraft({ ...draft, reps: nextReps, setSchemeText: `${draft.weight_kg}×${nextReps}×${draft.sets}` });
+              }}
+            />
           </div>
         )}
 
@@ -2334,9 +2389,13 @@ function WorkoutExerciseEditor({
   const setSignature = sets.map((set) => [set.set_order, set.weight_kg, set.reps, set.duration_min, set.active_calories, set.note].join(":")).join("|");
   const [setSchemeText, setSetSchemeText] = useState("");
   const [setSchemeStatus, setSetSchemeStatus] = useState("");
+  const [weightStep, setWeightStep] = useState(() => inferWeightStep(exercise));
   useEffect(() => {
     setSetSchemeText(formatWorkoutSetText(sets, isCardio));
   }, [isCardio, setSignature]);
+  useEffect(() => {
+    setWeightStep(inferWeightStep(exercise));
+  }, [exercise.exercise_name, exercise.equipment_type]);
   const updateCardioDuration = async (value: number) => {
     const timestamp = nowIso();
     if (!sets.length) {
@@ -2416,25 +2475,37 @@ function WorkoutExerciseEditor({
       </div>
       {isCardio && (
         <div className="mt-3 rounded-md bg-rice p-3">
-          <p className="mb-2 text-xs font-bold text-moss">分数</p>
-          <Stepper value={sets[0]?.duration_min ?? 20} suffix="min" step={5} onChange={updateCardioDuration} />
+          <TapSliderControl
+            label="分数"
+            value={sets[0]?.duration_min ?? 20}
+            suffix="min"
+            step={5}
+            min={0}
+            max={120}
+            onChange={updateCardioDuration}
+          />
+        </div>
+      )}
+      {!isCardio && (
+        <div className="mt-3 flex items-center justify-between gap-2 rounded-md bg-rice p-3">
+          <p className="text-xs font-bold text-moss">重量刻み</p>
+          <div className="flex gap-1">
+            {weightStepOptions.map((step) => (
+              <button className={`mini-chip ${weightStep === step ? "mini-chip-active" : ""}`} key={step} onClick={() => setWeightStep(step)}>{step}</button>
+            ))}
+          </div>
         </div>
       )}
       <div className="mt-3 space-y-2">
-        {sets.length > 0 && (
-          <div className={isCardio ? "grid grid-cols-[28px_1fr_72px_36px] items-center gap-2 text-[11px] font-bold text-moss" : "grid grid-cols-[28px_1fr_1fr_36px] items-center gap-2 text-[11px] font-bold text-moss"}>
-            <span>Set</span>
-            <span>{isCardio ? "時間" : "重量"}</span>
-            <span>{isCardio ? "消費" : "回数"}</span>
-            <span />
-          </div>
-        )}
         {sets.map((set) => (
-          <div className={isCardio ? "grid grid-cols-[28px_1fr_72px_36px] items-center gap-2" : "grid grid-cols-[28px_1fr_1fr_36px] items-center gap-2"} key={set.id}>
-            <span className="text-xs font-bold text-moss">{set.set_order}</span>
+          <div className="rounded-md border border-line bg-surface p-3" key={set.id}>
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <span className="text-xs font-bold text-moss">Set {set.set_order}</span>
+              <button className="icon-button h-8 w-8" aria-label="削除" onClick={async () => { await db.workout_sets.delete(set.id); await refresh(); }}><Trash2 size={14} /></button>
+            </div>
             {isCardio ? (
-              <>
-                <Stepper value={set.duration_min ?? 20} suffix="min" step={5} onChange={async (value) => {
+              <div className="space-y-2">
+                <TapSliderControl value={set.duration_min ?? 20} label="時間" suffix="min" step={5} min={0} max={120} onChange={async (value) => {
                   await db.workout_sets.update(set.id, {
                     duration_min: value,
                     active_calories: estimateActiveCalories(exercise.exercise_name, value, bodyWeightKg),
@@ -2443,14 +2514,29 @@ function WorkoutExerciseEditor({
                   await refresh();
                 }} />
                 <p className="text-right text-xs font-bold text-moss">{set.active_calories ?? estimateActiveCalories(exercise.exercise_name, set.duration_min ?? 20, bodyWeightKg)} kcal</p>
-              </>
+              </div>
             ) : (
-              <>
-                <Stepper value={set.weight_kg ?? 0} suffix="kg" step={2.5} onChange={async (value) => { await db.workout_sets.update(set.id, { weight_kg: value, updated_at: nowIso() }); await refresh(); }} />
-                <Stepper value={set.reps ?? 0} suffix="回" step={1} onChange={async (value) => { await db.workout_sets.update(set.id, { reps: value, updated_at: nowIso() }); await refresh(); }} />
-              </>
+              <div className="space-y-3">
+                <TapSliderControl
+                  value={set.weight_kg ?? 0}
+                  label="重量"
+                  suffix="kg"
+                  step={weightStep}
+                  min={0}
+                  max={sliderMax(set.weight_kg ?? 0, 200, weightStep)}
+                  onChange={async (value) => { await db.workout_sets.update(set.id, { weight_kg: value, updated_at: nowIso() }); await refresh(); }}
+                />
+                <TapSliderControl
+                  value={set.reps ?? 0}
+                  label="回数"
+                  suffix="回"
+                  step={1}
+                  min={0}
+                  max={50}
+                  onChange={async (value) => { await db.workout_sets.update(set.id, { reps: Math.round(value), updated_at: nowIso() }); await refresh(); }}
+                />
+              </div>
             )}
-            <button className="icon-button h-9 w-9" aria-label="削除" onClick={async () => { await db.workout_sets.delete(set.id); await refresh(); }}><Trash2 size={14} /></button>
           </div>
         ))}
       </div>
@@ -2513,6 +2599,43 @@ function Stepper({ value, suffix, step, onChange }: { value: number; suffix: str
       <button className="h-9" onClick={() => onChange(round1(Math.max(0, value - step)))} aria-label="減らす"><Minus size={14} className="mx-auto" /></button>
       <input className="h-9 rounded-none border-0 px-1 text-center text-xs focus:ring-0" type="number" step={step} value={value} onChange={(event) => onChange(Number(event.target.value))} aria-label={suffix} />
       <button className="h-9" onClick={() => onChange(round1(value + step))} aria-label="増やす"><Plus size={14} className="mx-auto" /></button>
+    </div>
+  );
+}
+
+function TapSliderControl({ label, value, suffix, step, min, max, onChange }: {
+  label: string;
+  value: number;
+  suffix: string;
+  step: number;
+  min: number;
+  max: number;
+  onChange: (value: number) => void | Promise<void>;
+}) {
+  const normalized = clampToRange(value, min, max);
+  const commit = (nextValue: number) => {
+    onChange(roundToStep(clampToRange(nextValue, min, max), step));
+  };
+  return (
+    <div>
+      <div className="mb-1.5 flex items-center justify-between gap-2">
+        <p className="text-xs font-bold text-moss">{label}</p>
+        <p className="rounded-md bg-rice px-2 py-1 text-sm font-bold text-ink">{formatControlValue(normalized)}{suffix}</p>
+      </div>
+      <div className="grid grid-cols-[36px_1fr_36px] items-center gap-2">
+        <button className="icon-button h-9 w-9 bg-surface" onClick={() => commit(normalized - step)} aria-label={`${label}を減らす`}><Minus size={14} /></button>
+        <input
+          className="h-9 w-full accent-moss"
+          type="range"
+          min={min}
+          max={max}
+          step={step}
+          value={normalized}
+          onChange={(event) => commit(Number(event.target.value))}
+          aria-label={label}
+        />
+        <button className="icon-button h-9 w-9 bg-surface" onClick={() => commit(normalized + step)} aria-label={`${label}を増やす`}><Plus size={14} /></button>
+      </div>
     </div>
   );
 }
@@ -3217,6 +3340,33 @@ function formatMonthLabel(month: string) {
 
 function round1(value: number) {
   return Math.round(value * 10) / 10;
+}
+
+function clampToRange(value: number, min: number, max: number) {
+  if (!Number.isFinite(value)) return min;
+  return Math.min(max, Math.max(min, value));
+}
+
+function roundToStep(value: number, step: number) {
+  const rounded = Math.round(value / step) * step;
+  return round1(rounded);
+}
+
+function sliderMax(value: number, fallbackMax: number, step: number) {
+  const nextMax = Math.max(fallbackMax, value + step * 10);
+  return Math.ceil(nextMax / step) * step;
+}
+
+function formatControlValue(value: number) {
+  return Number.isInteger(value) ? String(value) : value.toFixed(1);
+}
+
+function inferWeightStep(item: { exercise_name?: string; name?: string; equipment_type: string }) {
+  const text = `${item.exercise_name ?? item.name ?? ""} ${item.equipment_type}`;
+  if (/ダンベル|ケーブル|プレート|フリー|スミス/.test(text)) return 2.5;
+  if (/自重|チューブ/.test(text)) return 1;
+  if (/マシン|プレス|ロー|カール|エクステンション|プルダウン/.test(text)) return 1;
+  return 1;
 }
 
 function clampBodyFat(value: number) {
