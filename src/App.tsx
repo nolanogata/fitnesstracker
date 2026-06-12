@@ -71,6 +71,7 @@ import { getWeeklyWorkoutStatus, type WeeklyWorkoutStatus } from "./lib/workoutS
 type Tab = "home" | "food" | "workout" | "records" | "settings";
 type FoodMode = "search" | "favorite" | "chain" | "category" | "quick" | "manual" | "personal";
 type WorkoutMode = "favorite" | "preset" | "body" | "equipment" | "previous" | "search";
+type FoodFocus = "todayLog" | undefined;
 type SettingsFocus = "ai" | "backup" | "myMenu" | undefined;
 type HistoryGrouping = "day" | "week" | "month";
 type BackupInfo = {
@@ -178,6 +179,15 @@ const workoutWeightPresetStorageKey = "phase-log-workout-weight-presets";
 const staleAppPromptDelayMs = 6 * 60 * 60 * 1000;
 const weightStepOptions = [1, 2.5, 5, 10];
 const appUpdates: AppUpdate[] = [
+  {
+    id: "2026-06-12-home-food-log-jump",
+    title: "ホームから今日の食事ログへ直接移動",
+    date: "2026-06-12",
+    items: [
+      "ホームの今日の食事エントリをタップした時、Foodタブ下部の今日の食事ログへ直接スクロールするようにしました。",
+      "通常のFoodタブボタンはこれまで通り食事追加の上部から開きます。",
+    ],
+  },
   {
     id: "2026-06-12-home-food-delete",
     title: "ホームの今日の食事から削除可能に変更",
@@ -429,6 +439,7 @@ function App() {
   const [workoutExercises, setWorkoutExercises] = useState<WorkoutExercise[]>([]);
   const [workoutSets, setWorkoutSets] = useState<WorkoutSet[]>([]);
   const [tab, setTab] = useState<Tab>(() => (localStorage.getItem("phase-log-tab") as Tab) || "home");
+  const [foodFocus, setFoodFocus] = useState<FoodFocus>();
   const [settingsFocus, setSettingsFocus] = useState<SettingsFocus>();
   const [lastBackupAt, setLastBackupAt] = useState<string | undefined>(() => localStorage.getItem(backupStorageKey) || undefined);
   const [seenUpdateId, setSeenUpdateId] = useState<string | undefined>(() => localStorage.getItem(updateSeenStorageKey) || undefined);
@@ -583,14 +594,22 @@ function App() {
             backupInfo={backupInfo}
             setTab={(nextTab) => {
               setSettingsFocus(undefined);
+              setFoodFocus(undefined);
               setTab(nextTab);
+            }}
+            openTodayFoodLog={() => {
+              setSettingsFocus(undefined);
+              setFoodFocus("todayLog");
+              setTab("food");
             }}
             openAiReport={() => {
               setSettingsFocus("ai");
+              setFoodFocus(undefined);
               setTab("settings");
             }}
             openBackup={() => {
               setSettingsFocus("backup");
+              setFoodFocus(undefined);
               setTab("settings");
             }}
             latestUpdate={latestUpdate}
@@ -607,10 +626,13 @@ function App() {
             menuItems={menuItems}
             foodEntries={foodEntries}
             appDate={appDate}
+            focus={foodFocus}
             openMyMenuSettings={() => {
               setSettingsFocus("myMenu");
+              setFoodFocus(undefined);
               setTab("settings");
             }}
+            onFocusHandled={() => setFoodFocus(undefined)}
             refresh={refresh}
             showToast={showToast}
           />
@@ -662,11 +684,11 @@ function App() {
 
       <nav className="safe-bottom fixed inset-x-0 bottom-0 z-30 mx-auto max-w-[430px] border-t border-line bg-surface/95 px-3 pt-1.5 backdrop-blur">
         <div className="grid grid-cols-5 gap-1">
-          <TabButton active={tab === "home"} icon={<Home size={19} />} label="Home" onClick={() => { setSettingsFocus(undefined); setTab("home"); }} />
-          <TabButton active={tab === "food"} icon={<Utensils size={19} />} label="Food" onClick={() => { setSettingsFocus(undefined); setTab("food"); }} />
-          <TabButton active={tab === "workout"} icon={<Dumbbell size={19} />} label="Workout" onClick={() => { setSettingsFocus(undefined); setTab("workout"); }} />
-          <TabButton active={tab === "records"} icon={<BarChart3 size={19} />} label="History" onClick={() => { setSettingsFocus(undefined); setTab("records"); }} />
-          <TabButton active={tab === "settings"} icon={<Settings size={19} />} label="Settings" onClick={() => { setSettingsFocus(undefined); setTab("settings"); }} />
+          <TabButton active={tab === "home"} icon={<Home size={19} />} label="Home" onClick={() => { setSettingsFocus(undefined); setFoodFocus(undefined); setTab("home"); }} />
+          <TabButton active={tab === "food"} icon={<Utensils size={19} />} label="Food" onClick={() => { setSettingsFocus(undefined); setFoodFocus(undefined); setTab("food"); }} />
+          <TabButton active={tab === "workout"} icon={<Dumbbell size={19} />} label="Workout" onClick={() => { setSettingsFocus(undefined); setFoodFocus(undefined); setTab("workout"); }} />
+          <TabButton active={tab === "records"} icon={<BarChart3 size={19} />} label="History" onClick={() => { setSettingsFocus(undefined); setFoodFocus(undefined); setTab("records"); }} />
+          <TabButton active={tab === "settings"} icon={<Settings size={19} />} label="Settings" onClick={() => { setSettingsFocus(undefined); setFoodFocus(undefined); setTab("settings"); }} />
         </div>
       </nav>
     </main>
@@ -699,6 +721,7 @@ function HomeTab(props: {
   weightLogs: WeightLog[];
   backupInfo: BackupInfo;
   setTab: (tab: Tab) => void;
+  openTodayFoodLog: () => void;
   openAiReport: () => void;
   openBackup: () => void;
   latestUpdate?: AppUpdate;
@@ -887,7 +910,7 @@ function HomeTab(props: {
         />
         {visibleFoodEntries.map((entry) => (
           <div className="flex items-center gap-2 pr-4" key={entry.id}>
-            <button className="min-w-0 flex-1 text-left" onClick={() => props.setTab("food")}>
+            <button className="min-w-0 flex-1 text-left" onClick={props.openTodayFoodLog}>
               <HomeFoodLogRow entry={entry} displayName={formatFoodEntryName(entry, props.menuItems)} />
             </button>
             <button className="icon-button h-8 w-8 text-clay" aria-label={`${formatFoodEntryName(entry, props.menuItems)}を今日の食事から削除`} onClick={() => deleteFoodEntry(entry)}><Trash2 size={14} /></button>
@@ -993,11 +1016,12 @@ function HomeFoodLogRow({ entry, displayName }: { entry: FoodEntry; displayName:
   );
 }
 
-function FoodTab(props: { menuItems: MenuItem[]; foodEntries: FoodEntry[]; appDate: string; openMyMenuSettings: () => void; refresh: () => Promise<void>; showToast: (text: string) => void }) {
+function FoodTab(props: { menuItems: MenuItem[]; foodEntries: FoodEntry[]; appDate: string; focus?: FoodFocus; openMyMenuSettings: () => void; onFocusHandled: () => void; refresh: () => Promise<void>; showToast: (text: string) => void }) {
   const foodTopRef = useRef<HTMLDivElement | null>(null);
   const chainSectionRef = useRef<HTMLElement | null>(null);
   const chainListRef = useRef<HTMLDivElement | null>(null);
   const foodResultsRef = useRef<HTMLElement | null>(null);
+  const todayLogRef = useRef<HTMLElement | null>(null);
   const [mode, setMode] = useState<FoodMode>("search");
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<MenuItem>();
@@ -1023,6 +1047,14 @@ function FoodTab(props: { menuItems: MenuItem[]; foodEntries: FoodEntry[]; appDa
   const scrollToChainList = () => {
     window.setTimeout(() => chainListRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
   };
+  useEffect(() => {
+    if (props.focus !== "todayLog") return;
+    const timer = window.setTimeout(() => {
+      todayLogRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      props.onFocusHandled();
+    }, 80);
+    return () => window.clearTimeout(timer);
+  }, [props.focus]);
   const selectFoodItem = (item: MenuItem) => {
     setMultiplier(1);
     setSelected(item);
@@ -1235,7 +1267,7 @@ function FoodTab(props: { menuItems: MenuItem[]; foodEntries: FoodEntry[]; appDa
         <ManualFoodForm manual={manual} setManual={setManual} onSave={saveManual} />
       )}
 
-      <section className="compact-card divide-y divide-line">
+      <section className="compact-card divide-y divide-line scroll-mt-24" ref={todayLogRef}>
         <ListHeader title="今日の食事ログ" value={`${props.foodEntries.filter((entry) => entry.app_date === props.appDate).length}件`} />
         {props.foodEntries.filter((entry) => entry.app_date === props.appDate).map((entry) => (
           <FoodLogRow
