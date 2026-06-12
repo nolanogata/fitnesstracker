@@ -6,7 +6,6 @@ const sources = {
   coco: "https://www.ichibanya.co.jp/menu/pdf/nutrition.pdf",
   tenya: "https://www.tenya.co.jp/pdf/allergen-shop.pdf",
   ringer: "https://www.ringerhut.jp/quality/allergy-nutrition_value/",
-  mos: "https://www.mos.jp/menu/pdf/nutrition.pdf",
   hotto: "https://www.hottomotto.com/menu_list/info/13",
   ohsho: "https://www.ohsho.co.jp/menu/east/",
 };
@@ -99,12 +98,6 @@ export const dailyChainOfficialFoods = [
   chainOfficial({ brand: "リンガーハット", name: "ぎょうざ（5個）", calories: 199, protein_g: 4.7, fat_g: 14.1, carbs_g: 13.1, salt_g: 0.7, tags: ["餃子", "サイド"], source_url: sources.ringer }),
   chainOfficial({ brand: "リンガーハット", name: "ぎょうざ7個定食", calories: 592, protein_g: 11.8, fat_g: 20.5, carbs_g: 87.3, salt_g: 3.0, tags: ["餃子", "定食"], source_url: sources.ringer }),
   chainOfficial({ brand: "リンガーハット", name: "ぎょうざ10個定食", calories: 712, protein_g: 14.7, fat_g: 28.9, carbs_g: 95.2, salt_g: 3.4, tags: ["餃子", "定食"], source_url: sources.ringer }),
-
-  chainOfficial({ brand: "モスバーガー", name: "モスチキン", calories: 269, protein_g: 15.3, fat_g: 16.6, carbs_g: 14.7, salt_g: 1.5, tags: ["チキン", "サイド"], source_url: sources.mos }),
-  chainOfficial({ brand: "モスバーガー", name: "フレンチフライポテト S", calories: 170, protein_g: 2.2, fat_g: 7.0, carbs_g: 24.8, salt_g: 0.5, tags: ["ポテト", "サイド"], source_url: sources.mos }),
-  chainOfficial({ brand: "モスバーガー", name: "フレンチフライポテト M", calories: 238, protein_g: 3.0, fat_g: 9.8, carbs_g: 34.7, salt_g: 0.7, tags: ["ポテト", "サイド"], source_url: sources.mos }),
-  chainOfficial({ brand: "モスバーガー", name: "オニポテ", calories: 189, protein_g: 2.6, fat_g: 8.7, carbs_g: 25.3, salt_g: 0.7, tags: ["ポテト", "オニオン", "サイド"], source_url: sources.mos }),
-  chainOfficial({ brand: "モスバーガー", name: "チキンナゲット 5コ", calories: 195, protein_g: 14.8, fat_g: 10.2, carbs_g: 10.9, salt_g: 0.8, tags: ["ナゲット", "チキン", "サイド"], source_url: sources.mos }),
 
   chainOfficial({ brand: "ほっともっと", name: "のり弁当", calories: 770, protein_g: 22.5, fat_g: 23.6, carbs_g: 116.9, salt_g: 3.7, tags: ["弁当"], source_url: "https://www.hottomotto.com/menu_list/view/13/1563" }),
   chainOfficial({ brand: "ほっともっと", name: "特のりタル弁当", calories: 902, protein_g: 28.0, fat_g: 32.0, carbs_g: 126.0, salt_g: 4.4, tags: ["弁当", "のり弁"], source_url: sources.hotto }),
