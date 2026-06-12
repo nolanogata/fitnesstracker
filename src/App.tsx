@@ -173,6 +173,14 @@ const updateSeenStorageKey = "phase-log-seen-update-id";
 const staleAppPromptDelayMs = 6 * 60 * 60 * 1000;
 const appUpdates: AppUpdate[] = [
   {
+    id: "2026-06-12-food-menu-modal-dismiss",
+    title: "食事メニュー選択を閉じやすく改善",
+    date: "2026-06-12",
+    items: [
+      "食事メニューをタップして開いた記録画面を、閉じるボタンだけでなく枠外タップでも閉じられるようにしました。",
+    ],
+  },
+  {
     id: "2026-06-12-favorite-menu-persistence",
     title: "お気に入りメニューの保持を修正",
     date: "2026-06-12",
@@ -975,8 +983,8 @@ function FoodTab(props: { menuItems: MenuItem[]; foodEntries: FoodEntry[]; appDa
       </section>
 
       {selected && (
-        <div className="fixed inset-0 z-40 flex items-end bg-ink/30 px-4 pb-4">
-          <div className="compact-card w-full p-4">
+        <div className="fixed inset-0 z-40 flex items-end bg-ink/30 px-4 pb-4" onClick={() => setSelected(undefined)}>
+          <div className="compact-card w-full p-4" onClick={(event) => event.stopPropagation()}>
             <p className="text-lg font-bold">{formatMenuItemName(selected)}</p>
             <p className="text-sm text-moss">{selected.brand ?? selected.category} · {Math.round(selected.calories * multiplier)} kcal</p>
             <div className="mt-2">
