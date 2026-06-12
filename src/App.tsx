@@ -177,6 +177,16 @@ const staleAppPromptDelayMs = 6 * 60 * 60 * 1000;
 const weightStepOptions = [1, 2.5, 5, 10];
 const appUpdates: AppUpdate[] = [
   {
+    id: "2026-06-12-pre-workout-fuel-foods",
+    title: "トレ前補給向けメニューを追加",
+    date: "2026-06-12",
+    items: [
+      "塩大福、ミニ塩大福、バナナの量違い、羊羹、干し芋、ラムネ菓子などを追加しました。",
+      "トレ前補給・糖質補給・低脂質タグで検索しやすくしました。",
+      "スポーツドリンクやエネルギーゼリーも補給用メニューとして追加しました。",
+    ],
+  },
+  {
     id: "2026-06-12-ootoya-official-nutrition",
     title: "大戸屋メニューを公式栄養値で拡充",
     date: "2026-06-12",
