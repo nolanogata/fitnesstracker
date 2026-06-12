@@ -180,6 +180,16 @@ const staleAppPromptDelayMs = 6 * 60 * 60 * 1000;
 const weightStepOptions = [1, 2.5, 5, 10];
 const appUpdates: AppUpdate[] = [
   {
+    id: "2026-06-12-chain-menu-nutrition-expansion",
+    title: "チェーン店メニューと公式栄養値を追加",
+    date: "2026-06-12",
+    items: [
+      "バーミヤンの主要メニューを公式メニュー確認済みの推定栄養値として追加しました。",
+      "リンガーハットのちゃんぽん・皿うどん・餃子定食などを公式栄養値で拡充しました。",
+      "はなまるうどんの推定値を整理し、取得できたメニューを公式PDFの栄養値に置き換えました。",
+    ],
+  },
+  {
     id: "2026-06-12-home-header-reload-checkin-edit",
     title: "Homeの更新導線とチェックイン表示を調整",
     date: "2026-06-12",

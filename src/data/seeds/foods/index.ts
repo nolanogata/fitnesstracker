@@ -2,8 +2,10 @@ import { genericFoods } from "./generic";
 import { proteinProductFoods } from "./proteinProducts";
 import { quickEstimateFoods } from "./quickEstimates";
 import { userMenuImportFoods } from "./userMenuImports";
+import { bamiyanMenuFoods } from "./chains/bamiyanMenu";
 import { burgerKingMenuFoods } from "./chains/burgerkingMenu";
 import { gyudonFoods } from "./chains/gyudon";
+import { hanamaruOfficialFoods } from "./chains/hanamaruOfficial";
 import { udonFoods } from "./chains/udon";
 import { teishokuFoods } from "./chains/teishoku";
 import { fastFoodFoods } from "./chains/fastFood";
@@ -38,6 +40,7 @@ export const foodSeeds = [
   ...sukiyaOfficialFoods,
   ...nakauOfficialFoods,
   ...yoshinoyaOfficialFoods,
+  ...hanamaruOfficialFoods,
   ...udonFoods,
   ...teishokuFoods,
   ...ootoyaMenuFoods,
@@ -48,6 +51,7 @@ export const foodSeeds = [
   ...mcdonaldsOfficialFoods,
   ...subwayOfficialFoods,
   ...dailyChainOfficialFoods,
+  ...bamiyanMenuFoods,
   ...italianRestaurantMenuFoods,
   ...monsoonCafeMenuFoods,
   ...externalNutritionFoods,

@@ -24,7 +24,7 @@ export async function initializeSeeds() {
     }
 
     await db.menu_items.bulkDelete(existingMenuItems
-      .filter((item) => item.brand === "大戸屋" && item.data_source === "estimated" && !item.is_user_created)
+      .filter((item) => ["大戸屋", "はなまるうどん"].includes(item.brand ?? "") && item.data_source === "estimated" && !item.is_user_created)
       .map((item) => item.id));
     await db.menu_items.bulkPut(foodSeeds.map((item) => ({ ...item, is_favorite: item.is_favorite || favoriteMenuItemIds.has(item.id) })));
     await db.exercise_presets.bulkPut(exerciseSeeds.map((exercise) => ({ ...exercise, is_favorite: favoriteExerciseIds.has(exercise.id) })));
