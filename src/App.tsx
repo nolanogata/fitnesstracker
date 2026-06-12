@@ -170,6 +170,7 @@ const emptyManual: ManualFoodDraft = {
 
 const backupStorageKey = "phase-log-last-backup-at";
 const updateSeenStorageKey = "phase-log-seen-update-id";
+const staleAppPromptDelayMs = 6 * 60 * 60 * 1000;
 const appUpdates: AppUpdate[] = [
   {
     id: "2026-06-12-workout-template-cardio-updates",
@@ -212,6 +213,8 @@ function App() {
   const [lastBackupAt, setLastBackupAt] = useState<string | undefined>(() => localStorage.getItem(backupStorageKey) || undefined);
   const [seenUpdateId, setSeenUpdateId] = useState<string | undefined>(() => localStorage.getItem(updateSeenStorageKey) || undefined);
   const [isUpdateNotesOpen, setIsUpdateNotesOpen] = useState(false);
+  const [showStaleAppPrompt, setShowStaleAppPrompt] = useState(false);
+  const appOpenedAtRef = useRef(Date.now());
   const appDate = todayAppDate(settings?.day_boundary_hour ?? 3);
   const activeGoal = goals.find((goal) => goal.is_active);
   const latestUpdate = appUpdates[0];
@@ -251,6 +254,20 @@ function App() {
   useEffect(() => {
     localStorage.setItem("phase-log-tab", tab);
   }, [tab]);
+
+  useEffect(() => {
+    const updatePromptState = () => {
+      setShowStaleAppPrompt(Date.now() - appOpenedAtRef.current >= staleAppPromptDelayMs);
+    };
+    const timer = window.setTimeout(updatePromptState, staleAppPromptDelayMs);
+    const interval = window.setInterval(updatePromptState, 60_000);
+    document.addEventListener("visibilitychange", updatePromptState);
+    return () => {
+      window.clearTimeout(timer);
+      window.clearInterval(interval);
+      document.removeEventListener("visibilitychange", updatePromptState);
+    };
+  }, []);
 
   const todayEntries = foodEntries.filter((entry) => entry.app_date === appDate);
   const todayWorkouts = workoutSessions.filter((session) => session.app_date === appDate);
@@ -335,6 +352,7 @@ function App() {
             }}
             latestUpdate={latestUpdate}
             hasUnreadUpdate={!!latestUpdate && seenUpdateId !== latestUpdate.id}
+            showStaleAppPrompt={showStaleAppPrompt}
             openUpdateNotes={openUpdateNotes}
             reloadLatestApp={reloadLatestApp}
             refresh={refresh}
@@ -413,6 +431,7 @@ function HomeTab(props: {
   openBackup: () => void;
   latestUpdate?: AppUpdate;
   hasUnreadUpdate: boolean;
+  showStaleAppPrompt: boolean;
   openUpdateNotes: () => void;
   reloadLatestApp: () => Promise<void>;
   refresh: () => Promise<void>;
@@ -457,6 +476,29 @@ function HomeTab(props: {
           </div>
           <ChevronRight className="shrink-0 text-muted" size={18} />
         </button>
+      )}
+
+      {props.showStaleAppPrompt && (
+        <div className="compact-card flex items-center gap-3 px-4 py-3">
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-bold">長時間更新していません</p>
+            <p className="mt-1 text-xs text-moss">最新のメニューや修正を反映するには更新してください。</p>
+          </div>
+          <button
+            className="secondary-button shrink-0 px-3 py-2 text-xs"
+            disabled={isReloadingLatest}
+            onClick={async () => {
+              setIsReloadingLatest(true);
+              try {
+                await props.reloadLatestApp();
+              } catch {
+                window.location.reload();
+              }
+            }}
+          >
+            <RotateCcw size={15} />{isReloadingLatest ? "更新中" : "更新"}
+          </button>
+        </div>
       )}
 
       {props.backupInfo.level !== "ok" && (
