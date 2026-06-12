@@ -180,6 +180,15 @@ const staleAppPromptDelayMs = 6 * 60 * 60 * 1000;
 const weightStepOptions = [1, 2.5, 5, 10];
 const appUpdates: AppUpdate[] = [
   {
+    id: "2026-06-12-home-header-reload-checkin-edit",
+    title: "Homeの更新導線とチェックイン表示を調整",
+    date: "2026-06-12",
+    items: [
+      "Home右上のフェーズ/体重表示をリロードアイコンに変更しました。",
+      "Homeの日付サイズを少し抑え、チェックインカードに編集できることが分かる表示を追加しました。",
+    ],
+  },
+  {
     id: "2026-06-12-all-tabs-glass-theme",
     title: "各タブの色合いをHomeのテーマに統一",
     date: "2026-06-12",
@@ -492,6 +501,7 @@ function App() {
   const [seenUpdateId, setSeenUpdateId] = useState<string | undefined>(() => localStorage.getItem(updateSeenStorageKey) || undefined);
   const [isUpdateNotesOpen, setIsUpdateNotesOpen] = useState(false);
   const [showStaleAppPrompt, setShowStaleAppPrompt] = useState(false);
+  const [isHeaderReloading, setIsHeaderReloading] = useState(false);
   const [currentTime, setCurrentTime] = useState(() => new Date());
   const [toast, setToast] = useState<{ id: string; text: string }>();
   const toastTimerRef = useRef<number | undefined>(undefined);
@@ -598,6 +608,14 @@ function App() {
     }
     setIsUpdateNotesOpen(true);
   };
+  const reloadFromHeader = async () => {
+    setIsHeaderReloading(true);
+    try {
+      await reloadLatestApp();
+    } catch {
+      window.location.reload();
+    }
+  };
 
   useEffect(() => () => {
     if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
@@ -622,12 +640,18 @@ function App() {
       <header className={`safe-top app-header sticky top-0 z-20 px-4 pb-3 ${tab === "home" ? "home-header" : ""}`}>
         <div className="flex items-center justify-between">
           <div>
-            <h1 className={tab === "home" ? "text-[2.35rem] font-semibold leading-tight tracking-normal" : "text-2xl font-bold tracking-normal"}>{headerTitle}</h1>
+            <h1 className={tab === "home" ? "text-[2.08rem] font-semibold leading-tight tracking-normal" : "text-2xl font-bold tracking-normal"}>{headerTitle}</h1>
             <p className="mt-1 text-xs font-normal text-moss">{headerSubtext}</p>
           </div>
-          <div className={tab === "home" ? "home-status-pill" : "app-status-pill"}>
-            {activeGoal ? phaseLabels[activeGoal.phase] : "未設定"} / {typeof statusWeight === "number" ? `${statusWeight}kg` : "-"}
-          </div>
+          {tab === "home" ? (
+            <button className="home-header-reload" disabled={isHeaderReloading} aria-label="最新の情報にリロード" onClick={reloadFromHeader}>
+              <RotateCcw className={isHeaderReloading ? "home-header-reload-loading" : ""} size={18} />
+            </button>
+          ) : (
+            <div className="app-status-pill">
+              {activeGoal ? phaseLabels[activeGoal.phase] : "未設定"} / {typeof statusWeight === "number" ? `${statusWeight}kg` : "-"}
+            </div>
+          )}
         </div>
       </header>
 
@@ -920,23 +944,10 @@ function HomeTab(props: {
       <div className="flex justify-center gap-4 text-xs font-semibold text-moss/80">
         <button className="px-2 py-1" onClick={() => props.setTab("settings")}>ゴールを確認</button>
         <button className="px-2 py-1 text-moss/70" onClick={props.openAiReport}>AIレポート</button>
-        <button
-          className="px-2 py-1 text-moss/70"
-          disabled={isReloadingLatest}
-          onClick={async () => {
-            setIsReloadingLatest(true);
-            try {
-              await props.reloadLatestApp();
-            } catch {
-              window.location.reload();
-            }
-          }}
-        >
-          {isReloadingLatest ? "更新中" : "最新へ"}
-        </button>
       </div>
 
-      <button className="home-glass-card w-full p-5 text-left" onClick={() => setIsCheckInOpen(true)}>
+      <button className="home-glass-card relative w-full p-5 text-left" onClick={() => setIsCheckInOpen(true)}>
+        <span className="home-checkin-edit" aria-hidden="true"><Plus size={15} /></span>
         <div className="grid grid-cols-2 items-end gap-3">
           <div>
             <p className="text-sm font-bold">今日のチェックイン</p>
