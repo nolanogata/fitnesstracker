@@ -1,4 +1,4 @@
-import { estimated } from "./helpers";
+import { estimated, unofficial } from "./helpers";
 
 export const genericFoods = [
   estimated({ name: "白米", category: "ごはん・丼", tags: ["自炊", "主食"], calories: 250, protein_g: 4, fat_g: 1, carbs_g: 56, serving_label: "茶碗1杯" }),
@@ -74,6 +74,7 @@ export const genericFoods = [
   estimated({ name: "どら焼き", category: "スイーツ", tags: ["和菓子"], calories: 260, protein_g: 6, fat_g: 4, carbs_g: 52, salt_g: 0.3, serving_label: "1個" }),
   estimated({ name: "大福", category: "スイーツ", tags: ["和菓子"], calories: 230, protein_g: 4, fat_g: 1, carbs_g: 52, salt_g: 0.1, serving_label: "1個" }),
   estimated({ name: "チョコレート", category: "スイーツ", tags: ["チョコ"], calories: 280, protein_g: 4, fat_g: 18, carbs_g: 28, salt_g: 0.1, serving_label: "50g" }),
+  unofficial({ brand: "亀田製菓", name: "うすやきせんべい えび味", category: "スイーツ", tags: ["せんべい", "米菓", "間食", "えび"], calories: 99, protein_g: 1.9, fat_g: 1.8, carbs_g: 18.8, serving_label: "1パック" }),
   estimated({ name: "プロテイン", category: "プロテイン", tags: ["タンパク質"], calories: 120, protein_g: 24, fat_g: 2, carbs_g: 3, serving_label: "1杯" }),
   estimated({ name: "プロテインバー", category: "プロテイン", tags: ["タンパク質", "間食"], calories: 200, protein_g: 15, fat_g: 8, carbs_g: 18, serving_label: "1本" }),
   estimated({ name: "カフェラテ", category: "ドリンク", tags: ["カフェ"], calories: 140, protein_g: 7, fat_g: 7, carbs_g: 12, serving_label: "M" }),
