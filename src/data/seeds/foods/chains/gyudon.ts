@@ -28,6 +28,4 @@ export const gyudonFoods = brands.flatMap((brand) =>
     }),
   ),
 ).concat([
-  estimated({ brand: "なか卯", name: "親子丼", category: "チェーン店", tags: ["牛丼・丼", "丼"], calories: 690, protein_g: 30, fat_g: 18, carbs_g: 100, serving_label: "並" }),
-  estimated({ brand: "なか卯", name: "カツ丼", category: "チェーン店", tags: ["牛丼・丼", "丼"], calories: 900, protein_g: 32, fat_g: 35, carbs_g: 112, serving_label: "並" }),
 ]);
