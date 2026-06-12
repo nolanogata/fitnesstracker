@@ -138,6 +138,61 @@ button {
     rgba(255, 255, 255, 0.58);
 }
 
+.home-macro-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.home-macro-pill {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.28rem;
+  border-radius: 999px;
+  padding: 0.45rem 0.55rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1;
+  color: rgba(36, 40, 32, 0.72);
+  background: rgba(255, 255, 255, 0.42);
+}
+
+.home-macro-dot {
+  width: 0.45rem;
+  height: 0.45rem;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: rgba(82, 106, 87, 0.34);
+}
+
+.home-macro-safe {
+  color: #426249;
+  background: rgba(79, 107, 85, 0.1);
+}
+
+.home-macro-safe .home-macro-dot {
+  background: #4f6b55;
+}
+
+.home-macro-over {
+  color: #a64d3c;
+  background: rgba(196, 106, 82, 0.12);
+}
+
+.home-macro-over .home-macro-dot {
+  background: #c46a52;
+}
+
+.home-macro-low {
+  color: #85601d;
+  background: rgba(218, 154, 61, 0.13);
+}
+
+.home-macro-low .home-macro-dot {
+  background: #da9a3d;
+}
+
 .home-action-row {
   display: grid;
   grid-template-columns: minmax(0, 1.18fr) minmax(0, 0.92fr);

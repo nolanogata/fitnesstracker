@@ -180,6 +180,15 @@ const staleAppPromptDelayMs = 6 * 60 * 60 * 1000;
 const weightStepOptions = [1, 2.5, 5, 10];
 const appUpdates: AppUpdate[] = [
   {
+    id: "2026-06-12-home-pfc-status-colors",
+    title: "HomeのPFC達成率を色で確認可能に",
+    date: "2026-06-12",
+    items: [
+      "HomeのカロリーカードでPFCの目標比率を%表示にしました。",
+      "安全圏は緑、超過は赤、未達は黄系で控えめに見分けられるようにしました。",
+    ],
+  },
+  {
     id: "2026-06-12-home-health-weather-redesign",
     title: "HomeをApple Health / Weather寄りに整理",
     date: "2026-06-12",
@@ -792,6 +801,15 @@ function HomeTab(props: {
   const calorieMoodLabel = typeof calorieDelta === "number" ? (calorieDelta > 0 ? "over" : Math.abs(calorieDelta) <= 100 ? "on track" : "left") : calorieState.label;
   const foodSummary = `${props.todayEntries.length}件 / ${props.dayTotals.calories} kcal`;
   const workoutSummary = todayWorkoutCalories > 0 ? `${props.todayWorkouts.length}回 / ${todayWorkoutCalories} kcal` : `${props.todayWorkouts.length}回`;
+  const macroStats = [
+    { label: "P", value: props.dayTotals.protein, target: props.goal?.target_protein_g ?? 0 },
+    { label: "F", value: props.dayTotals.fat, target: props.goal?.target_fat_g ?? 0 },
+    { label: "C", value: props.dayTotals.carbs, target: props.goal?.target_carbs_g ?? 0 },
+  ].map((macro) => {
+    const percent = macro.target > 0 ? Math.round((macro.value / macro.target) * 100) : undefined;
+    const tone = typeof percent !== "number" ? "neutral" : percent > 110 ? "over" : percent >= 80 ? "safe" : "low";
+    return { ...macro, percent, tone };
+  });
   const saveCheckIn = async () => {
     const timestamp = nowIso();
     const normalizedBodyFat = clampBodyFat(bodyFat);
@@ -874,7 +892,16 @@ function HomeTab(props: {
             <div className={`h-full rounded-full ${calorieDelta && calorieDelta > 0 ? "bg-clay" : "bg-moss"}`} style={{ width: `${caloriePercent}%` }} />
           </div>
         </div>
-        <p className="mt-5 text-sm font-semibold text-ink/70">P {props.dayTotals.protein}g / F {props.dayTotals.fat}g / C {props.dayTotals.carbs}g</p>
+        <div className="home-macro-row mt-5">
+          {macroStats.map((macro) => (
+            <div className={`home-macro-pill home-macro-${macro.tone}`} key={macro.label}>
+              <span className="home-macro-dot" />
+              <span className="font-bold">{macro.label}</span>
+              <span>{round1(macro.value)}g</span>
+              <span className="ml-auto font-bold">{typeof macro.percent === "number" ? `${macro.percent}%` : "-"}</span>
+            </div>
+          ))}
+        </div>
       </section>
 
       <div className="home-action-row">
