@@ -177,6 +177,15 @@ const staleAppPromptDelayMs = 6 * 60 * 60 * 1000;
 const weightStepOptions = [1, 2.5, 5, 10];
 const appUpdates: AppUpdate[] = [
   {
+    id: "2026-06-12-convenience-menu-expansion",
+    title: "コンビニメニューを拡充",
+    date: "2026-06-12",
+    items: [
+      "セブンイレブン、ファミリーマート、ローソン、ミニストップの定番メニューを追加しました。",
+      "おにぎり、サンドイッチ、弁当、麺類、ホットスナック、高たんぱく系、スイーツを検索しやすくしました。",
+    ],
+  },
+  {
     id: "2026-06-12-my-menu-registration-flow",
     title: "マイメニュー登録の導線を改善",
     date: "2026-06-12",
