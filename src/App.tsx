@@ -906,8 +906,8 @@ function HomeTab(props: {
             <div className={`home-macro-pill home-macro-${macro.tone}`} key={macro.label}>
               <span className="home-macro-dot" />
               <span className="font-bold">{macro.label}</span>
-              <span>{round1(macro.value)}g</span>
-              <span className="ml-auto font-bold">{typeof macro.percent === "number" ? `${macro.percent}%` : "-"}</span>
+              <span className="home-macro-grams">{round1(macro.value)}g</span>
+              <span className="home-macro-percent">{typeof macro.percent === "number" ? `${macro.percent}%` : "-"}</span>
             </div>
           ))}
         </div>
@@ -937,14 +937,14 @@ function HomeTab(props: {
       </div>
 
       <button className="home-glass-card w-full p-5 text-left" onClick={() => setIsCheckInOpen(true)}>
-        <div className="flex items-start justify-between gap-3">
+        <div className="grid grid-cols-2 items-end gap-3">
           <div>
             <p className="text-sm font-bold">今日のチェックイン</p>
             <p className="mt-6 text-[2.6rem] font-semibold leading-none tracking-normal">{round1(weight)}<span className="ml-1 text-base font-semibold">kg</span></p>
             <p className="mt-2 text-xs text-moss">7日平均 {average7 ? `${average7}kg` : "-"}{typeof weightDelta === "number" ? ` / 前日比 ${weightDelta > 0 ? "+" : ""}${weightDelta}kg` : ""}</p>
           </div>
           <div className="text-right">
-            <p className="mt-8 text-[2.15rem] font-semibold leading-none tracking-normal">{round1(bodyFat)}<span className="ml-1 text-sm font-semibold">%</span></p>
+            <p className="text-[2.15rem] font-semibold leading-none tracking-normal">{round1(bodyFat)}<span className="ml-1 text-sm font-semibold">%</span></p>
             <p className="mt-2 text-xs text-moss">体脂肪率</p>
           </div>
         </div>
