@@ -179,6 +179,15 @@ const staleAppPromptDelayMs = 6 * 60 * 60 * 1000;
 const weightStepOptions = [1, 2.5, 5, 10];
 const appUpdates: AppUpdate[] = [
   {
+    id: "2026-06-12-home-food-delete",
+    title: "ホームの今日の食事から削除可能に変更",
+    date: "2026-06-12",
+    items: [
+      "ホームの今日の食事リストに削除ボタンを追加しました。",
+      "削除しても食品メニュー本体は残り、その日の食事記録だけを削除します。",
+    ],
+  },
+  {
     id: "2026-06-12-workout-weight-rep-pages",
     title: "ワークアウト追加の重量と回数を分離",
     date: "2026-06-12",
@@ -711,6 +720,11 @@ function HomeTab(props: {
   const caloriePercent = props.goal?.target_calories ? Math.min(100, Math.round((props.dayTotals.calories / props.goal.target_calories) * 100)) : 0;
   const calorieHeadline = props.goal?.target_calories && remaining < 0 ? "超過" : "残り";
   const backupTitle = props.backupInfo.level === "danger" ? "バックアップ推奨" : "そろそろバックアップ";
+  const deleteFoodEntry = async (entry: FoodEntry) => {
+    await db.food_entries.delete(entry.id);
+    await props.refresh();
+    props.showToast(`${formatFoodEntryName(entry, props.menuItems)}を今日の食事から削除しました`);
+  };
   const deleteWorkoutSession = async (session: WorkoutSession) => {
     if (!confirm(`この日の記録から「${session.title}」を削除しますか？ワークアウトメニュー・プリセット本体は残ります。`)) return;
     const exerciseIds = props.workoutExercises.filter((exercise) => exercise.session_id === session.id).map((exercise) => exercise.id);
@@ -872,9 +886,12 @@ function HomeTab(props: {
           onToggle={() => setShowAllFood((expanded) => !expanded)}
         />
         {visibleFoodEntries.map((entry) => (
-          <button className="w-full text-left" key={entry.id} onClick={() => props.setTab("food")}>
-            <HomeFoodLogRow entry={entry} displayName={formatFoodEntryName(entry, props.menuItems)} />
-          </button>
+          <div className="flex items-center gap-2 pr-4" key={entry.id}>
+            <button className="min-w-0 flex-1 text-left" onClick={() => props.setTab("food")}>
+              <HomeFoodLogRow entry={entry} displayName={formatFoodEntryName(entry, props.menuItems)} />
+            </button>
+            <button className="icon-button h-8 w-8 text-clay" aria-label={`${formatFoodEntryName(entry, props.menuItems)}を今日の食事から削除`} onClick={() => deleteFoodEntry(entry)}><Trash2 size={14} /></button>
+          </div>
         ))}
         {props.todayEntries.length === 0 && <EmptyLine text="まだ食事ログなし" />}
       </section>
