@@ -1,10 +1,10 @@
 # Food seed coverage report
 
-Generated: 2026-06-12T00:00:00.000Z
+Generated: 2026-06-13T00:00:00.000Z
 
 ## Summary
 
-This pass expands the verified official chain coverage. It applies only rows where kcal, protein, fat, carbohydrate, and salt are all source-backed by official nutrition tables. Partial official kcal/salt rows and ambiguous PDF regions remain in manual review.
+This pass continues the official-source food seed expansion. It still promotes rows to `official()` only when calories, protein, fat, carbohydrate, and salt are all backed by the same official nutrition source. Ambiguous or partial rows remain in manual review.
 
 | Brand | Source type | Official inventory | Existing before expansion | Missing add records | Replace records | Manual review |
 | --- | --- | ---: | ---: | ---: | ---: | ---: |
@@ -12,55 +12,45 @@ This pass expands the verified official chain coverage. It applies only rows whe
 | スターバックス | official_full | 9 | 9 | 0 | 9 | 0 |
 | ケンタッキー | official_full | 35 | 18 | 17 | 18 | 0 |
 | モスバーガー | official_full | 184 | 54 | 132 | 52 | 0 |
-| サブウェイ | official_full | 120 | 20 | 100 | 20 | 15 |
+| サブウェイ | official_full | 154 | 120 | 34 | 0 | 0 |
 | マクドナルド | official_full | 71 | 20 | 51 | 1 | 0 |
 | KFC coverage add-on | official_full | 50 | 35 | 15 | 0 | 0 |
 | すき家 | official_full | 129 | 62 | 67 | 0 | 1 |
 | 吉野家 | official_full | 69 | 6 | 63 | 0 | 0 |
 | 松屋 | official_full | 41 | 10 | 31 | 0 | 0 |
+| なか卯 | official_full | 209 | 2 | 207 | 2 | 0 |
+| はなまるうどん | official_full | 74 | 0 | 74 | 0 | 0 |
 | やよい軒 | official_full | 39 | 15 | 24 | 0 | 0 |
 | 大戸屋 | official_full/add_if_missing | 162 | 159 | 3 | 0 | 0 |
+| ドトール | official_full | 116 | 10 | 106 | 10 | 0 |
+| タリーズ | official_full | 10 | 9 | 1 | 9 | 0 |
 | しんぱち食堂 | official_menu_plus_supplemental_estimated | 43 | 14 | 29 | 14 | 0 |
-| Other supported chains | mixed/not extracted in this artifact | 0 | 0 | 0 | 0 | 21 |
+| Other supported chains | mixed/not fully extracted | 0 | 0 | 0 | 0 | 16 |
 
 ## Applied expansion
 
-- Burger King official PDF rows remain represented as add/replace records in `food_seed_coverage_diff.json`; the add records are emitted in `food_seed_missing_items_patch.ts`.
-- KFC official PDF rows refresh the prior 18 seed rows and add current missing official rows.
-- MOS official PDF rows now cover all safely extracted rows from the 2026-05-20 nutrition table, including burgers, sides, drinks, sweets, kids, breakfast, and MOS cafe items.
-- Subway official PDF rows now cover 120 safely attached rows from the 2026-06-10 nutrition table, including sandwiches, potatoes, breads, toppings, morning/kids/sweets, drinks, condiments, and floats.
-- The 2026-06-12 handoff batch adds McDonald's, KFC add-on, Sukiya, Yoshinoya, Matsuya, Yayoiken, and Ootoya official coverage. McDonald's existing fries seed is canonicalized to `マックフライポテト S`.
-- Shinpachi Shokudo common official menu coverage and supplemental store/menu-size rows are added as `estimated()` only. No row is promoted to `official()` because official kcal/PFC/salt values were not found.
-- Starbucks food rows in the supplied batch are replace records only; no new Starbucks add records were present in the handoff.
-- Records with only official calories/salt, or ambiguous PDF table extraction, are not promoted to `official()`.
+- Doutor official nutrition rows now add 116 food, snack, dessert, and light-meal records from the official nutrition search pages.
+- Tullys official food PDF rows now add 10 verified food and pasta records. Existing estimated Tullys cafe menu rows are removed from the loaded seed path to avoid duplicate brand rows.
+- Nakau official PDF rows now add 209 records across bowls, noodles, set meals, breakfast, rice, and sides. PDF rows with `W` size variants are preserved as distinct serving labels.
+- Hanamaru official PDF rows now add 74 safely extracted udon, curry, and rice records.
+- Subway ambiguous PDF rows are resolved into 34 additional official rows; the prior 15-row manual queue is cleared.
+- Existing app ranking still puts `official` rows above `unofficial`, `estimated`, and generic templates. Seed initialization also clears old estimated brand rows for chains now covered by official sources.
 
 ## Manual review queue
 
-- バーミヤン: 公式ページで確認できるのは主にカロリー／塩分。PFC は公式確認できず、自動置換は保留。
-- ドトール・タリーズ・コメダ: 一部は公式カロリータグだが PFC は estimated。公式表または商品ページで個別照合が必要。
-- ガスト・ロイヤルホスト・サイゼリヤ・デニーズ・ジョイフル等: 全体が estimated。公式が kcal/塩分のみのチェーンが多く、PFC 補完方針の決定が必要。
-- 餃子の王将 subset: 同ファイル内で王将のみ estimated。公式 PFC の有無確認が必要。
-- Monsoon Cafe: 公式メニュー PDF は確認できても栄養成分表が見つからない可能性が高い。代替ソースで unofficial 化候補。
-- 汎用ファストフード: バーガーキング等の公式 seed と重複。公式 seed を優先し、汎用推定はブランド名なしのクイック見積へ寄せる。
-- 汎用カフェ: スターバックス公式 seed と重複。ブランド別公式が入るものは非表示または優先度低下推奨。
-- 丸亀製麺・ウエスト・資さんうどん汎用: 公式/第三者値の確認が必要。
-- やよい軒・しんぱち食堂汎用: やよい軒公式と重複しうる。公式 seed 優先。
-- ドトール: Phase 1: Chains with official kcal/P/F/C/salt can be bulk-added as official() after exact table extraction and diffing.
-- タリーズ: Phase 1: Chains with official kcal/P/F/C/salt can be bulk-added as official() after exact table extraction and diffing.
-- なか卯: Phase 1: Chains with official kcal/P/F/C/salt can be bulk-added as official() after exact table extraction and diffing.
-- はなまるうどん: Phase 1: Chains with official kcal/P/F/C/salt can be bulk-added as official() after exact table extraction and diffing.
-- ガスト: Phase 2: Chains whose official sources may expose only calories/salt or whose table extraction requires careful validation. Keep PFC provenance explicit.
-- バーミヤン: Phase 2: Chains whose official sources may expose only calories/salt or whose table extraction requires careful validation. Keep PFC provenance explicit.
-- サイゼリヤ: Phase 2: Chains whose official sources may expose only calories/salt or whose table extraction requires careful validation. Keep PFC provenance explicit.
-- コメダ珈琲: Phase 2: Chains whose official sources may expose only calories/salt or whose table extraction requires careful validation. Keep PFC provenance explicit.
-- 大戸屋: Phase 2: Chains whose official sources may expose only calories/salt or whose table extraction requires careful validation. Keep PFC provenance explicit.
-- Monsoon Cafe: Phase 3: Chains where official nutrition may be absent. Use secondary sources only with clear source_url and confidence downgrade.
-- その他ローカル定食系: Phase 3: Chains where official nutrition may be absent. Use secondary sources only with clear source_url and confidence downgrade.
-- サブウェイ PDF ambiguous rows: 15 numeric-only or concatenated rows need table-layout extraction before official() promotion.
-- すき家カレー系追加候補: PDF text extraction can misalign product names and values; keep the listed curry additions in manual review until table-layout validation is available.
+- すき家カレー系追加候補: current official seed coverage already includes the safe curry rows. Remaining candidate rows still risk PDF name/value misalignment, so no new `official()` rows are added in this pass.
+- バーミヤン: official pages appear to expose mainly calories and salt. PFC is not official-backed, so automatic promotion remains blocked.
+- ガスト / すかいらーく系: official data is partial for the nutrients tracked by the app. Needs field-level provenance or secondary-source policy.
+- サイゼリヤ: nutrition availability and PFC provenance need table-level validation before official promotion.
+- コメダ珈琲: several rows remain estimated or calorie-only; do not promote until full PFC and salt are source-backed.
+- ロイヤルホスト / デニーズ / ジョイフル等: broad family-restaurant rows remain estimated until complete official or credible secondary values are available.
+- 餃子の王将 subset: rows are still estimated. Official PFC availability needs confirmation.
+- Monsoon Cafe: official menu PDF may exist, but nutrition data is not confirmed. Candidate for `unofficial()` only if a credible secondary source is found.
+- 汎用ファストフード / 汎用カフェ: keep as brandless quick-estimate fallbacks while official brand rows rank above them.
+- 丸亀製麺・ウエスト・資さんうどん汎用: official or stable third-party values still need confirmation.
 
 ## Notes
 
 - This is still an incremental source-of-truth crawl, not yet a completed all-chain inventory.
-- Remaining high-priority adapters should next focus on Doutor, Tullys, Nakau, Hanamaru, Monsoon Cafe, and remaining partial/ambiguous chains.
-- Existing app search already ranks `official` above `unofficial`, `estimated`, and generic templates.
+- Remaining high-priority work is now concentrated on partial/ambiguous chains, Monsoon Cafe, and generic fallback cleanup.
+- Rows with only official calories/salt, or ambiguous source attachment, are intentionally not promoted to `official()`.
