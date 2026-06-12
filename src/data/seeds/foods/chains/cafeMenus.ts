@@ -9,10 +9,6 @@ const sources = {
   コメダ珈琲: "https://www.komeda.co.jp/menu/",
 } as const;
 
-const officialSources = {
-  starbucks: "https://product.starbucks.co.jp/allergy/nutrient/",
-} as const;
-
 type CafeMenu = {
   brand: keyof typeof sources;
   name: string;
@@ -63,26 +59,15 @@ const officialItem = (input: OfficialCafeMenu) =>
   });
 
 export const cafeMenuFoods = [
-  officialItem({
-    brand: "スターバックス",
-    name: "ニューヨークチーズケーキ",
-    calories: 414,
-    protein_g: 6.6,
-    fat_g: 29.9,
-    carbs_g: 30.1,
-    salt_g: 0.7,
-    tags: ["デザート", "ケーキ", "チーズケーキ"],
-    serving_label: "1個",
-    source_url: officialSources.starbucks,
-  }),
-  item({ brand: "スターバックス", name: "シュガードーナツ", calories: 360, protein_g: 6, fat_g: 19, carbs_g: 42, tags: ["ドーナツ"] }),
-  item({ brand: "スターバックス", name: "チョコレートチャンクスコーン", calories: 360, protein_g: 7, fat_g: 18, carbs_g: 46, tags: ["スコーン"] }),
-  item({ brand: "スターバックス", name: "ベーコンとほうれん草のキッシュ", calories: 340, protein_g: 12, fat_g: 24, carbs_g: 20, tags: ["キッシュ"] }),
-  item({ brand: "スターバックス", name: "ハム&マリボーチーズ 石窯フィローネ", calories: 420, protein_g: 22, fat_g: 16, carbs_g: 48, tags: ["サンド", "チーズ"] }),
-  item({ brand: "スターバックス", name: "チキン&チーズアラビアータ 石窯フィローネ", calories: 450, protein_g: 25, fat_g: 16, carbs_g: 52, tags: ["サンド", "チキン"] }),
-  item({ brand: "スターバックス", name: "クラブハウス 石窯カンパーニュサンド", calories: 510, protein_g: 26, fat_g: 22, carbs_g: 55, tags: ["サンド"] }),
-  item({ brand: "スターバックス", name: "根菜チキン サラダラップ", calories: 300, protein_g: 15, fat_g: 13, carbs_g: 34, tags: ["ラップ", "チキン"] }),
-  item({ brand: "スターバックス", name: "ヨーグルト&バナナグラノーラ", calories: 280, protein_g: 9, fat_g: 8, carbs_g: 45, tags: ["ヨーグルト", "朝食"] }),
+  officialItem({ brand: "スターバックス", name: "ニューヨークチーズケーキ", calories: 414, protein_g: 6.6, fat_g: 29.9, carbs_g: 30.1, salt_g: 0.7, tags: ["デザート","ケーキ"], serving_label: "1品", source_url: "https://menu.starbucks.co.jp/4524785308985" }),
+  officialItem({ brand: "スターバックス", name: "シュガードーナツ", calories: 360, protein_g: 4.5, fat_g: 21.4, carbs_g: 38, salt_g: 0.5, tags: ["ドーナツ"], serving_label: "1品", source_url: "https://menu.starbucks.co.jp/4524785508385" }),
+  officialItem({ brand: "スターバックス", name: "チョコレートチャンクスコーン", calories: 332, protein_g: 4.4, fat_g: 20.9, carbs_g: 32.4, salt_g: 0.8, tags: ["スコーン"], serving_label: "1品", source_url: "https://menu.starbucks.co.jp/4524785614512" }),
+  officialItem({ brand: "スターバックス", name: "ベーコンとほうれん草のキッシュ", calories: 299, protein_g: 7, fat_g: 20.4, carbs_g: 22.3, salt_g: 1.5, tags: ["キッシュ"], serving_label: "1品", source_url: "https://menu.starbucks.co.jp/4524785561427" }),
+  officialItem({ brand: "スターバックス", name: "ハム＆マリボーチーズ 石窯フィローネ", calories: 342, protein_g: 19, fat_g: 12.7, carbs_g: 39.4, salt_g: 1.8, tags: ["サンド","チーズ"], serving_label: "1品", source_url: "https://menu.starbucks.co.jp/4524785447462" }),
+  officialItem({ brand: "スターバックス", name: "チキン＆チーズアラビアータ 石窯フィローネ", calories: 362, protein_g: 21.8, fat_g: 11.5, carbs_g: 42.8, salt_g: 2.7, tags: ["サンド","チキン"], serving_label: "1品", source_url: "https://menu.starbucks.co.jp/4524785628281" }),
+  officialItem({ brand: "スターバックス", name: "クラブハウス 石窯カンパーニュサンド", calories: 299, protein_g: 11.8, fat_g: 17.5, carbs_g: 24.4, salt_g: 1.9, tags: ["サンド"], serving_label: "1品", source_url: "https://menu.starbucks.co.jp/4524785625280" }),
+  officialItem({ brand: "スターバックス", name: "根菜チキン サラダラップ", calories: 203, protein_g: 9.6, fat_g: 7.2, carbs_g: 25.1, salt_g: 1.6, tags: ["ラップ","チキン"], serving_label: "1品", source_url: "https://menu.starbucks.co.jp/4524785598126" }),
+  officialItem({ brand: "スターバックス", name: "ヨーグルト＆バナナグラノーラ", calories: 179, protein_g: 11.5, fat_g: 5.5, carbs_g: 20.9, salt_g: 0.1, tags: ["ヨーグルト","朝食"], serving_label: "1品", source_url: "https://menu.starbucks.co.jp/4524785625891" }),
 
   officialItem({ brand: "ドトール", name: "ミラノサンドA 生ハム・ボンレスハム・ボローニャソーセージ", calories: 372, protein_g: 15.1, fat_g: 16.6, carbs_g: 40.7, salt_g: 2.56, tags: ["サンド", "サンドイッチ"], serving_label: "1個", source_url: "https://allergy.doutor.co.jp/allergy_check/doutor_coffee_shop/item/detail/11002001/" }),
   officialItem({ brand: "ドトール", name: "爽やかレモン ミラノサンドB スモークサーモン・エビ・アボカド", calories: 339, protein_g: 12.1, fat_g: 13.7, carbs_g: 42.0, salt_g: 2.24, tags: ["サンド", "海老", "魚", "サンドイッチ"], serving_label: "1個", source_url: "https://allergy.doutor.co.jp/allergy_check/doutor_coffee_shop/item/detail/11002077/" }),

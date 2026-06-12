@@ -68,6 +68,7 @@ export type MenuItem = {
   carbs_g: number;
   salt_g?: number;
   serving_label?: string;
+  weight_g?: number;
   default_meal_type?: MealType;
   data_source: DataSource;
   confidence: Confidence;
