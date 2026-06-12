@@ -163,6 +163,7 @@ export type WorkoutTemplate = {
   exercises: TemplateExercise[];
   is_public_preset: boolean;
   is_user_created: boolean;
+  display_order?: number;
   created_at: string;
   updated_at: string;
 };
