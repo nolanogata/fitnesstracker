@@ -404,6 +404,8 @@ function App() {
   const [isUpdateNotesOpen, setIsUpdateNotesOpen] = useState(false);
   const [showStaleAppPrompt, setShowStaleAppPrompt] = useState(false);
   const [currentTime, setCurrentTime] = useState(() => new Date());
+  const [toast, setToast] = useState<{ id: string; text: string }>();
+  const toastTimerRef = useRef<number | undefined>(undefined);
   const appOpenedAtRef = useRef(Date.now());
   const appDate = todayAppDate(settings?.day_boundary_hour ?? 3, currentTime);
   const activeGoal = goals.find((goal) => goal.is_active);
@@ -481,6 +483,11 @@ function App() {
     localStorage.setItem(backupStorageKey, timestamp);
     setLastBackupAt(timestamp);
   };
+  const showToast = (text: string) => {
+    if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
+    setToast({ id: makeId("toast"), text });
+    toastTimerRef.current = window.setTimeout(() => setToast(undefined), 2200);
+  };
   const reloadLatestApp = async () => {
     await refresh();
     await updateServiceWorkers();
@@ -494,6 +501,11 @@ function App() {
     }
     setIsUpdateNotesOpen(true);
   };
+
+  useEffect(() => () => {
+    if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
+  }, []);
+
   const headerTitle = {
     home: formatHomeDate(appDate),
     food: "Food",
@@ -556,6 +568,7 @@ function App() {
             openUpdateNotes={openUpdateNotes}
             reloadLatestApp={reloadLatestApp}
             refresh={refresh}
+            showToast={showToast}
           />
         )}
         {tab === "food" && (
@@ -568,6 +581,7 @@ function App() {
               setTab("settings");
             }}
             refresh={refresh}
+            showToast={showToast}
           />
         )}
         {tab === "workout" && (
@@ -581,6 +595,7 @@ function App() {
             workoutSets={workoutSets}
             setWorkoutTemplates={setWorkoutTemplates}
             refresh={refresh}
+            showToast={showToast}
           />
         )}
         {tab === "records" && (
@@ -605,12 +620,14 @@ function App() {
             markBackupNow={markBackupNow}
             openUpdateNotes={openUpdateNotes}
             refresh={refresh}
+            showToast={showToast}
             allData={{ foodEntries, weightLogs, workoutSessions, workoutExercises, workoutSets }}
           />
         )}
       </section>
 
       {isUpdateNotesOpen && <UpdateNotesModal updates={appUpdates} onClose={() => setIsUpdateNotesOpen(false)} />}
+      {toast && <QuickToast key={toast.id} text={toast.text} />}
 
       <nav className="safe-bottom fixed inset-x-0 bottom-0 z-30 mx-auto max-w-[430px] border-t border-line bg-surface/95 px-3 pt-1.5 backdrop-blur">
         <div className="grid grid-cols-5 gap-1">
@@ -622,6 +639,17 @@ function App() {
         </div>
       </nav>
     </main>
+  );
+}
+
+function QuickToast({ text }: { text: string }) {
+  return (
+    <div className="pointer-events-none fixed inset-x-0 bottom-24 z-50 mx-auto max-w-[430px] px-4">
+      <div className="mx-auto flex w-fit max-w-full items-center gap-2 rounded-xl border border-moss/20 bg-ink px-4 py-3 text-sm font-bold text-white shadow-lg">
+        <Check size={16} />
+        <span className="truncate">{text}</span>
+      </div>
+    </div>
   );
 }
 
@@ -648,6 +676,7 @@ function HomeTab(props: {
   openUpdateNotes: () => void;
   reloadLatestApp: () => Promise<void>;
   refresh: () => Promise<void>;
+  showToast: (text: string) => void;
 }) {
   const [weight, setWeight] = useState(props.latestWeight?.weight_kg ?? props.profile?.current_weight_kg ?? 70);
   const [bodyFat, setBodyFat] = useState(props.latestWeight?.body_fat_percentage ?? props.profile?.body_fat_percentage ?? 20);
@@ -792,6 +821,7 @@ function HomeTab(props: {
             if (props.profile) await db.profile.update(props.profile.id, { current_weight_kg: weight, body_fat_percentage: normalizedBodyFat, updated_at: timestamp });
             setBodyFat(normalizedBodyFat);
             await props.refresh();
+            props.showToast("チェックインを保存しました");
           }}><Save size={16} />保存</button>
         </div>
         <div className="mt-4 grid grid-cols-2 gap-3">
@@ -924,7 +954,7 @@ function HomeFoodLogRow({ entry, displayName }: { entry: FoodEntry; displayName:
   );
 }
 
-function FoodTab(props: { menuItems: MenuItem[]; foodEntries: FoodEntry[]; appDate: string; openMyMenuSettings: () => void; refresh: () => Promise<void> }) {
+function FoodTab(props: { menuItems: MenuItem[]; foodEntries: FoodEntry[]; appDate: string; openMyMenuSettings: () => void; refresh: () => Promise<void>; showToast: (text: string) => void }) {
   const foodTopRef = useRef<HTMLDivElement | null>(null);
   const chainSectionRef = useRef<HTMLElement | null>(null);
   const chainListRef = useRef<HTMLDivElement | null>(null);
@@ -1017,6 +1047,7 @@ function FoodTab(props: { menuItems: MenuItem[]; foodEntries: FoodEntry[]; appDa
     setSelected(undefined);
     setMultiplier(1);
     await props.refresh();
+    props.showToast(`${formatMenuItemName(selected)}を記録しました`);
   };
 
   const cloneSelectedToManual = () => {
@@ -1080,6 +1111,7 @@ function FoodTab(props: { menuItems: MenuItem[]; foodEntries: FoodEntry[]; appDa
     });
     setManual(emptyManual);
     await props.refresh();
+    props.showToast(manual.savePreset ? "食事を記録し、マイメニューに保存しました" : "食事を記録しました");
   };
 
   return (
@@ -1221,6 +1253,7 @@ function WorkoutTab(props: {
   workoutSets: WorkoutSet[];
   setWorkoutTemplates: (templates: WorkoutTemplate[]) => void;
   refresh: () => Promise<void>;
+  showToast: (text: string) => void;
 }) {
   const [sessionId, setSessionId] = useState<string>();
   const [mode, setMode] = useState<WorkoutMode>("favorite");
@@ -1351,6 +1384,7 @@ function WorkoutTab(props: {
     );
     await props.refresh();
     setFocusedExerciseId(addedExerciseId);
+    props.showToast(`${exercise.name}を今日のワークアウトに追加しました`);
   };
 
   const toggleExerciseFavorite = async (exercise: ExercisePreset) => {
@@ -1373,6 +1407,7 @@ function WorkoutTab(props: {
     await updateTemplateExercises(template, [...template.exercises, item]);
     setEditingTemplateId(template.id);
     setTemplateTargetItem(undefined);
+    props.showToast(`${template.name}に${item.exercise_name}を追加しました`);
   };
 
   const removeExerciseFromTemplate = async (template: WorkoutTemplate, index: number) => {
@@ -1502,6 +1537,7 @@ function WorkoutTab(props: {
     setEditingTemplateId(template.id);
     setTemplateExerciseQuery("");
     setTemplateSaveMessage("プリセットに保存しました");
+    props.showToast("ワークアウトプリセットに保存しました");
     window.requestAnimationFrame(() => workoutTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
   };
 
@@ -1532,6 +1568,7 @@ function WorkoutTab(props: {
     setSessionId(newSession.id);
     await props.refresh();
     setFocusedExerciseId(firstExerciseId);
+    props.showToast(`${template.name}を今日のワークアウトに追加しました`);
   };
 
   const copyPrevious = async () => {
@@ -1560,6 +1597,7 @@ function WorkoutTab(props: {
     setSessionId(newSession.id);
     await props.refresh();
     setFocusedExerciseId(firstExerciseId);
+    props.showToast("前回のワークアウトをコピーしました");
   };
 
   const favoriteExercises = props.exercisePresets.filter((item) => item.is_favorite);
@@ -1885,6 +1923,7 @@ function SettingsTab(props: {
   markBackupNow: () => void;
   openUpdateNotes: () => void;
   refresh: () => Promise<void>;
+  showToast: (text: string) => void;
   allData: {
     foodEntries: FoodEntry[];
     weightLogs: WeightLog[];
@@ -2039,6 +2078,7 @@ function SettingsTab(props: {
           await db.goals.put(goal);
           await db.settings.update("local", { active_goal_id: goal.id, updated_at: timestamp });
           await props.refresh();
+          props.showToast("ゴールを保存しました");
         }}><Save size={17} />保存</button>
       </section>
 
@@ -2073,6 +2113,7 @@ function SettingsTab(props: {
           });
           setPresetDraft({ ...emptyManual, savePreset: true });
           await props.refresh();
+          props.showToast(`${presetDraft.name.trim()}をマイメニューに保存しました`);
         }} />
         <div className="mt-3 divide-y divide-line">
           {props.menuItems.filter((item) => item.is_user_created).slice(0, 10).map((item) => (
