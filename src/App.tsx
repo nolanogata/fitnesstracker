@@ -174,9 +174,20 @@ const emptyManual: ManualFoodDraft = {
 
 const backupStorageKey = "phase-log-last-backup-at";
 const updateSeenStorageKey = "phase-log-seen-update-id";
+const workoutWeightPresetStorageKey = "phase-log-workout-weight-presets";
 const staleAppPromptDelayMs = 6 * 60 * 60 * 1000;
 const weightStepOptions = [1, 2.5, 5, 10];
 const appUpdates: AppUpdate[] = [
+  {
+    id: "2026-06-12-workout-weight-rep-pages",
+    title: "ワークアウト追加の重量と回数を分離",
+    date: "2026-06-12",
+    items: [
+      "筋トレ追加を重量、回数、セット数、確認の順に分けました。",
+      "重量ページにスライダーと手入力を残しつつ、種目ごとに5枠の重量プリセットを保存できるようにしました。",
+      "保存した重量プリセットは次回同じ種目を追加する時に呼び出せます。",
+    ],
+  },
   {
     id: "2026-06-12-monsoon-cafe-menu",
     title: "モンスーンカフェのメニューを追加",
@@ -2716,7 +2727,8 @@ function ExerciseAddModal({ draft, setDraft, onClose, onSave }: {
   const isCardio = draft.exercise.body_part === "有酸素" || draft.exercise.equipment_type === "有酸素";
   const pictogram = getWorkoutPictogram(draft.exercise.body_part, draft.exercise.equipment_type);
   const [weightStep, setWeightStep] = useState(() => inferWeightStep(draft.exercise));
-  const [step, setStep] = useState<"load" | "sets" | "confirm" | "done">(isCardio ? "load" : "load");
+  const [step, setStep] = useState<"duration" | "weight" | "reps" | "sets" | "confirm" | "done">(isCardio ? "duration" : "weight");
+  const [weightPresets, setWeightPresets] = useState(() => loadWorkoutWeightPresets(draft.exercise.id, draft.weight_kg, weightStep));
   const [isSaving, setIsSaving] = useState(false);
   const setCount = Math.min(5, Math.max(1, Math.round(draft.sets)));
   const summary = isCardio
@@ -2725,8 +2737,14 @@ function ExerciseAddModal({ draft, setDraft, onClose, onSave }: {
   const stepLabel = step === "done"
     ? "追加完了"
     : isCardio
-      ? `${step === "load" ? 1 : 2}/2`
-      : `${step === "load" ? 1 : step === "sets" ? 2 : 3}/3`;
+      ? `${step === "duration" ? 1 : 2}/2`
+      : `${step === "weight" ? 1 : step === "reps" ? 2 : step === "sets" ? 3 : 4}/4`;
+  const saveWeightPreset = (index: number) => {
+    const normalized = roundToStep(Math.max(0, draft.weight_kg), weightStep);
+    const nextPresets = weightPresets.map((value, valueIndex) => valueIndex === index ? normalized : value);
+    setWeightPresets(nextPresets);
+    saveWorkoutWeightPresets(draft.exercise.id, nextPresets);
+  };
   const handleSave = async () => {
     if (isSaving) return;
     setIsSaving(true);
@@ -2761,7 +2779,7 @@ function ExerciseAddModal({ draft, setDraft, onClose, onSave }: {
               <button className="primary-button" onClick={onClose}>終了</button>
             </div>
           </div>
-        ) : isCardio && step === "load" ? (
+        ) : isCardio && step === "duration" ? (
           <div className="mt-4 space-y-4">
             <WizardNumberControl
               label="分数"
@@ -2777,7 +2795,7 @@ function ExerciseAddModal({ draft, setDraft, onClose, onSave }: {
               <button className="primary-button" onClick={() => setStep("confirm")}>次へ</button>
             </div>
           </div>
-        ) : !isCardio && step === "load" ? (
+        ) : !isCardio && step === "weight" ? (
           <div className="mt-4 space-y-4">
             <div className="rounded-md bg-rice p-3">
               <div className="mb-3 flex items-center justify-between gap-2">
@@ -2797,7 +2815,33 @@ function ExerciseAddModal({ draft, setDraft, onClose, onSave }: {
                 max={sliderMax(draft.weight_kg, 200, weightStep)}
                 onChange={(weight_kg) => setDraft({ ...draft, weight_kg })}
               />
+              <div className="mt-4">
+                <p className="mb-2 text-xs font-bold text-moss">重量プリセット</p>
+                <div className="grid grid-cols-5 gap-1.5">
+                  {weightPresets.map((value, index) => (
+                    <button
+                      className={`mini-chip ${roundToStep(draft.weight_kg, weightStep) === roundToStep(value, weightStep) ? "mini-chip-active" : ""}`}
+                      key={`${index}-${value}`}
+                      onClick={() => setDraft({ ...draft, weight_kg: value })}
+                    >
+                      {formatControlValue(value)}
+                    </button>
+                  ))}
+                </div>
+                <div className="mt-2 grid grid-cols-5 gap-1.5">
+                  {weightPresets.map((_, index) => (
+                    <button className="mini-chip" key={index} onClick={() => saveWeightPreset(index)}>保存{index + 1}</button>
+                  ))}
+                </div>
+              </div>
             </div>
+            <div className="grid grid-cols-2 gap-2">
+              <button className="secondary-button" onClick={onClose}>閉じる</button>
+              <button className="primary-button" onClick={() => setStep("reps")}>次へ</button>
+            </div>
+          </div>
+        ) : !isCardio && step === "reps" ? (
+          <div className="mt-4 space-y-4">
             <WizardNumberControl
               label="回数"
               value={draft.reps}
@@ -2808,7 +2852,7 @@ function ExerciseAddModal({ draft, setDraft, onClose, onSave }: {
               onChange={(reps) => setDraft({ ...draft, reps: Math.max(0, Math.round(reps)) })}
             />
             <div className="grid grid-cols-2 gap-2">
-              <button className="secondary-button" onClick={onClose}>閉じる</button>
+              <button className="secondary-button" onClick={() => setStep("weight")}>戻る</button>
               <button className="primary-button" onClick={() => setStep("sets")}>次へ</button>
             </div>
           </div>
@@ -2827,7 +2871,7 @@ function ExerciseAddModal({ draft, setDraft, onClose, onSave }: {
             </div>
             <div className="rounded-md bg-rice p-3 text-sm font-bold">{summary}</div>
             <div className="grid grid-cols-2 gap-2">
-              <button className="secondary-button" onClick={() => setStep("load")}>戻る</button>
+              <button className="secondary-button" onClick={() => setStep("reps")}>戻る</button>
               <button className="primary-button" onClick={() => setStep("confirm")}>次へ</button>
             </div>
           </div>
@@ -2838,7 +2882,7 @@ function ExerciseAddModal({ draft, setDraft, onClose, onSave }: {
               <p className="mt-2 text-lg font-bold text-ink">{summary}</p>
             </div>
             <div className="grid grid-cols-2 gap-2">
-              <button className="secondary-button" onClick={() => setStep(isCardio ? "load" : "sets")}>戻る</button>
+              <button className="secondary-button" onClick={() => setStep(isCardio ? "duration" : "sets")}>戻る</button>
               <button className="primary-button" disabled={isSaving} onClick={handleSave}><Plus size={17} />{isSaving ? "追加中" : "ワークアウト追加"}</button>
             </div>
           </div>
@@ -3920,6 +3964,64 @@ function sliderMax(value: number, fallbackMax: number, step: number) {
 
 function formatControlValue(value: number) {
   return Number.isInteger(value) ? String(value) : value.toFixed(1);
+}
+
+function defaultWorkoutWeightPresets(currentWeight: number, step: number) {
+  const base = currentWeight > 0 ? currentWeight : 20;
+  const candidates = [
+    currentWeight,
+    base,
+    base + step * 5,
+    base + step * 10,
+    base + step * 15,
+    base + step * 20,
+    0,
+    10,
+    20,
+    30,
+    40,
+  ];
+  const seen = new Set<string>();
+  const presets = candidates
+    .map((value) => roundToStep(Math.max(0, value), step))
+    .filter((value) => {
+      const key = String(value);
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .slice(0, 5);
+  while (presets.length < 5) presets.push(roundToStep(presets.length * step * 5, step));
+  return presets;
+}
+
+function loadWorkoutWeightPresets(exerciseId: string, currentWeight: number, step: number) {
+  const fallback = defaultWorkoutWeightPresets(currentWeight, step);
+  try {
+    const raw = localStorage.getItem(workoutWeightPresetStorageKey);
+    if (!raw) return fallback;
+    const parsed = JSON.parse(raw) as Record<string, unknown>;
+    const values = Array.isArray(parsed[exerciseId]) ? parsed[exerciseId] : undefined;
+    if (!values) return fallback;
+    const normalized = values
+      .map((value) => typeof value === "number" ? roundToStep(Math.max(0, value), step) : undefined)
+      .filter((value): value is number => typeof value === "number")
+      .slice(0, 5);
+    return normalized.length === 5 ? normalized : [...normalized, ...fallback].slice(0, 5);
+  } catch {
+    return fallback;
+  }
+}
+
+function saveWorkoutWeightPresets(exerciseId: string, presets: number[]) {
+  try {
+    const raw = localStorage.getItem(workoutWeightPresetStorageKey);
+    const parsed = raw ? JSON.parse(raw) as Record<string, number[]> : {};
+    parsed[exerciseId] = presets.slice(0, 5);
+    localStorage.setItem(workoutWeightPresetStorageKey, JSON.stringify(parsed));
+  } catch {
+    // 操作補助の保存なので、失敗しても記録自体は止めない。
+  }
 }
 
 function inferWeightStep(item: { exercise_name?: string; name?: string; equipment_type: string }) {
