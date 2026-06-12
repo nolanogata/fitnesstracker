@@ -2366,7 +2366,7 @@ function WorkoutTemplateEditor({ template, exercisePresets, query, setQuery, onS
             })}
           </div>
         </div>
-        <button className="secondary-button mt-3 w-full" onClick={() => onUpdateDetails({ name: nameDraft, icon_key: iconDraft })}><Save size={16} />名前とアイコンを保存</button>
+        <button className="secondary-button mt-3 w-full" onClick={() => onUpdateDetails({ name: nameDraft, icon_key: iconDraft })}><Save size={16} />今の内容で保存</button>
       </div>
 
       <div>
