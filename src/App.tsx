@@ -71,7 +71,7 @@ import { getWeeklyWorkoutStatus, type WeeklyWorkoutStatus } from "./lib/workoutS
 type Tab = "home" | "food" | "workout" | "records" | "settings";
 type FoodMode = "search" | "favorite" | "chain" | "category" | "quick" | "manual" | "personal";
 type WorkoutMode = "favorite" | "preset" | "body" | "equipment" | "previous" | "search";
-type SettingsFocus = "ai" | "backup" | undefined;
+type SettingsFocus = "ai" | "backup" | "myMenu" | undefined;
 type HistoryGrouping = "day" | "week" | "month";
 type BackupInfo = {
   lastBackupAt?: string;
@@ -176,6 +176,15 @@ const updateSeenStorageKey = "phase-log-seen-update-id";
 const staleAppPromptDelayMs = 6 * 60 * 60 * 1000;
 const weightStepOptions = [1, 2.5, 5, 10];
 const appUpdates: AppUpdate[] = [
+  {
+    id: "2026-06-12-my-menu-registration-flow",
+    title: "マイメニュー登録の導線を改善",
+    date: "2026-06-12",
+    items: [
+      "食事のマイメニュー画面から、マイメニュー登録フォームへ直接移動できるようにしました。",
+      "マイメニュー登録では朝・昼・夜などの食事タイミングを選ばず、メニューそのものだけを登録できるようにしました。",
+    ],
+  },
   {
     id: "2026-06-12-workout-template-reorder",
     title: "ワークアウトプリセットの並べ替えを追加",
@@ -491,7 +500,18 @@ function App() {
             refresh={refresh}
           />
         )}
-        {tab === "food" && <FoodTab menuItems={menuItems} foodEntries={foodEntries} appDate={appDate} refresh={refresh} />}
+        {tab === "food" && (
+          <FoodTab
+            menuItems={menuItems}
+            foodEntries={foodEntries}
+            appDate={appDate}
+            openMyMenuSettings={() => {
+              setSettingsFocus("myMenu");
+              setTab("settings");
+            }}
+            refresh={refresh}
+          />
+        )}
         {tab === "workout" && (
           <WorkoutTab
             profile={profile}
@@ -846,7 +866,7 @@ function HomeFoodLogRow({ entry, displayName }: { entry: FoodEntry; displayName:
   );
 }
 
-function FoodTab(props: { menuItems: MenuItem[]; foodEntries: FoodEntry[]; appDate: string; refresh: () => Promise<void> }) {
+function FoodTab(props: { menuItems: MenuItem[]; foodEntries: FoodEntry[]; appDate: string; openMyMenuSettings: () => void; refresh: () => Promise<void> }) {
   const foodTopRef = useRef<HTMLDivElement | null>(null);
   const chainListRef = useRef<HTMLDivElement | null>(null);
   const foodResultsRef = useRef<HTMLElement | null>(null);
@@ -1056,6 +1076,11 @@ function FoodTab(props: { menuItems: MenuItem[]; foodEntries: FoodEntry[]; appDa
           )}
           {mode === "favorite" && favoriteItems.length === 0 && (
             <section className="compact-card p-4 text-sm text-moss">食品行のハートを押すとここから呼び出せます。</section>
+          )}
+          {mode === "personal" && (
+            <section className="compact-card p-3">
+              <button className="primary-button w-full" onClick={props.openMyMenuSettings}><Plus size={17} />マイメニューを登録</button>
+            </section>
           )}
           <section className="compact-card divide-y divide-line overflow-hidden scroll-mt-24" ref={foodResultsRef}>
             <ListHeader title={foodModeLabel(mode)} value={`${results.length}件`} />
@@ -1804,11 +1829,13 @@ function SettingsTab(props: {
   const [copiedReport, setCopiedReport] = useState(false);
   const [backupImportMessage, setBackupImportMessage] = useState("");
   const backupSectionRef = useRef<HTMLElement | null>(null);
+  const myMenuSectionRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
-    if (props.focus !== "backup") return;
+    if (props.focus !== "backup" && props.focus !== "myMenu") return;
     const timer = window.setTimeout(() => {
-      backupSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      const target = props.focus === "backup" ? backupSectionRef.current : myMenuSectionRef.current;
+      target?.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 50);
     return () => window.clearTimeout(timer);
   }, [props.focus]);
@@ -1932,9 +1959,12 @@ function SettingsTab(props: {
         }}><Save size={17} />保存</button>
       </section>
 
-      <section className="compact-card p-4">
-        <h2 className="font-bold">マイメニューを追加</h2>
-        <ManualFoodForm manual={presetDraft} setManual={setPresetDraft} compact onSave={async () => {
+      <section ref={myMenuSectionRef} className={`compact-card scroll-mt-24 p-4 ${props.focus === "myMenu" ? "border-2 border-leaf" : ""}`}>
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="font-bold">マイメニューを追加</h2>
+          {props.focus === "myMenu" && <span className="rounded-md bg-leaf px-2 py-1 text-[11px] font-bold text-white">登録はこちら</span>}
+        </div>
+        <ManualFoodForm manual={presetDraft} setManual={setPresetDraft} compact mode="preset" onSave={async () => {
           if (!presetDraft.name.trim()) return;
           const timestamp = nowIso();
           const nutrition = draftNutrition(presetDraft);
@@ -1950,7 +1980,6 @@ function SettingsTab(props: {
             fat_g: nutrition.fat_g,
             carbs_g: nutrition.carbs_g,
             salt_g: nutrition.salt_g,
-            default_meal_type: presetDraft.meal_type,
             data_source: "user",
             confidence: nutrition.unknown.length ? "low" : "high",
             is_public_preset: false,
@@ -2152,13 +2181,15 @@ function Onboarding({ refresh }: { refresh: () => Promise<void> }) {
   );
 }
 
-function ManualFoodForm({ manual, setManual, onSave, compact = false }: {
+function ManualFoodForm({ manual, setManual, onSave, compact = false, mode = "log" }: {
   manual: ManualFoodDraft;
   setManual: (manual: ManualFoodDraft) => void;
   onSave: () => void;
   compact?: boolean;
+  mode?: "log" | "preset";
 }) {
   const subcategories = genericCategories[manual.category] ?? [];
+  const isPresetOnly = mode === "preset";
   return (
     <section className={compact ? "" : "compact-card p-4"}>
       {!compact && (
@@ -2168,11 +2199,13 @@ function ManualFoodForm({ manual, setManual, onSave, compact = false }: {
         </div>
       )}
       <div className="mt-3 grid grid-cols-2 gap-2">
-        <input className="col-span-2" value={manual.name} onChange={(event) => setManual({ ...manual, name: event.target.value })} placeholder="名前（空欄OK）" />
-        <input value={manual.brand} onChange={(event) => setManual({ ...manual, brand: event.target.value })} placeholder="ブランド（空欄OK）" />
-        <select value={manual.meal_type} onChange={(event) => setManual({ ...manual, meal_type: event.target.value as MealType })}>
-          {Object.entries(mealLabels).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
-        </select>
+        <input className="col-span-2" value={manual.name} onChange={(event) => setManual({ ...manual, name: event.target.value })} placeholder={isPresetOnly ? "メニュー名" : "名前（空欄OK）"} />
+        <input className={isPresetOnly ? "col-span-2" : ""} value={manual.brand} onChange={(event) => setManual({ ...manual, brand: event.target.value })} placeholder="ブランド（空欄OK）" />
+        {!isPresetOnly && (
+          <select value={manual.meal_type} onChange={(event) => setManual({ ...manual, meal_type: event.target.value as MealType })}>
+            {Object.entries(mealLabels).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
+          </select>
+        )}
         <div className="col-span-2">
           <p className="mb-2 text-xs font-semibold">カテゴリ</p>
           <div className="grid grid-cols-3 gap-2">
@@ -2196,7 +2229,7 @@ function ManualFoodForm({ manual, setManual, onSave, compact = false }: {
         <input value={manual.note} onChange={(event) => setManual({ ...manual, note: event.target.value })} placeholder="メモ" />
       </div>
       <div className="mt-3 flex flex-wrap gap-2">
-        <label className="chip"><input type="checkbox" checked={manual.savePreset} onChange={(event) => setManual({ ...manual, savePreset: event.target.checked })} />プリセット保存</label>
+        {!isPresetOnly && <label className="chip"><input type="checkbox" checked={manual.savePreset} onChange={(event) => setManual({ ...manual, savePreset: event.target.checked })} />プリセット保存</label>}
         <label className="chip"><input type="checkbox" checked={manual.favorite} onChange={(event) => setManual({ ...manual, favorite: event.target.checked })} />お気に入り</label>
       </div>
       <button className="primary-button mt-3 w-full" onClick={onSave}><Save size={17} />保存</button>
