@@ -4,6 +4,11 @@ import { addDays, dateRange } from "./date";
 export type WeeklyWorkoutStatus = {
   start: string;
   end: string;
+  days: {
+    date: string;
+    hasStrength: boolean;
+    hasCardio: boolean;
+  }[];
   strengthDone: number;
   strengthTarget: number;
   cardioDone: number;
@@ -25,21 +30,28 @@ export function getWeeklyWorkoutStatus(
   });
 
   const weekSessions = sessions.filter((session) => weekDates.has(session.app_date));
-  const cardioDone = weekSessions.filter((session) => {
+  const strengthDates = new Set<string>();
+  const cardioDates = new Set<string>();
+  weekSessions.forEach((session) => {
     const sessionExercises = exercisesBySession.get(session.id) ?? [];
-    return session.workout_type === "cardio" || session.body_parts.includes("有酸素") || sessionExercises.some((exercise) => exercise.body_part === "有酸素");
-  }).length;
-  const strengthDone = weekSessions.filter((session) => {
-    const sessionExercises = exercisesBySession.get(session.id) ?? [];
-    return session.workout_type !== "cardio" && sessionExercises.some((exercise) => exercise.body_part !== "有酸素");
-  }).length;
+    const hasCardio = session.workout_type === "cardio" || session.body_parts.includes("有酸素") || sessionExercises.some((exercise) => exercise.body_part === "有酸素");
+    const hasStrength = session.workout_type !== "cardio" && sessionExercises.some((exercise) => exercise.body_part !== "有酸素");
+    if (hasCardio) cardioDates.add(session.app_date);
+    if (hasStrength) strengthDates.add(session.app_date);
+  });
+  const days = [...weekDates].map((date) => ({
+    date,
+    hasStrength: strengthDates.has(date),
+    hasCardio: cardioDates.has(date),
+  }));
 
   return {
     start,
     end,
-    strengthDone,
+    days,
+    strengthDone: strengthDates.size,
     strengthTarget: goal?.target_workouts_per_week ?? 0,
-    cardioDone,
+    cardioDone: cardioDates.size,
     cardioTarget: goal?.target_cardio_sessions_per_week ?? 0,
   };
 }
