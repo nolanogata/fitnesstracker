@@ -413,6 +413,8 @@ function HomeTab(props: {
   const [weight, setWeight] = useState(props.latestWeight?.weight_kg ?? props.profile?.current_weight_kg ?? 70);
   const [bodyFat, setBodyFat] = useState(props.latestWeight?.body_fat_percentage ?? props.profile?.body_fat_percentage ?? 20);
   const [isReloadingLatest, setIsReloadingLatest] = useState(false);
+  const [showAllFood, setShowAllFood] = useState(false);
+  const [showAllWorkouts, setShowAllWorkouts] = useState(false);
   const remaining = (props.goal?.target_calories ?? 0) - props.dayTotals.calories;
   const calorieState = getCalorieState(remaining, props.goal?.target_calories ?? 0);
   const average7 = movingAverage(props.weightLogs, 7);
@@ -435,6 +437,8 @@ function HomeTab(props: {
     setWeight(props.latestWeight?.weight_kg ?? props.profile?.current_weight_kg ?? 70);
     setBodyFat(clampBodyFat(props.latestWeight?.body_fat_percentage ?? props.profile?.body_fat_percentage ?? 20));
   }, [props.latestWeight?.weight_kg, props.latestWeight?.body_fat_percentage, props.profile?.current_weight_kg, props.profile?.body_fat_percentage]);
+  const visibleFoodEntries = showAllFood ? props.todayEntries : props.todayEntries.slice(0, 1);
+  const visibleWorkouts = showAllWorkouts ? props.todayWorkouts : props.todayWorkouts.slice(0, 1);
 
   return (
     <div className="space-y-3">
@@ -546,8 +550,14 @@ function HomeTab(props: {
       </section>
 
       <section className="compact-card divide-y divide-line overflow-hidden">
-        <ListHeader title="今日の食事" value={`${props.todayEntries.length}件`} />
-        {props.todayEntries.slice(0, 1).map((entry) => (
+        <ExpandableListHeader
+          title="今日の食事"
+          value={`${props.todayEntries.length}件`}
+          expanded={showAllFood}
+          disabled={props.todayEntries.length <= 1}
+          onToggle={() => setShowAllFood((expanded) => !expanded)}
+        />
+        {visibleFoodEntries.map((entry) => (
           <button className="w-full text-left" key={entry.id} onClick={() => props.setTab("food")}>
             <HomeFoodLogRow entry={entry} displayName={formatFoodEntryName(entry, props.menuItems)} />
           </button>
@@ -556,8 +566,14 @@ function HomeTab(props: {
       </section>
 
       <section className="compact-card divide-y divide-line overflow-hidden">
-        <ListHeader title="今日の筋トレ" value={`${props.todayWorkouts.length}件`} />
-        {props.todayWorkouts.slice(0, 1).map((session) => (
+        <ExpandableListHeader
+          title="今日の筋トレ"
+          value={`${props.todayWorkouts.length}件`}
+          expanded={showAllWorkouts}
+          disabled={props.todayWorkouts.length <= 1}
+          onToggle={() => setShowAllWorkouts((expanded) => !expanded)}
+        />
+        {visibleWorkouts.map((session) => (
           <div className="flex items-center gap-3 px-4 py-3.5" key={session.id}>
             <button className="min-w-0 flex-1 text-left" onClick={() => props.setTab("workout")}>
               <div className="min-w-0 flex-1">
@@ -2490,6 +2506,19 @@ function ListHeader({ title, value }: { title: string; value: string }) {
       <h2 className="text-sm font-bold">{title}</h2>
       <span className="text-xs font-semibold text-moss">{value}</span>
     </div>
+  );
+}
+
+function ExpandableListHeader({ title, value, expanded, disabled, onToggle }: { title: string; value: string; expanded: boolean; disabled: boolean; onToggle: () => void }) {
+  if (disabled) return <ListHeader title={title} value={value} />;
+  return (
+    <button className="flex w-full items-center justify-between px-4 py-3 text-left" onClick={onToggle}>
+      <h2 className="text-sm font-bold">{title}</h2>
+      <span className="inline-flex items-center gap-1 text-xs font-semibold text-moss">
+        {value}
+        <ChevronRight className={`transition-transform ${expanded ? "rotate-90" : ""}`} size={14} />
+      </span>
+    </button>
   );
 }
 
