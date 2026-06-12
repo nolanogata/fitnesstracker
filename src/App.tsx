@@ -176,6 +176,15 @@ const staleAppPromptDelayMs = 6 * 60 * 60 * 1000;
 const weightStepOptions = [1, 2.5, 5, 10];
 const appUpdates: AppUpdate[] = [
   {
+    id: "2026-06-12-workout-template-explicit-start",
+    title: "ワークアウトプリセット開始を明確化",
+    date: "2026-06-12",
+    items: [
+      "ワークアウトプリセットの行を押しても今日の記録に追加されないようにし、行タップは編集を開く動きにしました。",
+      "今日の記録へ追加する操作は、記録ボタンだけに分けました。",
+    ],
+  },
+  {
     id: "2026-06-12-ai-report-generated-at",
     title: "AI相談レポートに生成時刻を追加",
     date: "2026-06-12",
@@ -2151,13 +2160,13 @@ function WorkoutTemplateRow({ template, isEditing, onStart, onEdit, onDelete }: 
   return (
     <div className={`flex items-center justify-between gap-3 px-4 py-4 transition-colors hover:bg-rice/70 ${isEditing ? "bg-leaf/20" : ""}`}>
       <Pictogram {...getWorkoutTemplatePictogram(template)} />
-      <button className="min-w-0 flex-1 text-left" onClick={() => onStart(template)}>
+      <button className="min-w-0 flex-1 text-left" onClick={onEdit}>
         <p className="truncate text-sm font-bold">{template.name}</p>
         <p className="truncate text-xs text-moss">{template.body_parts.join(" / ") || "未設定"} · {template.exercises.length}種目</p>
       </button>
       <button className={`icon-button h-8 w-8 ${isEditing ? "border-moss/50 text-moss" : ""}`} aria-label={`${template.name}を編集`} onClick={onEdit}><Pencil size={14} /></button>
       <button className="icon-button h-8 w-8 text-clay" aria-label={`${template.name}を削除`} onClick={onDelete}><Trash2 size={14} /></button>
-      <button className="icon-button h-8 w-8" aria-label={`${template.name}を開始`} onClick={() => onStart(template)}><ChevronRight size={14} /></button>
+      <button className="secondary-button h-8 px-2 py-1 text-xs" aria-label={`${template.name}を今日の記録に追加`} onClick={() => onStart(template)}><Plus size={13} />記録</button>
     </div>
   );
 }
@@ -2198,7 +2207,7 @@ function WorkoutTemplateEditor({ template, exercisePresets, query, setQuery, onS
           </div>
           <div className="flex shrink-0 gap-2">
             <button className="icon-button h-10 w-10 text-clay" aria-label={`${template.name}を削除`} onClick={onDelete}><Trash2 size={16} /></button>
-            <button className="primary-button h-10 px-3 py-2" onClick={onStart}><Check size={16} />開始</button>
+            <button className="primary-button h-10 px-3 py-2" onClick={onStart}><Plus size={16} />記録に追加</button>
           </div>
         </div>
       </div>
