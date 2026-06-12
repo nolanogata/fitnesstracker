@@ -21,6 +21,7 @@ export async function initializeSeeds() {
 
     await db.menu_items.bulkPut(foodSeeds);
     await db.exercise_presets.bulkPut(exerciseSeeds.map((exercise) => ({ ...exercise, is_favorite: favoriteExerciseIds.has(exercise.id) })));
-    await db.workout_templates.bulkPut(workoutTemplateSeeds);
+    const hiddenWorkoutTemplateIds = new Set(settings?.hidden_workout_template_ids ?? []);
+    await db.workout_templates.bulkPut(workoutTemplateSeeds.filter((template) => !hiddenWorkoutTemplateIds.has(template.id)));
   });
 }

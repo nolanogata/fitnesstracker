@@ -18,6 +18,7 @@ export type Settings = {
   day_boundary_hour: number;
   onboarding_completed: boolean;
   active_goal_id?: string;
+  hidden_workout_template_ids?: string[];
   created_at: string;
   updated_at: string;
 };

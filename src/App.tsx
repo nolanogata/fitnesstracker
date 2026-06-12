@@ -78,6 +78,12 @@ type BackupInfo = {
   level: "ok" | "soon" | "danger";
 };
 type ReportMode = HistoryGrouping;
+type AppUpdate = {
+  id: string;
+  title: string;
+  date: string;
+  items: string[];
+};
 type PortionOption = {
   label: string;
   value: number;
@@ -156,6 +162,31 @@ const emptyManual: ManualFoodDraft = {
 };
 
 const backupStorageKey = "phase-log-last-backup-at";
+const updateSeenStorageKey = "phase-log-seen-update-id";
+const appUpdates: AppUpdate[] = [
+  {
+    id: "2026-06-12-workout-template-cardio-updates",
+    title: "ワークアウト操作と更新履歴を改善",
+    date: "2026-06-12",
+    items: [
+      "ワークアウトプリセット本体を削除できるようにしました。標準プリセットも削除後に自動復活しません。",
+      "ホームに未読更新バナーを追加し、タップで更新内容を確認できるようにしました。",
+      "設定のゴールトラッカー情報に、更新内容だけを開くリンクを追加しました。",
+      "クロストレーナーなど有酸素種目の分数を、記録中とプリセット編集時に指定しやすくしました。",
+    ],
+  },
+  {
+    id: "2026-06-12-food-menu-updates",
+    title: "食事メニューと記録操作を改善",
+    date: "2026-06-12",
+    items: [
+      "一般的な食事メニューと推定栄養素を追加しました。",
+      "食事追加時の分量候補を食品タイプ別に出し分けるようにしました。",
+      "チェーン店メニューのサイズ表記を表示名に反映しました。",
+      "ホームから最新アプリへ更新できるボタンを追加しました。",
+    ],
+  },
+];
 
 function App() {
   const [settings, setSettings] = useState<AppSettings>();
@@ -172,8 +203,11 @@ function App() {
   const [tab, setTab] = useState<Tab>(() => (localStorage.getItem("phase-log-tab") as Tab) || "home");
   const [settingsFocus, setSettingsFocus] = useState<SettingsFocus>();
   const [lastBackupAt, setLastBackupAt] = useState<string | undefined>(() => localStorage.getItem(backupStorageKey) || undefined);
+  const [seenUpdateId, setSeenUpdateId] = useState<string | undefined>(() => localStorage.getItem(updateSeenStorageKey) || undefined);
+  const [isUpdateNotesOpen, setIsUpdateNotesOpen] = useState(false);
   const appDate = todayAppDate(settings?.day_boundary_hour ?? 3);
   const activeGoal = goals.find((goal) => goal.is_active);
+  const latestUpdate = appUpdates[0];
 
   const refresh = async () => {
     const [nextSettings, nextProfile, nextGoals, nextMenu, nextFood, nextWeights, nextExercises, nextTemplates, nextSessions, nextWorkoutExercises, nextSets] =
@@ -228,6 +262,13 @@ function App() {
     await updateServiceWorkers();
     await clearAppCaches();
     window.location.reload();
+  };
+  const openUpdateNotes = () => {
+    if (latestUpdate) {
+      localStorage.setItem(updateSeenStorageKey, latestUpdate.id);
+      setSeenUpdateId(latestUpdate.id);
+    }
+    setIsUpdateNotesOpen(true);
   };
   const headerTitle = {
     home: "今日の記録",
@@ -285,6 +326,9 @@ function App() {
               setSettingsFocus("backup");
               setTab("settings");
             }}
+            latestUpdate={latestUpdate}
+            hasUnreadUpdate={!!latestUpdate && seenUpdateId !== latestUpdate.id}
+            openUpdateNotes={openUpdateNotes}
             reloadLatestApp={reloadLatestApp}
             refresh={refresh}
           />
@@ -321,11 +365,14 @@ function App() {
             focus={settingsFocus}
             backupInfo={backupInfo}
             markBackupNow={markBackupNow}
+            openUpdateNotes={openUpdateNotes}
             refresh={refresh}
             allData={{ foodEntries, weightLogs, workoutSessions, workoutExercises, workoutSets }}
           />
         )}
       </section>
+
+      {isUpdateNotesOpen && <UpdateNotesModal updates={appUpdates} onClose={() => setIsUpdateNotesOpen(false)} />}
 
       <nav className="safe-bottom fixed inset-x-0 bottom-0 z-30 mx-auto max-w-[430px] border-t border-line bg-surface/95 px-3 pt-1.5 backdrop-blur">
         <div className="grid grid-cols-5 gap-1">
@@ -357,6 +404,9 @@ function HomeTab(props: {
   setTab: (tab: Tab) => void;
   openAiReport: () => void;
   openBackup: () => void;
+  latestUpdate?: AppUpdate;
+  hasUnreadUpdate: boolean;
+  openUpdateNotes: () => void;
   reloadLatestApp: () => Promise<void>;
   refresh: () => Promise<void>;
 }) {
@@ -388,6 +438,16 @@ function HomeTab(props: {
 
   return (
     <div className="space-y-3">
+      {props.latestUpdate && props.hasUnreadUpdate && (
+        <button className="compact-card flex w-full items-center gap-3 px-4 py-3 text-left" onClick={props.openUpdateNotes}>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-bold">更新があります</p>
+            <p className="mt-1 truncate text-xs text-moss">{props.latestUpdate.title}</p>
+          </div>
+          <ChevronRight className="shrink-0 text-muted" size={18} />
+        </button>
+      )}
+
       {props.backupInfo.level !== "ok" && (
         <button className="compact-card flex w-full items-center gap-3 px-4 py-3 text-left" onClick={props.openBackup}>
           <div className="min-w-0 flex-1">
@@ -511,6 +571,33 @@ function HomeTab(props: {
         ))}
         {props.todayWorkouts.length === 0 && <EmptyLine text="まだワークアウトなし" />}
       </section>
+    </div>
+  );
+}
+
+function UpdateNotesModal({ updates, onClose }: { updates: AppUpdate[]; onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-end bg-ink/30 px-4 pb-4">
+      <div className="compact-card max-h-[82vh] w-full overflow-y-auto p-4">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-lg font-bold">更新内容</p>
+            <p className="mt-1 text-xs text-moss">アプリに入った変更だけを表示しています。</p>
+          </div>
+          <button className="icon-button h-9 w-9" aria-label="閉じる" onClick={onClose}>×</button>
+        </div>
+        <div className="mt-4 space-y-3">
+          {updates.map((update) => (
+            <section className="rounded-md border border-line bg-rice p-3" key={update.id}>
+              <p className="text-[11px] font-bold text-moss">{formatJapaneseDate(update.date)}</p>
+              <h2 className="mt-1 text-sm font-bold">{update.title}</h2>
+              <ul className="mt-2 list-disc space-y-1 pl-5 text-xs leading-relaxed text-moss">
+                {update.items.map((item) => <li key={item}>{item}</li>)}
+              </ul>
+            </section>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
@@ -916,6 +1003,10 @@ function WorkoutTab(props: {
     await updateTemplateExercises(template, template.exercises.filter((_, itemIndex) => itemIndex !== index));
   };
 
+  const updateTemplateExercise = async (template: WorkoutTemplate, index: number, exercise: TemplateExercise) => {
+    await updateTemplateExercises(template, template.exercises.map((item, itemIndex) => itemIndex === index ? exercise : item));
+  };
+
   const updateTemplateDetails = async (template: WorkoutTemplate, details: { name: string; icon_key: WorkoutTemplateIconKey }) => {
     const name = details.name.trim() || template.name;
     await db.workout_templates.update(template.id, {
@@ -923,6 +1014,25 @@ function WorkoutTab(props: {
       icon_key: details.icon_key,
       updated_at: nowIso(),
     });
+    await props.refresh();
+  };
+
+  const deleteWorkoutTemplate = async (template: WorkoutTemplate) => {
+    if (!confirm(`ワークアウトプリセット「${template.name}」を削除しますか？過去の記録は残ります。`)) return;
+    const timestamp = nowIso();
+    await db.transaction("rw", db.settings, db.workout_templates, async () => {
+      await db.workout_templates.delete(template.id);
+      if (template.is_public_preset) {
+        const settings = await db.settings.get("local");
+        if (settings) {
+          await db.settings.update("local", {
+            hidden_workout_template_ids: unique([...(settings.hidden_workout_template_ids ?? []), template.id]),
+            updated_at: timestamp,
+          });
+        }
+      }
+    });
+    if (editingTemplateId === template.id) setEditingTemplateId(undefined);
     await props.refresh();
   };
 
@@ -1062,6 +1172,7 @@ function WorkoutTab(props: {
                   setTemplateExerciseQuery("");
                 }}
                 onStart={startFromTemplate}
+                onDelete={() => deleteWorkoutTemplate(template)}
                 template={template}
               />
             ))}
@@ -1074,7 +1185,9 @@ function WorkoutTab(props: {
               onAddExercise={(exercise) => addExerciseToTemplate(editingTemplate.id, exercisePresetToTemplateExercise(exercise))}
               onRemoveExercise={(index) => removeExerciseFromTemplate(editingTemplate, index)}
               onStart={() => startFromTemplate(editingTemplate)}
+              onDelete={() => deleteWorkoutTemplate(editingTemplate)}
               onUpdateDetails={(details) => updateTemplateDetails(editingTemplate, details)}
+              onUpdateExercise={(index, exercise) => updateTemplateExercise(editingTemplate, index, exercise)}
               query={templateExerciseQuery}
               setQuery={setTemplateExerciseQuery}
               template={editingTemplate}
@@ -1157,6 +1270,7 @@ function WorkoutTab(props: {
                   sets: props.workoutSets.filter((set) => set.workout_exercise_id === exercise.id).length || 3,
                   reps: props.workoutSets.find((set) => set.workout_exercise_id === exercise.id)?.reps,
                   weight_kg: props.workoutSets.find((set) => set.workout_exercise_id === exercise.id)?.weight_kg,
+                  duration_min: props.workoutSets.find((set) => set.workout_exercise_id === exercise.id)?.duration_min,
                 })),
                 is_public_preset: false,
                 is_user_created: true,
@@ -1337,6 +1451,7 @@ function SettingsTab(props: {
   focus?: SettingsFocus;
   backupInfo: BackupInfo;
   markBackupNow: () => void;
+  openUpdateNotes: () => void;
   refresh: () => Promise<void>;
   allData: {
     foodEntries: FoodEntry[];
@@ -1576,6 +1691,7 @@ function SettingsTab(props: {
         <p className="font-semibold text-ink">ゴールトラッカー</p>
         <p>IndexedDB local-only · no login · no backend</p>
         <p className="mt-2">同じURLを友達が開いても、ログは各iPhone内に別々に保存されます。</p>
+        <button className="secondary-button mt-3 w-full" onClick={props.openUpdateNotes}><FileText size={17} />更新内容</button>
       </section>
     </div>
   );
@@ -1782,11 +1898,12 @@ function FoodItemRow({ item, onPick, onClone, refresh }: { item: MenuItem; onPic
   );
 }
 
-function WorkoutTemplateRow({ template, isEditing, onStart, onEdit }: {
+function WorkoutTemplateRow({ template, isEditing, onStart, onEdit, onDelete }: {
   template: WorkoutTemplate;
   isEditing: boolean;
   onStart: (template: WorkoutTemplate) => void | Promise<void>;
   onEdit: () => void;
+  onDelete: () => void | Promise<void>;
 }) {
   return (
     <div className={`flex items-center justify-between gap-3 px-4 py-4 transition-colors hover:bg-rice/70 ${isEditing ? "bg-leaf/20" : ""}`}>
@@ -1796,19 +1913,22 @@ function WorkoutTemplateRow({ template, isEditing, onStart, onEdit }: {
         <p className="truncate text-xs text-moss">{template.body_parts.join(" / ") || "未設定"} · {template.exercises.length}種目</p>
       </button>
       <button className={`icon-button h-8 w-8 ${isEditing ? "border-moss/50 text-moss" : ""}`} aria-label={`${template.name}を編集`} onClick={onEdit}><Pencil size={14} /></button>
+      <button className="icon-button h-8 w-8 text-clay" aria-label={`${template.name}を削除`} onClick={onDelete}><Trash2 size={14} /></button>
       <button className="icon-button h-8 w-8" aria-label={`${template.name}を開始`} onClick={() => onStart(template)}><ChevronRight size={14} /></button>
     </div>
   );
 }
 
-function WorkoutTemplateEditor({ template, exercisePresets, query, setQuery, onStart, onAddExercise, onRemoveExercise, onUpdateDetails }: {
+function WorkoutTemplateEditor({ template, exercisePresets, query, setQuery, onStart, onDelete, onAddExercise, onRemoveExercise, onUpdateExercise, onUpdateDetails }: {
   template: WorkoutTemplate;
   exercisePresets: ExercisePreset[];
   query: string;
   setQuery: (query: string) => void;
   onStart: () => void | Promise<void>;
+  onDelete: () => void | Promise<void>;
   onAddExercise: (exercise: ExercisePreset) => void | Promise<void>;
   onRemoveExercise: (index: number) => void | Promise<void>;
+  onUpdateExercise: (index: number, exercise: TemplateExercise) => void | Promise<void>;
   onUpdateDetails: (details: { name: string; icon_key: WorkoutTemplateIconKey }) => void | Promise<void>;
 }) {
   const [nameDraft, setNameDraft] = useState(template.name);
@@ -1833,7 +1953,10 @@ function WorkoutTemplateEditor({ template, exercisePresets, query, setQuery, onS
             <p className="truncate text-sm font-bold">{template.name}を編集</p>
             <p className="mt-1 text-xs text-moss">プリセット内の種目を削除・追加できます。</p>
           </div>
-          <button className="primary-button h-10 px-3 py-2" onClick={onStart}><Check size={16} />開始</button>
+          <div className="flex shrink-0 gap-2">
+            <button className="icon-button h-10 w-10 text-clay" aria-label={`${template.name}を削除`} onClick={onDelete}><Trash2 size={16} /></button>
+            <button className="primary-button h-10 px-3 py-2" onClick={onStart}><Check size={16} />開始</button>
+          </div>
         </div>
       </div>
 
@@ -1862,7 +1985,7 @@ function WorkoutTemplateEditor({ template, exercisePresets, query, setQuery, onS
       <div>
         <ListHeader title="登録中の種目" value={`${template.exercises.length}件`} />
         {template.exercises.map((exercise, index) => (
-          <TemplateExerciseRow exercise={exercise} index={index} key={`${exercise.exercise_name}-${index}`} onRemove={onRemoveExercise} />
+          <TemplateExerciseRow exercise={exercise} index={index} key={`${exercise.exercise_name}-${index}`} onRemove={onRemoveExercise} onUpdate={onUpdateExercise} />
         ))}
         {template.exercises.length === 0 && <EmptyLine text="まだ種目がありません。下から追加できます" />}
       </div>
@@ -1889,18 +2012,27 @@ function WorkoutTemplateEditor({ template, exercisePresets, query, setQuery, onS
   );
 }
 
-function TemplateExerciseRow({ exercise, index, onRemove }: {
+function TemplateExerciseRow({ exercise, index, onRemove, onUpdate }: {
   exercise: TemplateExercise;
   index: number;
   onRemove: (index: number) => void | Promise<void>;
+  onUpdate: (index: number, exercise: TemplateExercise) => void | Promise<void>;
 }) {
   const pictogram = getWorkoutPictogram(exercise.body_part, exercise.equipment_type);
+  const isCardio = exercise.body_part === "有酸素" || exercise.equipment_type === "有酸素";
   return (
-    <div className="flex items-center justify-between gap-3 px-4 py-3">
+    <div className="flex items-start justify-between gap-3 px-4 py-3">
       <Pictogram {...pictogram} />
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-semibold">{exercise.exercise_name}</p>
-        <p className="truncate text-xs text-moss">{exercise.body_part} · {exercise.equipment_type} · {exercise.sets}セット</p>
+        <p className="truncate text-xs text-moss">
+          {exercise.body_part} · {exercise.equipment_type} · {exercise.sets}セット{isCardio ? ` · ${exercise.duration_min ?? 20}分` : ""}
+        </p>
+        {isCardio && (
+          <div className="mt-2 max-w-[170px]">
+            <Stepper value={exercise.duration_min ?? 20} suffix="min" step={5} onChange={(value) => onUpdate(index, { ...exercise, duration_min: value })} />
+          </div>
+        )}
       </div>
       <button className="icon-button h-8 w-8 text-clay" aria-label={`${exercise.exercise_name}をプリセットから削除`} onClick={() => onRemove(index)}><Trash2 size={14} /></button>
     </div>
@@ -1972,6 +2104,29 @@ function WorkoutExerciseEditor({
 }) {
   const isCardio = exercise.body_part === "有酸素" || exercise.equipment_type === "有酸素";
   const pictogram = getWorkoutPictogram(exercise.body_part, exercise.equipment_type);
+  const updateCardioDuration = async (value: number) => {
+    const timestamp = nowIso();
+    if (!sets.length) {
+      await db.workout_sets.put({
+        id: makeId("set"),
+        workout_exercise_id: exercise.id,
+        set_order: 1,
+        reps: 0,
+        duration_min: value,
+        active_calories: estimateActiveCalories(exercise.exercise_name, value, bodyWeightKg),
+        is_warmup: false,
+        created_at: timestamp,
+        updated_at: timestamp,
+      });
+    } else {
+      await Promise.all(sets.map((set) => db.workout_sets.update(set.id, {
+        duration_min: value,
+        active_calories: estimateActiveCalories(exercise.exercise_name, value, bodyWeightKg),
+        updated_at: timestamp,
+      })));
+    }
+    await refresh();
+  };
   return (
     <div className="p-4">
       <div className="flex items-start gap-3">
@@ -1982,6 +2137,12 @@ function WorkoutExerciseEditor({
         </div>
         <button className="icon-button h-8 w-8 text-clay" aria-label={`${exercise.exercise_name}をこの日の記録から削除`} onClick={onDeleteExercise}><Trash2 size={14} /></button>
       </div>
+      {isCardio && (
+        <div className="mt-3 rounded-md bg-rice p-3">
+          <p className="mb-2 text-xs font-bold text-moss">分数</p>
+          <Stepper value={sets[0]?.duration_min ?? 20} suffix="min" step={5} onChange={updateCardioDuration} />
+        </div>
+      )}
       <div className="mt-3 space-y-2">
         {sets.length > 0 && (
           <div className={isCardio ? "grid grid-cols-[28px_1fr_72px_36px] items-center gap-2 text-[11px] font-bold text-moss" : "grid grid-cols-[28px_1fr_1fr_36px] items-center gap-2 text-[11px] font-bold text-moss"}>
@@ -2385,7 +2546,7 @@ async function addExerciseToSession(
   const setCount = previousSets.length || item.sets || 3;
   const sets = Array.from({ length: setCount }, (_, index) => {
     const previous = previousSets[index] ?? previousSets.at(-1);
-    const durationMin = previous?.duration_min ?? item.duration_min;
+    const durationMin = item.duration_min ?? previous?.duration_min;
     return {
       id: makeId("set"),
       workout_exercise_id: exercise.id,
