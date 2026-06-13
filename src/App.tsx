@@ -9,6 +9,7 @@ import {
   CakeSlice,
   Carrot,
   Check,
+  ChevronLeft,
   ChevronRight,
   Coffee,
   Copy,
@@ -79,6 +80,15 @@ type BackupInfo = {
   daysSinceBackup?: number;
   trackedRecords: number;
   level: "ok" | "soon" | "danger";
+};
+type DayRecordSummary = {
+  foodCount: number;
+  weightCount: number;
+  workoutCount: number;
+};
+type CalendarCell = {
+  date?: string;
+  day?: number;
 };
 type ReportMode = HistoryGrouping;
 type AppUpdate = {
@@ -824,10 +834,17 @@ function App() {
         )}
         {tab === "records" && (
           <RecordsTab
+            profile={profile}
+            goal={target}
+            appDate={appDate}
+            cheatDayDates={cheatDayDates}
+            foodEntries={foodEntries}
             weightLogs={weightLogs}
             workoutSessions={workoutSessions}
             workoutExercises={workoutExercises}
             workoutSets={workoutSets}
+            weeklyWorkoutStatus={weeklyWorkoutStatus}
+            showToast={showToast}
           />
         )}
         {tab === "settings" && (
@@ -2119,12 +2136,23 @@ function WorkoutTab(props: {
 }
 
 function RecordsTab(props: {
+  profile?: Profile;
+  goal?: Goal;
+  appDate: string;
+  cheatDayDates: string[];
+  foodEntries: FoodEntry[];
   weightLogs: WeightLog[];
   workoutSessions: WorkoutSession[];
   workoutExercises: WorkoutExercise[];
   workoutSets: WorkoutSet[];
+  weeklyWorkoutStatus: WeeklyWorkoutStatus;
+  showToast: (text: string) => void;
 }) {
   const [historyGrouping, setHistoryGrouping] = useState<HistoryGrouping>("day");
+  const [reportMonth, setReportMonth] = useState(() => monthKey(props.appDate));
+  const [selectedReportDate, setSelectedReportDate] = useState(props.appDate);
+  const [historyReport, setHistoryReport] = useState("");
+  const [historyReportCopied, setHistoryReportCopied] = useState(false);
   const sortedWeightLogs = [...props.weightLogs].sort((a, b) => a.logged_at.localeCompare(b.logged_at));
   const latestWeight = sortedWeightLogs.at(-1);
   const firstWeight = sortedWeightLogs[0];
@@ -2133,6 +2161,67 @@ function RecordsTab(props: {
   const workoutHistory = buildWorkoutHistory(props.workoutSessions, props.workoutExercises, props.workoutSets);
   const workoutGroups = groupWorkoutHistory(workoutHistory, historyGrouping);
   const recentPrs = workoutHistory.flatMap((session) => session.prs.map((pr) => ({ ...pr, app_date: session.app_date }))).slice(0, 8);
+  const recordsByDate = useMemo(() => {
+    const summaries = new Map<string, DayRecordSummary>();
+    const summaryFor = (date: string) => {
+      const existing = summaries.get(date);
+      if (existing) return existing;
+      const next = { foodCount: 0, weightCount: 0, workoutCount: 0 };
+      summaries.set(date, next);
+      return next;
+    };
+    props.foodEntries.forEach((entry) => {
+      summaryFor(entry.app_date).foodCount += 1;
+    });
+    props.weightLogs.forEach((entry) => {
+      summaryFor(entry.app_date).weightCount += 1;
+    });
+    props.workoutSessions.forEach((entry) => {
+      summaryFor(entry.app_date).workoutCount += 1;
+    });
+    return summaries;
+  }, [props.foodEntries, props.weightLogs, props.workoutSessions]);
+  const calendarCells = useMemo(() => buildMonthCalendar(reportMonth), [reportMonth]);
+  const selectedSummary = recordsByDate.get(selectedReportDate);
+  const selectedFoodEntries = selectedReportDate ? props.foodEntries.filter((entry) => entry.app_date === selectedReportDate) : [];
+  const selectedFoodTotal = sumFood(selectedFoodEntries);
+  const selectedWeight = selectedReportDate
+    ? [...props.weightLogs].reverse().find((entry) => entry.app_date === selectedReportDate)
+    : undefined;
+  const selectedHasRecords = !!selectedSummary;
+  const generateHistoryDayReport = async () => {
+    if (!selectedReportDate || !selectedHasRecords) return;
+    const generatedAt = nowIso();
+    const content = generateMarkdownReport({
+      profile: props.profile,
+      goal: props.goal,
+      foodEntries: selectedFoodEntries,
+      weightLogs: props.weightLogs.filter((entry) => entry.app_date === selectedReportDate),
+      workoutSessions: props.workoutSessions.filter((entry) => entry.app_date === selectedReportDate),
+      workoutExercises: props.workoutExercises,
+      workoutSets: props.workoutSets,
+      weeklyWorkoutStatus: props.weeklyWorkoutStatus,
+      periodStart: selectedReportDate,
+      periodEnd: selectedReportDate,
+      generatedAt,
+      currentAppDate: props.appDate,
+      cheatDayDates: props.cheatDayDates.filter((date) => date === selectedReportDate),
+      workoutGrouping: "day",
+      question: `${formatJapaneseDate(selectedReportDate)}の記録を翌朝に振り返る前提で、よかった点と次回の調整を簡潔に整理してください。`,
+    });
+    setHistoryReport(content);
+    setHistoryReportCopied(false);
+    await db.ai_reports.put({
+      id: makeId("report"),
+      period_start: selectedReportDate,
+      period_end: selectedReportDate,
+      format: "markdown",
+      content,
+      created_at: generatedAt,
+      updated_at: generatedAt,
+    });
+    props.showToast("日別AIレポートを生成しました");
+  };
 
   return (
     <div className="space-y-4">
@@ -2167,6 +2256,115 @@ function RecordsTab(props: {
         getValue={(log) => log.body_fat_percentage}
         color="#c76f51"
       />
+
+      <section className="compact-card p-4">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h2 className="text-sm font-bold">日別AIレポート</h2>
+            <p className="mt-1 text-xs text-moss">印が付いた日を選んで、過去の日別レポートを生成できます。</p>
+          </div>
+          <div className="flex shrink-0 items-center gap-1">
+            <button
+              aria-label="前の月"
+              className="icon-button h-9 w-9"
+              onClick={() => {
+                setReportMonth(shiftMonthKey(reportMonth, -1));
+                setSelectedReportDate("");
+                setHistoryReport("");
+              }}
+            >
+              <ChevronLeft size={17} />
+            </button>
+            <button
+              aria-label="次の月"
+              className="icon-button h-9 w-9"
+              onClick={() => {
+                setReportMonth(shiftMonthKey(reportMonth, 1));
+                setSelectedReportDate("");
+                setHistoryReport("");
+              }}
+            >
+              <ChevronRight size={17} />
+            </button>
+          </div>
+        </div>
+        <div className="mt-3 flex items-center justify-between gap-2 rounded-md bg-rice px-3 py-2">
+          <p className="text-sm font-black">{formatMonthLabel(reportMonth)}</p>
+          <button
+            className="text-xs font-bold text-leaf underline-offset-2 hover:underline"
+            onClick={() => {
+              setReportMonth(monthKey(props.appDate));
+              setSelectedReportDate(props.appDate);
+              setHistoryReport("");
+            }}
+          >
+            今月へ
+          </button>
+        </div>
+        <div className="mt-3 grid grid-cols-7 gap-1 text-center text-[11px] font-bold text-moss">
+          {["日", "月", "火", "水", "木", "金", "土"].map((day) => <span key={day}>{day}</span>)}
+        </div>
+        <div className="mt-1 grid grid-cols-7 gap-1">
+          {calendarCells.map((cell, index) => {
+            if (!cell.date) return <div className="aspect-square min-h-10 rounded-md border border-transparent" key={`empty-${index}`} />;
+            const hasRecords = recordsByDate.has(cell.date);
+            const isSelected = selectedReportDate === cell.date;
+            return (
+              <button
+                className={`relative flex aspect-square min-h-10 items-center justify-center rounded-md border text-sm font-black transition active:scale-[0.98] ${
+                  isSelected
+                    ? "border-leaf bg-leaf text-white"
+                    : hasRecords
+                      ? "border-leaf/30 bg-leaf/10 text-ink"
+                      : "border-line bg-white/60 text-moss/40"
+                }`}
+                disabled={!hasRecords}
+                key={cell.date}
+                onClick={() => {
+                  setSelectedReportDate(cell.date ?? "");
+                  setHistoryReport("");
+                }}
+              >
+                {cell.day}
+                {hasRecords && <span className={`absolute bottom-1.5 h-1.5 w-1.5 rounded-full ${isSelected ? "bg-white" : "bg-leaf"}`} />}
+              </button>
+            );
+          })}
+        </div>
+        <div className="mt-3 rounded-md bg-rice p-3 text-sm">
+          {selectedHasRecords ? (
+            <>
+              <p className="font-bold">{formatJapaneseDate(selectedReportDate)}の記録</p>
+              <p className="mt-1 text-xs text-moss">
+                食事 {selectedSummary.foodCount}件 / 体重 {selectedSummary.weightCount}件 / ワークアウト {selectedSummary.workoutCount}回
+              </p>
+              <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
+                <MetricPill label="摂取" value={`${Math.round(selectedFoodTotal.calories)}kcal`} />
+                <MetricPill label="PFC" value={`P${selectedFoodTotal.protein} F${selectedFoodTotal.fat} C${selectedFoodTotal.carbs}`} />
+                <MetricPill label="体重" value={selectedWeight ? `${selectedWeight.weight_kg}kg` : "-"} />
+                <MetricPill label="チートデー" value={props.cheatDayDates.includes(selectedReportDate) ? "対象" : "-"} />
+              </div>
+              <button className="primary-button mt-3 w-full" onClick={generateHistoryDayReport}>
+                <FileText size={17} />この日の日別レポートを生成
+              </button>
+            </>
+          ) : (
+            <p className="text-xs text-moss">印が付いた日を選ぶと生成ボタンが表示されます。</p>
+          )}
+        </div>
+        {historyReport && (
+          <>
+            <textarea className="mt-3 min-h-56 w-full font-mono text-xs" value={historyReport} readOnly />
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              <button className="primary-button" onClick={async () => {
+                await copyText(historyReport);
+                setHistoryReportCopied(true);
+              }}><Copy size={17} />{historyReportCopied ? "コピー済み" : "コピー"}</button>
+              <button className="secondary-button" onClick={() => downloadText(`phase-log-report-${selectedReportDate}.md`, historyReport, "text/markdown")}><FileDown size={17} />MD保存</button>
+            </div>
+          </>
+        )}
+      </section>
 
       <section className="compact-card divide-y divide-line">
         <ListHeader title="最近の記録更新" value={`${recentPrs.length}件`} />
@@ -4209,6 +4407,28 @@ function weekKey(dateString: string) {
 
 function monthKey(dateString: string) {
   return dateString.slice(0, 7);
+}
+
+function shiftMonthKey(month: string, offset: number) {
+  const [year, monthNumber] = month.split("-").map(Number);
+  const date = new Date(year, monthNumber - 1 + offset, 1, 12);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function buildMonthCalendar(month: string): CalendarCell[] {
+  const [year, monthNumber] = month.split("-").map(Number);
+  const firstDay = new Date(year, monthNumber - 1, 1, 12);
+  const lastDay = new Date(year, monthNumber, 0, 12);
+  const leadingEmptyCells = firstDay.getDay();
+  const totalCells = Math.ceil((leadingEmptyCells + lastDay.getDate()) / 7) * 7;
+  return Array.from({ length: totalCells }, (_, index) => {
+    const day = index - leadingEmptyCells + 1;
+    if (day < 1 || day > lastDay.getDate()) return {};
+    return {
+      day,
+      date: `${year}-${String(monthNumber).padStart(2, "0")}-${String(day).padStart(2, "0")}`,
+    };
+  });
 }
 
 function startOfWeek(dateString: string) {

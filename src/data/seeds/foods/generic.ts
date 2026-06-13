@@ -51,6 +51,8 @@ export const genericFoods = [
   estimated({ name: "ラーメントッピング もやし", category: "麺類", tags: ["ラーメン", "トッピング", "もやし", "野菜"], calories: 25, protein_g: 2, fat_g: 0, carbs_g: 5, salt_g: 0.1, serving_label: "1盛り" }),
   estimated({ name: "ラーメントッピング 替え玉", category: "麺類", tags: ["ラーメン", "トッピング", "麺"], calories: 260, protein_g: 8, fat_g: 2, carbs_g: 52, salt_g: 0.6, serving_label: "1玉" }),
   estimated({ name: "ラーメントッピング 麺大盛", category: "麺類", tags: ["ラーメン", "トッピング", "麺"], calories: 180, protein_g: 6, fat_g: 1.5, carbs_g: 36, salt_g: 0.4, serving_label: "1追加" }),
+  estimated({ brand: "佐野PA", name: "耳うどんアラビアータ", category: "麺類", tags: ["佐野PA", "サービスエリア", "うどん", "耳うどん", "アラビアータ", "ご当地"], calories: 620, protein_g: 18, fat_g: 20, carbs_g: 92, salt_g: 4.8, serving_label: "1杯" }),
+  estimated({ brand: "佐野PA", name: "佐野ラーメン", category: "麺類", tags: ["佐野PA", "サービスエリア", "ラーメン", "佐野ラーメン", "ご当地"], calories: 560, protein_g: 22, fat_g: 16, carbs_g: 82, salt_g: 6.2, serving_label: "1杯" }),
   estimated({ name: "かけうどん", category: "麺類", tags: ["うどん", "和食"], calories: 330, protein_g: 10, fat_g: 2, carbs_g: 68, salt_g: 4.2, serving_label: "1杯" }),
   estimated({ name: "きつねうどん", category: "麺類", tags: ["うどん", "和食"], calories: 450, protein_g: 16, fat_g: 9, carbs_g: 75, salt_g: 4.6, serving_label: "1杯" }),
   estimated({ name: "ざるそば", category: "麺類", tags: ["そば", "和食"], calories: 340, protein_g: 13, fat_g: 2, carbs_g: 66, salt_g: 2.8, serving_label: "1枚" }),
