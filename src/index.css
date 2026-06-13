@@ -287,6 +287,38 @@ button {
   background: linear-gradient(90deg, #ff6b6b 0%, #ffd166 24%, #5ad66f 48%, #4ecdc4 68%, #7b61ff 100%);
 }
 
+.home-pull-shell {
+  touch-action: pan-y;
+}
+
+.home-pull-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.42rem;
+  overflow: hidden;
+  color: #526a57;
+  font-size: 0.75rem;
+  font-weight: 800;
+  transition: height 180ms ease, opacity 140ms ease;
+}
+
+.home-pull-ready {
+  color: #4f6b55;
+}
+
+.home-pull-spin {
+  animation: home-spin 900ms linear infinite;
+}
+
+.home-pull-shell .home-dashboard {
+  transition: transform 180ms ease;
+}
+
+.home-pull-refreshing .home-dashboard {
+  transition-duration: 220ms;
+}
+
 .home-macro-row {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ChangeEvent, type ReactNode, type RefObject } from "react";
+import { useEffect, useMemo, useRef, useState, type ChangeEvent, type ReactNode, type RefObject, type TouchEvent } from "react";
 import {
   Activity,
   Archive,
@@ -919,6 +919,10 @@ function HomeTab(props: {
   const [bodyFat, setBodyFat] = useState(props.latestWeight?.body_fat_percentage ?? props.profile?.body_fat_percentage ?? 20);
   const [isReloadingLatest, setIsReloadingLatest] = useState(false);
   const [isCheckInOpen, setIsCheckInOpen] = useState(false);
+  const [pullOffset, setPullOffset] = useState(0);
+  const [isPullRefreshing, setIsPullRefreshing] = useState(false);
+  const pullStartYRef = useRef<number | undefined>(undefined);
+  const pullThreshold = 64;
   const remaining = (props.goal?.target_calories ?? 0) - props.dayTotals.calories;
   const calorieState = getCalorieState(remaining, props.goal?.target_calories ?? 0);
   const average7 = movingAverage(props.weightLogs, 7);
@@ -967,6 +971,45 @@ function HomeTab(props: {
     await props.refresh();
     props.showToast("チェックインを保存しました");
   };
+  const resetPullRefresh = () => {
+    pullStartYRef.current = undefined;
+    setPullOffset(0);
+  };
+  const handlePullStart = (event: TouchEvent<HTMLDivElement>) => {
+    const target = event.target instanceof HTMLElement ? event.target : undefined;
+    if (isCheckInOpen || isPullRefreshing || window.scrollY > 0 || target?.closest("input, select, textarea")) {
+      pullStartYRef.current = undefined;
+      return;
+    }
+    pullStartYRef.current = event.touches[0]?.clientY;
+  };
+  const handlePullMove = (event: TouchEvent<HTMLDivElement>) => {
+    const startY = pullStartYRef.current;
+    if (typeof startY !== "number") return;
+    const deltaY = (event.touches[0]?.clientY ?? startY) - startY;
+    if (deltaY <= 0 || window.scrollY > 0) {
+      resetPullRefresh();
+      return;
+    }
+    event.preventDefault();
+    setPullOffset(Math.min(96, Math.round(deltaY * 0.58)));
+  };
+  const handlePullEnd = () => {
+    const shouldRefresh = pullOffset >= pullThreshold && !isPullRefreshing;
+    pullStartYRef.current = undefined;
+    if (!shouldRefresh) {
+      setPullOffset(0);
+      return;
+    }
+    setPullOffset(72);
+    setIsPullRefreshing(true);
+    void props.refresh()
+      .then(() => props.showToast("Homeを更新しました"))
+      .finally(() => {
+        setIsPullRefreshing(false);
+        setPullOffset(0);
+      });
+  };
 
   useEffect(() => {
     setWeight(props.latestWeight?.weight_kg ?? props.profile?.current_weight_kg ?? 70);
@@ -974,8 +1017,23 @@ function HomeTab(props: {
   }, [props.latestWeight?.weight_kg, props.latestWeight?.body_fat_percentage, props.profile?.current_weight_kg, props.profile?.body_fat_percentage]);
 
   return (
-    <div className="home-dashboard space-y-4">
-      {props.latestUpdate && props.hasUnreadUpdate && (
+    <div
+      className={`home-pull-shell ${isPullRefreshing ? "home-pull-refreshing" : ""}`}
+      onTouchStart={handlePullStart}
+      onTouchMove={handlePullMove}
+      onTouchEnd={handlePullEnd}
+      onTouchCancel={resetPullRefresh}
+    >
+      <div
+        className={`home-pull-indicator ${pullOffset >= pullThreshold ? "home-pull-ready" : ""}`}
+        style={{ height: `${pullOffset}px`, opacity: pullOffset > 8 || isPullRefreshing ? 1 : 0 }}
+        aria-hidden="true"
+      >
+        <RotateCcw className={isPullRefreshing ? "home-pull-spin" : ""} size={17} />
+        <span>{isPullRefreshing ? "更新中" : pullOffset >= pullThreshold ? "離して更新" : "更新"}</span>
+      </div>
+      <div className="home-dashboard space-y-4" style={pullOffset > 0 ? { transform: `translateY(${Math.min(18, pullOffset * 0.16)}px)` } : undefined}>
+        {props.latestUpdate && props.hasUnreadUpdate && (
         <button className="home-notice flex w-full items-center gap-3 px-4 py-3 text-left" onClick={props.openUpdateNotes}>
           <div className="min-w-0 flex-1">
             <p className="text-sm font-bold">更新があります</p>
@@ -1124,6 +1182,7 @@ function HomeTab(props: {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }
