@@ -204,6 +204,36 @@ const staleAppPromptDelayMs = 6 * 60 * 60 * 1000;
 const weightStepOptions = [1, 2.5, 5, 10];
 const appUpdates: AppUpdate[] = [
   {
+    id: "2026-06-14-small-screen-readable-workout",
+    title: "小さい画面でのワークアウト表示を改善",
+    date: "2026-06-14",
+    items: [
+      "ワークアウトプリセットや種目行で、画面幅が狭い時に名前が読めなくなる問題を改善しました。",
+      "小さい画面では操作ボタンを2段目に逃がし、メニュー名を最大2行まで表示するようにしました。",
+      "最近追加した操作変更が分かるよう、更新履歴を整理しました。",
+    ],
+  },
+  {
+    id: "2026-06-14-past-record-editing",
+    title: "過去の食事・ワークアウト修正に対応",
+    date: "2026-06-14",
+    items: [
+      "Historyのカレンダーで記録がある日を選び、食事や筋トレを過去日に戻って修正できるようにしました。",
+      "Foodログの鉛筆ボタンから、名前・ブランド・食事タイミング・kcal/PFC/塩分を編集できるようにしました。",
+      "過去日を編集中はヘッダーに表示し、今日の記録へ戻れる導線を追加しました。",
+    ],
+  },
+  {
+    id: "2026-06-14-liquid-glass-refresh",
+    title: "全体UIをLiquid Glass寄りに更新",
+    date: "2026-06-14",
+    items: [
+      "Food、Workout、History、Settingsを中心に、半透明カード、淡い多層背景、ガラス調ボタンへ更新しました。",
+      "チートデーやリロードなど既存のHome操作は残したまま、通常時は落ち着いたパール系の見た目に調整しました。",
+      "数字表示をAppleのSan Francisco Rounded寄りのフォント指定にし、主要な数値を読みやすくしました。",
+    ],
+  },
+  {
     id: "2026-06-13-yoshoku-snack-foods",
     title: "洋食とお菓子メニューを追加",
     date: "2026-06-13",
@@ -3117,7 +3147,7 @@ function WorkoutTemplateRow({ template, isEditing, isDragging, onStart, onEdit, 
 }) {
   return (
     <div
-      className={`flex items-center justify-between gap-3 px-4 py-4 transition-colors hover:bg-rice/70 ${isEditing ? "bg-leaf/20" : ""} ${isDragging ? "opacity-60" : ""}`}
+      className={`workout-template-row px-4 py-4 transition-colors hover:bg-rice/70 ${isEditing ? "bg-leaf/20" : ""} ${isDragging ? "opacity-60" : ""}`}
       data-workout-template-id={template.id}
       onDragEnter={(event) => {
         event.preventDefault();
@@ -3126,7 +3156,7 @@ function WorkoutTemplateRow({ template, isEditing, isDragging, onStart, onEdit, 
       onDragOver={(event) => event.preventDefault()}
     >
       <button
-        className="icon-button h-8 w-8 cursor-grab active:cursor-grabbing"
+        className="workout-template-drag icon-button h-8 w-8 cursor-grab active:cursor-grabbing"
         draggable
         aria-label={`${template.name}を並べ替え`}
         onDragStart={(event) => {
@@ -3140,14 +3170,18 @@ function WorkoutTemplateRow({ template, isEditing, isDragging, onStart, onEdit, 
       >
         <GripVertical size={14} />
       </button>
-      <Pictogram {...getWorkoutTemplatePictogram(template)} />
-      <button className="min-w-0 flex-1 text-left" onClick={onEdit}>
-        <p className="truncate text-sm font-bold">{template.name}</p>
-        <p className="truncate text-xs text-moss">{template.body_parts.join(" / ") || "未設定"} · {template.exercises.length}種目</p>
+      <span className="workout-template-icon">
+        <Pictogram {...getWorkoutTemplatePictogram(template)} />
+      </span>
+      <button className="workout-template-main min-w-0 text-left" onClick={onEdit}>
+        <p className="workout-row-title text-sm font-bold">{template.name}</p>
+        <p className="workout-row-meta text-xs text-moss">{template.body_parts.join(" / ") || "未設定"} · {template.exercises.length}種目</p>
       </button>
-      <button className={`icon-button h-8 w-8 ${isEditing ? "border-moss/50 text-moss" : ""}`} aria-label={`${template.name}を編集`} onClick={onEdit}><Pencil size={14} /></button>
-      <button className="icon-button h-8 w-8 text-clay" aria-label={`${template.name}を削除`} onClick={onDelete}><Trash2 size={14} /></button>
-      <button className="secondary-button h-8 px-2 py-1 text-xs" aria-label={`${template.name}を今日の記録に追加`} onClick={() => onStart(template)}><Plus size={13} />記録</button>
+      <div className="workout-template-actions">
+        <button className={`icon-button h-8 w-8 ${isEditing ? "border-moss/50 text-moss" : ""}`} aria-label={`${template.name}を編集`} onClick={onEdit}><Pencil size={14} /></button>
+        <button className="icon-button h-8 w-8 text-clay" aria-label={`${template.name}を削除`} onClick={onDelete}><Trash2 size={14} /></button>
+        <button className="workout-template-record secondary-button h-8 px-2 py-1 text-xs" aria-label={`${template.name}を今日の記録に追加`} onClick={() => onStart(template)}><Plus size={13} />記録</button>
+      </div>
     </div>
   );
 }
@@ -3400,21 +3434,25 @@ function ExercisePresetRow({ exercise, isFavorite, onAdd, onToggleFavorite, onPi
 }) {
   const pictogram = getWorkoutPictogram(exercise.body_part, exercise.equipment_type);
   return (
-    <div className="flex items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-rice/70">
-      <Pictogram {...pictogram} />
-      <button className="min-w-0 flex-1 text-left" onClick={() => onAdd(exercise)}>
-        <p className="truncate text-sm font-semibold">{exercise.name}</p>
-        <p className="truncate text-xs text-moss">{exercise.body_part} · {exercise.equipment_type}</p>
+    <div className="exercise-preset-row px-4 py-3 transition-colors hover:bg-rice/70">
+      <span className="exercise-preset-icon">
+        <Pictogram {...pictogram} />
+      </span>
+      <button className="exercise-preset-main min-w-0 text-left" onClick={() => onAdd(exercise)}>
+        <p className="workout-row-title text-sm font-semibold">{exercise.name}</p>
+        <p className="workout-row-meta text-xs text-moss">{exercise.body_part} · {exercise.equipment_type}</p>
       </button>
-      <button className="icon-button h-8 w-8" aria-label={`${exercise.name}の内容を設定して追加`} onClick={() => onAdd(exercise)}><Plus size={14} /></button>
-      {onPickTemplate && <button className="icon-button h-8 w-8" aria-label={`${exercise.name}をプリセットへ追加`} onClick={() => onPickTemplate(exercise)}><Archive size={14} /></button>}
-      <button
-        className={`icon-button h-8 w-8 ${isFavorite ? "border-sun/50 text-[#8a5d13]" : ""}`}
-        aria-label={`${exercise.name}をお気に入り${isFavorite ? "から外す" : "に追加"}`}
-        onClick={() => onToggleFavorite(exercise)}
-      >
-        <Heart size={14} fill={isFavorite ? "currentColor" : "none"} />
-      </button>
+      <div className="exercise-preset-actions">
+        <button className="icon-button h-8 w-8" aria-label={`${exercise.name}の内容を設定して追加`} onClick={() => onAdd(exercise)}><Plus size={14} /></button>
+        {onPickTemplate && <button className="icon-button h-8 w-8" aria-label={`${exercise.name}をプリセットへ追加`} onClick={() => onPickTemplate(exercise)}><Archive size={14} /></button>}
+        <button
+          className={`icon-button h-8 w-8 ${isFavorite ? "border-sun/50 text-[#8a5d13]" : ""}`}
+          aria-label={`${exercise.name}をお気に入り${isFavorite ? "から外す" : "に追加"}`}
+          onClick={() => onToggleFavorite(exercise)}
+        >
+          <Heart size={14} fill={isFavorite ? "currentColor" : "none"} />
+        </button>
+      </div>
     </div>
   );
 }

@@ -752,6 +752,59 @@ button {
   box-shadow: inset 3px 0 0 rgba(82, 106, 87, 0.72);
 }
 
+.workout-template-row,
+.exercise-preset-row {
+  display: grid;
+  align-items: center;
+  column-gap: 0.75rem;
+  row-gap: 0.55rem;
+}
+
+.workout-template-row {
+  grid-template-columns: 2rem 2.5rem minmax(0, 1fr) auto;
+  grid-template-areas: "drag icon main actions";
+}
+
+.exercise-preset-row {
+  grid-template-columns: 2.5rem minmax(0, 1fr) auto;
+  grid-template-areas: "icon main actions";
+}
+
+.workout-template-drag {
+  grid-area: drag;
+}
+
+.workout-template-icon,
+.exercise-preset-icon {
+  grid-area: icon;
+}
+
+.workout-template-main,
+.exercise-preset-main {
+  grid-area: main;
+}
+
+.workout-template-actions,
+.exercise-preset-actions {
+  grid-area: actions;
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.workout-row-title,
+.workout-row-meta {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workout-template-record {
+  min-width: 4.6rem;
+}
+
 .compact-card.divide-y > :not([hidden]) ~ :not([hidden]),
 .compact-card .divide-y > :not([hidden]) ~ :not([hidden]) {
   border-color: rgba(255, 255, 255, 0.34);
@@ -856,4 +909,56 @@ button {
 .app-shell-workout .mode-button,
 .app-shell-records .mode-button {
   min-height: 2.9rem;
+}
+
+@media (max-width: 390px) {
+  .workout-template-row {
+    grid-template-columns: 2rem 2.5rem minmax(0, 1fr);
+    grid-template-areas:
+      "drag icon main"
+      ". actions actions";
+  }
+
+  .exercise-preset-row {
+    grid-template-columns: 2.5rem minmax(0, 1fr);
+    grid-template-areas:
+      "icon main"
+      "actions actions";
+  }
+
+  .workout-template-actions,
+  .exercise-preset-actions {
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
+
+  .workout-row-title,
+  .workout-row-meta {
+    display: -webkit-box;
+    overflow: hidden;
+    white-space: normal;
+    -webkit-box-orient: vertical;
+  }
+
+  .workout-row-title {
+    -webkit-line-clamp: 2;
+  }
+
+  .workout-row-meta {
+    -webkit-line-clamp: 1;
+  }
+}
+
+@media (max-width: 360px) {
+  .app-shell-workout .mode-button {
+    min-height: 2.65rem;
+    padding-inline: 0.55rem;
+    font-size: 0.8rem;
+  }
+
+  .workout-template-actions .icon-button,
+  .exercise-preset-actions .icon-button {
+    width: 1.9rem;
+    height: 1.9rem;
+  }
 }
