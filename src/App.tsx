@@ -140,7 +140,7 @@ const chainCategories: Record<string, string[]> = {
 
 const genericCategories: Record<string, string[]> = {
   "ごはん・丼": ["白米", "おにぎり", "チャーハン", "オムライス", "親子丼", "カツ丼", "カレー", "寿司"],
-  麺類: ["ラーメン", "うどん", "そば", "パスタ", "焼きそば"],
+  麺類: ["ラーメン", "つけ麺", "油そば", "タンメン", "担々麺", "トッピング", "うどん", "そば", "パスタ", "焼きそば"],
   パン: ["サンドイッチ", "トースト", "食パン", "菓子パン"],
   "肉・魚": ["鶏", "豚", "牛豚", "鮭", "サバ", "刺身", "卵"],
   "サラダ・野菜": ["サラダ", "野菜", "海藻"],
@@ -176,9 +176,29 @@ const emptyManual: ManualFoodDraft = {
 const backupStorageKey = "phase-log-last-backup-at";
 const updateSeenStorageKey = "phase-log-seen-update-id";
 const workoutWeightPresetStorageKey = "phase-log-workout-weight-presets";
+const cheatDayStorageKey = "phase-log-cheat-day-dates";
 const staleAppPromptDelayMs = 6 * 60 * 60 * 1000;
 const weightStepOptions = [1, 2.5, 5, 10];
 const appUpdates: AppUpdate[] = [
+  {
+    id: "2026-06-13-cheat-day-mode",
+    title: "チートデーモードを追加",
+    date: "2026-06-13",
+    items: [
+      "Home上部の！ボタンから、その日をチートデーとして切り替えられるようにしました。",
+      "チートデー中はカロリーカードを虹色にし、今日がチートデーであることをHomeに明記します。",
+      "AI相談レポートにも対象範囲内のチートデーを明記するようにしました。",
+    ],
+  },
+  {
+    id: "2026-06-13-ramen-search-flow",
+    title: "ラーメンと食事検索を改善",
+    date: "2026-06-13",
+    items: [
+      "一般的なラーメン各種と、味玉・バター・替え玉などのトッピングを追加しました。",
+      "食事検索を始めた時に検索結果へ移動し、検索中は結果が見やすいよう余分な候補パネルを畳むようにしました。",
+    ],
+  },
   {
     id: "2026-06-12-ai-report-estimated-food-notes",
     title: "AI相談レポートの推定値表示を改善",
@@ -537,6 +557,7 @@ function App() {
   const [settingsFocus, setSettingsFocus] = useState<SettingsFocus>();
   const [lastBackupAt, setLastBackupAt] = useState<string | undefined>(() => localStorage.getItem(backupStorageKey) || undefined);
   const [seenUpdateId, setSeenUpdateId] = useState<string | undefined>(() => localStorage.getItem(updateSeenStorageKey) || undefined);
+  const [cheatDayDates, setCheatDayDates] = useState<string[]>(() => loadCheatDayDates());
   const [isUpdateNotesOpen, setIsUpdateNotesOpen] = useState(false);
   const [showStaleAppPrompt, setShowStaleAppPrompt] = useState(false);
   const [isHeaderReloading, setIsHeaderReloading] = useState(false);
@@ -613,8 +634,11 @@ function App() {
   const latestWeight = weightLogs.at(-1);
   const dayTotals = sumFood(todayEntries);
   const target = activeGoal ?? defaultGoal(profile);
+  const isCheatDay = cheatDayDates.includes(appDate);
   const targetCalories = target?.target_calories ?? 0;
-  const homeTone = targetCalories <= 0
+  const homeTone = isCheatDay
+    ? "cheat"
+    : targetCalories <= 0
     ? "neutral"
     : dayTotals.calories > targetCalories
       ? "over"
@@ -654,6 +678,14 @@ function App() {
       window.location.reload();
     }
   };
+  const toggleCheatDay = () => {
+    setCheatDayDates((current) => {
+      const next = current.includes(appDate) ? current.filter((date) => date !== appDate) : [...current, appDate].sort();
+      localStorage.setItem(cheatDayStorageKey, JSON.stringify(next));
+      showToast(next.includes(appDate) ? "チートデーに設定しました" : "チートデーを解除しました");
+      return next;
+    });
+  };
 
   useEffect(() => () => {
     if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
@@ -682,9 +714,20 @@ function App() {
             <p className="mt-1 text-xs font-normal text-moss">{headerSubtext}</p>
           </div>
           {tab === "home" ? (
-            <button className="home-header-reload" disabled={isHeaderReloading} aria-label="最新の情報にリロード" onClick={reloadFromHeader}>
-              <RotateCcw className={isHeaderReloading ? "home-header-reload-loading" : ""} size={18} />
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                className={`home-header-cheat ${isCheatDay ? "home-header-cheat-active" : ""}`}
+                aria-pressed={isCheatDay}
+                aria-label={isCheatDay ? "チートデーを解除" : "チートデーに設定"}
+                onClick={toggleCheatDay}
+                title={isCheatDay ? "チートデーを解除" : "チートデーに設定"}
+              >
+                !
+              </button>
+              <button className="home-header-reload" disabled={isHeaderReloading} aria-label="最新の情報にリロード" onClick={reloadFromHeader}>
+                <RotateCcw className={isHeaderReloading ? "home-header-reload-loading" : ""} size={18} />
+              </button>
+            </div>
           ) : (
             <div className="app-status-pill">
               {activeGoal ? phaseLabels[activeGoal.phase] : "未設定"} / {typeof statusWeight === "number" ? `${statusWeight}kg` : "-"}
@@ -706,6 +749,7 @@ function App() {
             workoutExercises={workoutExercises}
             workoutSets={workoutSets}
             weeklyWorkoutStatus={weeklyWorkoutStatus}
+            isCheatDay={isCheatDay}
             latestWeight={latestWeight}
             weightLogs={weightLogs}
             backupInfo={backupInfo}
@@ -783,6 +827,7 @@ function App() {
             activeGoal={activeGoal}
             appDate={appDate}
             weeklyWorkoutStatus={weeklyWorkoutStatus}
+            cheatDayDates={cheatDayDates}
             menuItems={menuItems}
             workoutTemplates={workoutTemplates}
             focus={settingsFocus}
@@ -823,6 +868,16 @@ function QuickToast({ text }: { text: string }) {
   );
 }
 
+function loadCheatDayDates() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(cheatDayStorageKey) || "[]");
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((date): date is string => typeof date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(date)).sort();
+  } catch {
+    return [];
+  }
+}
+
 function HomeTab(props: {
   profile?: Profile;
   goal?: Goal;
@@ -834,6 +889,7 @@ function HomeTab(props: {
   workoutExercises: WorkoutExercise[];
   workoutSets: WorkoutSet[];
   weeklyWorkoutStatus: WeeklyWorkoutStatus;
+  isCheatDay: boolean;
   latestWeight?: WeightLog;
   weightLogs: WeightLog[];
   backupInfo: BackupInfo;
@@ -868,8 +924,8 @@ function HomeTab(props: {
   const weightDelta = typeof previousWeight === "number" ? round1(weight - previousWeight) : undefined;
   const calorieDelta = props.goal?.target_calories ? props.dayTotals.calories - props.goal.target_calories : undefined;
   const calorieDeltaText = typeof calorieDelta === "number" ? `${calorieDelta > 0 ? "+" : ""}${Math.round(calorieDelta)}` : "-";
-  const calorieMoodClass = typeof calorieDelta === "number" ? (calorieDelta > 0 ? "over" : Math.abs(calorieDelta) <= 100 ? "on-track" : "left") : "neutral";
-  const calorieMoodLabel = typeof calorieDelta === "number" ? (calorieDelta > 0 ? "over" : Math.abs(calorieDelta) <= 100 ? "on track" : "left") : calorieState.label;
+  const calorieMoodClass = props.isCheatDay ? "cheat" : typeof calorieDelta === "number" ? (calorieDelta > 0 ? "over" : Math.abs(calorieDelta) <= 100 ? "on-track" : "left") : "neutral";
+  const calorieMoodLabel = props.isCheatDay ? "cheat day" : typeof calorieDelta === "number" ? (calorieDelta > 0 ? "over" : Math.abs(calorieDelta) <= 100 ? "on track" : "left") : calorieState.label;
   const foodSummary = `${props.todayEntries.length}件 / ${props.dayTotals.calories} kcal`;
   const workoutSummary = todayWorkoutCalories > 0 ? `${props.todayWorkouts.length}回 / ${todayWorkoutCalories} kcal` : `${props.todayWorkouts.length}回`;
   const macroStats = [
@@ -952,15 +1008,19 @@ function HomeTab(props: {
       )}
 
       <section className={`home-hero-card home-hero-${calorieMoodClass}`}>
-        <p className="text-sm font-semibold text-ink/80">今日のカロリー</p>
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-sm font-semibold text-ink/80">今日のカロリー</p>
+          {props.isCheatDay && <span className="home-cheat-badge">チートデー</span>}
+        </div>
         <div className="mt-6">
           <p className={`text-[4.25rem] font-semibold leading-none tracking-normal ${calorieDelta && calorieDelta > 0 ? "text-clay" : "text-ink"}`}>
             {calorieDeltaText}<span className="ml-2 text-xl font-semibold">kcal</span>
           </p>
           <p className="mt-2 text-sm font-semibold text-moss">{calorieMoodLabel}</p>
+          {props.isCheatDay && <p className="mt-1 text-sm font-bold text-ink">今日はチートデーです。目標差分は参考値として見ます。</p>}
           <p className="mt-1 text-sm text-moss">摂取 {props.dayTotals.calories} / 目標 {props.goal?.target_calories ?? "-"} kcal</p>
           <div className="mt-6 h-2 overflow-hidden rounded-full bg-white/55">
-            <div className={`h-full rounded-full ${calorieDelta && calorieDelta > 0 ? "bg-clay" : "bg-moss"}`} style={{ width: `${caloriePercent}%` }} />
+            <div className={`h-full rounded-full ${props.isCheatDay ? "home-progress-cheat" : calorieDelta && calorieDelta > 0 ? "bg-clay" : "bg-moss"}`} style={{ width: `${caloriePercent}%` }} />
           </div>
         </div>
         <div className="home-macro-row mt-5">
@@ -1161,7 +1221,20 @@ function FoodTab(props: { menuItems: MenuItem[]; foodEntries: FoodEntry[]; appDa
       scrollToChainSection();
       return;
     }
+    if (nextMode === "search" && query.trim()) {
+      scrollToFoodResults();
+      return;
+    }
     scrollToFoodTop();
+  };
+  const updateSearchQuery = (nextQuery: string) => {
+    const wasSearching = query.trim().length > 0;
+    const isSearching = nextQuery.trim().length > 0;
+    setQuery(nextQuery);
+    if (isSearching && !wasSearching) {
+      setMode("search");
+      scrollToFoodResults();
+    }
   };
   const portionOptions = selected ? getPortionOptions(selected) : [];
   const isGlobalSearch = query.trim().length > 0;
@@ -1283,20 +1356,22 @@ function FoodTab(props: { menuItems: MenuItem[]; foodEntries: FoodEntry[]; appDa
   return (
     <div className="scroll-mt-24 space-y-4" ref={foodTopRef}>
       <div className="sticky-panel sticky top-[74px] z-10 -mx-4 space-y-3 px-4 pb-2">
-        <form className="compact-card flex gap-2 p-2" onSubmit={(event) => { event.preventDefault(); selectMode("search"); }}>
+        <form className="compact-card flex gap-2 p-2" onSubmit={(event) => { event.preventDefault(); setMode("search"); scrollToFoodResults(); }}>
           <div className="relative min-w-0 flex-1">
             <Search className="pointer-events-none absolute left-3 top-3.5 text-moss" size={20} />
-            <input className="h-12 w-full pl-10 text-base" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="食品・ブランド検索" />
+            <input className="h-12 w-full pl-10 text-base" value={query} onChange={(event) => updateSearchQuery(event.target.value)} placeholder="食品・ブランド検索" />
           </div>
           <button type="submit" className={`${mode === "search" || isGlobalSearch ? "primary-button" : "secondary-button"} h-12 px-4`}>検索</button>
         </form>
-        <div className="grid grid-cols-3 gap-2">
-          {(["favorite", "personal", "manual", "chain", "category", "quick"] as FoodMode[]).map((item) => (
-            <button key={item} className={`mode-button ${mode === item ? "mode-button-active" : ""}`} onClick={() => selectMode(item)}>
-              {foodModeLabel(item)}
-            </button>
-          ))}
-        </div>
+        {!isGlobalSearch && (
+          <div className="grid grid-cols-3 gap-2">
+            {(["favorite", "personal", "manual", "chain", "category", "quick"] as FoodMode[]).map((item) => (
+              <button key={item} className={`mode-button ${mode === item ? "mode-button-active" : ""}`} onClick={() => selectMode(item)}>
+                {foodModeLabel(item)}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {mode === "chain" && (
@@ -1339,7 +1414,7 @@ function FoodTab(props: { menuItems: MenuItem[]; foodEntries: FoodEntry[]; appDa
 
       {mode !== "manual" && (
         <>
-          {mode === "search" && (
+          {mode === "search" && !isGlobalSearch && (
             <QuickStrip title="Recent" items={recentItems} onPick={selectFoodItem} fallback={favoriteItems} />
           )}
           {mode === "favorite" && !isGlobalSearch && favoriteItems.length === 0 && (
@@ -2089,6 +2164,7 @@ function SettingsTab(props: {
   activeGoal?: Goal;
   appDate: string;
   weeklyWorkoutStatus: WeeklyWorkoutStatus;
+  cheatDayDates: string[];
   menuItems: MenuItem[];
   workoutTemplates: WorkoutTemplate[];
   focus?: SettingsFocus;
@@ -2168,6 +2244,7 @@ function SettingsTab(props: {
         const end = props.appDate;
         const start = reportMode === "day" ? end : addDays(end, reportMode === "week" ? -6 : -29);
         const range = dateRange(start, end);
+        const scopedCheatDayDates = props.cheatDayDates.filter((date) => range.includes(date));
         const content = generateMarkdownReport({
           profile: props.profile,
           goal: props.activeGoal,
@@ -2181,6 +2258,7 @@ function SettingsTab(props: {
           periodEnd: end,
           generatedAt,
           currentAppDate: props.appDate,
+          cheatDayDates: scopedCheatDayDates,
           workoutGrouping: reportMode,
           question,
         });
