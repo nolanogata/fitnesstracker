@@ -186,7 +186,7 @@ const appUpdates: AppUpdate[] = [
     date: "2026-06-13",
     items: [
       "Home上部の！ボタンから、その日をチートデーとして切り替えられるようにしました。",
-      "チートデー中はカロリーカードを虹色にし、今日がチートデーであることをHomeに明記します。",
+      "チートデー中はカロリーカードを虹色にし、カロリー差分を???表示にして、今日がチートデーであることをHomeに明記します。",
       "AI相談レポートにも対象範囲内のチートデーを明記するようにしました。",
     ],
   },
@@ -924,6 +924,7 @@ function HomeTab(props: {
   const weightDelta = typeof previousWeight === "number" ? round1(weight - previousWeight) : undefined;
   const calorieDelta = props.goal?.target_calories ? props.dayTotals.calories - props.goal.target_calories : undefined;
   const calorieDeltaText = typeof calorieDelta === "number" ? `${calorieDelta > 0 ? "+" : ""}${Math.round(calorieDelta)}` : "-";
+  const calorieDisplayText = props.isCheatDay ? "???" : calorieDeltaText;
   const calorieMoodClass = props.isCheatDay ? "cheat" : typeof calorieDelta === "number" ? (calorieDelta > 0 ? "over" : Math.abs(calorieDelta) <= 100 ? "on-track" : "left") : "neutral";
   const calorieMoodLabel = props.isCheatDay ? "cheat day" : typeof calorieDelta === "number" ? (calorieDelta > 0 ? "over" : Math.abs(calorieDelta) <= 100 ? "on track" : "left") : calorieState.label;
   const foodSummary = `${props.todayEntries.length}件 / ${props.dayTotals.calories} kcal`;
@@ -1014,7 +1015,7 @@ function HomeTab(props: {
         </div>
         <div className="mt-6">
           <p className={`text-[4.25rem] font-semibold leading-none tracking-normal ${calorieDelta && calorieDelta > 0 ? "text-clay" : "text-ink"}`}>
-            {calorieDeltaText}<span className="ml-2 text-xl font-semibold">kcal</span>
+            {calorieDisplayText}<span className="ml-2 text-xl font-semibold">kcal</span>
           </p>
           <p className="mt-2 text-sm font-semibold text-moss">{calorieMoodLabel}</p>
           {props.isCheatDay && <p className="mt-1 text-sm font-bold text-ink">今日はチートデーです。目標差分は参考値として見ます。</p>}
