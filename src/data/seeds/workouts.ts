@@ -36,6 +36,7 @@ export const exerciseSeeds: ExercisePreset[] = [
   exercise("バーベルベンチプレス", "胸", "フリーウェイト", "push"),
   exercise("ダンベルベンチプレス", "胸", "フリーウェイト", "push"),
   exercise("プッシュアップ", "胸", "自重・自宅", "push"),
+  exercise("ディップス", "胸", "自重・自宅", "push", 3, 8),
   exercise("ラットプルダウン", "背中", "マシン", "pull"),
   exercise("シーテッドロー", "背中", "マシン", "pull"),
   exercise("ケーブルロー", "背中", "ケーブル", "pull"),
