@@ -2914,7 +2914,7 @@ function ManualFoodForm({ manual, setManual, onSave, compact = false, mode = "lo
         <input value={manual.note} onChange={(event) => setManual({ ...manual, note: event.target.value })} placeholder="メモ" />
       </div>
       <div className="mt-3 flex flex-wrap gap-2">
-        {!isPresetOnly && <label className="chip"><input type="checkbox" checked={manual.savePreset} onChange={(event) => setManual({ ...manual, savePreset: event.target.checked })} />プリセット保存</label>}
+        {!isPresetOnly && <label className="chip"><input type="checkbox" checked={manual.savePreset} onChange={(event) => setManual({ ...manual, savePreset: event.target.checked })} />メニューとして登録</label>}
         <label className="chip"><input type="checkbox" checked={manual.favorite} onChange={(event) => setManual({ ...manual, favorite: event.target.checked })} />お気に入り</label>
       </div>
       <button className="primary-button mt-3 w-full" onClick={onSave}><Save size={17} />保存</button>
