@@ -194,7 +194,8 @@ button {
 }
 
 .home-header-reload,
-.home-header-cheat {
+.home-header-cheat,
+.home-header-today {
   display: inline-flex;
   width: 2.75rem;
   height: 2.75rem;
@@ -214,6 +215,14 @@ button {
   font-size: 1.05rem;
   font-weight: 900;
   line-height: 1;
+}
+
+.home-header-today {
+  width: auto;
+  min-width: 2.75rem;
+  padding: 0 0.72rem;
+  font-size: 0.74rem;
+  font-weight: 900;
 }
 
 .home-header-cheat:active {
@@ -515,6 +524,7 @@ button {
   .sticky-panel,
   .home-status-pill,
   .home-header-cheat,
+  .home-header-today,
   .home-header-reload,
   .home-checkin-edit,
   .home-glass-card,

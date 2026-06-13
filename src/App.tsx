@@ -75,6 +75,7 @@ type WorkoutMode = "favorite" | "preset" | "body" | "equipment" | "previous" | "
 type FoodFocus = "todayLog" | undefined;
 type SettingsFocus = "ai" | "backup" | "myMenu" | undefined;
 type HistoryGrouping = "day" | "week" | "month";
+type EditableRecordTab = "food" | "workout";
 type BackupInfo = {
   lastBackupAt?: string;
   daysSinceBackup?: number;
@@ -123,6 +124,16 @@ type ManualFoodDraft = {
   note: string;
   savePreset: boolean;
   favorite: boolean;
+};
+type FoodEntryEditDraft = {
+  name: string;
+  brand: string;
+  meal_type: MealType;
+  calories: string;
+  protein_g: string;
+  fat_g: string;
+  carbs_g: string;
+  salt_g: string;
 };
 
 const mealLabels: Record<MealType, string> = {
@@ -584,10 +595,13 @@ function App() {
   const [showStaleAppPrompt, setShowStaleAppPrompt] = useState(false);
   const [isHeaderReloading, setIsHeaderReloading] = useState(false);
   const [currentTime, setCurrentTime] = useState(() => new Date());
+  const [selectedAppDate, setSelectedAppDate] = useState<string>();
   const [toast, setToast] = useState<{ id: string; text: string }>();
   const toastTimerRef = useRef<number | undefined>(undefined);
   const appOpenedAtRef = useRef(Date.now());
-  const appDate = todayAppDate(settings?.day_boundary_hour ?? 3, currentTime);
+  const actualAppDate = todayAppDate(settings?.day_boundary_hour ?? 3, currentTime);
+  const appDate = selectedAppDate ?? actualAppDate;
+  const isEditingPastDate = appDate !== actualAppDate;
   const activeGoal = goals.find((goal) => goal.is_active);
   const latestUpdate = appUpdates[0];
 
@@ -708,6 +722,13 @@ function App() {
       return next;
     });
   };
+  const editRecordDate = (date: string, targetTab: EditableRecordTab) => {
+    setSelectedAppDate(date === actualAppDate ? undefined : date);
+    setSettingsFocus(undefined);
+    setFoodFocus(targetTab === "food" ? "todayLog" : undefined);
+    setTab(targetTab);
+    showToast(`${formatJapaneseDate(date)}を編集します`);
+  };
 
   useEffect(() => () => {
     if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
@@ -732,11 +753,16 @@ function App() {
       <header className={`safe-top app-header sticky top-0 z-20 px-4 pb-3 ${tab === "home" ? "home-header" : ""}`}>
         <div className="flex items-center justify-between">
           <div>
-            <h1 className={tab === "home" ? "text-[2.08rem] font-semibold leading-tight tracking-normal" : "text-2xl font-bold tracking-normal"}>{headerTitle}</h1>
-            <p className="mt-1 text-xs font-normal text-moss">{headerSubtext}</p>
+            <h1 className={`numeric-text ${tab === "home" ? "text-[2.08rem] font-semibold leading-tight tracking-normal" : "text-2xl font-bold tracking-normal"}`}>{headerTitle}</h1>
+            <p className="mt-1 text-xs font-normal text-moss">{isEditingPastDate ? "過去の記録を編集中" : headerSubtext}</p>
           </div>
           {tab === "home" ? (
             <div className="flex items-center gap-2">
+              {isEditingPastDate && (
+                <button className="home-header-today" onClick={() => setSelectedAppDate(undefined)}>
+                  今日
+                </button>
+              )}
               <button
                 className={`home-header-cheat ${isCheatDay ? "home-header-cheat-active" : ""}`}
                 aria-pressed={isCheatDay}
@@ -751,9 +777,15 @@ function App() {
               </button>
             </div>
           ) : (
-            <div className="app-status-pill">
-              {activeGoal ? phaseLabels[activeGoal.phase] : "未設定"} / {typeof statusWeight === "number" ? `${statusWeight}kg` : "-"}
-            </div>
+            isEditingPastDate ? (
+              <button className="app-status-pill" onClick={() => setSelectedAppDate(undefined)}>
+                {formatJapaneseDate(appDate)} / 今日へ
+              </button>
+            ) : (
+              <div className="app-status-pill">
+                {activeGoal ? phaseLabels[activeGoal.phase] : "未設定"} / {typeof statusWeight === "number" ? `${statusWeight}kg` : "-"}
+              </div>
+            )
           )}
         </div>
       </header>
@@ -847,6 +879,7 @@ function App() {
             workoutSets={workoutSets}
             weeklyWorkoutStatus={weeklyWorkoutStatus}
             showToast={showToast}
+            onEditRecordDate={editRecordDate}
           />
         )}
         {tab === "settings" && (
@@ -1275,6 +1308,7 @@ function FoodTab(props: { menuItems: MenuItem[]; foodEntries: FoodEntry[]; appDa
   const [mode, setMode] = useState<FoodMode>("search");
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<MenuItem>();
+  const [editingEntry, setEditingEntry] = useState<{ entry: FoodEntry; draft: FoodEntryEditDraft }>();
   const [mealType, setMealType] = useState<MealType>("lunch");
   const [multiplier, setMultiplier] = useState(1);
   const [manual, setManual] = useState(emptyManual);
@@ -1469,6 +1503,49 @@ function FoodTab(props: { menuItems: MenuItem[]; foodEntries: FoodEntry[]; appDa
     await props.refresh();
     props.showToast(manual.savePreset ? "食事を記録し、マイメニューに保存しました" : "食事を記録しました");
   };
+  const openFoodEntryEdit = (entry: FoodEntry) => {
+    setEditingEntry({
+      entry,
+      draft: {
+        name: entry.name,
+        brand: entry.brand ?? "",
+        meal_type: entry.meal_type,
+        calories: String(entry.calories),
+        protein_g: String(entry.protein_g),
+        fat_g: String(entry.fat_g),
+        carbs_g: String(entry.carbs_g),
+        salt_g: entry.salt_g === undefined ? "" : String(entry.salt_g),
+      },
+    });
+  };
+  const saveFoodEntryEdit = async () => {
+    if (!editingEntry) return;
+    const { entry, draft } = editingEntry;
+    const calories = draftNumber(draft.calories);
+    const protein = draftNumber(draft.protein_g);
+    const fat = draftNumber(draft.fat_g);
+    const carbs = draftNumber(draft.carbs_g);
+    const salt = draft.salt_g.trim() === "" ? undefined : draftNumber(draft.salt_g).value;
+    const unknown = [calories, protein, fat, carbs].some((item) => item.unknown);
+    await db.food_entries.update(entry.id, {
+      meal_type: draft.meal_type,
+      name: draft.name.trim() || entry.name || `${mealLabels[draft.meal_type]}の食事ログ`,
+      brand: draft.brand.trim() || undefined,
+      calories: Math.round(calories.value),
+      protein_g: round1(protein.value),
+      fat_g: round1(fat.value),
+      carbs_g: round1(carbs.value),
+      salt_g: salt === undefined ? undefined : round1(salt),
+      confidence: unknown ? "low" : entry.confidence,
+      note: unique([entry.note ?? "", unknown ? "編集時に栄養素一部不明" : ""]).join(" / ") || undefined,
+      updated_at: nowIso(),
+    });
+    setEditingEntry(undefined);
+    await props.refresh();
+    props.showToast("食事ログを修正しました");
+  };
+  const todayFoodEntries = props.foodEntries.filter((entry) => entry.app_date === props.appDate);
+  const foodLogTitle = `${formatJapaneseDate(props.appDate)}の食事ログ`;
 
   return (
     <div className="scroll-mt-24 space-y-4" ref={foodTopRef}>
@@ -1567,13 +1644,14 @@ function FoodTab(props: { menuItems: MenuItem[]; foodEntries: FoodEntry[]; appDa
       )}
 
       <section className="compact-card divide-y divide-line scroll-mt-24" ref={todayLogRef}>
-        <ListHeader title="今日の食事ログ" value={`${props.foodEntries.filter((entry) => entry.app_date === props.appDate).length}件`} />
-        {props.foodEntries.filter((entry) => entry.app_date === props.appDate).map((entry) => (
+        <ListHeader title={foodLogTitle} value={`${todayFoodEntries.length}件`} />
+        {todayFoodEntries.map((entry) => (
           <FoodLogRow
             entry={entry}
             key={entry.id}
             displayName={formatFoodEntryName(entry, props.menuItems)}
             showSource
+            onEdit={() => openFoodEntryEdit(entry)}
             onDelete={async () => {
               await db.food_entries.delete(entry.id);
               await props.refresh();
@@ -1606,6 +1684,53 @@ function FoodTab(props: { menuItems: MenuItem[]; foodEntries: FoodEntry[]; appDa
               <button className="primary-button" onClick={saveSelected}><Check size={17} />記録</button>
             </div>
             <button className="secondary-button mt-2 w-full" onClick={cloneSelectedToManual}><Pencil size={17} />編集して個人メニュー化</button>
+          </div>
+        </div>
+      )}
+
+      {editingEntry && (
+        <div className="fixed inset-0 z-40 flex items-end bg-ink/30 px-4 pb-4" onClick={() => setEditingEntry(undefined)}>
+          <div className="compact-card w-full p-4" onClick={(event) => event.stopPropagation()}>
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-lg font-bold">食事ログを修正</p>
+                <p className="mt-1 text-xs text-moss">{formatJapaneseDate(editingEntry.entry.app_date)}の記録</p>
+              </div>
+              <button className="icon-button h-9 w-9" aria-label="閉じる" onClick={() => setEditingEntry(undefined)}>×</button>
+            </div>
+            <div className="mt-4 grid grid-cols-2 gap-2">
+              <input
+                className="col-span-2"
+                value={editingEntry.draft.name}
+                onChange={(event) => setEditingEntry({ ...editingEntry, draft: { ...editingEntry.draft, name: event.target.value } })}
+                placeholder="名前"
+              />
+              <input
+                value={editingEntry.draft.brand}
+                onChange={(event) => setEditingEntry({ ...editingEntry, draft: { ...editingEntry.draft, brand: event.target.value } })}
+                placeholder="ブランド"
+              />
+              <select
+                value={editingEntry.draft.meal_type}
+                onChange={(event) => setEditingEntry({ ...editingEntry, draft: { ...editingEntry.draft, meal_type: event.target.value as MealType } })}
+              >
+                {Object.entries(mealLabels).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
+              </select>
+              <PartialNumberInput label="kcal" value={editingEntry.draft.calories} onChange={(value) => setEditingEntry({ ...editingEntry, draft: { ...editingEntry.draft, calories: value } })} />
+              <PartialNumberInput label="P" value={editingEntry.draft.protein_g} step={0.1} onChange={(value) => setEditingEntry({ ...editingEntry, draft: { ...editingEntry.draft, protein_g: value } })} />
+              <PartialNumberInput label="F" value={editingEntry.draft.fat_g} step={0.1} onChange={(value) => setEditingEntry({ ...editingEntry, draft: { ...editingEntry.draft, fat_g: value } })} />
+              <PartialNumberInput label="C" value={editingEntry.draft.carbs_g} step={0.1} onChange={(value) => setEditingEntry({ ...editingEntry, draft: { ...editingEntry.draft, carbs_g: value } })} />
+              <input
+                className="col-span-2"
+                value={editingEntry.draft.salt_g}
+                onChange={(event) => setEditingEntry({ ...editingEntry, draft: { ...editingEntry.draft, salt_g: event.target.value } })}
+                placeholder="塩分 optional"
+              />
+            </div>
+            <div className="mt-4 grid grid-cols-2 gap-2">
+              <button className="secondary-button justify-center" onClick={() => setEditingEntry(undefined)}>閉じる</button>
+              <button className="primary-button" onClick={saveFoodEntryEdit}><Save size={17} />保存</button>
+            </div>
           </div>
         </div>
       )}
@@ -1647,6 +1772,13 @@ function WorkoutTab(props: {
   const activeExercises = props.workoutExercises
     .filter((exercise) => exercise.session_id === sessionId)
     .sort((a, b) => a.order - b.order);
+  const dateSessions = props.workoutSessions.filter((session) => session.app_date === props.appDate);
+
+  useEffect(() => {
+    setSessionId(undefined);
+    setFocusedExerciseId(undefined);
+    setSessionScrollKey(0);
+  }, [props.appDate]);
 
   useEffect(() => {
     if (!focusedExerciseId) return;
@@ -1997,6 +2129,26 @@ function WorkoutTab(props: {
         ))}
       </div>
 
+      {dateSessions.length > 0 && (
+        <section className="compact-card divide-y divide-line">
+          <ListHeader title={`${formatJapaneseDate(props.appDate)}のワークアウト`} value={`${dateSessions.length}件`} />
+          {dateSessions.map((session) => (
+            <div className="flex items-center justify-between gap-3 px-4 py-3" key={session.id}>
+              <button className="min-w-0 flex-1 text-left" onClick={() => {
+                setSessionId(session.id);
+                setFocusedExerciseId(undefined);
+                setSessionScrollKey((key) => key + 1);
+              }}>
+                <p className="truncate text-sm font-semibold">{session.title}</p>
+                <p className="truncate text-xs text-moss">{session.body_parts.join(" / ") || "未設定"}</p>
+              </button>
+              <button className="icon-button h-8 w-8 text-clay" aria-label={`${session.title}をこの日の記録から削除`} onClick={() => deleteWorkoutSession(session)}><Trash2 size={14} /></button>
+              <ChevronRight size={17} />
+            </div>
+          ))}
+        </section>
+      )}
+
       {mode === "favorite" && (
         <section className="compact-card divide-y divide-line">
           <ListHeader title="お気に入り種目" value={`${favoriteExercises.length}件`} />
@@ -2185,6 +2337,7 @@ function RecordsTab(props: {
   workoutSets: WorkoutSet[];
   weeklyWorkoutStatus: WeeklyWorkoutStatus;
   showToast: (text: string) => void;
+  onEditRecordDate: (date: string, targetTab: EditableRecordTab) => void;
 }) {
   const [historyGrouping, setHistoryGrouping] = useState<HistoryGrouping>("day");
   const [reportMonth, setReportMonth] = useState(() => monthKey(props.appDate));
@@ -2385,6 +2538,14 @@ function RecordsTab(props: {
               <button className="primary-button mt-3 w-full" onClick={generateHistoryDayReport}>
                 <FileText size={17} />この日の日別レポートを生成
               </button>
+              <div className="mt-2 grid grid-cols-2 gap-2">
+                <button className="secondary-button justify-center" onClick={() => props.onEditRecordDate(selectedReportDate, "food")}>
+                  <Utensils size={16} />食事を修正
+                </button>
+                <button className="secondary-button justify-center" onClick={() => props.onEditRecordDate(selectedReportDate, "workout")}>
+                  <Dumbbell size={16} />筋トレを修正
+                </button>
+              </div>
             </>
           ) : (
             <p className="text-xs text-moss">印が付いた日を選ぶと生成ボタンが表示されます。</p>
@@ -3432,7 +3593,7 @@ function ExerciseAddModal({ draft, setDraft, onClose, onSave }: {
   );
 }
 
-function FoodLogRow({ entry, displayName, showSource = false, onDelete }: { entry: FoodEntry; displayName?: string; showSource?: boolean; onDelete?: () => Promise<void> }) {
+function FoodLogRow({ entry, displayName, showSource = false, onEdit, onDelete }: { entry: FoodEntry; displayName?: string; showSource?: boolean; onEdit?: () => void; onDelete?: () => Promise<void> }) {
   const pictogram = getFoodPictogram(entry);
   return (
     <div className="flex items-center justify-between gap-3 px-4 py-3">
@@ -3446,6 +3607,7 @@ function FoodLogRow({ entry, displayName, showSource = false, onDelete }: { entr
       </div>
       <div className="flex items-center gap-2">
         <p className="numeric-text text-sm font-bold">{entry.calories}</p>
+        {onEdit && <button className="icon-button h-8 w-8" aria-label="修正" onClick={onEdit}><Pencil size={14} /></button>}
         {onDelete && <button className="icon-button h-8 w-8" aria-label="削除" onClick={onDelete}><Trash2 size={14} /></button>}
       </div>
     </div>
