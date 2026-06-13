@@ -949,7 +949,11 @@ function HomeTab(props: {
     { label: "C", value: props.dayTotals.carbs, target: props.goal?.target_carbs_g ?? 0 },
   ].map((macro) => {
     const percent = macro.target > 0 ? Math.round((macro.value / macro.target) * 100) : undefined;
-    const tone = typeof percent !== "number" ? "neutral" : percent > 110 ? "over" : percent >= 80 ? "safe" : "low";
+    const tone = typeof percent !== "number"
+      ? "neutral"
+      : macro.label === "P"
+        ? percent < 80 ? "over" : "safe"
+        : percent > 110 ? "over" : percent >= 80 ? "safe" : "low";
     return { ...macro, percent, tone };
   });
   const saveCheckIn = async () => {
