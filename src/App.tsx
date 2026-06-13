@@ -166,6 +166,8 @@ const genericCategories: Record<string, string[]> = {
   サプリ: ["ビタミン", "ミネラル", "クレアチン", "EAA", "BCAA", "グルタミン", "シトルリン", "プレワークアウト", "その他"],
   その他: ["不明"],
 };
+const generalFoodCategoryLabels = [...Object.keys(genericCategories).filter((category) => category !== "チェーン店"), "ざっくり"];
+const chainBrandNames = new Set(Object.values(chainCategories).flat());
 
 const emptyManual: ManualFoodDraft = {
   name: "",
@@ -1266,6 +1268,7 @@ function FoodTab(props: { menuItems: MenuItem[]; foodEntries: FoodEntry[]; appDa
   const foodTopRef = useRef<HTMLDivElement | null>(null);
   const chainSectionRef = useRef<HTMLElement | null>(null);
   const chainListRef = useRef<HTMLDivElement | null>(null);
+  const genericSectionRef = useRef<HTMLElement | null>(null);
   const foodResultsRef = useRef<HTMLElement | null>(null);
   const todayLogRef = useRef<HTMLElement | null>(null);
   const [mode, setMode] = useState<FoodMode>("search");
@@ -1293,6 +1296,9 @@ function FoodTab(props: { menuItems: MenuItem[]; foodEntries: FoodEntry[]; appDa
   const scrollToChainList = () => {
     window.setTimeout(() => chainListRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
   };
+  const scrollToGenericSection = () => {
+    window.setTimeout(() => genericSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
+  };
   useEffect(() => {
     if (props.focus !== "todayLog") return;
     const timer = window.setTimeout(() => {
@@ -1310,6 +1316,10 @@ function FoodTab(props: { menuItems: MenuItem[]; foodEntries: FoodEntry[]; appDa
     if (nextMode !== "search") setQuery("");
     if (nextMode === "chain") {
       scrollToChainSection();
+      return;
+    }
+    if (nextMode === "category") {
+      scrollToGenericSection();
       return;
     }
     if (nextMode === "search" && query.trim()) {
@@ -1339,7 +1349,11 @@ function FoodTab(props: { menuItems: MenuItem[]; foodEntries: FoodEntry[]; appDa
         if (mode === "quick") return item.data_source === "quick_estimate";
         if (mode === "personal") return item.is_user_created;
         if (mode === "chain") return item.brand === brand;
-        if (mode === "category") return item.category === genericCategory || item.tags.some((tag) => genericCategories[genericCategory]?.includes(tag));
+        if (mode === "category") {
+          if (genericCategory === "ざっくり") return item.data_source === "quick_estimate";
+          if (chainBrandNames.has(item.brand ?? "")) return false;
+          return item.category === genericCategory || item.tags.some((tag) => genericCategories[genericCategory]?.includes(tag));
+        }
         return true;
       });
     const sorted = dedupeMenuItemsBySource(base);
@@ -1456,7 +1470,7 @@ function FoodTab(props: { menuItems: MenuItem[]; foodEntries: FoodEntry[]; appDa
         </form>
         {!isGlobalSearch && (
           <div className="grid grid-cols-3 gap-2">
-            {(["favorite", "personal", "manual", "chain", "category", "quick"] as FoodMode[]).map((item) => (
+            {(["favorite", "personal", "manual", "chain", "category"] as FoodMode[]).map((item) => (
               <button key={item} className={`mode-button ${mode === item ? "mode-button-active" : ""}`} onClick={() => selectMode(item)}>
                 {foodModeLabel(item)}
               </button>
@@ -1494,9 +1508,10 @@ function FoodTab(props: { menuItems: MenuItem[]; foodEntries: FoodEntry[]; appDa
       )}
 
       {mode === "category" && (
-        <section className="compact-card p-3">
+        <section className="compact-card scroll-mt-24 p-3" ref={genericSectionRef}>
+          <p className="mb-2 text-xs font-semibold text-moss">ジャンル</p>
           <div className="grid grid-cols-2 gap-2">
-            {Object.keys(genericCategories).map((item) => (
+            {generalFoodCategoryLabels.map((item) => (
               <button className={`tap-tile ${genericCategory === item ? "tap-tile-active" : ""}`} key={item} onClick={() => { setGenericCategory(item); scrollToFoodResults(); }}>{item}</button>
             ))}
           </div>
@@ -1517,7 +1532,7 @@ function FoodTab(props: { menuItems: MenuItem[]; foodEntries: FoodEntry[]; appDa
             </section>
           )}
           <section className="compact-card divide-y divide-line overflow-hidden scroll-mt-24" ref={foodResultsRef}>
-            <ListHeader title={isGlobalSearch ? "検索結果" : foodModeLabel(mode)} value={`${results.length}件`} />
+            <ListHeader title={isGlobalSearch ? "検索結果" : mode === "category" ? genericCategory : foodModeLabel(mode)} value={`${results.length}件`} />
             {results.map((item) => <FoodItemRow key={item.id} item={item} onPick={selectFoodItem} onClone={setManualFromItem(setManual, setMode)} refresh={props.refresh} />)}
             {results.length === 0 && <EmptyLine text="見つかりません" />}
           </section>
@@ -4555,8 +4570,8 @@ function foodModeLabel(mode: FoodMode) {
     search: "検索",
     favorite: "お気に入り",
     chain: "チェーン",
-    category: "カテゴリ",
-    quick: "一般",
+    category: "一般",
+    quick: "ざっくり",
     manual: "マニュアル",
     personal: "マイメニュー",
   }[mode];
