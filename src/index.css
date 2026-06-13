@@ -112,6 +112,12 @@ button {
     linear-gradient(180deg, #fbf7ee 0%, #f5f0e7 100%);
 }
 
+.home-shell-cheat {
+  background:
+    linear-gradient(135deg, rgba(255, 114, 94, 0.16), rgba(255, 209, 102, 0.12) 28%, rgba(89, 201, 165, 0.13) 56%, rgba(121, 144, 255, 0.14) 100%),
+    linear-gradient(180deg, #fff8ee 0%, #f6f1e8 100%);
+}
+
 .home-header {
   border-bottom: 1px solid rgba(255, 255, 255, 0.36);
   background: rgba(251, 247, 238, 0.5);
@@ -147,6 +153,36 @@ button {
   transition: transform 180ms ease, opacity 180ms ease;
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
+}
+
+.home-header-cheat {
+  display: inline-flex;
+  width: 2.75rem;
+  height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.62);
+  background: rgba(255, 255, 255, 0.58);
+  color: #526a57;
+  font-size: 1.05rem;
+  font-weight: 900;
+  line-height: 1;
+  box-shadow: 0 12px 30px rgba(40, 48, 36, 0.07);
+  transition: transform 180ms ease, opacity 180ms ease, color 180ms ease;
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+}
+
+.home-header-cheat:active {
+  transform: scale(0.96);
+}
+
+.home-header-cheat-active {
+  border-color: rgba(255, 255, 255, 0.82);
+  background: linear-gradient(135deg, #ff6b6b 0%, #ffd166 30%, #4ecdc4 62%, #7b61ff 100%);
+  color: #fff;
+  text-shadow: 0 1px 8px rgba(36, 40, 32, 0.28);
 }
 
 .home-header-reload:active {
@@ -209,6 +245,46 @@ button {
   background:
     linear-gradient(180deg, rgba(218, 154, 61, 0.14) 0%, rgba(255, 255, 255, 0.66) 46%, rgba(255, 255, 255, 0.54) 100%),
     rgba(255, 255, 255, 0.58);
+}
+
+.home-hero-cheat {
+  position: relative;
+  overflow: hidden;
+  border-color: rgba(255, 255, 255, 0.74);
+  background:
+    linear-gradient(135deg, rgba(255, 107, 107, 0.34) 0%, rgba(255, 209, 102, 0.32) 28%, rgba(78, 205, 196, 0.3) 58%, rgba(123, 97, 255, 0.28) 100%),
+    rgba(255, 255, 255, 0.62);
+}
+
+.home-hero-cheat::before {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.32), transparent 24%, rgba(255, 255, 255, 0.22) 52%, transparent 76%);
+  content: "";
+}
+
+.home-hero-cheat > * {
+  position: relative;
+  z-index: 1;
+}
+
+.home-cheat-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.48);
+  padding: 0.34rem 0.65rem;
+  color: #242820;
+  font-size: 0.72rem;
+  font-weight: 900;
+  box-shadow: 0 8px 18px rgba(40, 48, 36, 0.08);
+}
+
+.home-progress-cheat {
+  background: linear-gradient(90deg, #ff6b6b 0%, #ffd166 24%, #5ad66f 48%, #4ecdc4 68%, #7b61ff 100%);
 }
 
 .home-macro-row {
@@ -361,6 +437,7 @@ button {
   .app-status-pill,
   .sticky-panel,
   .home-status-pill,
+  .home-header-cheat,
   .home-header-reload,
   .home-checkin-edit,
   .home-glass-card,

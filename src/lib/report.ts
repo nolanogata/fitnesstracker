@@ -18,10 +18,12 @@ export function generateMarkdownReport(input: {
   periodEnd: string;
   generatedAt: string;
   currentAppDate: string;
+  cheatDayDates?: string[];
   workoutGrouping?: WorkoutGrouping;
   question: string;
 }) {
   const dates = dateRange(input.periodStart, input.periodEnd);
+  const cheatDayDates = dates.filter((date) => input.cheatDayDates?.includes(date));
   const foodDays = new Set(input.foodEntries.map((entry) => entry.app_date));
   const missingDays = dates.filter((date) => !foodDays.has(date));
   const totals = input.foodEntries.reduce(
@@ -94,6 +96,9 @@ export function generateMarkdownReport(input: {
   const estimatedFoodRequestLine = estimatedFoodEntries.length
     ? "- 食事ログに推定値が含まれています。可能ならAI側で公式サイト・商品ページ・信頼できる栄養データから正しい kcal / P / F / C の取得を試み、推定値との差分が大きいものを明記してください。"
     : "";
+  const cheatDayRequestLine = cheatDayDates.length
+    ? "- 対象範囲にチートデーがあります。該当日は通常の目標超過として厳しく評価しすぎず、週/月の平均や翌日以降の調整方針として扱ってください。"
+    : "";
 
   return `# ゴールトラッカー AI相談レポート
 
@@ -103,16 +108,19 @@ ${isDaily ? `対象日: ${input.periodStart}` : `期間: ${input.periodStart} - 
 
 - 生成日時: ${formatReportDateTime(input.generatedAt)}
 - 対象範囲の状態: ${isCurrentDailySnapshot ? "当日途中の記録である可能性があります" : "対象期間終了後または過去期間の記録です"}
+- チートデー: ${cheatDayDates.length ? `あり (${cheatDayDates.join(", ")})` : "なし"}
 ${isCurrentDailySnapshot ? "- 注意: このレポートは1日の途中経過として扱い、最終的な摂取量・運動量とは限らない前提で判断してください。" : ""}
 
 ## AIへの依頼
 
 - このレポート、これまでの会話、AI側で把握している追加情報を踏まえて、現在の目標に対する適正な目標カロリーとP/F/Cを算定してください。
 - 対象範囲の状態が当日途中の場合は、途中経過であることを明記し、その時点までの傾向として評価してください。
+- チートデーがある場合は、該当日をチートデーとして明記したうえで、通常日と分けて評価してください。
 - 体重、体脂肪率、活動量、トレーニング頻度、生活リズムなどについて、AI側にこのレポートより詳細または新しい情報がある場合は、その情報を優先して判断してください。
 - AI側で判断した適正値が、現在トラッカーに設定されている kcal / P / F / C と違う場合は、トラッカー側の値を編集する前提で修正後の数値を明示してください。
 - 体重・体脂肪率・運動強度・フェーズ・週の運動目標など、PFC以外にもトラッカー側で直した方がよい項目があれば併せて示してください。
 ${estimatedFoodRequestLine}
+${cheatDayRequestLine}
 - 修正が不要な場合も、その理由と次に見るべき記録指標を簡潔に教えてください。
 - トラッカー側で変更する値がある場合は、「トラッカー修正案」として、そのまま入力しやすい形でまとめてください。
 
@@ -145,6 +153,7 @@ ${estimatedFoodRequestLine}
 - 外食・チェーン系ログ: ${eatingOut}件
 - スイーツ系ログ: ${sweets}件
 - 飲酒・飲み会ログ: ${drinking}件
+- チートデー: ${cheatDayDates.length ? `${cheatDayDates.length}日 (${cheatDayDates.join(", ")})` : "なし"}
 - 推定値を含む食事ログ: ${estimatedFoodEntries.length}件${estimatedFoodEntries.length ? "（該当ログは食事詳細に明記）" : ""}
 - 推定ログ比率: ${
     Math.round((input.foodEntries.filter((entry) => entry.confidence !== "high").length / Math.max(input.foodEntries.length, 1)) * 100)
