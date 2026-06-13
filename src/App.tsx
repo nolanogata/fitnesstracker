@@ -204,6 +204,17 @@ const staleAppPromptDelayMs = 6 * 60 * 60 * 1000;
 const weightStepOptions = [1, 2.5, 5, 10];
 const appUpdates: AppUpdate[] = [
   {
+    id: "2026-06-14-workout-flow-labels-nav",
+    title: "ワークアウト操作と下部ナビを改善",
+    date: "2026-06-14",
+    items: [
+      "ワークアウト編集の「一括反映」を、段階セットでセット一覧を置き換える操作だと分かる文言に変更しました。",
+      "種目内の「追加」は「セットを追加」に変更し、ワークアウトへ種目を追加する操作と区別しやすくしました。",
+      "種目追加後の「次の種目を選ぶ」から、種目選択エリアへ自然に戻るようにしました。",
+      "小さい端末でスクロール中に下部ナビが浮いて見える問題を抑えるため、画面下にドックする見た目へ調整しました。",
+    ],
+  },
+  {
     id: "2026-06-14-small-screen-readable-workout",
     title: "小さい画面でのワークアウト表示を改善",
     date: "2026-06-14",
@@ -2084,7 +2095,9 @@ function WorkoutTab(props: {
 
   const scrollToWorkoutTop = () => {
     setFocusedExerciseId(undefined);
-    workoutTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    setMode("search");
+    setFilter("");
+    window.setTimeout(() => workoutTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 60);
   };
 
   const startFromTemplate = async (template: WorkoutTemplate) => {
@@ -2348,6 +2361,10 @@ function WorkoutTab(props: {
           draft={exerciseDraft}
           setDraft={setExerciseDraft}
           onClose={() => setExerciseDraft(undefined)}
+          onAddAnother={() => {
+            setExerciseDraft(undefined);
+            scrollToWorkoutTop();
+          }}
           onSave={() => addPresetExercise(exerciseDraft)}
         />
       )}
@@ -3457,10 +3474,11 @@ function ExercisePresetRow({ exercise, isFavorite, onAdd, onToggleFavorite, onPi
   );
 }
 
-function ExerciseAddModal({ draft, setDraft, onClose, onSave }: {
+function ExerciseAddModal({ draft, setDraft, onClose, onAddAnother, onSave }: {
   draft: WorkoutExerciseDraft;
   setDraft: (draft: WorkoutExerciseDraft) => void;
   onClose: () => void;
+  onAddAnother: () => void;
   onSave: () => void | Promise<void>;
 }) {
   const isCardio = draft.exercise.body_part === "有酸素" || draft.exercise.equipment_type === "有酸素";
@@ -3514,7 +3532,7 @@ function ExerciseAddModal({ draft, setDraft, onClose, onSave }: {
               <p className="mt-2 text-lg font-bold text-ink">{summary}</p>
             </div>
             <div className="grid grid-cols-2 gap-2">
-              <button className="secondary-button" onClick={onClose}>次の種目を追加</button>
+              <button className="secondary-button" onClick={onAddAnother}>次の種目を選ぶ</button>
               <button className="primary-button" onClick={onClose}>終了</button>
             </div>
           </div>
@@ -3622,7 +3640,7 @@ function ExerciseAddModal({ draft, setDraft, onClose, onSave }: {
             </div>
             <div className="grid grid-cols-2 gap-2">
               <button className="secondary-button" onClick={() => setStep(isCardio ? "duration" : "sets")}>戻る</button>
-              <button className="primary-button" disabled={isSaving} onClick={handleSave}><Plus size={17} />{isSaving ? "追加中" : "ワークアウト追加"}</button>
+              <button className="primary-button" disabled={isSaving} onClick={handleSave}><Plus size={17} />{isSaving ? "追加中" : "この種目を記録に追加"}</button>
             </div>
           </div>
         )}
@@ -3710,7 +3728,7 @@ function WorkoutExerciseEditor({
     }
     await replaceWorkoutSetsWithScheme(exercise.id, scheme);
     await refresh();
-    setSetSchemeStatus(`${scheme.length}セットを反映しました`);
+    setSetSchemeStatus(`${scheme.length}セットに置き換えました`);
   };
   const saveCustomExercise = async () => {
     const parsedScheme = parseWorkoutSetScheme(setSchemeText, isCardio, exercise.exercise_name, bodyWeightKg);
@@ -3836,8 +3854,9 @@ function WorkoutExerciseEditor({
             placeholder={isCardio ? "例: 25分 または 25〜30分" : "例: 47×10 / 54×10 / 61×10 / 68×10 または 20×10×3"}
           />
         </label>
+        <p className="mt-2 text-xs leading-relaxed text-moss">入力した段階セットで、上のセット一覧をまとめて置き換えます。</p>
         <div className="mt-2 grid grid-cols-2 gap-2">
-          <button className="secondary-button" onClick={applySetScheme}><Check size={16} />一括反映</button>
+          <button className="secondary-button" onClick={applySetScheme}><Check size={16} />段階セットを反映</button>
           <button className="secondary-button" onClick={saveCustomExercise}><Save size={16} />カスタム種目保存</button>
         </div>
         {setSchemeStatus && <p className="mt-2 text-xs font-semibold text-moss">{setSchemeStatus}</p>}
@@ -3858,13 +3877,13 @@ function WorkoutExerciseEditor({
             updated_at: nowIso(),
           });
           await refresh();
-        }}><Plus size={16} />追加</button>
+        }}><Plus size={16} />セットを追加</button>
         <button className="secondary-button" onClick={async () => {
           const previous = sets.at(-1);
           if (!previous) return;
           await db.workout_sets.put({ ...previous, id: makeId("set"), set_order: sets.length + 1, created_at: nowIso(), updated_at: nowIso() });
           await refresh();
-        }}>複製</button>
+        }}>直前セットを複製</button>
         {onPickTemplate && (
           <button className="secondary-button col-span-2" onClick={() => onPickTemplate({
             label: exercise.exercise_name,
