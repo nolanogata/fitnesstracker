@@ -140,13 +140,13 @@ const chainCategories: Record<string, string[]> = {
 
 const genericCategories: Record<string, string[]> = {
   "ごはん・丼": ["白米", "おにぎり", "チャーハン", "オムライス", "親子丼", "カツ丼", "カレー", "寿司"],
-  麺類: ["ラーメン", "つけ麺", "油そば", "タンメン", "担々麺", "トッピング", "うどん", "そば", "パスタ", "焼きそば"],
-  パン: ["サンドイッチ", "トースト", "食パン", "菓子パン"],
+  麺類: ["ラーメン", "つけ麺", "油そば", "タンメン", "担々麺", "トッピング", "うどん", "そば", "パスタ", "スパゲティ", "焼きそば"],
+  パン: ["サンドイッチ", "トースト", "食パン", "菓子パン", "惣菜パン", "食事パン", "ハード系", "ピザ"],
   "肉・魚": ["鶏", "豚", "牛豚", "鮭", "サバ", "刺身", "卵"],
   "サラダ・野菜": ["サラダ", "野菜", "海藻"],
-  "おかず・惣菜": ["納豆", "豆腐", "唐揚げ", "副菜", "揚げ物", "惣菜"],
+  "おかず・惣菜": ["納豆", "豆腐", "唐揚げ", "副菜", "揚げ物", "惣菜", "洋食"],
   スープ: ["味噌汁", "スープ", "豚汁", "汁物"],
-  スイーツ: ["ケーキ", "アイス", "和菓子", "焼き菓子", "せんべい", "米菓", "チョコ", "プリン", "果物", "ヨーグルト"],
+  スイーツ: ["ケーキ", "アイス", "和菓子", "焼き菓子", "スナック", "せんべい", "米菓", "チョコ", "グミ", "プリン", "果物", "ヨーグルト"],
   ドリンク: ["コーヒー", "カフェラテ", "牛乳", "豆乳", "ジュース", "炭酸", "アルコール"],
   コンビニ: ["おにぎり", "弁当", "サンドイッチ", "サラダチキン", "カップ麺", "スイーツ"],
   チェーン店: ["牛丼", "うどん", "定食", "バーガー"],
@@ -181,12 +181,22 @@ const staleAppPromptDelayMs = 6 * 60 * 60 * 1000;
 const weightStepOptions = [1, 2.5, 5, 10];
 const appUpdates: AppUpdate[] = [
   {
+    id: "2026-06-13-yoshoku-snack-foods",
+    title: "洋食とお菓子メニューを追加",
+    date: "2026-06-13",
+    items: [
+      "一般的なスパゲティ、ピザ、シチュー、グラタン、フライなどの洋食メニューを追加しました。",
+      "ポテトチップス、クッキー、グミ、ナッツ、米菓などの汎用お菓子を追加しました。",
+      "カルビー、グリコ、明治、ブルボン、森永製菓の主要お菓子は公式栄養情報をもとに登録しました。",
+    ],
+  },
+  {
     id: "2026-06-13-cheat-day-mode",
     title: "チートデーモードを追加",
     date: "2026-06-13",
     items: [
       "Home上部の！ボタンから、その日をチートデーとして切り替えられるようにしました。",
-      "チートデー中はカロリーカードを虹色にし、カロリー差分を???表示にして、今日がチートデーであることをHomeに明記します。",
+      "チートデー中はカロリーカードを虹色にし、カロリー差分を横棒表示にして、今日がチートデーであることをHomeに明記します。",
       "AI相談レポートにも対象範囲内のチートデーを明記するようにしました。",
     ],
   },
@@ -924,7 +934,7 @@ function HomeTab(props: {
   const weightDelta = typeof previousWeight === "number" ? round1(weight - previousWeight) : undefined;
   const calorieDelta = props.goal?.target_calories ? props.dayTotals.calories - props.goal.target_calories : undefined;
   const calorieDeltaText = typeof calorieDelta === "number" ? `${calorieDelta > 0 ? "+" : ""}${Math.round(calorieDelta)}` : "-";
-  const calorieDisplayText = props.isCheatDay ? "???" : calorieDeltaText;
+  const calorieDisplayText = props.isCheatDay ? "-" : calorieDeltaText;
   const calorieMoodClass = props.isCheatDay ? "cheat" : typeof calorieDelta === "number" ? (calorieDelta > 0 ? "over" : Math.abs(calorieDelta) <= 100 ? "on-track" : "left") : "neutral";
   const calorieMoodLabel = props.isCheatDay ? "cheat day" : typeof calorieDelta === "number" ? (calorieDelta > 0 ? "over" : Math.abs(calorieDelta) <= 100 ? "on track" : "left") : calorieState.label;
   const foodSummary = `${props.todayEntries.length}件 / ${props.dayTotals.calories} kcal`;
