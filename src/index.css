@@ -5,6 +5,7 @@
 :root {
   color: #242820;
   background: #f7f4ec;
+  --rounded-number-font: ui-rounded, "SF Pro Rounded", "SF Pro Display", -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Hiragino Sans", "Yu Gothic", system-ui, sans-serif;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -43,6 +44,14 @@ textarea {
 
 button {
   -webkit-tap-highlight-color: transparent;
+}
+
+.numeric-text,
+:where(input[type="number"], input[inputmode="decimal"], .app-status-pill, .home-status-pill, .home-macro-grams, .home-macro-percent, .mini-chip) {
+  font-family: var(--rounded-number-font);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1, "kern" 1;
+  letter-spacing: 0;
 }
 
 .app-shell {

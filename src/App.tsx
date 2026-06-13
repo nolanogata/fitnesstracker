@@ -1105,12 +1105,12 @@ function HomeTab(props: {
           {props.isCheatDay && <span className="home-cheat-badge">チートデー</span>}
         </div>
         <div className="mt-6">
-          <p className={`text-[4.25rem] font-semibold leading-none tracking-normal ${calorieDelta && calorieDelta > 0 ? "text-clay" : "text-ink"}`}>
+          <p className={`numeric-text text-[4.25rem] font-semibold leading-none tracking-normal ${calorieDelta && calorieDelta > 0 ? "text-clay" : "text-ink"}`}>
             {calorieDisplayText}<span className="ml-2 text-xl font-semibold">kcal</span>
           </p>
           <p className="mt-2 text-sm font-semibold text-moss">{calorieMoodLabel}</p>
           {props.isCheatDay && <p className="mt-1 text-sm font-bold text-ink">今日はチートデーです。目標差分は参考値として見ます。</p>}
-          <p className="mt-1 text-sm text-moss">摂取 {props.dayTotals.calories} / 目標 {props.goal?.target_calories ?? "-"} kcal</p>
+          <p className="numeric-text mt-1 text-sm text-moss">摂取 {props.dayTotals.calories} / 目標 {props.goal?.target_calories ?? "-"} kcal</p>
           <div className="mt-6 h-2 overflow-hidden rounded-full bg-white/55">
             <div className={`h-full rounded-full ${props.isCheatDay ? "home-progress-cheat" : calorieDelta && calorieDelta > 0 ? "bg-clay" : "bg-moss"}`} style={{ width: `${caloriePercent}%` }} />
           </div>
@@ -1141,11 +1141,11 @@ function HomeTab(props: {
         <div className="grid grid-cols-2 items-end gap-3">
           <div>
             <p className="text-sm font-bold">今日のチェックイン</p>
-            <p className="mt-6 text-[2.6rem] font-semibold leading-none tracking-normal">{round1(weight)}<span className="ml-1 text-base font-semibold">kg</span></p>
-            <p className="mt-2 text-xs text-moss">7日平均 {average7 ? `${average7}kg` : "-"}{typeof weightDelta === "number" ? ` / 前日比 ${weightDelta > 0 ? "+" : ""}${weightDelta}kg` : ""}</p>
+            <p className="numeric-text mt-6 text-[2.6rem] font-semibold leading-none tracking-normal">{round1(weight)}<span className="ml-1 text-base font-semibold">kg</span></p>
+            <p className="numeric-text mt-2 text-xs text-moss">7日平均 {average7 ? `${average7}kg` : "-"}{typeof weightDelta === "number" ? ` / 前日比 ${weightDelta > 0 ? "+" : ""}${weightDelta}kg` : ""}</p>
           </div>
           <div className="text-right">
-            <p className="text-[2.15rem] font-semibold leading-none tracking-normal">{round1(bodyFat)}<span className="ml-1 text-sm font-semibold">%</span></p>
+            <p className="numeric-text text-[2.15rem] font-semibold leading-none tracking-normal">{round1(bodyFat)}<span className="ml-1 text-sm font-semibold">%</span></p>
             <p className="mt-2 text-xs text-moss">体脂肪率</p>
           </div>
         </div>
@@ -1158,11 +1158,11 @@ function HomeTab(props: {
             <div className="mt-5 space-y-4">
               <div className="flex items-center justify-between gap-3">
                 <span className="text-sm text-moss">食事</span>
-                <span className="text-right text-sm font-semibold">{foodSummary}</span>
+                <span className="numeric-text text-right text-sm font-semibold">{foodSummary}</span>
               </div>
               <div className="flex items-center justify-between gap-3">
                 <span className="text-sm text-moss">筋トレ</span>
-                <span className="text-right text-sm font-semibold">{workoutSummary}</span>
+                <span className="numeric-text text-right text-sm font-semibold">{workoutSummary}</span>
               </div>
             </div>
           </button>
@@ -1586,7 +1586,7 @@ function FoodTab(props: { menuItems: MenuItem[]; foodEntries: FoodEntry[]; appDa
         <div className="fixed inset-0 z-40 flex items-end bg-ink/30 px-4 pb-4" onClick={() => setSelected(undefined)}>
           <div className="compact-card w-full p-4" onClick={(event) => event.stopPropagation()}>
             <p className="text-lg font-bold">{formatMenuItemName(selected)}</p>
-            <p className="text-sm text-moss">{selected.brand ?? selected.category} · {Math.round(selected.calories * multiplier)} kcal</p>
+            <p className="numeric-text text-sm text-moss">{selected.brand ?? selected.category} · {Math.round(selected.calories * multiplier)} kcal</p>
             <div className="mt-2">
               <SourceBadge item={selected} source={selected.data_source} confidence={selected.confidence} />
             </div>
@@ -2929,7 +2929,7 @@ function FoodItemRow({ item, onPick, onClone, refresh }: { item: MenuItem; onPic
       <Pictogram {...pictogram} />
       <button className="min-w-0 flex-1 text-left" onClick={() => onPick(item)}>
         <p className="truncate text-sm font-semibold">{formatMenuItemName(item)}</p>
-        <p className="truncate text-xs text-moss">{item.brand ?? item.category} · {item.calories}kcal · P{item.protein_g} F{item.fat_g} C{item.carbs_g}</p>
+        <p className="numeric-text truncate text-xs text-moss">{item.brand ?? item.category} · {item.calories}kcal · P{item.protein_g} F{item.fat_g} C{item.carbs_g}</p>
         <div className="mt-1">
           <SourceBadge item={item} source={item.data_source} confidence={item.confidence} />
         </div>
@@ -3440,12 +3440,12 @@ function FoodLogRow({ entry, displayName, showSource = false, onDelete }: { entr
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-semibold">{displayName ?? entry.name}</p>
         <div className="mt-1 flex flex-wrap items-center gap-1.5">
-          <span className="text-xs text-moss">{mealLabels[entry.meal_type]} · P{entry.protein_g} F{entry.fat_g} C{entry.carbs_g}</span>
+          <span className="numeric-text text-xs text-moss">{mealLabels[entry.meal_type]} · P{entry.protein_g} F{entry.fat_g} C{entry.carbs_g}</span>
           {showSource && <SourceBadge source={entry.entry_source} confidence={entry.confidence} />}
         </div>
       </div>
       <div className="flex items-center gap-2">
-        <p className="text-sm font-bold">{entry.calories}</p>
+        <p className="numeric-text text-sm font-bold">{entry.calories}</p>
         {onDelete && <button className="icon-button h-8 w-8" aria-label="削除" onClick={onDelete}><Trash2 size={14} /></button>}
       </div>
     </div>
@@ -3596,7 +3596,7 @@ function WorkoutExerciseEditor({
                   });
                   await refresh();
                 }} />
-                <p className="text-right text-xs font-bold text-moss">{set.active_calories ?? estimateActiveCalories(exercise.exercise_name, set.duration_min ?? 20, bodyWeightKg)} kcal</p>
+                <p className="numeric-text text-right text-xs font-bold text-moss">{set.active_calories ?? estimateActiveCalories(exercise.exercise_name, set.duration_min ?? 20, bodyWeightKg)} kcal</p>
               </div>
             ) : (
               <div className="space-y-3">
@@ -3703,7 +3703,7 @@ function WizardNumberControl({ label, value, suffix, step, min, max, onChange }:
     <div>
       <div className="mb-1.5 flex items-center justify-between gap-2">
         <p className="text-xs font-bold text-moss">{label}</p>
-        <p className="rounded-md bg-rice px-2 py-1 text-sm font-bold text-ink">{formatControlValue(normalized)}{suffix}</p>
+        <p className="numeric-text rounded-md bg-rice px-2 py-1 text-sm font-bold text-ink">{formatControlValue(normalized)}{suffix}</p>
       </div>
       <div className="grid grid-cols-[36px_1fr_74px_36px] items-center gap-2">
         <button className="icon-button h-9 w-9 bg-surface" onClick={() => commit(normalized - step)} aria-label={`${label}を減らす`}><Minus size={14} /></button>
@@ -3751,7 +3751,7 @@ function TapSliderControl({ label, value, suffix, step, min, max, onChange }: {
     <div>
       <div className="mb-1.5 flex items-center justify-between gap-2">
         <p className="text-xs font-bold text-moss">{label}</p>
-        <p className="rounded-md bg-rice px-2 py-1 text-sm font-bold text-ink">{formatControlValue(normalized)}{suffix}</p>
+        <p className="numeric-text rounded-md bg-rice px-2 py-1 text-sm font-bold text-ink">{formatControlValue(normalized)}{suffix}</p>
       </div>
       <div className="grid grid-cols-[36px_1fr_36px] items-center gap-2">
         <button className="icon-button h-9 w-9 bg-surface" onClick={() => commit(normalized - step)} aria-label={`${label}を減らす`}><Minus size={14} /></button>
@@ -3803,7 +3803,7 @@ function MetricPill({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-md border border-line bg-rice px-3 py-2">
       <p className="text-[11px] font-semibold text-moss">{label}</p>
-      <p className="mt-0.5 text-sm font-black">{value}</p>
+      <p className="numeric-text mt-0.5 text-sm font-black">{value}</p>
     </div>
   );
 }
@@ -3945,7 +3945,7 @@ function HistoryLineChart({
           <p className="text-sm font-bold">{title}</p>
           <p className="text-xs text-moss">直近30件</p>
         </div>
-        <p className="text-sm font-black">{latest ? `${latest.value}${unit}` : "-"}</p>
+        <p className="numeric-text text-sm font-black">{latest ? `${latest.value}${unit}` : "-"}</p>
       </div>
       {recent.length > 0 ? (
         <>
@@ -3957,7 +3957,7 @@ function HistoryLineChart({
               <circle key={`${point.date}-${index}`} cx={point.x} cy={point.y} r={index === points.length - 1 ? 4 : 2.5} fill={index === points.length - 1 ? "#f7f6f2" : color} stroke={color} strokeWidth="2" />
             ))}
           </svg>
-          <div className="mt-1 flex justify-between text-[11px] font-semibold text-moss">
+          <div className="numeric-text mt-1 flex justify-between text-[11px] font-semibold text-moss">
             <span>{recent[0]?.date}</span>
             <span>min {round1(min)}{unit} / max {round1(max)}{unit}</span>
             <span>{latest?.date}</span>
@@ -4066,7 +4066,7 @@ function QuickStrip({ title, items, fallback, onPick }: { title: string; items: 
             <Pictogram {...getFoodPictogram(item)} />
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-bold">{formatMenuItemName(item)}</p>
-              <p className="truncate text-xs text-moss">{item.brand ?? item.category} · {item.calories}kcal · P{item.protein_g} F{item.fat_g} C{item.carbs_g}</p>
+              <p className="numeric-text truncate text-xs text-moss">{item.brand ?? item.category} · {item.calories}kcal · P{item.protein_g} F{item.fat_g} C{item.carbs_g}</p>
             </div>
             <ChevronRight className="shrink-0 text-muted" size={16} />
           </button>
