@@ -728,7 +728,7 @@ function App() {
   }
 
   return (
-    <main className={`app-shell mx-auto min-h-screen max-w-[430px] text-ink ${tab === "home" ? `home-shell home-shell-${homeTone}` : ""}`}>
+    <main className={`app-shell app-shell-${tab} mx-auto min-h-screen max-w-[430px] text-ink ${tab === "home" ? `home-shell home-shell-${homeTone}` : ""}`}>
       <header className={`safe-top app-header sticky top-0 z-20 px-4 pb-3 ${tab === "home" ? "home-header" : ""}`}>
         <div className="flex items-center justify-between">
           <div>
@@ -3822,7 +3822,7 @@ const pictogramToneClasses: Record<PictogramTone, string> = {
 
 function Pictogram({ icon: Icon, tone = "moss" }: { icon: LucideIcon; tone?: PictogramTone }) {
   return (
-    <span className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border ${pictogramToneClasses[tone]}`} aria-hidden="true">
+    <span className={`pictogram inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border ${pictogramToneClasses[tone]}`} aria-hidden="true">
       <Icon size={18} strokeWidth={2.25} />
     </span>
   );
@@ -4047,7 +4047,7 @@ function EmptyLine({ text }: { text: string }) {
 
 function TabButton({ active, icon, label, onClick }: { active: boolean; icon: ReactNode; label: string; onClick: () => void }) {
   return (
-    <button className={`flex min-h-12 flex-col items-center justify-center gap-0.5 rounded-2xl px-2 py-1 text-[10px] font-semibold transition duration-200 ${active ? "bg-white/60 text-moss shadow-[0_8px_22px_rgba(40,48,36,0.08)]" : "text-moss/75"}`} onClick={onClick}>
+    <button className={`tab-button ${active ? "tab-button-active" : ""}`} onClick={onClick}>
       {icon}
       <span>{label}</span>
     </button>
