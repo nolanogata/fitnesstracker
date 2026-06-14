@@ -127,6 +127,43 @@ button {
   -webkit-backdrop-filter: blur(24px) saturate(140%);
 }
 
+.past-edit-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  border: 1px solid rgba(217, 122, 104, 0.34);
+  border-radius: 24px;
+  background:
+    linear-gradient(135deg, rgba(243, 221, 211, 0.84), rgba(246, 235, 221, 0.62)),
+    rgba(255, 255, 255, 0.46);
+  padding: 0.9rem 0.95rem;
+  color: #6f3f35;
+  box-shadow: 0 14px 32px rgba(104, 58, 48, 0.12), var(--glass-highlight);
+  backdrop-filter: blur(24px) saturate(145%);
+  -webkit-backdrop-filter: blur(24px) saturate(145%);
+}
+
+.past-edit-banner-button {
+  display: inline-flex;
+  min-height: 2.4rem;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(217, 122, 104, 0.28);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.64);
+  padding: 0 0.9rem;
+  color: #6f3f35;
+  font-size: 0.78rem;
+  font-weight: 900;
+  box-shadow: 0 10px 24px rgba(104, 58, 48, 0.08), var(--glass-highlight);
+  transition: transform 180ms ease;
+}
+
+.past-edit-banner-button:active {
+  transform: scale(0.97);
+}
+
 .sticky-panel {
   background:
     linear-gradient(180deg, rgba(248, 247, 243, 0.74), rgba(248, 247, 243, 0.42)),
