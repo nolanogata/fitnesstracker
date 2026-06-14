@@ -1153,6 +1153,23 @@ function App() {
   }[tab];
   const headerSubtext = tab === "home" ? "今日の記録" : formatJapaneseDate(appDate);
   const statusWeight = latestWeight?.weight_kg ?? profile?.current_weight_kg;
+  const scrollCurrentTabToTop = () => {
+    const prefersReducedMotion = typeof window.matchMedia === "function" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const behavior: ScrollBehavior = prefersReducedMotion ? "auto" : "smooth";
+    window.requestAnimationFrame(() => {
+      const scroller = document.scrollingElement ?? document.documentElement;
+      scroller.scrollTo({ top: 0, behavior });
+    });
+  };
+  const selectBottomTab = (nextTab: Tab) => {
+    setSettingsFocus(undefined);
+    setFoodFocus(undefined);
+    if (nextTab === tab) {
+      scrollCurrentTabToTop();
+      return;
+    }
+    setTab(nextTab);
+  };
 
   if (settings && !settings.onboarding_completed) {
     return <Onboarding refresh={refresh} />;
@@ -1341,11 +1358,11 @@ function App() {
 
       <nav className="safe-bottom app-bottom-nav fixed inset-x-0 bottom-0 z-30 mx-auto max-w-[430px] px-3 pt-1.5">
         <div className="grid grid-cols-5 gap-1">
-          <TabButton active={tab === "home"} icon={<Home size={19} />} label="Home" onClick={() => { setSettingsFocus(undefined); setFoodFocus(undefined); setTab("home"); }} />
-          <TabButton active={tab === "food"} icon={<Utensils size={19} />} label="Food" onClick={() => { setSettingsFocus(undefined); setFoodFocus(undefined); setTab("food"); }} />
-          <TabButton active={tab === "workout"} icon={<Dumbbell size={19} />} label="Workout" onClick={() => { setSettingsFocus(undefined); setFoodFocus(undefined); setTab("workout"); }} />
-          <TabButton active={tab === "records"} icon={<BarChart3 size={19} />} label="History" onClick={() => { setSettingsFocus(undefined); setFoodFocus(undefined); setTab("records"); }} />
-          <TabButton active={tab === "settings"} icon={<Settings size={19} />} label="Settings" onClick={() => { setSettingsFocus(undefined); setFoodFocus(undefined); setTab("settings"); }} />
+          <TabButton active={tab === "home"} icon={<Home size={19} />} label="Home" onClick={() => selectBottomTab("home")} />
+          <TabButton active={tab === "food"} icon={<Utensils size={19} />} label="Food" onClick={() => selectBottomTab("food")} />
+          <TabButton active={tab === "workout"} icon={<Dumbbell size={19} />} label="Workout" onClick={() => selectBottomTab("workout")} />
+          <TabButton active={tab === "records"} icon={<BarChart3 size={19} />} label="History" onClick={() => selectBottomTab("records")} />
+          <TabButton active={tab === "settings"} icon={<Settings size={19} />} label="Settings" onClick={() => selectBottomTab("settings")} />
         </div>
       </nav>
     </main>
