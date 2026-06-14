@@ -221,6 +221,15 @@ const finisherPulseIntensity = "finisher_pulse";
 const finisherPulseNote = "仕上げパルス（部分可動域・素早く）";
 const appUpdates: AppUpdate[] = [
   {
+    id: "2026-06-14-light-theme-floating-cards",
+    title: "ライトテーマの見た目を調整",
+    date: "2026-06-14",
+    items: [
+      "日付まわりだけ淡いグラデーションを残し、下の背景は白ベースにしました。",
+      "全タブのカード、ボタン、下部ナビが白い面から浮いて見えるよう影と境界線を調整しました。",
+    ],
+  },
+  {
     id: "2026-06-14-komeraku-korean-oikos",
     title: "こめらく・韓国系・ヨーグルト商品を追加",
     date: "2026-06-14",
@@ -857,7 +866,7 @@ function App() {
 
   useEffect(() => {
     const root = document.documentElement;
-    const themeColor = resolvedTheme === "dark" ? "#000000" : "#f7f6f2";
+    const themeColor = resolvedTheme === "dark" ? "#000000" : "#ffffff";
     root.dataset.theme = resolvedTheme;
     root.style.colorScheme = resolvedTheme;
     document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]').forEach((meta) => {
