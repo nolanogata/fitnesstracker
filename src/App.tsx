@@ -75,7 +75,7 @@ type Tab = "home" | "food" | "workout" | "records" | "settings";
 type FoodMode = "search" | "favorite" | "chain" | "category" | "quick" | "manual" | "personal";
 type WorkoutMode = "favorite" | "preset" | "body" | "equipment" | "previous" | "search";
 type FoodFocus = "todayLog" | undefined;
-type SettingsFocus = "ai" | "backup" | "myMenu" | undefined;
+type SettingsFocus = "ai" | "backup" | "myMenu" | "goal" | undefined;
 type HistoryGrouping = "day" | "week" | "month";
 type EditableRecordTab = "food" | "workout";
 type BackupInfo = {
@@ -218,11 +218,13 @@ const emptyManual: ManualFoodDraft = {
 
 function settingsGoalDraftFrom(activeGoal?: Goal, profile?: Profile) {
   const isLegacyCustomGoal = activeGoal?.phase === "custom";
+  const fallbackTargetDate = addDays(todayAppDate(), 90);
   return {
     phase: activeGoal?.phase ?? ("maintenance" as Phase),
     age: activeGoal?.age ?? 35,
     activity_level: activeGoal?.activity_level ?? ("moderate" as ActivityLevel),
     target_weight_kg: activeGoal?.target_weight_kg ?? profile?.current_weight_kg ?? 70,
+    target_date: activeGoal?.target_date ?? fallbackTargetDate,
     manual_target_calories: activeGoal?.manual_target_calories ?? (isLegacyCustomGoal ? activeGoal?.target_calories ?? 0 : 0),
     manual_protein_g: activeGoal?.manual_protein_g ?? (isLegacyCustomGoal ? activeGoal?.target_protein_g ?? 0 : 0),
     manual_fat_g: activeGoal?.manual_fat_g ?? (isLegacyCustomGoal ? activeGoal?.target_fat_g ?? 0 : 0),
@@ -242,6 +244,17 @@ const weightStepOptions = [1, 2.5, 5, 10];
 const finisherPulseIntensity = "finisher_pulse";
 const finisherPulseNote = "仕上げパルス（部分可動域・素早く）";
 const appUpdates: AppUpdate[] = [
+  {
+    id: "2026-06-15-goal-target-period",
+    title: "目標期間をカロリー計算に反映",
+    date: "2026-06-15",
+    items: [
+      "目標体重と目標達成日から、減量・増量どちらも日次カロリー補正を自動計算するようにしました。",
+      "既存ユーザーにはHomeで目標期間の設定を促すバナーを表示します。",
+      "手動でkcal/P/F/Cを設定している場合は、その値を上書きせずに目標期間だけ保存できます。",
+      "AI相談レポートに目標体重・目標達成日・期間補正を含め、AI側で妥当性を判断しやすくしました。",
+    ],
+  },
   {
     id: "2026-06-14-food-recommend-badge-zoom-edge-back",
     title: "おすすめ表示と入力中の拡大を調整",
@@ -1074,6 +1087,7 @@ function App() {
   const latestWeight = weightLogs.at(-1);
   const dayTotals = sumFood(todayEntries);
   const target = activeGoal ?? defaultGoal(profile);
+  const needsGoalTargetPeriod = !!activeGoal && !activeGoal.target_date;
   const isCheatDay = cheatDayDates.includes(appDate);
   const targetCalories = target?.target_calories ?? 0;
   const homeTone = isCheatDay
@@ -1250,10 +1264,16 @@ function App() {
             latestWeight={latestWeight}
             weightLogs={weightLogs}
             backupInfo={backupInfo}
+            needsGoalTargetPeriod={needsGoalTargetPeriod}
             setTab={(nextTab) => {
               setSettingsFocus(undefined);
               setFoodFocus(undefined);
               setTab(nextTab);
+            }}
+            openGoalSettings={() => {
+              setSettingsFocus("goal");
+              setFoodFocus(undefined);
+              setTab("settings");
             }}
             openTodayFoodLog={() => {
               setSettingsFocus(undefined);
@@ -1453,7 +1473,9 @@ function HomeTab(props: {
   latestWeight?: WeightLog;
   weightLogs: WeightLog[];
   backupInfo: BackupInfo;
+  needsGoalTargetPeriod: boolean;
   setTab: (tab: Tab) => void;
+  openGoalSettings: () => void;
   openTodayFoodLog: () => void;
   openAiReport: () => void;
   openBackup: () => void;
@@ -1619,6 +1641,16 @@ function HomeTab(props: {
           <div className="min-w-0 flex-1">
             <p className="text-sm font-bold">更新があります</p>
             <p className="mt-1 truncate text-xs text-moss">{props.latestUpdate.title}</p>
+          </div>
+          <ChevronRight className="shrink-0 text-muted" size={18} />
+        </button>
+      )}
+
+      {props.needsGoalTargetPeriod && (
+        <button className="home-notice flex w-full items-center gap-3 px-4 py-3 text-left" onClick={props.openGoalSettings}>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-bold">目標期間を設定してください</p>
+            <p className="mt-1 text-xs text-moss">目標体重と達成日から、減量・増量のカロリー補正を計算します。手動kcal/PFCは上書きしません。</p>
           </div>
           <ChevronRight className="shrink-0 text-muted" size={18} />
         </button>
@@ -3615,6 +3647,7 @@ function SettingsTab(props: {
   const [report, setReport] = useState("");
   const [copiedReport, setCopiedReport] = useState(false);
   const [backupImportMessage, setBackupImportMessage] = useState("");
+  const goalSectionRef = useRef<HTMLElement | null>(null);
   const backupSectionRef = useRef<HTMLElement | null>(null);
   const myMenuSectionRef = useRef<HTMLElement | null>(null);
   const themeOptions: Array<{ value: ThemeMode; label: string }> = [
@@ -3642,9 +3675,9 @@ function SettingsTab(props: {
   };
 
   useEffect(() => {
-    if (props.focus !== "backup" && props.focus !== "myMenu") return;
+    if (props.focus !== "backup" && props.focus !== "myMenu" && props.focus !== "goal") return;
     const timer = window.setTimeout(() => {
-      const target = props.focus === "backup" ? backupSectionRef.current : myMenuSectionRef.current;
+      const target = props.focus === "backup" ? backupSectionRef.current : props.focus === "myMenu" ? myMenuSectionRef.current : goalSectionRef.current;
       target?.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 50);
     return () => window.clearTimeout(timer);
@@ -3662,6 +3695,7 @@ function SettingsTab(props: {
         activity_level: goalDraft.activity_level,
         phase: goalDraft.phase,
         target_weight_kg: goalDraft.target_weight_kg,
+        target_date: goalDraft.target_date || undefined,
         manual_target_calories: goalDraft.manual_target_calories || undefined,
         manual_protein_g: goalDraft.manual_protein_g || undefined,
         manual_fat_g: goalDraft.manual_fat_g || undefined,
@@ -3747,7 +3781,7 @@ function SettingsTab(props: {
         </div>
       </section>
 
-      <section className="compact-card p-4">
+      <section ref={goalSectionRef} className={`compact-card scroll-mt-24 p-4 ${props.focus === "goal" ? "border-2 border-leaf" : ""}`}>
         <h2 className="font-bold">ゴール設定</h2>
         <div className="mt-3 grid grid-cols-2 gap-2">
           <SelectField label="フェーズ" hint="体重・筋量をどう動かしたいか">
@@ -3762,6 +3796,14 @@ function SettingsTab(props: {
           </SelectField>
           <NumberInput label="年齢" value={goalDraft.age} onChange={(value) => setGoalDraft({ ...goalDraft, age: value })} />
           <NumberInput label="目標体重" value={goalDraft.target_weight_kg} step={0.1} onChange={(value) => setGoalDraft({ ...goalDraft, target_weight_kg: value })} />
+          <SelectField label="目標達成日" hint="体重差からkcal補正">
+            <input
+              type="date"
+              min={addDays(todayAppDate(), 1)}
+              value={goalDraft.target_date}
+              onChange={(event) => setGoalDraft({ ...goalDraft, target_date: event.target.value })}
+            />
+          </SelectField>
           <NumberInput label="筋トレ/週" value={goalDraft.target_workouts_per_week} onChange={(value) => setGoalDraft({ ...goalDraft, target_workouts_per_week: value })} />
           <NumberInput label="有酸素/週" value={goalDraft.target_cardio_sessions_per_week} onChange={(value) => setGoalDraft({ ...goalDraft, target_cardio_sessions_per_week: value })} />
           <NumberInput label="kcal上書き (0=自動)" value={goalDraft.manual_target_calories} onChange={(value) => setGoalDraft({ ...goalDraft, manual_target_calories: value })} />
@@ -3769,8 +3811,11 @@ function SettingsTab(props: {
           <NumberInput label="F上書き (0=自動)" value={goalDraft.manual_fat_g} onChange={(value) => setGoalDraft({ ...goalDraft, manual_fat_g: value })} />
           <NumberInput label="C上書き (0=自動)" value={goalDraft.manual_carbs_g} onChange={(value) => setGoalDraft({ ...goalDraft, manual_carbs_g: value })} />
         </div>
-        <p className="mt-3 rounded-md bg-rice p-3 text-sm">計算: {calculated?.target_calories ?? "-"} kcal / P{calculated?.target_protein_g ?? "-"} F{calculated?.target_fat_g ?? "-"} C{calculated?.target_carbs_g ?? "-"}</p>
-        <p className="mt-2 text-xs text-moss">自動計算は現在体重から消費カロリーを出し、目標体重・フェーズ・運動強度・総カロリーからP/F/Cを配分します。AI相談後はkcal/P/F/Cを個別に上書きできます。</p>
+        <p className="mt-3 rounded-md bg-rice p-3 text-sm">
+          計算: {calculated?.target_calories ?? "-"} kcal / P{calculated?.target_protein_g ?? "-"} F{calculated?.target_fat_g ?? "-"} C{calculated?.target_carbs_g ?? "-"}
+          {typeof calculated?.target_daily_calorie_adjustment === "number" && <span className="block text-xs text-moss">期間補正: {calculated.target_daily_calorie_adjustment > 0 ? "+" : ""}{calculated.target_daily_calorie_adjustment} kcal/日</span>}
+        </p>
+        <p className="mt-2 text-xs text-moss">自動計算は現在体重から消費カロリーを出し、目標体重・目標達成日・フェーズ・運動強度・総カロリーからP/F/Cを配分します。kcal/P/F/Cを手動上書きしている場合、その値は保存時に上書きしません。</p>
         <button className="primary-button mt-3 w-full" onClick={async () => {
           if (!props.profile) return;
           const timestamp = nowIso();
@@ -3781,6 +3826,7 @@ function SettingsTab(props: {
             activity_level: goalDraft.activity_level,
             age: goalDraft.age,
             target_weight_kg: goalDraft.target_weight_kg,
+            target_date: goalDraft.target_date || undefined,
             manual_target_calories: goalDraft.manual_target_calories || undefined,
             manual_protein_g: goalDraft.manual_protein_g || undefined,
             manual_fat_g: goalDraft.manual_fat_g || undefined,
@@ -3903,6 +3949,7 @@ function Onboarding({ refresh }: { refresh: () => Promise<void> }) {
     phase: "maintenance" as Phase,
     activity_level: "moderate" as ActivityLevel,
     target_weight_kg: 70,
+    target_date: addDays(todayAppDate(), 90),
     target_calories: 0,
     target_protein_g: 0,
     target_fat_g: 0,
@@ -3931,6 +3978,7 @@ function Onboarding({ refresh }: { refresh: () => Promise<void> }) {
     activity_level: draft.activity_level,
     phase: draft.phase,
     target_weight_kg: draft.target_weight_kg,
+    target_date: draft.target_date,
     manual_target_calories: draft.target_calories || undefined,
     manual_protein_g: draft.target_protein_g || undefined,
     manual_fat_g: draft.target_fat_g || undefined,
@@ -3967,6 +4015,7 @@ function Onboarding({ refresh }: { refresh: () => Promise<void> }) {
     { title: "目標", subtitle: "体重や筋肉の方向性を選びます。" },
     { title: "運動量", subtitle: "日常活動も含めた消費量の補正です。迷ったら普通がおすすめ。" },
     { title: "目標体重", subtitle: "PFCの基準にする体重です。維持でも今の体重でOK。" },
+    { title: "目標達成日", subtitle: "体重差と期間から、減量・増量に必要なカロリー補正を計算します。" },
     { title: "筋トレ頻度", subtitle: "Homeの今週の運動カードに使います。" },
     { title: "有酸素頻度", subtitle: "歩く・バイク・ランなどの週目標です。" },
     { title: "確認", subtitle: "自動計算した目標で始めます。細かい上書きは後からでもOKです。" },
@@ -3983,6 +4032,7 @@ function Onboarding({ refresh }: { refresh: () => Promise<void> }) {
       activity_level: draft.activity_level,
       age,
       target_weight_kg: draft.target_weight_kg,
+      target_date: draft.target_date,
       manual_target_calories: draft.target_calories || undefined,
       manual_protein_g: draft.target_protein_g || undefined,
       manual_fat_g: draft.target_fat_g || undefined,
@@ -4083,8 +4133,16 @@ function Onboarding({ refresh }: { refresh: () => Promise<void> }) {
       );
     }
     if (step === 9) return <NumberInput label="目標体重 kg" value={draft.target_weight_kg} step={0.1} onChange={(value) => setDraft({ ...draft, target_weight_kg: value })} />;
-    if (step === 10) return <NumberInput label="筋トレ / 週" value={draft.workouts} onChange={(value) => setDraft({ ...draft, workouts: Math.max(0, Math.round(value)) })} />;
-    if (step === 11) return <NumberInput label="有酸素 / 週" value={draft.cardio} onChange={(value) => setDraft({ ...draft, cardio: Math.max(0, Math.round(value)) })} />;
+    if (step === 10) {
+      return (
+        <label className="onboarding-field">
+          <span>目標達成日</span>
+          <input type="date" min={addDays(todayAppDate(), 1)} value={draft.target_date} onChange={(event) => setDraft({ ...draft, target_date: event.target.value })} />
+        </label>
+      );
+    }
+    if (step === 11) return <NumberInput label="筋トレ / 週" value={draft.workouts} onChange={(value) => setDraft({ ...draft, workouts: Math.max(0, Math.round(value)) })} />;
+    if (step === 12) return <NumberInput label="有酸素 / 週" value={draft.cardio} onChange={(value) => setDraft({ ...draft, cardio: Math.max(0, Math.round(value)) })} />;
     return (
       <div className="grid gap-3">
         <div className="onboarding-target-card">
@@ -4095,7 +4153,7 @@ function Onboarding({ refresh }: { refresh: () => Promise<void> }) {
             <div><span>F</span><strong>{calculated.target_fat_g}g</strong></div>
             <div><span>C</span><strong>{calculated.target_carbs_g}g</strong></div>
           </div>
-          <p className="mt-3 text-xs leading-relaxed text-moss">現在体重・年齢・目標・運動量からざっくり計算しています。AI相談後や実際の変化を見ながらSettingsで調整できます。</p>
+          <p className="mt-3 text-xs leading-relaxed text-moss">現在体重・年齢・目標・運動量・目標達成日からざっくり計算しています。AI相談後や実際の変化を見ながらSettingsで調整できます。</p>
         </div>
         <button className="secondary-button w-full" onClick={() => setShowAdvanced((current) => !current)}>
           {showAdvanced ? "詳細上書きを閉じる" : "kcal/PFCを手で上書きする"}

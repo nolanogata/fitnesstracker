@@ -43,6 +43,7 @@ export type Goal = {
   age: number;
   activity_level: ActivityLevel;
   target_weight_kg?: number;
+  target_date?: string;
   target_calories: number;
   target_protein_g: number;
   target_fat_g: number;
@@ -54,6 +55,7 @@ export type Goal = {
   target_active_calories?: number;
   target_workouts_per_week?: number;
   target_cardio_sessions_per_week?: number;
+  target_daily_calorie_adjustment?: number;
   target_weight_change_per_week_kg?: number;
   start_date: string;
   end_date?: string;
