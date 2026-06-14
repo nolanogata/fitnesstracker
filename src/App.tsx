@@ -227,6 +227,14 @@ const finisherPulseIntensity = "finisher_pulse";
 const finisherPulseNote = "仕上げパルス（部分可動域・素早く）";
 const appUpdates: AppUpdate[] = [
   {
+    id: "2026-06-14-chain-scoped-food-search",
+    title: "チェーン店内検索を追加",
+    date: "2026-06-14",
+    items: [
+      "Foodタブでチェーン店を選んだあと、そのチェーンのメニューだけを検索できるようにしました。",
+    ],
+  },
+  {
     id: "2026-06-14-michitas-drink",
     title: "明治MICHITASドリンクを追加",
     date: "2026-06-14",
@@ -1981,7 +1989,7 @@ function FoodTab(props: {
     const isSearching = nextQuery.trim().length > 0;
     setQuery(nextQuery);
     if (isSearching && !wasSearching) {
-      setMode("search");
+      if (mode !== "chain") setMode("search");
       scrollToFoodResults();
     }
   };
@@ -1992,11 +2000,13 @@ function FoodTab(props: {
   const canUseOverGoalFilter = !!props.goal && props.goal.target_calories > 0;
   const canShowFoodBalance = canUseOverGoalFilter;
   const isFoodFitFilterActive = (hideOverGoalItems && canUseOverGoalFilter) || (showFoodBalance && canShowFoodBalance);
+  const isChainScopedSearch = mode === "chain" && !!brand;
+  const searchPlaceholder = isChainScopedSearch ? `${brand}内を検索` : "食品・ブランド検索";
   const results = useMemo(() => {
     const needle = query.trim().toLowerCase();
     const tokens = needle.split(/\s+/).filter(Boolean);
     const base = needle
-      ? props.menuItems
+      ? props.menuItems.filter((item) => !isChainScopedSearch || item.brand === brand)
       : props.menuItems.filter((item) => {
         if (mode === "favorite") return item.is_favorite;
         if (mode === "quick") {
@@ -2028,6 +2038,7 @@ function FoodTab(props: {
     query,
     mode,
     brand,
+    isChainScopedSearch,
     categoryGenre,
     generalCategory,
     hideOverGoalItems,
@@ -2185,10 +2196,10 @@ function FoodTab(props: {
   return (
     <div className="scroll-mt-24 space-y-4" ref={foodTopRef}>
       <div className="sticky-panel sticky top-[74px] z-10 -mx-4 space-y-3 px-4 pb-2">
-        <form className="compact-card flex gap-2 p-2" onSubmit={(event) => { event.preventDefault(); setMode("search"); scrollToFoodResults(); }}>
+        <form className="compact-card flex gap-2 p-2" onSubmit={(event) => { event.preventDefault(); if (mode !== "chain") setMode("search"); scrollToFoodResults(); }}>
           <div className="relative min-w-0 flex-1">
             <Search className="pointer-events-none absolute left-3 top-3.5 text-moss" size={20} />
-            <input className="h-12 w-full pl-10 text-base" value={query} onChange={(event) => updateSearchQuery(event.target.value)} placeholder="食品・ブランド検索" />
+            <input className="h-12 w-full pl-10 text-base" value={query} onChange={(event) => updateSearchQuery(event.target.value)} placeholder={searchPlaceholder} />
           </div>
           <button
             type="button"
@@ -2248,6 +2259,12 @@ function FoodTab(props: {
               </button>
             </div>
           </section>
+        )}
+        {isGlobalSearch && isChainScopedSearch && (
+          <div className="flex items-center justify-between gap-2 rounded-full border border-line bg-surface/55 px-3 py-2 text-xs font-semibold text-moss shadow-soft">
+            <span className="min-w-0 truncate">{brand}のメニュー内を検索中</span>
+            <button className="shrink-0 text-ink" type="button" onClick={() => { setQuery(""); scrollToChainSection(); }}>チェーン変更</button>
+          </div>
         )}
         {!isGlobalSearch && (
           <div className="grid grid-cols-3 gap-2">
@@ -2324,7 +2341,7 @@ function FoodTab(props: {
             </section>
           )}
           <section className="compact-card divide-y divide-line overflow-hidden scroll-mt-24" ref={foodResultsRef}>
-            <ListHeader title={isGlobalSearch ? "検索結果" : mode === "category" ? categoryGenre : mode === "quick" ? generalCategory : foodModeLabel(mode)} value={`${results.length}件`} />
+            <ListHeader title={isGlobalSearch ? (isChainScopedSearch ? `${brand}の検索結果` : "検索結果") : mode === "category" ? categoryGenre : mode === "quick" ? generalCategory : foodModeLabel(mode)} value={`${results.length}件`} />
             {results.map((item) => (
               <FoodItemRow
                 key={item.id}
