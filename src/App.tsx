@@ -155,6 +155,7 @@ const chainCategories: Record<string, string[]> = {
   ファミレス: ["ガスト", "ロイヤルホスト", "サイゼリヤ", "オリーブの丘", "デニーズ", "ジョイフル", "ジョナサン", "華屋与兵衛", "藍屋"],
   エスニック: ["モンスーンカフェ"],
   カフェ: ["スターバックス", "ドトール", "タリーズ", "コメダ珈琲"],
+  ドーナツ: ["ミスタードーナツ", "クリスピークリーム", "アイムドーナツ"],
   コンビニ: ["セブンイレブン", "ファミリーマート", "ローソン", "ミニストップ"],
   居酒屋: [],
   その他: [],
@@ -168,7 +169,7 @@ const genericCategories: Record<string, string[]> = {
   "サラダ・野菜": ["サラダ", "野菜", "海藻", "チョレギ", "サンチュ", "焼き野菜"],
   "おかず・惣菜": ["納豆", "豆腐", "唐揚げ", "フライドポテト", "フライドチキン", "チキンナゲット", "ポテト", "副菜", "揚げ物", "惣菜", "洋食", "インド料理", "韓国料理", "ナムル", "キムチ"],
   スープ: ["味噌汁", "スープ", "豚汁", "汁物", "ユッケジャン"],
-  スイーツ: ["ケーキ", "アイス", "和菓子", "焼き菓子", "スナック", "せんべい", "米菓", "チョコ", "グミ", "プリン", "果物", "ヨーグルト"],
+  スイーツ: ["ケーキ", "ドーナツ", "アイス", "和菓子", "焼き菓子", "スナック", "せんべい", "米菓", "チョコ", "グミ", "プリン", "果物", "ヨーグルト"],
   ドリンク: ["コーヒー", "カフェラテ", "牛乳", "豆乳", "ジュース", "炭酸", "アルコール"],
   コンビニ: ["おにぎり", "弁当", "サンドイッチ", "サラダチキン", "カップ麺", "スイーツ"],
   チェーン店: ["牛丼", "うどん", "定食", "バーガー"],
@@ -3218,9 +3219,9 @@ function ManualFoodForm({ manual, setManual, onSave, compact = false, mode = "lo
             ))}
           </div>
           {!!subcategories.length && (
-            <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
+            <div className="manual-subcategory-scroll mt-2 flex gap-2 overflow-x-auto pb-1">
               {subcategories.map((subcategory) => (
-                <button className={`chip ${manual.subcategory === subcategory ? "chip-active" : ""}`} key={subcategory} onClick={() => setManual({ ...manual, subcategory })}>{subcategory}</button>
+                <button className={`chip manual-subcategory-chip ${manual.subcategory === subcategory ? "chip-active" : ""}`} key={subcategory} onClick={() => setManual({ ...manual, subcategory })}>{subcategory}</button>
               ))}
             </div>
           )}
