@@ -45,6 +45,7 @@ export function calculateTargets(input: {
   activity_level: ActivityLevel;
   phase: Phase;
   target_weight_kg?: number;
+  target_body_fat_percentage?: number;
   target_date?: string;
   manual_target_calories?: number;
   manual_protein_g?: number;
@@ -54,6 +55,7 @@ export function calculateTargets(input: {
   const weight = input.profile.current_weight_kg;
   const macroWeight = input.target_weight_kg && input.target_weight_kg > 0 ? input.target_weight_kg : weight;
   const periodAdjustment = calculateTargetPeriodAdjustment(weight, input.target_weight_kg, input.target_date);
+  const bodyComposition = calculateTargetBodyComposition(weight, input.profile.body_fat_percentage, input.target_weight_kg, input.target_body_fat_percentage);
   const hasBodyFat = typeof input.profile.body_fat_percentage === "number";
   const bmr = hasBodyFat
     ? 370 + 21.6 * (weight * (1 - (input.profile.body_fat_percentage ?? 0) / 100))
@@ -76,6 +78,10 @@ export function calculateTargets(input: {
     target_carbs_g: carbs,
     target_daily_calorie_adjustment: periodAdjustment?.dailyCalories,
     target_weight_change_per_week_kg: periodAdjustment?.weeklyWeightChange,
+    target_fat_mass_kg: bodyComposition?.targetFatMass,
+    target_lean_mass_kg: bodyComposition?.targetLeanMass,
+    target_fat_mass_change_kg: bodyComposition?.fatMassChange,
+    target_lean_mass_change_kg: bodyComposition?.leanMassChange,
     carbs_warning: carbs < 0,
   };
 }
@@ -86,6 +92,7 @@ export function buildGoal(input: {
   activity_level: ActivityLevel;
   age: number;
   target_weight_kg?: number;
+  target_body_fat_percentage?: number;
   target_date?: string;
   manual_target_calories?: number;
   manual_protein_g?: number;
@@ -103,6 +110,7 @@ export function buildGoal(input: {
     activity_level: input.activity_level,
     age: input.age,
     target_weight_kg: input.target_weight_kg,
+    target_body_fat_percentage: input.target_body_fat_percentage,
     target_date: input.target_date,
     target_calories: recalculated.target_calories,
     target_protein_g: recalculated.target_protein_g,
@@ -116,6 +124,10 @@ export function buildGoal(input: {
     target_cardio_sessions_per_week: input.target_cardio_sessions_per_week,
     target_daily_calorie_adjustment: recalculated.target_daily_calorie_adjustment,
     target_weight_change_per_week_kg: recalculated.target_weight_change_per_week_kg,
+    target_fat_mass_kg: recalculated.target_fat_mass_kg,
+    target_lean_mass_kg: recalculated.target_lean_mass_kg,
+    target_fat_mass_change_kg: recalculated.target_fat_mass_change_kg,
+    target_lean_mass_change_kg: recalculated.target_lean_mass_change_kg,
     start_date: todayAppDate(),
     is_active: true,
     created_at: timestamp,
@@ -135,10 +147,33 @@ function calculateTargetPeriodAdjustment(currentWeightKg: number, targetWeightKg
   };
 }
 
+function calculateTargetBodyComposition(currentWeightKg: number, currentBodyFatPercentage?: number, targetWeightKg?: number, targetBodyFatPercentage?: number) {
+  if (!targetBodyFatPercentage || targetBodyFatPercentage <= 0 || targetBodyFatPercentage >= 80) return undefined;
+  const targetWeight = targetWeightKg && targetWeightKg > 0 ? targetWeightKg : currentWeightKg;
+  const targetFatMass = round1(targetWeight * (targetBodyFatPercentage / 100));
+  const targetLeanMass = round1(targetWeight - targetFatMass);
+  const hasCurrentBodyFat = typeof currentBodyFatPercentage === "number" && currentBodyFatPercentage > 0 && currentBodyFatPercentage < 80;
+  if (!hasCurrentBodyFat) {
+    return { targetFatMass, targetLeanMass };
+  }
+  const currentFatMass = currentWeightKg * (currentBodyFatPercentage / 100);
+  const currentLeanMass = currentWeightKg - currentFatMass;
+  return {
+    targetFatMass,
+    targetLeanMass,
+    fatMassChange: round1(targetFatMass - currentFatMass),
+    leanMassChange: round1(targetLeanMass - currentLeanMass),
+  };
+}
+
 function daysBetween(startDate: string, endDate: string) {
   const start = new Date(`${startDate}T12:00:00`).getTime();
   const end = new Date(`${endDate}T12:00:00`).getTime();
   return Math.round((end - start) / 86_400_000);
+}
+
+function round1(value: number) {
+  return Math.round(value * 10) / 10;
 }
 
 function calculateProteinTarget(weightKg: number, phase: Phase, activityLevel: ActivityLevel, age: number) {
