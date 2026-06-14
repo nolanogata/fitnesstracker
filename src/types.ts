@@ -47,6 +47,10 @@ export type Goal = {
   target_protein_g: number;
   target_fat_g: number;
   target_carbs_g: number;
+  manual_target_calories?: number;
+  manual_protein_g?: number;
+  manual_fat_g?: number;
+  manual_carbs_g?: number;
   target_active_calories?: number;
   target_workouts_per_week?: number;
   target_cardio_sessions_per_week?: number;
