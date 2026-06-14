@@ -1,4 +1,5 @@
 import { genericFoods } from "./generic";
+import { genericKonamonoFoods } from "./genericKonamono";
 import { proteinProductFoods } from "./proteinProducts";
 import { quickEstimateFoods } from "./quickEstimates";
 import { snackDrinkFoods } from "./snacksDrinks";
@@ -25,6 +26,7 @@ import { gyudonTeishokuOfficialCoverageFoods } from "./chains/gyudonTeishokuOffi
 import { italianRestaurantMenuFoods } from "./chains/italianRestaurantMenus";
 import { kfcOfficialFoods } from "./chains/kfcOfficial";
 import { komerakuMenuFoods } from "./chains/komerakuMenu";
+import { konamonoChainFoods } from "./chains/konamonoChains";
 import { matsuyaOfficialFoods } from "./chains/matsuyaOfficial";
 import { mcdonaldsOfficialFoods } from "./chains/mcdonaldsOfficial";
 import { mcdonaldsKfcOfficialCoverageFoods } from "./chains/mcdonaldsKfcOfficialCoverage";
@@ -42,6 +44,7 @@ import { yoshinoyaOfficialFoods } from "./chains/yoshinoyaOfficial";
 
 export const foodSeeds = [
   ...genericFoods,
+  ...genericKonamonoFoods,
   ...userMenuImportFoods,
   ...proteinProductFoods,
   ...snackDrinkFoods,
@@ -70,6 +73,7 @@ export const foodSeeds = [
   ...tullysOfficialFoods,
   ...cocoichiOfficialFoods,
   ...costcoFoodCourtFoods,
+  ...konamonoChainFoods,
   ...dailyChainOfficialFoods,
   ...fastFoodFoods,
   ...bamiyanMenuFoods,
