@@ -227,6 +227,14 @@ const finisherPulseIntensity = "finisher_pulse";
 const finisherPulseNote = "仕上げパルス（部分可動域・素早く）";
 const appUpdates: AppUpdate[] = [
   {
+    id: "2026-06-14-michitas-drink",
+    title: "明治MICHITASドリンクを追加",
+    date: "2026-06-14",
+    items: [
+      "市販品メニューに明治MICHITAS カップ 乳酸菌飲料風味を追加しました。",
+    ],
+  },
+  {
     id: "2026-06-14-takikomi-rice-gohan-no-otomo",
     title: "炊き込みご飯とご飯のお供を追加",
     date: "2026-06-14",
