@@ -213,6 +213,16 @@ const finisherPulseIntensity = "finisher_pulse";
 const finisherPulseNote = "仕上げパルス（部分可動域・素早く）";
 const appUpdates: AppUpdate[] = [
   {
+    id: "2026-06-14-perfect-food-filter-balance",
+    title: "ぴったりフードと食事検索を調整",
+    date: "2026-06-14",
+    items: [
+      "ぴったりフードの候補が同じチェーンに偏りすぎないようにしました。",
+      "ぴったりフード表示中は、Homeの下引っ張り更新が反応しないようにしました。",
+      "Foodタブに、残りカロリー・脂質・炭水化物を超える候補を非表示にするフィルターを追加しました。",
+    ],
+  },
+  {
     id: "2026-06-14-workout-finisher-pulse",
     title: "筋トレに仕上げパルスを追加",
     date: "2026-06-14",
@@ -971,6 +981,8 @@ function App() {
             menuItems={menuItems}
             foodEntries={foodEntries}
             appDate={appDate}
+            goal={target}
+            dayTotals={dayTotals}
             focus={foodFocus}
             openMyMenuSettings={() => {
               setSettingsFocus("myMenu");
@@ -1193,7 +1205,7 @@ function HomeTab(props: {
   };
   const handlePullStart = (event: TouchEvent<HTMLDivElement>) => {
     const target = event.target instanceof HTMLElement ? event.target : undefined;
-    if (isCheckInOpen || isPullRefreshing || window.scrollY > 0 || target?.closest("input, select, textarea")) {
+    if (isCheckInOpen || isPerfectFoodOpen || isPullRefreshing || window.scrollY > 0 || target?.closest("input, select, textarea")) {
       pullStartYRef.current = undefined;
       return;
     }
@@ -1600,7 +1612,18 @@ function CheckInStepper({ label, value, suffix, step, onChange }: { label: strin
   );
 }
 
-function FoodTab(props: { menuItems: MenuItem[]; foodEntries: FoodEntry[]; appDate: string; focus?: FoodFocus; openMyMenuSettings: () => void; onFocusHandled: () => void; refresh: () => Promise<void>; showToast: (text: string) => void }) {
+function FoodTab(props: {
+  menuItems: MenuItem[];
+  foodEntries: FoodEntry[];
+  appDate: string;
+  goal?: Goal;
+  dayTotals: ReturnType<typeof sumFood>;
+  focus?: FoodFocus;
+  openMyMenuSettings: () => void;
+  onFocusHandled: () => void;
+  refresh: () => Promise<void>;
+  showToast: (text: string) => void;
+}) {
   const foodTopRef = useRef<HTMLDivElement | null>(null);
   const chainSectionRef = useRef<HTMLElement | null>(null);
   const chainListRef = useRef<HTMLDivElement | null>(null);
@@ -1619,6 +1642,7 @@ function FoodTab(props: { menuItems: MenuItem[]; foodEntries: FoodEntry[]; appDa
   const [brand, setBrand] = useState("松屋");
   const [categoryGenre, setCategoryGenre] = useState("ごはん・丼");
   const [generalCategory, setGeneralCategory] = useState("ごはん・丼");
+  const [hideOverGoalItems, setHideOverGoalItems] = useState(false);
 
   const recentIds = new Set(props.foodEntries.slice(0, 20).map((entry) => entry.menu_item_id).filter(Boolean));
   const favoriteItems = props.menuItems.filter((item) => item.is_favorite);
@@ -1685,6 +1709,8 @@ function FoodTab(props: { menuItems: MenuItem[]; foodEntries: FoodEntry[]; appDa
   };
   const portionOptions = selected ? getPortionOptions(selected) : [];
   const isGlobalSearch = query.trim().length > 0;
+  const remainingNutrition = getRemainingNutrition(props.dayTotals, props.goal);
+  const canUseOverGoalFilter = !!props.goal && props.goal.target_calories > 0;
   const results = useMemo(() => {
     const needle = query.trim().toLowerCase();
     const tokens = needle.split(/\s+/).filter(Boolean);
@@ -1706,14 +1732,29 @@ function FoodTab(props: { menuItems: MenuItem[]; foodEntries: FoodEntry[]; appDa
         return true;
       });
     const sorted = dedupeMenuItemsBySource(base);
-    if (!needle) return sorted.slice(0, 80);
-    return sorted
-      .filter((item) => {
+    const matched = needle
+      ? sorted.filter((item) => {
         const haystack = `${item.name} ${item.brand ?? ""} ${item.category} ${item.tags.join(" ")} ${item.serving_label ?? ""}`.toLowerCase();
         return tokens.every((token) => haystack.includes(token));
       })
-      .slice(0, 80);
-  }, [props.menuItems, query, mode, brand, categoryGenre, generalCategory]);
+      : sorted;
+    const filtered = hideOverGoalItems && canUseOverGoalFilter
+      ? matched.filter((item) => fitsRemainingFoodFilter(item, remainingNutrition))
+      : matched;
+    return filtered.slice(0, 80);
+  }, [
+    props.menuItems,
+    query,
+    mode,
+    brand,
+    categoryGenre,
+    generalCategory,
+    hideOverGoalItems,
+    canUseOverGoalFilter,
+    remainingNutrition.calories,
+    remainingNutrition.fat,
+    remainingNutrition.carbs,
+  ]);
 
   const saveSelected = async () => {
     if (!selected) return;
@@ -1870,6 +1911,24 @@ function FoodTab(props: { menuItems: MenuItem[]; foodEntries: FoodEntry[]; appDa
           </div>
         )}
       </div>
+
+      {mode !== "manual" && (
+        <section className="compact-card flex items-center justify-between gap-3 p-3">
+          <div className="min-w-0">
+            <p className="text-sm font-bold">残り内だけ表示</p>
+            <p className="numeric-text mt-1 truncate text-[11px] font-semibold text-moss">
+              あと {Math.max(0, Math.round(remainingNutrition.calories))}kcal / F{round1(remainingNutrition.fat)} C{round1(remainingNutrition.carbs)}
+            </p>
+          </div>
+          <button
+            className={`chip shrink-0 justify-center ${hideOverGoalItems ? "chip-active" : ""} ${!canUseOverGoalFilter ? "opacity-50" : ""}`}
+            disabled={!canUseOverGoalFilter}
+            onClick={() => setHideOverGoalItems((value) => !value)}
+          >
+            {hideOverGoalItems ? "ON" : "OFF"}
+          </button>
+        </section>
+      )}
 
       {mode === "chain" && (
         <section className="compact-card scroll-mt-24 p-3" ref={chainSectionRef}>
@@ -4584,6 +4643,13 @@ function getRemainingNutrition(dayTotals: ReturnType<typeof sumFood>, goal?: Goa
   };
 }
 
+function fitsRemainingFoodFilter(item: MenuItem, remaining: { calories: number; fat: number; carbs: number }) {
+  const fitsCalories = remaining.calories <= 0 ? item.calories <= 0 : item.calories <= remaining.calories;
+  const fitsFat = remaining.fat <= 0 ? item.fat_g <= 0 : item.fat_g <= remaining.fat;
+  const fitsCarbs = remaining.carbs <= 0 ? item.carbs_g <= 0 : item.carbs_g <= remaining.carbs;
+  return fitsCalories && fitsFat && fitsCarbs;
+}
+
 function getPlannedNutrition(plans: PerfectFoodPlan[]) {
   return plans
     .filter((plan) => plan !== "none")
@@ -4615,12 +4681,34 @@ function buildPerfectFoodSuggestions(menuItems: MenuItem[], target: { calories: 
   return groups
     .map((group) => ({
       label: group.label,
-      items: candidates
+      items: pickDiversePerfectFoodItems(candidates
         .filter(group.test)
-        .sort((a, b) => perfectFoodScore(a, target) - perfectFoodScore(b, target))
-        .slice(0, 9),
+        .sort((a, b) => perfectFoodScore(a, target) - perfectFoodScore(b, target))),
     }))
     .filter((group) => group.items.length > 0);
+}
+
+function pickDiversePerfectFoodItems(items: MenuItem[], maxItems = 9) {
+  const picked: MenuItem[] = [];
+  const pickedIds = new Set<string>();
+  const brandCounts = new Map<string, number>();
+  const brandKey = (item: MenuItem) => item.brand?.trim() || item.category || "一般";
+  const brandCaps = [1, 2, 3, Number.POSITIVE_INFINITY];
+
+  for (const cap of brandCaps) {
+    for (const item of items) {
+      if (picked.length >= maxItems) return picked;
+      if (pickedIds.has(item.id)) continue;
+      const key = brandKey(item);
+      const maxForThisPass = item.brand ? cap : Math.max(cap, 3);
+      if ((brandCounts.get(key) ?? 0) >= maxForThisPass) continue;
+      picked.push(item);
+      pickedIds.add(item.id);
+      brandCounts.set(key, (brandCounts.get(key) ?? 0) + 1);
+    }
+  }
+
+  return picked;
 }
 
 function perfectFoodScore(item: MenuItem, target: { calories: number; protein: number; fat: number; carbs: number }) {
