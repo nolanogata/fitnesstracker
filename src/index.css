@@ -89,6 +89,14 @@ textarea {
   color: #1f2722;
 }
 
+@supports (-webkit-touch-callout: none) {
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
 :root[data-theme="dark"] input,
 :root[data-theme="dark"] select,
 :root[data-theme="dark"] textarea {
@@ -966,6 +974,32 @@ button {
   @apply border-ink/20 bg-ink/5 text-ink;
 }
 
+.recommendation-rank-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 1.55rem;
+  border: 1px solid rgba(111, 143, 125, 0.36);
+  border-radius: 999px;
+  background:
+    linear-gradient(135deg, rgba(111, 143, 125, 0.2), rgba(221, 232, 225, 0.68)),
+    rgba(255, 255, 255, 0.62);
+  padding: 0.22rem 0.58rem;
+  color: #466355;
+  font-family: var(--rounded-number-font);
+  font-size: 0.64rem;
+  font-weight: 950;
+  line-height: 1;
+  white-space: nowrap;
+  box-shadow: 0 6px 14px rgba(82, 106, 87, 0.08), var(--glass-highlight);
+}
+
+.recommendation-divider {
+  background:
+    linear-gradient(90deg, transparent, rgba(111, 143, 125, 0.14), transparent),
+    rgba(255, 255, 255, 0.22);
+}
+
 .mode-button {
   @apply inline-flex min-h-12 items-center justify-center px-3 py-2 text-sm font-bold text-ink transition hover:border-leaf/60 active:scale-[0.98];
   border: 1px solid var(--glass-border);
@@ -1744,6 +1778,24 @@ button {
 :root[data-theme="dark"] .food-filter-option-active {
   border-color: rgba(159, 190, 169, 0.32);
   background: rgba(159, 190, 169, 0.15);
+}
+
+.theme-dark .recommendation-rank-badge,
+:root[data-theme="dark"] .recommendation-rank-badge {
+  border-color: rgba(159, 190, 169, 0.36);
+  background:
+    linear-gradient(135deg, rgba(159, 190, 169, 0.24), rgba(255, 255, 255, 0.08)),
+    rgba(255, 255, 255, 0.1);
+  color: #edf8ef;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14), 0 6px 18px rgba(0, 0, 0, 0.18);
+}
+
+.theme-dark .recommendation-divider,
+:root[data-theme="dark"] .recommendation-divider {
+  background:
+    linear-gradient(90deg, transparent, rgba(159, 190, 169, 0.2), transparent),
+    rgba(255, 255, 255, 0.04);
+  color: rgba(215, 228, 218, 0.74);
 }
 
 .theme-dark .calorie-card-under {
