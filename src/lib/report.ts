@@ -3,6 +3,8 @@ import { dateRange } from "./date";
 import { phaseLabels } from "./goalCalculator";
 import { formatWeeklyWorkoutStatus, type WeeklyWorkoutStatus } from "./workoutStatus";
 
+const finisherPulseIntensity = "finisher_pulse";
+
 type WorkoutGrouping = "day" | "week" | "month";
 
 export function generateMarkdownReport(input: {
@@ -299,7 +301,8 @@ function formatWorkoutSetDetail(set: WorkoutSet) {
     parts.push(`${typeof set.weight_kg === "number" ? `${set.weight_kg}kg` : "重量未記録"} x ${typeof set.reps === "number" ? `${set.reps}回` : "回数未記録"}`);
   }
   if (typeof set.active_calories === "number") parts.push(`${set.active_calories}kcal`);
-  if (set.intensity) parts.push(`強度:${set.intensity}`);
+  if (set.intensity === finisherPulseIntensity) parts.push("仕上げパルス");
+  else if (set.intensity) parts.push(`強度:${set.intensity}`);
   if (set.is_warmup) parts.push("ウォームアップ");
   if (set.note) parts.push(set.note);
   return parts.join(" / ") || "内容未記録";
