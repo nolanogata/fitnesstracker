@@ -775,8 +775,9 @@ function App() {
     if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
   }, []);
 
+  const homeDateTitle = formatHomeDateParts(appDate);
   const headerTitle = {
-    home: formatHomeDate(appDate),
+    home: "",
     food: "Food",
     workout: "Workout",
     records: "History",
@@ -794,7 +795,14 @@ function App() {
       <header className={`safe-top app-header sticky top-0 z-20 px-4 pb-3 ${tab === "home" ? "home-header" : ""}`}>
         <div className="flex items-center justify-between">
           <div>
-            <h1 className={`numeric-text ${tab === "home" ? "text-[2.08rem] font-semibold leading-tight tracking-normal" : "text-2xl font-bold tracking-normal"}`}>{headerTitle}</h1>
+            <h1 className={`numeric-text ${tab === "home" ? "text-[2.08rem] font-semibold leading-tight tracking-normal" : "text-2xl font-bold tracking-normal"}`}>
+              {tab === "home" ? (
+                <>
+                  {homeDateTitle.date}
+                  <span className="ml-1 align-baseline text-[0.58em] font-medium text-moss">{homeDateTitle.weekday}</span>
+                </>
+              ) : headerTitle}
+            </h1>
             <p className="mt-1 text-xs font-normal text-moss">{isEditingPastDate ? "過去の記録を編集中" : headerSubtext}</p>
           </div>
           {tab === "home" ? (
@@ -4230,12 +4238,12 @@ function getCalorieState(remaining: number, target: number) {
   };
 }
 
-function formatHomeDate(dateString: string) {
-  return new Intl.DateTimeFormat("ja-JP", {
-    month: "numeric",
-    day: "numeric",
-    weekday: "long",
-  }).format(new Date(`${dateString}T12:00:00`));
+function formatHomeDateParts(dateString: string) {
+  const date = new Date(`${dateString}T12:00:00`);
+  return {
+    date: `${date.getMonth() + 1}/${date.getDate()}`,
+    weekday: new Intl.DateTimeFormat("ja-JP", { weekday: "long" }).format(date),
+  };
 }
 
 function ListHeader({ title, value }: { title: string; value: string }) {
