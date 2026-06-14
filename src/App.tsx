@@ -219,6 +219,15 @@ const finisherPulseIntensity = "finisher_pulse";
 const finisherPulseNote = "仕上げパルス（部分可動域・素早く）";
 const appUpdates: AppUpdate[] = [
   {
+    id: "2026-06-14-perfect-food-dark-readability",
+    title: "ぴったりフードのダーク表示を改善",
+    date: "2026-06-14",
+    items: [
+      "ダークモードでぴったりフード候補の文字が薄く見える問題を修正しました。",
+      "候補カードと記録ボタンのコントラストを上げ、黒背景でも読みやすくしました。",
+    ],
+  },
+  {
     id: "2026-06-14-dark-home-black-gradient",
     title: "ダークモードのHome背景を調整",
     date: "2026-06-14",
@@ -1575,7 +1584,7 @@ function PerfectFoodModal({ dayTotals, goal, menuItems, onClose, onLog }: {
                 </button>
               ))}
             </div>
-            <div className="rounded-md bg-rice p-3">
+            <div className="perfect-food-panel rounded-md bg-rice p-3">
               <p className="text-xs font-bold text-moss">予定を引いた残り</p>
               <p className="numeric-text mt-2 text-sm font-bold">あと {Math.round(adjusted.calories)}kcal / P{round1(adjusted.protein)} F{round1(adjusted.fat)} C{round1(adjusted.carbs)}</p>
             </div>
@@ -1593,32 +1602,32 @@ function PerfectFoodModal({ dayTotals, goal, menuItems, onClose, onLog }: {
               const visibleItems = group.items.slice(0, isExpanded ? 9 : 3);
               const hiddenCount = Math.max(0, group.items.length - visibleItems.length);
               return (
-              <section className="rounded-md border border-line bg-rice/70 p-3" key={group.label}>
+              <section className="perfect-food-group rounded-md border border-line bg-rice/70 p-3" key={group.label}>
                 <div className="mb-2 flex items-center justify-between gap-2">
                   <h2 className="text-sm font-bold">{group.label}</h2>
                   <span className="text-xs font-semibold text-moss">{visibleItems.length}/{group.items.length}件</span>
                 </div>
                 <div className="space-y-2">
                   {visibleItems.map((item) => (
-                    <div className="rounded-xl bg-surface/70 p-3" key={item.id}>
+                    <div className="perfect-food-item rounded-xl bg-surface/70 p-3" key={item.id}>
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
                           <p className="truncate text-sm font-bold">{formatMenuItemName(item)}</p>
                           <p className="numeric-text mt-1 text-xs text-moss">{item.brand ? `${item.brand} · ` : ""}{item.calories}kcal · P{round1(item.protein_g)} F{round1(item.fat_g)} C{round1(item.carbs_g)}</p>
                         </div>
-                        <button className="secondary-button shrink-0 px-3 py-2 text-xs" onClick={() => onLog(item)}>記録</button>
+                        <button className="perfect-food-log-button secondary-button shrink-0 px-3 py-2 text-xs" onClick={() => onLog(item)}>記録</button>
                       </div>
                     </div>
                   ))}
                 </div>
                 {group.items.length > 3 && (
-                  <button className="secondary-button mt-3 w-full py-2 text-xs" onClick={() => toggleSuggestionGroup(group.label)}>
+                  <button className="perfect-food-more-button secondary-button mt-3 w-full py-2 text-xs" onClick={() => toggleSuggestionGroup(group.label)}>
                     {isExpanded ? "候補を閉じる" : `他の候補を表示${hiddenCount ? `（あと${hiddenCount}件）` : ""}`}
                   </button>
                 )}
               </section>
             );}) : (
-              <p className="rounded-md bg-rice p-4 text-center text-sm font-semibold text-moss">候補を出すにはゴール設定が必要です</p>
+              <p className="perfect-food-panel rounded-md bg-rice p-4 text-center text-sm font-semibold text-moss">候補を出すにはゴール設定が必要です</p>
             )}
             <div className="grid grid-cols-2 gap-2">
               <button className="secondary-button" onClick={() => setPage(1)}>戻る</button>
@@ -1633,7 +1642,7 @@ function PerfectFoodModal({ dayTotals, goal, menuItems, onClose, onLog }: {
 
 function PerfectFoodMetric({ label, value, suffix }: { label: string; value: number; suffix: string }) {
   return (
-    <div className="rounded-md bg-rice p-3">
+    <div className="perfect-food-panel rounded-md bg-rice p-3">
       <p className="text-xs font-bold text-moss">{label}</p>
       <p className="numeric-text mt-2 text-lg font-black">{round1(value)}<span className="ml-1 text-xs font-bold">{suffix}</span></p>
     </div>
