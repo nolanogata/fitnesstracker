@@ -221,6 +221,16 @@ const finisherPulseIntensity = "finisher_pulse";
 const finisherPulseNote = "仕上げパルス（部分可動域・素早く）";
 const appUpdates: AppUpdate[] = [
   {
+    id: "2026-06-14-komeraku-korean-oikos",
+    title: "こめらく・韓国系・ヨーグルト商品を追加",
+    date: "2026-06-14",
+    items: [
+      "こめらくのおひつごはん、お茶漬け膳、海鮮ごはん、手作りおむすびを追加しました。",
+      "スンドゥブ、チヂミ、トッポギなど韓国系の一般メニューを増やしました。",
+      "オイコスのヨーグルトとプロテインドリンクを公式栄養値ベースで追加しました。",
+    ],
+  },
+  {
     id: "2026-06-14-protein-products-expanded",
     title: "プロテイン商品を拡充",
     date: "2026-06-14",
