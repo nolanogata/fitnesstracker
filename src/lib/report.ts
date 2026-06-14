@@ -1,4 +1,4 @@
-import type { FoodEntry, Goal, Profile, WeightLog, WorkoutExercise, WorkoutSession, WorkoutSet } from "../types";
+import type { FoodEntry, Goal, Phase, Profile, WeightLog, WorkoutExercise, WorkoutSession, WorkoutSet } from "../types";
 import { dateRange } from "./date";
 import { phaseLabels } from "./goalCalculator";
 import { formatWeeklyWorkoutStatus, type WeeklyWorkoutStatus } from "./workoutStatus";
@@ -38,11 +38,14 @@ export function generateMarkdownReport(input: {
     { calories: 0, protein: 0, fat: 0, carbs: 0 },
   );
   const divisor = Math.max(foodDays.size, 1);
-  const latestWeight = input.weightLogs.at(-1);
-  const firstWeight = input.weightLogs[0];
+  const sortedWeightLogs = [...input.weightLogs].sort((a, b) => a.logged_at.localeCompare(b.logged_at));
+  const logsUpToPeriodEnd = sortedWeightLogs.filter((entry) => entry.app_date <= input.periodEnd);
+  const latestWeight = logsUpToPeriodEnd.at(-1) ?? sortedWeightLogs.at(-1);
+  const firstWeight = sortedWeightLogs[0];
+  const recentWeightLogs = logsUpToPeriodEnd.filter((entry) => entry.app_date >= addDays(input.periodEnd, -6));
   const eatingOut = input.foodEntries.filter((entry) => entry.entry_source !== "user" && entry.brand).length;
   const sweets = input.foodEntries.filter((entry) => /スイーツ|ケーキ|アイス|チョコ|プリン/.test(entry.name)).length;
-  const drinking = input.foodEntries.filter((entry) => /飲み会|ビール|アルコール/.test(`${entry.name} ${entry.note ?? ""}`)).length;
+  const drinking = input.foodEntries.filter((entry) => /飲み会|ビール|アルコール|ハイボール|サワー|日本酒|焼酎|ワイン|ウイスキー|梅酒|カクテル|マッコリ/.test(`${entry.name} ${entry.note ?? ""}`)).length;
   const estimatedFoodEntries = input.foodEntries.filter(isEstimatedFoodEntry);
   const sessionIds = new Set(input.workoutSessions.map((session) => session.id));
   const scopedExercises = input.workoutExercises.filter((exercise) => sessionIds.has(exercise.session_id));
@@ -172,9 +175,7 @@ ${targetBodyCompositionDetail}
 
 ## 体重トレンド
 
-- 初回: ${firstWeight?.weight_kg ?? "-"}kg
-- 最新: ${latestWeight?.weight_kg ?? "-"}kg
-- 記録回数: ${input.weightLogs.length}
+${formatWeightTrendSection({ isDaily, firstWeight, latestWeight, recentWeightLogs, totalCount: sortedWeightLogs.length })}
 
 ## 食事平均
 
@@ -428,7 +429,59 @@ function formatTargetBodyCompositionDetail(goal?: Goal, current?: { fatMass: num
 - 脂肪量: ${typeof fatChange === "number" ? `現在比 ${formatSignedKg(fatChange)}` : "現在推定がないため未計算"}
 - 除脂肪量: ${typeof leanChange === "number" ? `現在比 ${formatSignedKg(leanChange)}` : "現在推定がないため未計算"}
 
-補足: リコンプでは、体重だけでなく「脂肪量を減らし、除脂肪量を増やす」ことを目標にします。体組成計の数値は水分量やグリコーゲン量で変動するため、単日ではなく週平均・月平均の傾向で判断してください。`;
+補足: ${formatBodyCompositionGoalNote(goal.phase)}`;
+}
+
+function formatBodyCompositionGoalNote(phase: Phase) {
+  const trendNote = "体組成計の数値は水分量やグリコーゲン量で変動するため、単日ではなく週平均・月平均の傾向で判断してください。";
+  switch (phase) {
+    case "weight_loss":
+    case "slow_cut":
+      return `減量では、脂肪量を減らしつつ除脂肪量の低下をできるだけ抑えることを重視します。${trendNote}`;
+    case "lean_bulk":
+      return `リーンバルクでは、除脂肪量を増やしながら脂肪量の増加を最小限に抑えることを重視します。${trendNote}`;
+    case "recomposition":
+      return `リコンプでは、体重だけでなく「脂肪量を減らし、除脂肪量を増やす」ことを目標にします。${trendNote}`;
+    case "strength_focus":
+      return `筋力重視では、トレーニング出力を伸ばしながら除脂肪量の維持・増加と過度な脂肪増加の抑制を見ます。${trendNote}`;
+    case "maintenance":
+      return `維持では、体重を大きく動かさず、脂肪量と除脂肪量の傾向が目的から外れていないかを見ます。${trendNote}`;
+    case "custom":
+      return `カスタム設定では、入力された目標体重・目標体脂肪率・PFCを優先し、脂肪量と除脂肪量の変化が目的に合っているかを見ます。${trendNote}`;
+  }
+}
+
+function formatWeightTrendSection(input: {
+  isDaily: boolean;
+  firstWeight?: WeightLog;
+  latestWeight?: WeightLog;
+  recentWeightLogs: WeightLog[];
+  totalCount: number;
+}) {
+  const sevenLogAverage = averageWeight(input.recentWeightLogs);
+  if (input.isDaily) {
+    return [
+      `- 最新: ${formatWeightLog(input.latestWeight)}`,
+      `- 直近7日平均: ${sevenLogAverage ? `${formatKg(sevenLogAverage)}（${input.recentWeightLogs.length}件）` : "-"}`,
+      `- 参照できる体重記録: ${input.totalCount}件`,
+    ].join("\n");
+  }
+  return [
+    `- 初回: ${formatWeightLog(input.firstWeight)}`,
+    `- 最新: ${formatWeightLog(input.latestWeight)}`,
+    `- 直近7日平均: ${sevenLogAverage ? `${formatKg(sevenLogAverage)}（${input.recentWeightLogs.length}件）` : "-"}`,
+    `- 記録回数: ${input.totalCount}`,
+  ].join("\n");
+}
+
+function formatWeightLog(log?: WeightLog) {
+  if (!log) return "-";
+  return `${formatKg(log.weight_kg)} (${log.app_date})`;
+}
+
+function averageWeight(logs: WeightLog[]) {
+  if (!logs.length) return undefined;
+  return logs.reduce((sum, log) => sum + log.weight_kg, 0) / logs.length;
 }
 
 function formatKg(value: number) {
