@@ -101,6 +101,7 @@ type CalendarCell = {
   day?: number;
 };
 type ReportMode = HistoryGrouping;
+type GoalHelpTopic = "phase" | "activity" | "targetBodyFat";
 type AppUpdate = {
   id: string;
   title: string;
@@ -246,6 +247,16 @@ const weightStepOptions = [1, 2.5, 5, 10];
 const finisherPulseIntensity = "finisher_pulse";
 const finisherPulseNote = "仕上げパルス（部分可動域・素早く）";
 const appUpdates: AppUpdate[] = [
+  {
+    id: "2026-06-15-goal-setup-help",
+    title: "ゴール設定の案内を追加",
+    date: "2026-06-15",
+    items: [
+      "Homeのゴール設定案内を、目標達成期間と目標体脂肪率の新設が分かる内容に変更しました。",
+      "Settingsのフェーズ、運動強度、目標体脂肪率にヘルプを追加し、迷った時に設定の考え方を確認できるようにしました。",
+      "目標体脂肪率は分からなければ未指定でもよいこと、AI相談で目安を聞けることを案内するようにしました。",
+    ],
+  },
   {
     id: "2026-06-15-ai-report-weight-period-reference",
     title: "AIレポートの体重評価を7日平均対応に",
@@ -1148,7 +1159,7 @@ function App() {
   const latestWeight = weightLogs.at(-1);
   const dayTotals = useMemo(() => sumFood(todayEntries), [todayEntries]);
   const target = useMemo(() => activeGoal ?? defaultGoal(profile), [activeGoal, profile]);
-  const needsGoalTargetPeriod = !!activeGoal && !activeGoal.target_date;
+  const needsGoalTargetPeriod = !!activeGoal && (!activeGoal.target_date || typeof activeGoal.target_body_fat_percentage !== "number");
   const isCheatDay = cheatDayDates.includes(appDate);
   const targetCalories = target?.target_calories ?? 0;
   const homeTone = isCheatDay
@@ -1734,8 +1745,8 @@ function HomeTab(props: {
       {props.needsGoalTargetPeriod && (
         <button className="home-notice flex w-full items-center gap-3 px-4 py-3 text-left" onClick={props.openGoalSettings}>
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-bold">目標期間を設定してください</p>
-            <p className="mt-1 text-xs text-moss">目標体重と達成日から、減量・増量のカロリー補正を計算します。手動kcal/PFCは上書きしません。</p>
+            <p className="text-sm font-bold">ゴール設定を確認できます</p>
+            <p className="mt-1 text-xs text-moss">目標達成期間と目標体脂肪率を追加しました。設定すると期間補正やAIレポートの体組成判断が使いやすくなります。</p>
           </div>
           <ChevronRight className="shrink-0 text-muted" size={18} />
         </button>
@@ -3756,6 +3767,7 @@ function SettingsTab(props: {
   const [report, setReport] = useState("");
   const [copiedReport, setCopiedReport] = useState(false);
   const [backupImportMessage, setBackupImportMessage] = useState("");
+  const [goalHelpTopic, setGoalHelpTopic] = useState<GoalHelpTopic>();
   const goalSectionRef = useRef<HTMLElement | null>(null);
   const backupSectionRef = useRef<HTMLElement | null>(null);
   const myMenuSectionRef = useRef<HTMLElement | null>(null);
@@ -3894,19 +3906,19 @@ function SettingsTab(props: {
       <section ref={goalSectionRef} className={`compact-card scroll-mt-24 p-4 ${props.focus === "goal" ? "border-2 border-leaf" : ""}`}>
         <h2 className="font-bold">ゴール設定</h2>
         <div className="mt-3 grid grid-cols-2 gap-2">
-          <SelectField label="フェーズ" hint="体重・筋量をどう動かしたいか">
+          <SelectField label="フェーズ" hint="体重・筋量をどう動かしたいか" labelAction={<GoalHelpButton label="フェーズのヘルプ" onClick={() => setGoalHelpTopic("phase")} />}>
             <select value={goalDraft.phase} onChange={(event) => setGoalDraft({ ...goalDraft, phase: event.target.value as Phase })}>
               {Object.entries(phaseLabels).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
             </select>
           </SelectField>
-          <SelectField label="運動強度" hint="日常活動込みの消費量補正">
+          <SelectField label="運動強度" hint="日常活動込みの消費量補正" labelAction={<GoalHelpButton label="運動強度のヘルプ" onClick={() => setGoalHelpTopic("activity")} />}>
             <select value={goalDraft.activity_level} onChange={(event) => setGoalDraft({ ...goalDraft, activity_level: event.target.value as ActivityLevel })}>
               {Object.entries(activityLabels).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
             </select>
           </SelectField>
           <NumberInput label="年齢" value={goalDraft.age} onChange={(value) => setGoalDraft({ ...goalDraft, age: value })} />
           <NumberInput label="目標体重" value={goalDraft.target_weight_kg} step={0.1} onChange={(value) => setGoalDraft({ ...goalDraft, target_weight_kg: value })} />
-          <NumberInput label="目標体脂肪 % (0=未設定)" value={goalDraft.target_body_fat_percentage} step={0.1} onChange={(value) => setGoalDraft({ ...goalDraft, target_body_fat_percentage: clampBodyFat(value) })} />
+          <NumberInput label="目標体脂肪 % (0=未設定)" labelAction={<GoalHelpButton label="目標体脂肪率のヘルプ" onClick={() => setGoalHelpTopic("targetBodyFat")} />} value={goalDraft.target_body_fat_percentage} step={0.1} onChange={(value) => setGoalDraft({ ...goalDraft, target_body_fat_percentage: clampBodyFat(value) })} />
           <SelectField label="目標達成日" hint="体重差からkcal補正">
             <input
               type="date"
@@ -4049,6 +4061,7 @@ function SettingsTab(props: {
         <p className="mt-2">同じURLを友達が開いても、ログは各iPhone内に別々に保存されます。</p>
         <button className="secondary-button mt-3 w-full" onClick={props.openUpdateNotes}><FileText size={17} />更新内容</button>
       </section>
+      {goalHelpTopic && <GoalHelpModal topic={goalHelpTopic} onClose={() => setGoalHelpTopic(undefined)} />}
     </div>
   );
 }
@@ -5385,7 +5398,7 @@ function TapSliderControl({ label, value, suffix, step, min, max, onChange }: {
   );
 }
 
-function NumberInput({ label, value, step = 1, onChange }: { label: string; value: number; step?: number; onChange: (value: number) => void }) {
+function NumberInput({ label, labelAction, value, step = 1, onChange }: { label: string; labelAction?: ReactNode; value: number; step?: number; onChange: (value: number) => void }) {
   const [inputValue, setInputValue] = useState(String(value));
   useEffect(() => {
     setInputValue(String(value));
@@ -5402,7 +5415,10 @@ function NumberInput({ label, value, step = 1, onChange }: { label: string; valu
   const baseValue = Number.isFinite(current) ? current : value;
   return (
     <label className="text-xs font-semibold">
-      {label}
+      <span className="flex items-center gap-1">
+        <span>{label}</span>
+        {labelAction}
+      </span>
       <div className="number-stepper mt-1">
         <button type="button" className="number-stepper-button" onClick={() => commit(baseValue - step)} aria-label={`${label}を減らす`}>
           <Minus size={14} />
@@ -5432,14 +5448,94 @@ function NumberInput({ label, value, step = 1, onChange }: { label: string; valu
   );
 }
 
-function SelectField({ label, hint, children }: { label: string; hint: string; children: ReactNode }) {
+function SelectField({ label, hint, labelAction, children }: { label: string; hint: string; labelAction?: ReactNode; children: ReactNode }) {
   return (
     <label className="text-xs font-semibold">
-      <span>{label}</span>
-      <span className="ml-1 font-normal text-moss">{hint}</span>
+      <span className="flex items-center gap-1">
+        <span>{label}</span>
+        {labelAction}
+      </span>
+      <span className="font-normal text-moss">{hint}</span>
       <div className="mt-1">{children}</div>
     </label>
   );
+}
+
+function GoalHelpButton({ label, onClick }: { label: string; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-line bg-rice text-[10px] font-black leading-none text-moss"
+      aria-label={label}
+      onClick={(event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        onClick();
+      }}
+    >
+      ?
+    </button>
+  );
+}
+
+function GoalHelpModal({ topic, onClose }: { topic: GoalHelpTopic; onClose: () => void }) {
+  const content = goalHelpContent(topic);
+  return (
+    <div className="fixed inset-0 z-50 flex items-end bg-ink/30 px-4 pb-4" onClick={onClose}>
+      <div className="compact-card w-full p-4" onClick={(event) => event.stopPropagation()}>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-lg font-bold">{content.title}</p>
+            <p className="mt-1 text-xs text-moss">{content.subtitle}</p>
+          </div>
+          <button className="icon-button h-9 w-9" aria-label="閉じる" onClick={onClose}>×</button>
+        </div>
+        <div className="mt-4 space-y-2 text-sm leading-relaxed text-moss">
+          {content.items.map((item) => (
+            <p key={item}>{item}</p>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function goalHelpContent(topic: GoalHelpTopic) {
+  if (topic === "phase") {
+    return {
+      title: "フェーズの選び方",
+      subtitle: "今いちばん優先したい体の変化を選びます。",
+      items: [
+        "減量/ゆる減量は、体脂肪を落とすことを優先します。ゆる減量は続けやすさ重視です。",
+        "維持は、体重を大きく動かさず記録を安定させたい時に使います。",
+        "リコンプは、体重より見た目や体組成を重視し、脂肪を抑えながら筋肉や筋力を伸ばしたい時に向いています。",
+        "リーンバルク/筋力重視は、筋肉やトレーニング出力を伸ばすために少し多めに食べる方向です。",
+      ],
+    };
+  }
+  if (topic === "activity") {
+    return {
+      title: "運動強度の目安",
+      subtitle: "筋トレだけでなく、仕事・移動・歩数など日常活動も含めます。",
+      items: [
+        "低め: 座り仕事や在宅中心で、運動日以外はあまり歩かない。",
+        "普通: 日常でそこそこ歩く、または週2〜4回くらい運動する。",
+        "高め: 立ち仕事・よく歩く生活、または週4〜6回しっかり運動する。",
+        "かなり高い: 肉体労働や競技練習など、毎日の消費がかなり多い。",
+        "迷ったら普通から始めて、2〜3週間の体重トレンドと体調で調整するのがおすすめです。",
+      ],
+    };
+  }
+  return {
+    title: "目標体脂肪率について",
+    subtitle: "体重だけでは見えない、脂肪量と除脂肪量の目標に使います。",
+    items: [
+      "リコンプやバルクでは、目標体重だけでなく脂肪量と除脂肪量の変化を見ると判断しやすくなります。",
+      "わからなければ0のまま未指定でOKです。未指定でもカロリーやPFCの設定は使えます。",
+      "体組成計の数値は水分量でぶれやすいので、単日ではなく週平均や月平均の傾向で見ます。",
+      "目安に迷う場合は、AI相談レポートを作って「今の体重・体脂肪率なら目標体脂肪率は何%が現実的？」と聞いてみてください。",
+    ],
+  };
 }
 
 function PartialNumberInput({ label, value, step = 1, onChange }: { label: string; value: string; step?: number; onChange: (value: string) => void }) {
