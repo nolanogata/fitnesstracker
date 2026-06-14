@@ -19,6 +19,8 @@ const phaseAdjustments: Record<Phase, number> = {
   custom: 0,
 };
 
+const kcalPerKg = 7700;
+
 export const phaseLabels: Record<Phase, string> = {
   weight_loss: "減量",
   slow_cut: "ゆる減量",
@@ -43,6 +45,7 @@ export function calculateTargets(input: {
   activity_level: ActivityLevel;
   phase: Phase;
   target_weight_kg?: number;
+  target_date?: string;
   manual_target_calories?: number;
   manual_protein_g?: number;
   manual_fat_g?: number;
@@ -50,6 +53,7 @@ export function calculateTargets(input: {
 }) {
   const weight = input.profile.current_weight_kg;
   const macroWeight = input.target_weight_kg && input.target_weight_kg > 0 ? input.target_weight_kg : weight;
+  const periodAdjustment = calculateTargetPeriodAdjustment(weight, input.target_weight_kg, input.target_date);
   const hasBodyFat = typeof input.profile.body_fat_percentage === "number";
   const bmr = hasBodyFat
     ? 370 + 21.6 * (weight * (1 - (input.profile.body_fat_percentage ?? 0) / 100))
@@ -59,7 +63,7 @@ export function calculateTargets(input: {
       (input.sex === "male" ? 5 : input.sex === "female" ? -161 : -78);
   const tdee = bmr * activityFactors[input.activity_level];
   const targetCalories =
-    input.manual_target_calories ?? Math.round(tdee + phaseAdjustments[input.phase]);
+    input.manual_target_calories ?? Math.round(tdee + (periodAdjustment?.dailyCalories ?? phaseAdjustments[input.phase]));
   const protein = input.manual_protein_g ?? calculateProteinTarget(macroWeight, input.phase, input.activity_level, input.age);
   const fat = input.manual_fat_g ?? calculateFatTarget(targetCalories, macroWeight, input.phase);
   const carbs = input.manual_carbs_g ?? Math.round((targetCalories - protein * 4 - fat * 9) / 4);
@@ -70,6 +74,8 @@ export function calculateTargets(input: {
     target_protein_g: protein,
     target_fat_g: fat,
     target_carbs_g: carbs,
+    target_daily_calorie_adjustment: periodAdjustment?.dailyCalories,
+    target_weight_change_per_week_kg: periodAdjustment?.weeklyWeightChange,
     carbs_warning: carbs < 0,
   };
 }
@@ -80,6 +86,7 @@ export function buildGoal(input: {
   activity_level: ActivityLevel;
   age: number;
   target_weight_kg?: number;
+  target_date?: string;
   manual_target_calories?: number;
   manual_protein_g?: number;
   manual_fat_g?: number;
@@ -96,6 +103,7 @@ export function buildGoal(input: {
     activity_level: input.activity_level,
     age: input.age,
     target_weight_kg: input.target_weight_kg,
+    target_date: input.target_date,
     target_calories: recalculated.target_calories,
     target_protein_g: recalculated.target_protein_g,
     target_fat_g: recalculated.target_fat_g,
@@ -106,11 +114,31 @@ export function buildGoal(input: {
     manual_carbs_g: input.manual_carbs_g,
     target_workouts_per_week: input.target_workouts_per_week,
     target_cardio_sessions_per_week: input.target_cardio_sessions_per_week,
+    target_daily_calorie_adjustment: recalculated.target_daily_calorie_adjustment,
+    target_weight_change_per_week_kg: recalculated.target_weight_change_per_week_kg,
     start_date: todayAppDate(),
     is_active: true,
     created_at: timestamp,
     updated_at: timestamp,
   };
+}
+
+function calculateTargetPeriodAdjustment(currentWeightKg: number, targetWeightKg?: number, targetDate?: string) {
+  if (!targetWeightKg || targetWeightKg <= 0 || !targetDate) return undefined;
+  const today = todayAppDate();
+  const days = daysBetween(today, targetDate);
+  if (days <= 0) return undefined;
+  const totalWeightDelta = targetWeightKg - currentWeightKg;
+  return {
+    dailyCalories: Math.round((totalWeightDelta * kcalPerKg) / days),
+    weeklyWeightChange: Number(((totalWeightDelta / days) * 7).toFixed(2)),
+  };
+}
+
+function daysBetween(startDate: string, endDate: string) {
+  const start = new Date(`${startDate}T12:00:00`).getTime();
+  const end = new Date(`${endDate}T12:00:00`).getTime();
+  return Math.round((end - start) / 86_400_000);
 }
 
 function calculateProteinTarget(weightKg: number, phase: Phase, activityLevel: ActivityLevel, age: number) {
