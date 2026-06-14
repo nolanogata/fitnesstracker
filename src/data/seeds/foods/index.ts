@@ -17,6 +17,7 @@ import { cafeFoods } from "./chains/cafe";
 import { convenienceFoods } from "./chains/convenience";
 import { cocoichiOfficialFoods } from "./chains/cocoichiOfficial";
 import { dailyChainOfficialFoods } from "./chains/dailyChainsOfficial";
+import { donutChainFoods } from "./chains/donutChains";
 import { doutorOfficialFoods } from "./chains/doutorOfficial";
 import { externalNutritionFoods } from "./externalNutrition";
 import { gyudonTeishokuOfficialCoverageFoods } from "./chains/gyudonTeishokuOfficialCoverage";
@@ -60,6 +61,7 @@ export const foodSeeds = [
   ...mcdonaldsKfcOfficialCoverageFoods,
   ...gyudonTeishokuOfficialCoverageFoods,
   ...subwayOfficialFoods,
+  ...donutChainFoods,
   ...doutorOfficialFoods,
   ...tullysOfficialFoods,
   ...cocoichiOfficialFoods,

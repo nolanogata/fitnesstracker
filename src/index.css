@@ -735,6 +735,17 @@ button {
   color: #1f2722;
 }
 
+.manual-subcategory-scroll {
+  scroll-padding-inline: 0.25rem;
+}
+
+.manual-subcategory-chip {
+  min-width: max-content;
+  flex: 0 0 auto;
+  white-space: nowrap;
+  writing-mode: horizontal-tb;
+}
+
 .mini-chip {
   @apply inline-flex min-h-8 min-w-8 items-center justify-center px-2 text-[11px] font-bold text-moss transition active:scale-[0.98];
   border: 1px solid var(--glass-border);
