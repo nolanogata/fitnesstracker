@@ -1018,6 +1018,76 @@ button {
   color: #b85f4f;
 }
 
+.food-filter-button {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.64), rgba(255, 255, 255, 0.4)),
+    rgba(255, 255, 255, 0.36);
+  color: var(--text-secondary);
+  box-shadow: 0 10px 24px rgba(35, 45, 38, 0.06), var(--glass-highlight);
+  backdrop-filter: blur(22px) saturate(140%);
+  -webkit-backdrop-filter: blur(22px) saturate(140%);
+}
+
+.food-filter-button-active {
+  border-color: rgba(111, 143, 125, 0.36);
+  background:
+    linear-gradient(135deg, rgba(221, 232, 225, 0.86), rgba(255, 255, 255, 0.48)),
+    rgba(255, 255, 255, 0.48);
+  color: #566e61;
+}
+
+.food-filter-button-highlight {
+  animation: food-filter-pulse 1.8s ease-in-out infinite;
+}
+
+.food-filter-intro {
+  border-color: rgba(111, 143, 125, 0.26);
+  background:
+    linear-gradient(135deg, rgba(221, 232, 225, 0.7), rgba(255, 255, 255, 0.54)),
+    rgba(255, 255, 255, 0.48);
+}
+
+.food-filter-panel {
+  border-color: rgba(111, 143, 125, 0.22);
+}
+
+.food-filter-option {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.46);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.38);
+  padding: 0.7rem 0.75rem;
+  text-align: left;
+  box-shadow: var(--glass-highlight);
+}
+
+.food-filter-option-active {
+  border-color: rgba(111, 143, 125, 0.34);
+  background:
+    linear-gradient(135deg, rgba(221, 232, 225, 0.78), rgba(255, 255, 255, 0.48)),
+    rgba(255, 255, 255, 0.44);
+}
+
+@keyframes food-filter-pulse {
+  0%,
+  100% {
+    box-shadow: 0 10px 24px rgba(35, 45, 38, 0.06), 0 0 0 0 rgba(111, 143, 125, 0.28), var(--glass-highlight);
+  }
+  50% {
+    box-shadow: 0 12px 28px rgba(35, 45, 38, 0.1), 0 0 0 5px rgba(111, 143, 125, 0.14), var(--glass-highlight);
+  }
+}
+
 .workout-template-row,
 .exercise-preset-row {
   display: grid;
@@ -1461,6 +1531,46 @@ button {
   border-color: rgba(240, 154, 134, 0.32);
   background: rgba(240, 154, 134, 0.16);
   color: #ffc3b7;
+}
+
+.theme-dark .food-filter-button,
+:root[data-theme="dark"] .food-filter-button {
+  border-color: rgba(255, 255, 255, 0.16);
+  background:
+    linear-gradient(135deg, rgba(238, 244, 239, 0.12), rgba(185, 206, 190, 0.08)),
+    rgba(255, 255, 255, 0.08);
+  color: #d7e4da;
+}
+
+.theme-dark .food-filter-button-active,
+:root[data-theme="dark"] .food-filter-button-active {
+  border-color: rgba(159, 190, 169, 0.34);
+  background:
+    linear-gradient(135deg, rgba(159, 190, 169, 0.24), rgba(255, 255, 255, 0.08)),
+    rgba(255, 255, 255, 0.1);
+  color: #f0fbf2;
+}
+
+.theme-dark .food-filter-intro,
+:root[data-theme="dark"] .food-filter-intro,
+.theme-dark .food-filter-panel,
+:root[data-theme="dark"] .food-filter-panel {
+  border-color: rgba(159, 190, 169, 0.18);
+  background:
+    linear-gradient(135deg, rgba(25, 39, 31, 0.92), rgba(13, 22, 17, 0.86)),
+    rgba(255, 255, 255, 0.06);
+}
+
+.theme-dark .food-filter-option,
+:root[data-theme="dark"] .food-filter-option {
+  border-color: rgba(255, 255, 255, 0.13);
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.theme-dark .food-filter-option-active,
+:root[data-theme="dark"] .food-filter-option-active {
+  border-color: rgba(159, 190, 169, 0.32);
+  background: rgba(159, 190, 169, 0.15);
 }
 
 .theme-dark .calorie-card-under {

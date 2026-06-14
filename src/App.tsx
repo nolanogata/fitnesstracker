@@ -31,6 +31,7 @@ import {
   Search,
   Settings,
   ShoppingBag,
+  SlidersHorizontal,
   Soup,
   Store,
   Trash2,
@@ -211,6 +212,7 @@ const emptyManual: ManualFoodDraft = {
 
 const backupStorageKey = "phase-log-last-backup-at";
 const updateSeenStorageKey = "phase-log-seen-update-id";
+const foodFitFilterSeenStorageKey = "phase-log-food-fit-filter-seen-2026-06-14";
 const workoutWeightPresetStorageKey = "phase-log-workout-weight-presets";
 const cheatDayStorageKey = "phase-log-cheat-day-dates";
 const staleAppPromptDelayMs = 6 * 60 * 60 * 1000;
@@ -218,6 +220,16 @@ const weightStepOptions = [1, 2.5, 5, 10];
 const finisherPulseIntensity = "finisher_pulse";
 const finisherPulseNote = "仕上げパルス（部分可動域・素早く）";
 const appUpdates: AppUpdate[] = [
+  {
+    id: "2026-06-14-food-search-fit-filter",
+    title: "食事検索に栄養バランスフィルターを追加",
+    date: "2026-06-14",
+    items: [
+      "Foodタブの検索バー横にフィルターボタンを追加しました。",
+      "目標を超えない候補だけに絞り込み、必要な時だけP不足やF/C超過のバランス表示を出せるようにしました。",
+      "アップデート後に初めてFoodタブを開いた時、変更点がわかる案内を表示するようにしました。",
+    ],
+  },
   {
     id: "2026-06-14-perfect-food-macro-breakdown",
     title: "ぴったりフードの判定を詳しく表示",
@@ -1797,6 +1809,9 @@ function FoodTab(props: {
   const [categoryGenre, setCategoryGenre] = useState("ごはん・丼");
   const [generalCategory, setGeneralCategory] = useState("ごはん・丼");
   const [hideOverGoalItems, setHideOverGoalItems] = useState(false);
+  const [showFoodBalance, setShowFoodBalance] = useState(false);
+  const [isFoodFilterOpen, setIsFoodFilterOpen] = useState(false);
+  const [showFoodFilterIntro, setShowFoodFilterIntro] = useState(() => localStorage.getItem(foodFitFilterSeenStorageKey) !== "1");
 
   const recentIds = new Set(props.foodEntries.slice(0, 20).map((entry) => entry.menu_item_id).filter(Boolean));
   const favoriteItems = props.menuItems.filter((item) => item.is_favorite);
@@ -1818,6 +1833,14 @@ function FoodTab(props: {
   };
   const scrollToGenericSection = () => {
     window.setTimeout(() => genericSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
+  };
+  const dismissFoodFilterIntro = () => {
+    setShowFoodFilterIntro(false);
+    localStorage.setItem(foodFitFilterSeenStorageKey, "1");
+  };
+  const openFoodFilterOptions = () => {
+    setIsFoodFilterOpen((value) => !value);
+    if (showFoodFilterIntro) dismissFoodFilterIntro();
   };
   useEffect(() => {
     if (props.focus !== "todayLog") return;
@@ -1865,6 +1888,8 @@ function FoodTab(props: {
   const isGlobalSearch = query.trim().length > 0;
   const remainingNutrition = getRemainingNutrition(props.dayTotals, props.goal);
   const canUseOverGoalFilter = !!props.goal && props.goal.target_calories > 0;
+  const canShowFoodBalance = canUseOverGoalFilter;
+  const isFoodFitFilterActive = (hideOverGoalItems && canUseOverGoalFilter) || (showFoodBalance && canShowFoodBalance);
   const results = useMemo(() => {
     const needle = query.trim().toLowerCase();
     const tokens = needle.split(/\s+/).filter(Boolean);
@@ -2053,8 +2078,65 @@ function FoodTab(props: {
             <Search className="pointer-events-none absolute left-3 top-3.5 text-moss" size={20} />
             <input className="h-12 w-full pl-10 text-base" value={query} onChange={(event) => updateSearchQuery(event.target.value)} placeholder="食品・ブランド検索" />
           </div>
+          <button
+            type="button"
+            className={`food-filter-button h-12 w-12 ${isFoodFitFilterActive ? "food-filter-button-active" : ""} ${showFoodFilterIntro ? "food-filter-button-highlight" : ""}`}
+            aria-label="食事検索フィルター"
+            onClick={openFoodFilterOptions}
+          >
+            <SlidersHorizontal size={18} />
+          </button>
           <button type="submit" className={`${mode === "search" || isGlobalSearch ? "primary-button" : "secondary-button"} h-12 px-4`}>検索</button>
         </form>
+        {showFoodFilterIntro && mode !== "manual" && (
+          <section className="food-filter-intro compact-card p-3">
+            <div className="min-w-0">
+              <p className="text-sm font-bold">検索フィルターが増えました</p>
+              <p className="mt-1 text-xs text-moss">検索バー横のボタンから、目標内だけ表示やP/F/Cバランス表示を選べます。</p>
+            </div>
+            <div className="mt-3 flex gap-2">
+              <button className="primary-button h-9 flex-1 px-3 text-xs" onClick={openFoodFilterOptions}>使ってみる</button>
+              <button className="secondary-button h-9 px-3 text-xs" onClick={dismissFoodFilterIntro}>閉じる</button>
+            </div>
+          </section>
+        )}
+        {isFoodFilterOpen && mode !== "manual" && (
+          <section className="food-filter-panel compact-card p-3">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-sm font-bold">検索フィルター</p>
+                <p className="numeric-text mt-1 text-[11px] font-semibold text-moss">
+                  あと {Math.max(0, Math.round(remainingNutrition.calories))}kcal / P{round1(remainingNutrition.protein)} F{round1(remainingNutrition.fat)} C{round1(remainingNutrition.carbs)}
+                </p>
+              </div>
+              <button className="icon-button h-8 w-8" aria-label="フィルターを閉じる" onClick={() => setIsFoodFilterOpen(false)}>×</button>
+            </div>
+            <div className="mt-3 space-y-2">
+              <button
+                className={`food-filter-option ${hideOverGoalItems ? "food-filter-option-active" : ""} ${!canUseOverGoalFilter ? "opacity-50" : ""}`}
+                disabled={!canUseOverGoalFilter}
+                onClick={() => setHideOverGoalItems((value) => !value)}
+              >
+                <span>
+                  <span className="block text-sm font-bold">目標を超えないメニューのみ表示</span>
+                  <span className="mt-1 block text-xs text-moss">kcal/F/Cが今日の残り枠に収まる候補だけに絞ります。</span>
+                </span>
+                <span className="mini-chip shrink-0">{hideOverGoalItems ? "ON" : "OFF"}</span>
+              </button>
+              <button
+                className={`food-filter-option ${showFoodBalance ? "food-filter-option-active" : ""} ${!canShowFoodBalance ? "opacity-50" : ""}`}
+                disabled={!canShowFoodBalance}
+                onClick={() => setShowFoodBalance((value) => !value)}
+              >
+                <span>
+                  <span className="block text-sm font-bold">残りの数値とのバランスを表示</span>
+                  <span className="mt-1 block text-xs text-moss">P不足、F/C超過、kcal超過を検索結果の行に表示します。</span>
+                </span>
+                <span className="mini-chip shrink-0">{showFoodBalance ? "ON" : "OFF"}</span>
+              </button>
+            </div>
+          </section>
+        )}
         {!isGlobalSearch && (
           <div className="grid grid-cols-3 gap-2">
             {(["favorite", "personal", "manual", "chain", "category", "quick"] as FoodMode[]).map((item) => (
@@ -2065,24 +2147,6 @@ function FoodTab(props: {
           </div>
         )}
       </div>
-
-      {mode !== "manual" && (
-        <section className="compact-card flex items-center justify-between gap-3 p-3">
-          <div className="min-w-0">
-            <p className="text-sm font-bold">目標内のメニューのみ表示</p>
-            <p className="numeric-text mt-1 truncate text-[11px] font-semibold text-moss">
-              あと {Math.max(0, Math.round(remainingNutrition.calories))}kcal / F{round1(remainingNutrition.fat)} C{round1(remainingNutrition.carbs)}
-            </p>
-          </div>
-          <button
-            className={`chip shrink-0 justify-center ${hideOverGoalItems ? "chip-active" : ""} ${!canUseOverGoalFilter ? "opacity-50" : ""}`}
-            disabled={!canUseOverGoalFilter}
-            onClick={() => setHideOverGoalItems((value) => !value)}
-          >
-            {hideOverGoalItems ? "ON" : "OFF"}
-          </button>
-        </section>
-      )}
 
       {mode === "chain" && (
         <section className="compact-card scroll-mt-24 p-3" ref={chainSectionRef}>
@@ -2149,7 +2213,16 @@ function FoodTab(props: {
           )}
           <section className="compact-card divide-y divide-line overflow-hidden scroll-mt-24" ref={foodResultsRef}>
             <ListHeader title={isGlobalSearch ? "検索結果" : mode === "category" ? categoryGenre : mode === "quick" ? generalCategory : foodModeLabel(mode)} value={`${results.length}件`} />
-            {results.map((item) => <FoodItemRow key={item.id} item={item} onPick={selectFoodItem} onClone={setManualFromItem(setManual, setMode)} refresh={props.refresh} />)}
+            {results.map((item) => (
+              <FoodItemRow
+                key={item.id}
+                item={item}
+                onPick={selectFoodItem}
+                onClone={setManualFromItem(setManual, setMode)}
+                refresh={props.refresh}
+                balanceTarget={showFoodBalance && canShowFoodBalance ? remainingNutrition : undefined}
+              />
+            ))}
             {results.length === 0 && <EmptyLine text="見つかりません" />}
           </section>
         </>
@@ -3699,16 +3772,27 @@ function ManualFoodForm({ manual, setManual, onSave, compact = false, mode = "lo
   );
 }
 
-function FoodItemRow({ item, onPick, onClone, refresh }: { item: MenuItem; onPick: (item: MenuItem) => void; onClone: (item: MenuItem) => void; refresh: () => Promise<void> }) {
+function FoodItemRow({ item, onPick, onClone, refresh, balanceTarget }: {
+  item: MenuItem;
+  onPick: (item: MenuItem) => void;
+  onClone: (item: MenuItem) => void;
+  refresh: () => Promise<void>;
+  balanceTarget?: { calories: number; protein: number; fat: number; carbs: number };
+}) {
   const pictogram = getFoodPictogram(item);
+  const fit = balanceTarget ? getPerfectFoodFit(item, balanceTarget) : undefined;
   return (
     <div className="flex items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-rice/70">
       <Pictogram {...pictogram} />
       <button className="min-w-0 flex-1 text-left" onClick={() => onPick(item)}>
         <p className="truncate text-sm font-semibold">{formatMenuItemName(item)}</p>
         <p className="numeric-text truncate text-xs text-moss">{item.brand ?? item.category} · {item.calories}kcal · P{item.protein_g} F{item.fat_g} C{item.carbs_g}</p>
-        <div className="mt-1">
+        <div className="mt-1 flex flex-wrap items-center gap-1.5">
           <SourceBadge item={item} source={item.data_source} confidence={item.confidence} />
+          {fit && <span className={`perfect-food-fit-badge perfect-food-fit-${fit.tone}`}>{fit.label}</span>}
+          {fit?.details.map((detail) => (
+            <span className={`perfect-food-detail-chip perfect-food-detail-${detail.tone}`} key={detail.label}>{detail.label}</span>
+          ))}
         </div>
       </button>
       <button className="icon-button h-8 w-8" aria-label="編集して個人メニュー化" onClick={() => onClone(item)}><Pencil size={14} /></button>
