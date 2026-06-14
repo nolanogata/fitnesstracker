@@ -247,6 +247,16 @@ const finisherPulseIntensity = "finisher_pulse";
 const finisherPulseNote = "仕上げパルス（部分可動域・素早く）";
 const appUpdates: AppUpdate[] = [
   {
+    id: "2026-06-15-ai-report-weight-period-reference",
+    title: "AIレポートの体重評価を7日平均対応に",
+    date: "2026-06-15",
+    items: [
+      "AI相談レポートに、最新体重基準と7日平均基準の目標体重差分を追加しました。",
+      "期間補正の参考値を最新体重基準と7日平均基準で分けて表示し、フェーズ別にどちらを重視するか分かるようにしました。",
+      "カスタムkcal/PFCがある場合、期間補正をさらに上乗せせず、現在の目標値を最終目標として扱うようレポートに明記しました。",
+    ],
+  },
+  {
     id: "2026-06-15-ai-report-phase-weight-alcohol",
     title: "AIレポートとお酒メニューを調整",
     date: "2026-06-15",
