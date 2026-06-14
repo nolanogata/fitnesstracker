@@ -3494,6 +3494,9 @@ function ExerciseAddModal({ draft, setDraft, onClose, onAddAnother, onSave }: {
   const [weightStep, setWeightStep] = useState(() => inferWeightStep(draft.exercise));
   const [step, setStep] = useState<"duration" | "weight" | "reps" | "sets" | "confirm" | "done">(isCardio ? "duration" : "weight");
   const [weightPresets, setWeightPresets] = useState(() => loadWorkoutWeightPresets(draft.exercise.id, draft.weight_kg, weightStep));
+  const [hasUnsavedWeightPreset, setHasUnsavedWeightPreset] = useState(false);
+  const [isWeightPresetPickerOpen, setIsWeightPresetPickerOpen] = useState(false);
+  const [weightPresetMessage, setWeightPresetMessage] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const setCount = Math.min(5, Math.max(1, Math.round(draft.sets)));
   const summary = isCardio
@@ -3509,6 +3512,14 @@ function ExerciseAddModal({ draft, setDraft, onClose, onAddAnother, onSave }: {
     const nextPresets = weightPresets.map((value, valueIndex) => valueIndex === index ? normalized : value);
     setWeightPresets(nextPresets);
     saveWorkoutWeightPresets(draft.exercise.id, nextPresets);
+    setHasUnsavedWeightPreset(false);
+    setIsWeightPresetPickerOpen(false);
+    setWeightPresetMessage(`プリセット${index + 1}に保存しました`);
+  };
+  const updateDraftWeight = (weight_kg: number) => {
+    setDraft({ ...draft, weight_kg });
+    setHasUnsavedWeightPreset(true);
+    setWeightPresetMessage("");
   };
   const handleSave = async () => {
     if (isSaving) return;
@@ -3578,7 +3589,7 @@ function ExerciseAddModal({ draft, setDraft, onClose, onAddAnother, onSave }: {
                 step={weightStep}
                 min={0}
                 max={sliderMax(draft.weight_kg, 200, weightStep)}
-                onChange={(weight_kg) => setDraft({ ...draft, weight_kg })}
+                onChange={updateDraftWeight}
               />
               <div className="mt-4">
                 <p className="mb-2 text-xs font-bold text-moss">重量プリセット</p>
@@ -3587,17 +3598,22 @@ function ExerciseAddModal({ draft, setDraft, onClose, onAddAnother, onSave }: {
                     <button
                       className={`mini-chip ${roundToStep(draft.weight_kg, weightStep) === roundToStep(value, weightStep) ? "mini-chip-active" : ""}`}
                       key={`${index}-${value}`}
-                      onClick={() => setDraft({ ...draft, weight_kg: value })}
+                      onClick={() => {
+                        setDraft({ ...draft, weight_kg: value });
+                        setHasUnsavedWeightPreset(false);
+                        setWeightPresetMessage("");
+                      }}
                     >
                       {formatControlValue(value)}
                     </button>
                   ))}
                 </div>
-                <div className="mt-2 grid grid-cols-5 gap-1.5">
-                  {weightPresets.map((_, index) => (
-                    <button className="mini-chip" key={index} onClick={() => saveWeightPreset(index)}>保存{index + 1}</button>
-                  ))}
-                </div>
+                {hasUnsavedWeightPreset && (
+                  <button className="secondary-button mt-2 w-full py-2 text-xs" onClick={() => setIsWeightPresetPickerOpen(true)}>
+                    <Save size={15} />重量プリセットに保存
+                  </button>
+                )}
+                {weightPresetMessage && <p className="mt-2 text-xs font-semibold text-moss">{weightPresetMessage}</p>}
               </div>
             </div>
             <div className="grid grid-cols-2 gap-2">
@@ -3648,11 +3664,32 @@ function ExerciseAddModal({ draft, setDraft, onClose, onAddAnother, onSave }: {
             </div>
             <div className="grid grid-cols-2 gap-2">
               <button className="secondary-button" onClick={() => setStep(isCardio ? "duration" : "sets")}>戻る</button>
-              <button className="primary-button" disabled={isSaving} onClick={handleSave}><Plus size={17} />{isSaving ? "追加中" : "この種目を記録に追加"}</button>
+              <button className="primary-button whitespace-nowrap" disabled={isSaving} onClick={handleSave}><Plus size={17} />{isSaving ? "追加中" : "今日の記録に追加"}</button>
             </div>
           </div>
         )}
       </div>
+      {isWeightPresetPickerOpen && (
+        <div className="fixed inset-0 z-50 flex items-end bg-ink/35 px-4 pb-4">
+          <div className="compact-card w-full p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-base font-bold">保存先を選択</p>
+                <p className="mt-1 text-xs text-moss">{formatControlValue(roundToStep(Math.max(0, draft.weight_kg), weightStep))}kgで置き換えます</p>
+              </div>
+              <button className="icon-button h-9 w-9" aria-label="閉じる" onClick={() => setIsWeightPresetPickerOpen(false)}>×</button>
+            </div>
+            <div className="mt-4 grid gap-2">
+              {weightPresets.map((value, index) => (
+                <button className="secondary-button justify-between px-4" key={`${index}-${value}`} onClick={() => saveWeightPreset(index)}>
+                  <span>プリセット{index + 1}</span>
+                  <span className="numeric-text text-xs text-muted">{formatControlValue(value)}kg → {formatControlValue(roundToStep(Math.max(0, draft.weight_kg), weightStep))}kg</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
