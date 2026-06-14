@@ -49,6 +49,10 @@ body,
   min-height: 100%;
 }
 
+html {
+  background: #f8f7f3;
+}
+
 body {
   margin: 0;
   background:
@@ -1241,6 +1245,10 @@ button {
 
 .theme-dark .text-ink {
   color: #edf4ee !important;
+}
+
+.theme-dark .text-ink\/80 {
+  color: rgba(237, 244, 238, 0.82) !important;
 }
 
 .theme-dark .text-moss,
