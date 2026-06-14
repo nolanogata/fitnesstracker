@@ -136,6 +136,11 @@ type FoodEntryEditDraft = {
   carbs_g: string;
   salt_g: string;
 };
+type PerfectFoodPlan = "meal" | "snack" | "protein" | "none";
+type PerfectFoodSuggestionGroup = {
+  label: string;
+  items: MenuItem[];
+};
 
 const mealLabels: Record<MealType, string> = {
   breakfast: "朝",
@@ -163,7 +168,7 @@ const chainCategories: Record<string, string[]> = {
 
 const genericCategories: Record<string, string[]> = {
   "ごはん・丼": ["白米", "おにぎり", "チャーハン", "オムライス", "親子丼", "カツ丼", "ネギトロ", "まぐろ", "サーモン", "天丼", "豚丼", "焼肉", "ビビンバ", "クッパ", "カレー", "インドカレー", "インド料理", "寿司"],
-  麺類: ["ラーメン", "つけ麺", "油そば", "タンメン", "担々麺", "トッピング", "うどん", "そば", "パスタ", "スパゲティ", "焼きそば", "冷麺"],
+  麺類: ["ラーメン", "つけ麺", "油そば", "タンメン", "担々麺", "トッピング", "うどん", "そば", "冷やし", "パスタ", "スパゲティ", "焼きそば", "冷麺"],
   パン: ["サンドイッチ", "トースト", "食パン", "菓子パン", "惣菜パン", "食事パン", "ハード系", "ナン", "ピザ"],
   "肉・魚": ["鶏", "豚", "牛肉", "牛豚", "羊肉", "焼肉", "カルビ", "ロース", "ハラミ", "ホルモン", "牛タン", "鮭", "サバ", "刺身", "卵"],
   "サラダ・野菜": ["サラダ", "野菜", "海藻", "チョレギ", "サンチュ", "焼き野菜"],
@@ -205,6 +210,17 @@ const cheatDayStorageKey = "phase-log-cheat-day-dates";
 const staleAppPromptDelayMs = 6 * 60 * 60 * 1000;
 const weightStepOptions = [1, 2.5, 5, 10];
 const appUpdates: AppUpdate[] = [
+  {
+    id: "2026-06-14-perfect-food-cold-menu-workout",
+    title: "ぴったりフードと筋トレ追加フローを改善",
+    date: "2026-06-14",
+    items: [
+      "ホームの「ゴールを確認」の横に、残り栄養素と予定から候補を出す「ぴったりフード」を追加しました。",
+      "ぴったりフードの候補から、そのまま今日の食事に記録できるようにしました。",
+      "なか卯の冷やし担々うどんを検索しやすくし、一般メニューの冷やし系を拡充しました。",
+      "単一種目を記録した後、同じ種目の別重量セットを続けて追加できる導線を追加しました。",
+    ],
+  },
   {
     id: "2026-06-14-dark-mode-settings",
     title: "ダークモードを追加",
@@ -1076,6 +1092,7 @@ function HomeTab(props: {
   const [bodyFat, setBodyFat] = useState(props.latestWeight?.body_fat_percentage ?? props.profile?.body_fat_percentage ?? 20);
   const [isReloadingLatest, setIsReloadingLatest] = useState(false);
   const [isCheckInOpen, setIsCheckInOpen] = useState(false);
+  const [isPerfectFoodOpen, setIsPerfectFoodOpen] = useState(false);
   const [pullOffset, setPullOffset] = useState(0);
   const [isPullRefreshing, setIsPullRefreshing] = useState(false);
   const pullStartYRef = useRef<number | undefined>(undefined);
@@ -1131,6 +1148,32 @@ function HomeTab(props: {
     setIsCheckInOpen(false);
     await props.refresh();
     props.showToast("チェックインを保存しました");
+  };
+  const logPerfectFood = async (item: MenuItem) => {
+    const timestamp = nowIso();
+    await db.food_entries.put({
+      id: makeId("food"),
+      app_date: props.appDate,
+      logged_at: timestamp,
+      meal_type: item.default_meal_type ?? "snack",
+      name: item.name,
+      brand: item.brand,
+      calories: item.calories,
+      protein_g: item.protein_g,
+      fat_g: item.fat_g,
+      carbs_g: item.carbs_g,
+      salt_g: item.salt_g,
+      portion_multiplier: 1,
+      entry_source: item.data_source,
+      confidence: item.confidence,
+      menu_item_id: item.id,
+      note: "ぴったりフードから追加",
+      created_at: timestamp,
+      updated_at: timestamp,
+    });
+    setIsPerfectFoodOpen(false);
+    await props.refresh();
+    props.showToast(`${formatMenuItemName(item)}を記録しました`);
   };
   const resetPullRefresh = () => {
     pullStartYRef.current = undefined;
@@ -1269,7 +1312,8 @@ function HomeTab(props: {
         <button className="home-primary-action" onClick={() => props.setTab("food")}>食事を記録 <ChevronRight size={17} /></button>
         <button className="home-secondary-action" onClick={() => props.setTab("workout")}>筋トレを記録 <ChevronRight size={17} /></button>
       </div>
-      <div className="flex justify-center gap-4 text-xs font-semibold text-moss/80">
+      <div className="flex justify-center gap-3 text-xs font-semibold text-moss/80">
+        <button className="px-1.5 py-1" onClick={() => setIsPerfectFoodOpen(true)}>ぴったりフード</button>
         <button className="px-2 py-1" onClick={() => props.setTab("settings")}>ゴールを確認</button>
         <button className="px-2 py-1 text-moss/70" onClick={props.openAiReport}>AIレポート</button>
       </div>
@@ -1343,7 +1387,136 @@ function HomeTab(props: {
           </div>
         </div>
       )}
+      {isPerfectFoodOpen && (
+        <PerfectFoodModal
+          dayTotals={props.dayTotals}
+          goal={props.goal}
+          menuItems={props.menuItems}
+          onClose={() => setIsPerfectFoodOpen(false)}
+          onLog={logPerfectFood}
+        />
+      )}
       </div>
+    </div>
+  );
+}
+
+function PerfectFoodModal({ dayTotals, goal, menuItems, onClose, onLog }: {
+  dayTotals: ReturnType<typeof sumFood>;
+  goal?: Goal;
+  menuItems: MenuItem[];
+  onClose: () => void;
+  onLog: (item: MenuItem) => void | Promise<void>;
+}) {
+  const [page, setPage] = useState<0 | 1 | 2>(0);
+  const [plans, setPlans] = useState<PerfectFoodPlan[]>(["none"]);
+  const remaining = getRemainingNutrition(dayTotals, goal);
+  const planned = getPlannedNutrition(plans);
+  const adjusted = {
+    calories: Math.max(0, remaining.calories - planned.calories),
+    protein: Math.max(0, remaining.protein - planned.protein),
+    fat: Math.max(0, remaining.fat - planned.fat),
+    carbs: Math.max(0, remaining.carbs - planned.carbs),
+  };
+  const suggestionGroups = useMemo(() => buildPerfectFoodSuggestions(menuItems, adjusted, plans), [menuItems, adjusted.calories, adjusted.protein, adjusted.fat, adjusted.carbs, plans]);
+  const togglePlan = (plan: PerfectFoodPlan) => {
+    setPlans((current) => {
+      if (plan === "none") return ["none"];
+      const next = current.includes(plan) ? current.filter((item) => item !== plan) : [...current.filter((item) => item !== "none"), plan];
+      return next.length ? next : ["none"];
+    });
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end bg-ink/30 px-4 pb-4" onClick={onClose}>
+      <div className="home-sheet max-h-[86vh] w-full overflow-y-auto p-5" onClick={(event) => event.stopPropagation()}>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-lg font-bold">ぴったりフード</p>
+            <p className="mt-1 text-xs text-moss">{page === 0 ? "残り栄養素を確認" : page === 1 ? "このあと食べる予定を選択" : "ジャンル別の候補"}</p>
+          </div>
+          <button className="icon-button h-9 w-9" aria-label="閉じる" onClick={onClose}>×</button>
+        </div>
+        <div className="mt-4 grid grid-cols-3 gap-2">
+          {["残り", "予定", "候補"].map((label, index) => (
+            <button className={`mini-chip ${page === index ? "mini-chip-active" : ""}`} key={label} onClick={() => setPage(index as 0 | 1 | 2)}>{label}</button>
+          ))}
+        </div>
+
+        {page === 0 && (
+          <div className="mt-5 space-y-4">
+            <div className="grid grid-cols-2 gap-2">
+              <PerfectFoodMetric label="kcal" value={remaining.calories} suffix="kcal" />
+              <PerfectFoodMetric label="P" value={remaining.protein} suffix="g" />
+              <PerfectFoodMetric label="F" value={remaining.fat} suffix="g" />
+              <PerfectFoodMetric label="C" value={remaining.carbs} suffix="g" />
+            </div>
+            <button className="primary-button w-full" onClick={() => setPage(1)}>予定を入れる <ChevronRight size={17} /></button>
+          </div>
+        )}
+
+        {page === 1 && (
+          <div className="mt-5 space-y-4">
+            <div className="grid gap-2">
+              {perfectFoodPlans.map((plan) => (
+                <button className={`choice-button justify-between px-4 ${plans.includes(plan.id) ? "choice-button-active" : ""}`} key={plan.id} onClick={() => togglePlan(plan.id)}>
+                  <span>{plan.label}</span>
+                  <span className="numeric-text text-xs text-moss">{plan.summary}</span>
+                </button>
+              ))}
+            </div>
+            <div className="rounded-md bg-rice p-3">
+              <p className="text-xs font-bold text-moss">予定を引いた残り</p>
+              <p className="numeric-text mt-2 text-sm font-bold">あと {Math.round(adjusted.calories)}kcal / P{round1(adjusted.protein)} F{round1(adjusted.fat)} C{round1(adjusted.carbs)}</p>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <button className="secondary-button" onClick={() => setPage(0)}>戻る</button>
+              <button className="primary-button" onClick={() => setPage(2)}>候補を見る</button>
+            </div>
+          </div>
+        )}
+
+        {page === 2 && (
+          <div className="mt-5 space-y-4">
+            {suggestionGroups.length ? suggestionGroups.map((group) => (
+              <section className="rounded-md border border-line bg-rice/70 p-3" key={group.label}>
+                <div className="mb-2 flex items-center justify-between gap-2">
+                  <h2 className="text-sm font-bold">{group.label}</h2>
+                  <span className="text-xs font-semibold text-moss">上位{group.items.length}件</span>
+                </div>
+                <div className="space-y-2">
+                  {group.items.map((item) => (
+                    <div className="rounded-xl bg-surface/70 p-3" key={item.id}>
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-bold">{formatMenuItemName(item)}</p>
+                          <p className="numeric-text mt-1 text-xs text-moss">{item.brand ? `${item.brand} · ` : ""}{item.calories}kcal · P{round1(item.protein_g)} F{round1(item.fat_g)} C{round1(item.carbs_g)}</p>
+                        </div>
+                        <button className="secondary-button shrink-0 px-3 py-2 text-xs" onClick={() => onLog(item)}>記録</button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )) : (
+              <p className="rounded-md bg-rice p-4 text-center text-sm font-semibold text-moss">候補を出すにはゴール設定が必要です</p>
+            )}
+            <div className="grid grid-cols-2 gap-2">
+              <button className="secondary-button" onClick={() => setPage(1)}>戻る</button>
+              <button className="primary-button" onClick={onClose}>閉じる</button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function PerfectFoodMetric({ label, value, suffix }: { label: string; value: number; suffix: string }) {
+  return (
+    <div className="rounded-md bg-rice p-3">
+      <p className="text-xs font-bold text-moss">{label}</p>
+      <p className="numeric-text mt-2 text-lg font-black">{round1(value)}<span className="ml-1 text-xs font-bold">{suffix}</span></p>
     </div>
   );
 }
@@ -3635,6 +3808,10 @@ function ExerciseAddModal({ draft, setDraft, onClose, onAddAnother, onSave }: {
       setIsSaving(false);
     }
   };
+  const restartSameExercise = () => {
+    setIsSaving(false);
+    setStep(isCardio ? "duration" : "weight");
+  };
   return (
     <div className="fixed inset-0 z-40 flex items-end bg-ink/30 px-4 pb-4">
       <div className="compact-card w-full p-4">
@@ -3654,6 +3831,9 @@ function ExerciseAddModal({ draft, setDraft, onClose, onAddAnother, onSave }: {
               <p className="text-sm font-bold">追加しました</p>
               <p className="mt-2 text-lg font-bold text-ink">{summary}</p>
             </div>
+            <button className="secondary-button w-full" onClick={restartSameExercise}>
+              <Plus size={17} />{isCardio ? "同じ種目をもう1本追加" : "同じ種目の別重量を追加"}
+            </button>
             <div className="grid grid-cols-2 gap-2">
               <button className="secondary-button" onClick={onAddAnother}>次の種目を選ぶ</button>
               <button className="primary-button" onClick={onClose}>終了</button>
@@ -4336,6 +4516,73 @@ function HistoryLineChart({
       )}
     </section>
   );
+}
+
+const perfectFoodPlans: { id: PerfectFoodPlan; label: string; summary: string; nutrition: { calories: number; protein: number; fat: number; carbs: number } }[] = [
+  { id: "meal", label: "もう1食食べる", summary: "約550kcal", nutrition: { calories: 550, protein: 25, fat: 18, carbs: 75 } },
+  { id: "snack", label: "軽食を食べる", summary: "約200kcal", nutrition: { calories: 200, protein: 5, fat: 8, carbs: 25 } },
+  { id: "protein", label: "プロテイン補給", summary: "P24g想定", nutrition: { calories: 120, protein: 24, fat: 2, carbs: 4 } },
+  { id: "none", label: "予定なし", summary: "残り全部で見る", nutrition: { calories: 0, protein: 0, fat: 0, carbs: 0 } },
+];
+
+function getRemainingNutrition(dayTotals: ReturnType<typeof sumFood>, goal?: Goal) {
+  return {
+    calories: Math.max(0, (goal?.target_calories ?? 0) - dayTotals.calories),
+    protein: Math.max(0, (goal?.target_protein_g ?? 0) - dayTotals.protein),
+    fat: Math.max(0, (goal?.target_fat_g ?? 0) - dayTotals.fat),
+    carbs: Math.max(0, (goal?.target_carbs_g ?? 0) - dayTotals.carbs),
+  };
+}
+
+function getPlannedNutrition(plans: PerfectFoodPlan[]) {
+  return plans
+    .filter((plan) => plan !== "none")
+    .reduce((sum, plan) => {
+      const nutrition = perfectFoodPlans.find((item) => item.id === plan)?.nutrition ?? perfectFoodPlans.at(-1)!.nutrition;
+      return {
+        calories: sum.calories + nutrition.calories,
+        protein: sum.protein + nutrition.protein,
+        fat: sum.fat + nutrition.fat,
+        carbs: sum.carbs + nutrition.carbs,
+      };
+    }, { calories: 0, protein: 0, fat: 0, carbs: 0 });
+}
+
+function buildPerfectFoodSuggestions(menuItems: MenuItem[], target: { calories: number; protein: number; fat: number; carbs: number }, plans: PerfectFoodPlan[]): PerfectFoodSuggestionGroup[] {
+  if (target.calories <= 0 && target.protein <= 0 && target.fat <= 0 && target.carbs <= 0) return [];
+  const groups: { label: string; test: (item: MenuItem) => boolean }[] = [
+    { label: "プロテイン・補給", test: (item) => item.category === "プロテイン" || item.tags.some((tag) => /プロテイン|サプリ|クレアチン|EAA|BCAA/.test(tag)) },
+    { label: "ごはん・丼", test: (item) => item.category === "ごはん・丼" || item.tags.some((tag) => /丼|おにぎり|米|カレー/.test(tag)) },
+    { label: "麺・パン", test: (item) => item.category === "麺類" || item.category === "パン" || item.tags.some((tag) => /麺|うどん|そば|パスタ|パン|ピザ/.test(tag)) },
+    { label: "おかず・軽食", test: (item) => ["肉・魚", "おかず・惣菜", "サラダ・野菜", "スープ"].includes(item.category) },
+    { label: "チェーン店", test: (item) => item.category === "チェーン店" },
+  ];
+  const plannedProtein = plans.includes("protein");
+  const candidates = menuItems
+    .filter((item) => item.calories > 0)
+    .filter((item) => !plannedProtein || !(item.category === "プロテイン" || item.tags.includes("プロテイン")));
+
+  return groups
+    .map((group) => ({
+      label: group.label,
+      items: candidates
+        .filter(group.test)
+        .sort((a, b) => perfectFoodScore(a, target) - perfectFoodScore(b, target))
+        .slice(0, 3),
+    }))
+    .filter((group) => group.items.length > 0);
+}
+
+function perfectFoodScore(item: MenuItem, target: { calories: number; protein: number; fat: number; carbs: number }) {
+  const calorieTarget = Math.max(120, target.calories || item.calories);
+  const macroScore =
+    Math.abs((item.protein_g - target.protein) / Math.max(12, target.protein || item.protein_g || 12)) * 1.35 +
+    Math.abs((item.fat_g - target.fat) / Math.max(8, target.fat || item.fat_g || 8)) +
+    Math.abs((item.carbs_g - target.carbs) / Math.max(18, target.carbs || item.carbs_g || 18));
+  const calorieScore = Math.abs(item.calories - calorieTarget) / calorieTarget;
+  const overshootPenalty = item.calories > calorieTarget * 1.18 ? 0.9 : 0;
+  const sourceBonus = sourceRank(item.data_source) * 0.06;
+  return calorieScore * 1.6 + macroScore + overshootPenalty + sourceBonus;
 }
 
 function getCalorieState(remaining: number, target: number) {
