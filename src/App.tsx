@@ -219,6 +219,15 @@ const finisherPulseIntensity = "finisher_pulse";
 const finisherPulseNote = "仕上げパルス（部分可動域・素早く）";
 const appUpdates: AppUpdate[] = [
   {
+    id: "2026-06-14-perfect-food-fit-badge",
+    title: "ぴったりフードに余裕度を表示",
+    date: "2026-06-14",
+    items: [
+      "候補ごとに残り枠の何%を使うかを表示するようにしました。",
+      "余裕あり、ちょうどいい、ギリギリ、超過が色でわかるようになりました。",
+    ],
+  },
+  {
     id: "2026-06-14-perfect-food-dark-readability",
     title: "ぴったりフードのダーク表示を改善",
     date: "2026-06-14",
@@ -1608,17 +1617,25 @@ function PerfectFoodModal({ dayTotals, goal, menuItems, onClose, onLog }: {
                   <span className="text-xs font-semibold text-moss">{visibleItems.length}/{group.items.length}件</span>
                 </div>
                 <div className="space-y-2">
-                  {visibleItems.map((item) => (
-                    <div className="perfect-food-item rounded-xl bg-surface/70 p-3" key={item.id}>
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-bold">{formatMenuItemName(item)}</p>
-                          <p className="numeric-text mt-1 text-xs text-moss">{item.brand ? `${item.brand} · ` : ""}{item.calories}kcal · P{round1(item.protein_g)} F{round1(item.fat_g)} C{round1(item.carbs_g)}</p>
+                  {visibleItems.map((item) => {
+                    const fit = getPerfectFoodFit(item, adjusted);
+                    return (
+                      <div className={`perfect-food-item perfect-food-item-${fit.tone} rounded-xl bg-surface/70 p-3`} key={item.id}>
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-bold">{formatMenuItemName(item)}</p>
+                            <p className="numeric-text mt-1 text-xs text-moss">{item.brand ? `${item.brand} · ` : ""}{item.calories}kcal · P{round1(item.protein_g)} F{round1(item.fat_g)} C{round1(item.carbs_g)}</p>
+                          </div>
+                          <div className="flex shrink-0 flex-col items-end gap-2">
+                            <span className={`perfect-food-fit-badge perfect-food-fit-${fit.tone}`}>
+                              {fit.label}
+                            </span>
+                            <button className="perfect-food-log-button secondary-button px-3 py-2 text-xs" onClick={() => onLog(item)}>記録</button>
+                          </div>
                         </div>
-                        <button className="perfect-food-log-button secondary-button shrink-0 px-3 py-2 text-xs" onClick={() => onLog(item)}>記録</button>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
                 {group.items.length > 3 && (
                   <button className="perfect-food-more-button secondary-button mt-3 w-full py-2 text-xs" onClick={() => toggleSuggestionGroup(group.label)}>
@@ -1638,6 +1655,22 @@ function PerfectFoodModal({ dayTotals, goal, menuItems, onClose, onLog }: {
       </div>
     </div>
   );
+}
+
+function getPerfectFoodFit(item: MenuItem, target: { calories: number; protein: number; fat: number; carbs: number }) {
+  const ratios = [
+    target.calories > 0 ? item.calories / target.calories : 0,
+    target.fat > 0 ? item.fat_g / target.fat : 0,
+    target.carbs > 0 ? item.carbs_g / target.carbs : 0,
+  ].filter((ratio) => Number.isFinite(ratio));
+  const load = Math.max(...ratios, 0);
+  const percent = Math.round(load * 100);
+  const proteinCover = target.protein > 0 ? Math.round((item.protein_g / target.protein) * 100) : 0;
+  const proteinLabel = proteinCover > 0 ? ` / P${Math.min(proteinCover, 999)}%` : "";
+  if (percent > 105) return { tone: "over" as const, label: `超過 ${percent}%${proteinLabel}` };
+  if (percent >= 88) return { tone: "tight" as const, label: `ギリ ${percent}%${proteinLabel}` };
+  if (percent >= 55) return { tone: "good" as const, label: `枠 ${percent}%${proteinLabel}` };
+  return { tone: "easy" as const, label: `余裕 ${percent}%${proteinLabel}` };
 }
 
 function PerfectFoodMetric({ label, value, suffix }: { label: string; value: number; suffix: string }) {

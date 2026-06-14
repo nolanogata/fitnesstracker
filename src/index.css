@@ -929,6 +929,57 @@ button {
   box-shadow: var(--glass-highlight);
 }
 
+.perfect-food-item {
+  border: 1px solid rgba(255, 255, 255, 0.48);
+}
+
+.perfect-food-item-over {
+  border-color: rgba(217, 122, 104, 0.34);
+  background:
+    linear-gradient(135deg, rgba(243, 221, 211, 0.34), rgba(255, 255, 255, 0.52)),
+    rgba(255, 255, 255, 0.56) !important;
+}
+
+.perfect-food-fit-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 1.55rem;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 0.22rem 0.52rem;
+  font-family: var(--rounded-number-font);
+  font-size: 0.64rem;
+  font-weight: 900;
+  line-height: 1;
+  white-space: nowrap;
+  box-shadow: var(--glass-highlight);
+}
+
+.perfect-food-fit-easy {
+  border-color: rgba(140, 167, 152, 0.28);
+  background: rgba(221, 232, 225, 0.7);
+  color: #566e61;
+}
+
+.perfect-food-fit-good {
+  border-color: rgba(111, 143, 125, 0.34);
+  background: rgba(111, 143, 125, 0.16);
+  color: #466355;
+}
+
+.perfect-food-fit-tight {
+  border-color: rgba(190, 142, 67, 0.28);
+  background: rgba(246, 235, 221, 0.86);
+  color: #8c6630;
+}
+
+.perfect-food-fit-over {
+  border-color: rgba(217, 122, 104, 0.34);
+  background: rgba(243, 221, 211, 0.86);
+  color: #b85f4f;
+}
+
 .workout-template-row,
 .exercise-preset-row {
   display: grid;
@@ -1275,6 +1326,14 @@ button {
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.24), var(--glass-highlight);
 }
 
+.theme-dark .perfect-food-item-over,
+:root[data-theme="dark"] .perfect-food-item-over {
+  border-color: rgba(240, 154, 134, 0.3);
+  background:
+    linear-gradient(135deg, rgba(63, 36, 32, 0.82), rgba(23, 29, 24, 0.9)),
+    rgba(255, 255, 255, 0.08) !important;
+}
+
 .theme-dark .perfect-food-item p:first-child,
 .theme-dark .perfect-food-group h2,
 .theme-dark .perfect-food-panel p:last-child,
@@ -1303,6 +1362,39 @@ button {
     linear-gradient(135deg, rgba(238, 244, 239, 0.16), rgba(185, 206, 190, 0.1)),
     rgba(255, 255, 255, 0.1);
   color: #eef6f0;
+}
+
+.theme-dark .perfect-food-fit-badge,
+:root[data-theme="dark"] .perfect-food-fit-badge {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14), 0 6px 18px rgba(0, 0, 0, 0.18);
+}
+
+.theme-dark .perfect-food-fit-easy,
+:root[data-theme="dark"] .perfect-food-fit-easy {
+  border-color: rgba(159, 190, 169, 0.24);
+  background: rgba(159, 190, 169, 0.16);
+  color: #d8eadc;
+}
+
+.theme-dark .perfect-food-fit-good,
+:root[data-theme="dark"] .perfect-food-fit-good {
+  border-color: rgba(159, 190, 169, 0.34);
+  background: rgba(159, 190, 169, 0.24);
+  color: #f0fbf2;
+}
+
+.theme-dark .perfect-food-fit-tight,
+:root[data-theme="dark"] .perfect-food-fit-tight {
+  border-color: rgba(238, 191, 108, 0.3);
+  background: rgba(238, 191, 108, 0.16);
+  color: #f8dca5;
+}
+
+.theme-dark .perfect-food-fit-over,
+:root[data-theme="dark"] .perfect-food-fit-over {
+  border-color: rgba(240, 154, 134, 0.34);
+  background: rgba(240, 154, 134, 0.18);
+  color: #ffc3b7;
 }
 
 .theme-dark .calorie-card-under {
