@@ -247,6 +247,16 @@ const finisherPulseIntensity = "finisher_pulse";
 const finisherPulseNote = "仕上げパルス（部分可動域・素早く）";
 const appUpdates: AppUpdate[] = [
   {
+    id: "2026-06-15-ai-report-phase-weight-alcohol",
+    title: "AIレポートとお酒メニューを調整",
+    date: "2026-06-15",
+    items: [
+      "AI相談レポートの体組成補足を、減量・リコンプ・バルクなどフェーズに合わせた文言にしました。",
+      "日別AIレポートの体重トレンドは、対象日までの最新値と直近7日平均を表示するようにしました。",
+      "ビール、日本酒、焼酎、ワイン、サワー、カクテルなどのお酒メニューを、杯・合・mlが分かる形で追加しました。",
+    ],
+  },
+  {
     id: "2026-06-15-ai-report-body-composition-current-comparison",
     title: "AIレポートの体組成目標表示を調整",
     date: "2026-06-15",
@@ -3461,7 +3471,7 @@ function RecordsTab(props: {
       profile: props.profile,
       goal: props.goal,
       foodEntries: selectedFoodEntries,
-      weightLogs: props.weightLogs.filter((entry) => entry.app_date === selectedReportDate),
+      weightLogs: props.weightLogs.filter((entry) => entry.app_date <= selectedReportDate),
       workoutSessions: props.workoutSessions.filter((entry) => entry.app_date === selectedReportDate),
       workoutExercises: props.workoutExercises,
       workoutSets: props.workoutSets,
@@ -3816,7 +3826,7 @@ function SettingsTab(props: {
           profile: props.profile,
           goal: props.activeGoal,
           foodEntries: props.allData.foodEntries.filter((entry) => range.includes(entry.app_date)),
-          weightLogs: props.allData.weightLogs.filter((entry) => range.includes(entry.app_date)),
+          weightLogs: props.allData.weightLogs.filter((entry) => reportMode === "day" ? entry.app_date <= end : range.includes(entry.app_date)),
           workoutSessions: props.allData.workoutSessions.filter((entry) => range.includes(entry.app_date)),
           workoutExercises: props.allData.workoutExercises,
           workoutSets: props.allData.workoutSets,
