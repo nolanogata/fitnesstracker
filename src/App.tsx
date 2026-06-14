@@ -247,6 +247,16 @@ const finisherPulseIntensity = "finisher_pulse";
 const finisherPulseNote = "仕上げパルス（部分可動域・素早く）";
 const appUpdates: AppUpdate[] = [
   {
+    id: "2026-06-15-ai-report-body-composition-current-comparison",
+    title: "AIレポートの体組成目標表示を調整",
+    date: "2026-06-15",
+    items: [
+      "AI相談レポートの体組成目標を、不足/超過ではなく現在比の必要変化として表示するようにしました。",
+      "体組成目標に、現在推定・目標・必要変化とリコンプ向けの補足説明を追加しました。",
+      "目標kcal/P/F/Cが手動上書きされている場合、カスタム設定であることをAIレポートに明記するようにしました。",
+    ],
+  },
+  {
     id: "2026-06-15-goal-body-fat-target",
     title: "目標体脂肪率を追加",
     date: "2026-06-15",
