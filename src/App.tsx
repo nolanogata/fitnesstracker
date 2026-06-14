@@ -227,6 +227,15 @@ const finisherPulseIntensity = "finisher_pulse";
 const finisherPulseNote = "仕上げパルス（部分可動域・素早く）";
 const appUpdates: AppUpdate[] = [
   {
+    id: "2026-06-14-food-chain-recommend-sort",
+    title: "チェーン・コンビニメニューのおすすめ順を追加",
+    date: "2026-06-14",
+    items: [
+      "Foodタブの検索フィルターに、残り栄養素に合うメニューを上位表示するオプションを追加しました。",
+      "チェーン店やコンビニメニューを見る時に、P不足とF/C/kcal超過を見ながら選びやすくしました。",
+    ],
+  },
+  {
     id: "2026-06-14-oikos-greek-yogurt",
     title: "オイコスとギリシャヨーグルトを探しやすく",
     date: "2026-06-14",
@@ -1928,6 +1937,7 @@ function FoodTab(props: {
   const [generalCategory, setGeneralCategory] = useState("ごはん・丼");
   const [hideOverGoalItems, setHideOverGoalItems] = useState(false);
   const [showFoodBalance, setShowFoodBalance] = useState(false);
+  const [sortFoodByFit, setSortFoodByFit] = useState(false);
   const [isFoodFilterOpen, setIsFoodFilterOpen] = useState(false);
   const [showFoodFilterIntro, setShowFoodFilterIntro] = useState(() => localStorage.getItem(foodFitFilterSeenStorageKey) !== "1");
 
@@ -2008,8 +2018,11 @@ function FoodTab(props: {
   const remainingNutrition = getRemainingNutrition(props.dayTotals, props.goal);
   const canUseOverGoalFilter = !!props.goal && props.goal.target_calories > 0;
   const canShowFoodBalance = canUseOverGoalFilter;
-  const isFoodFitFilterActive = (hideOverGoalItems && canUseOverGoalFilter) || (showFoodBalance && canShowFoodBalance);
   const isChainScopedSearch = mode === "chain" && !!brand;
+  const isChainOrConvenienceMenuView = mode === "chain" || (mode === "category" && ["チェーン店", "コンビニ"].includes(categoryGenre));
+  const canSortFoodByFit = canUseOverGoalFilter && isChainOrConvenienceMenuView;
+  const isSortFoodByFitActive = sortFoodByFit && canSortFoodByFit;
+  const isFoodFitFilterActive = (hideOverGoalItems && canUseOverGoalFilter) || (showFoodBalance && canShowFoodBalance) || isSortFoodByFitActive;
   const searchPlaceholder = isChainScopedSearch ? `${brand}内を検索` : "食品・ブランド検索";
   const results = useMemo(() => {
     const needle = query.trim().toLowerCase();
@@ -2041,7 +2054,16 @@ function FoodTab(props: {
     const filtered = hideOverGoalItems && canUseOverGoalFilter
       ? matched.filter((item) => fitsRemainingFoodFilter(item, remainingNutrition))
       : matched;
-    return filtered.slice(0, 80);
+    const recommended = isSortFoodByFitActive
+      ? [...filtered].sort((a, b) => {
+        const scoreDiff = perfectFoodScore(a, remainingNutrition) - perfectFoodScore(b, remainingNutrition);
+        if (Math.abs(scoreDiff) > 0.0001) return scoreDiff;
+        const sourceDiff = sourceRank(a.data_source) - sourceRank(b.data_source);
+        if (sourceDiff !== 0) return sourceDiff;
+        return a.calories - b.calories;
+      })
+      : filtered;
+    return recommended.slice(0, 80);
   }, [
     props.menuItems,
     query,
@@ -2052,7 +2074,11 @@ function FoodTab(props: {
     generalCategory,
     hideOverGoalItems,
     canUseOverGoalFilter,
+    sortFoodByFit,
+    canSortFoodByFit,
+    isSortFoodByFitActive,
     remainingNutrition.calories,
+    remainingNutrition.protein,
     remainingNutrition.fat,
     remainingNutrition.carbs,
   ]);
@@ -2266,6 +2292,17 @@ function FoodTab(props: {
                 </span>
                 <span className="mini-chip shrink-0">{showFoodBalance ? "ON" : "OFF"}</span>
               </button>
+              <button
+                className={`food-filter-option ${isSortFoodByFitActive ? "food-filter-option-active" : ""} ${!canSortFoodByFit ? "opacity-50" : ""}`}
+                disabled={!canSortFoodByFit}
+                onClick={() => setSortFoodByFit((value) => !value)}
+              >
+                <span>
+                  <span className="block text-sm font-bold">残り栄養素に合う順で表示</span>
+                  <span className="mt-1 block text-xs text-moss">チェーン店・コンビニ一覧で、Pを補いやすくF/C/kcal超過が少ない候補を上に出します。</span>
+                </span>
+                <span className="mini-chip shrink-0">{isSortFoodByFitActive ? "ON" : "OFF"}</span>
+              </button>
             </div>
           </section>
         )}
@@ -2358,7 +2395,7 @@ function FoodTab(props: {
                 onPick={selectFoodItem}
                 onClone={setManualFromItem(setManual, setMode)}
                 refresh={props.refresh}
-                balanceTarget={showFoodBalance && canShowFoodBalance ? remainingNutrition : undefined}
+                balanceTarget={(showFoodBalance && canShowFoodBalance) || isSortFoodByFitActive ? remainingNutrition : undefined}
               />
             ))}
             {results.length === 0 && <EmptyLine text="見つかりません" />}
