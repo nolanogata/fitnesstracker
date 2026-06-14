@@ -1035,12 +1035,80 @@ button {
 
 .theme-dark .compact-card,
 .theme-dark .calorie-card,
+.theme-dark .home-hero-card,
 .theme-dark .home-glass-card,
 .theme-dark .home-sheet,
 .theme-dark .home-notice {
   border-color: var(--glass-border);
   background: var(--glass-bg);
   color: #edf4ee;
+}
+
+.theme-dark .home-hero-left,
+.theme-dark .home-hero-neutral {
+  background:
+    linear-gradient(180deg, rgba(165, 143, 105, 0.12) 0%, rgba(255, 255, 255, 0.04) 48%, rgba(255, 255, 255, 0.03) 100%),
+    var(--glass-bg);
+}
+
+.theme-dark .home-hero-over {
+  border-color: rgba(240, 154, 134, 0.24);
+  background:
+    linear-gradient(180deg, rgba(240, 154, 134, 0.13) 0%, rgba(255, 255, 255, 0.04) 48%, rgba(255, 255, 255, 0.03) 100%),
+    var(--glass-bg);
+}
+
+.theme-dark .home-hero-on-track {
+  border-color: rgba(159, 190, 169, 0.24);
+  background:
+    linear-gradient(180deg, rgba(159, 190, 169, 0.15) 0%, rgba(255, 255, 255, 0.04) 48%, rgba(255, 255, 255, 0.03) 100%),
+    var(--glass-bg);
+}
+
+.theme-dark .home-hero-cheat {
+  border-color: rgba(255, 255, 255, 0.18);
+  background:
+    radial-gradient(circle at 72% 24%, rgba(255, 255, 255, 0.12), transparent 22%),
+    linear-gradient(135deg, rgba(255, 107, 107, 0.2) 0%, rgba(255, 209, 102, 0.16) 28%, rgba(78, 205, 196, 0.16) 58%, rgba(123, 97, 255, 0.15) 100%),
+    var(--glass-bg);
+}
+
+.theme-dark .home-hero-cheat::before {
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.08), transparent 24%, rgba(255, 255, 255, 0.06) 52%, transparent 76%);
+}
+
+.theme-dark .home-cheat-badge {
+  border-color: rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.1);
+  color: #f7fbf8;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.18), var(--glass-highlight);
+}
+
+.theme-dark .home-macro-pill {
+  color: rgba(237, 244, 238, 0.82);
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: var(--glass-highlight);
+}
+
+.theme-dark .home-macro-safe {
+  color: #c7ddcf;
+  background: rgba(159, 190, 169, 0.14);
+}
+
+.theme-dark .home-macro-over {
+  color: #ffb7aa;
+  background: rgba(240, 154, 134, 0.14);
+}
+
+.theme-dark .home-macro-low {
+  color: #ead09a;
+  background: rgba(201, 152, 72, 0.14);
+}
+
+.theme-dark .home-checkin-edit {
+  border-color: var(--glass-border);
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-secondary);
 }
 
 .theme-dark .calorie-card-under {
@@ -1116,6 +1184,20 @@ button {
   box-shadow: 0 18px 42px rgba(0, 0, 0, 0.34), var(--glass-highlight);
 }
 
+.theme-dark .sticky-panel form.compact-card {
+  border-color: var(--glass-border);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.04)),
+    rgba(20, 26, 22, 0.58);
+}
+
+.theme-dark .sticky-panel form.compact-card input {
+  border-color: transparent;
+  background: rgba(255, 255, 255, 0.06);
+  color: #edf4ee;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
 .theme-dark .past-edit-banner {
   border-color: rgba(240, 154, 134, 0.32);
   background:
@@ -1169,6 +1251,8 @@ button {
 .theme-dark .bg-rice,
 .theme-dark .bg-surface,
 .theme-dark .bg-white,
+.theme-dark .bg-white\/55,
+.theme-dark .bg-white\/60,
 .theme-dark .bg-white\/90 {
   background-color: rgba(255, 255, 255, 0.08) !important;
 }
@@ -1182,6 +1266,7 @@ button {
 .theme-dark .bg-sun\/20,
 .theme-dark .bg-clay\/10,
 .theme-dark .bg-sky\/10,
+.theme-dark .bg-line,
 .theme-dark .bg-ink\/5 {
   background-color: rgba(159, 190, 169, 0.13) !important;
 }
