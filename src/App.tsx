@@ -209,7 +209,19 @@ const workoutWeightPresetStorageKey = "phase-log-workout-weight-presets";
 const cheatDayStorageKey = "phase-log-cheat-day-dates";
 const staleAppPromptDelayMs = 6 * 60 * 60 * 1000;
 const weightStepOptions = [1, 2.5, 5, 10];
+const finisherPulseIntensity = "finisher_pulse";
+const finisherPulseNote = "仕上げパルス（部分可動域・素早く）";
 const appUpdates: AppUpdate[] = [
+  {
+    id: "2026-06-14-workout-finisher-pulse",
+    title: "筋トレに仕上げパルスを追加",
+    date: "2026-06-14",
+    items: [
+      "各筋トレ種目に、仕上げ用の小さい可動域で素早く動かす「仕上げパルス」を追加できるようにしました。",
+      "仕上げパルスは通常セットと区別して表示し、PR判定には含めないようにしました。",
+      "AI相談レポートにも仕上げパルスの記録が分かるようにしました。",
+    ],
+  },
   {
     id: "2026-06-14-perfect-food-cold-menu-workout",
     title: "ぴったりフードと筋トレ追加フローを改善",
@@ -4016,7 +4028,7 @@ function WorkoutExerciseEditor({
 }) {
   const isCardio = exercise.body_part === "有酸素" || exercise.equipment_type === "有酸素";
   const pictogram = getWorkoutPictogram(exercise.body_part, exercise.equipment_type);
-  const setSignature = sets.map((set) => [set.set_order, set.weight_kg, set.reps, set.duration_min, set.active_calories, set.note].join(":")).join("|");
+  const setSignature = sets.map((set) => [set.set_order, set.weight_kg, set.reps, set.duration_min, set.active_calories, set.intensity, set.note].join(":")).join("|");
   const [setSchemeText, setSetSchemeText] = useState("");
   const [setSchemeStatus, setSetSchemeStatus] = useState("");
   const [weightStep, setWeightStep] = useState(() => inferWeightStep(exercise));
@@ -4093,6 +4105,23 @@ function WorkoutExerciseEditor({
     await refresh();
     setSetSchemeStatus("カスタム種目に保存しました");
   };
+  const addFinisherPulseSet = async () => {
+    const previous = sets.at(-1);
+    const timestamp = nowIso();
+    await db.workout_sets.put({
+      id: makeId("set"),
+      workout_exercise_id: exercise.id,
+      set_order: sets.length + 1,
+      weight_kg: previous?.weight_kg ?? 0,
+      reps: Math.max(20, previous?.reps ?? 20),
+      intensity: finisherPulseIntensity,
+      note: finisherPulseNote,
+      is_warmup: false,
+      created_at: timestamp,
+      updated_at: timestamp,
+    });
+    await refresh();
+  };
   return (
     <div className="p-4">
       <div className="flex items-start gap-3">
@@ -4130,7 +4159,10 @@ function WorkoutExerciseEditor({
         {sets.map((set) => (
           <div className="rounded-md border border-line bg-surface p-3" key={set.id}>
             <div className="mb-2 flex items-center justify-between gap-2">
-              <span className="text-xs font-bold text-moss">Set {set.set_order}</span>
+              <span className="inline-flex items-center gap-2 text-xs font-bold text-moss">
+                Set {set.set_order}
+                {isFinisherPulseSet(set) && <span className="rounded-full border border-sun/35 bg-sun/20 px-2 py-0.5 text-[10px] text-[#8a5d13]">仕上げパルス</span>}
+              </span>
               <button className="icon-button h-8 w-8" aria-label="削除" onClick={async () => { await db.workout_sets.delete(set.id); await refresh(); }}><Trash2 size={14} /></button>
             </div>
             {isCardio ? (
@@ -4207,6 +4239,11 @@ function WorkoutExerciseEditor({
           });
           await refresh();
         }}><Plus size={16} />セットを追加</button>
+        {!isCardio && (
+          <button className="secondary-button" onClick={addFinisherPulseSet}>
+            <Activity size={16} />仕上げパルス
+          </button>
+        )}
         <button className="secondary-button" onClick={async () => {
           const previous = sets.at(-1);
           if (!previous) return;
@@ -4695,6 +4732,10 @@ function isCardioWorkoutItem(item: { body_part: string; equipment_type: string }
   return item.body_part === "有酸素" || item.equipment_type === "有酸素";
 }
 
+function isFinisherPulseSet(set: { intensity?: string; note?: string }) {
+  return set.intensity === finisherPulseIntensity || /仕上げパルス|パーシャル|部分可動域|pulse/i.test(set.note ?? "");
+}
+
 function parseWorkoutSetScheme(text: string, isCardio: boolean, exerciseName: string, bodyWeightKg: number): WorkoutSetPattern[] {
   const normalizedText = text
     .replace(/[／]/g, "/")
@@ -4714,6 +4755,7 @@ function parseWorkoutSetSegment(segment: string, isCardio: boolean, exerciseName
   const notes = Array.from(target.matchAll(/[（(]([^）)]+)[）)]/g)).map((match) => match[1].trim()).filter(Boolean);
   target = target.replace(/[（(][^）)]+[）)]/g, "").trim();
   const note = notes.join(" / ") || undefined;
+  const intensity = /仕上げパルス|パーシャル|部分可動域|pulse/i.test(note ?? segment) ? finisherPulseIntensity : undefined;
   const numbers = target.match(/\d+(?:\.\d+)?/g)?.map(Number) ?? [];
   if (!numbers.length) return [];
 
@@ -4723,6 +4765,7 @@ function parseWorkoutSetSegment(segment: string, isCardio: boolean, exerciseName
       reps: 0,
       duration_min: duration,
       active_calories: estimateActiveCalories(exerciseName, duration, bodyWeightKg),
+      intensity,
       note,
     }];
   }
@@ -4732,6 +4775,7 @@ function parseWorkoutSetSegment(segment: string, isCardio: boolean, exerciseName
   return Array.from({ length: repeat }, () => ({
     weight_kg: numbers[0],
     reps: Math.round(numbers[1]),
+    intensity,
     note,
   }));
 }
@@ -4764,10 +4808,11 @@ function formatWorkoutSetText(sets: WorkoutSet[], isCardio: boolean) {
 }
 
 function formatWorkoutSetPatternToken(pattern: WorkoutSetPattern, isCardio: boolean) {
+  const label = isFinisherPulseSet(pattern) ? "仕上げパルス" : pattern.note;
   if (isCardio || typeof pattern.duration_min === "number") {
-    return `${pattern.duration_min ?? 0}分${pattern.note ? `（${pattern.note}）` : ""}`;
+    return `${pattern.duration_min ?? 0}分${label ? `（${label}）` : ""}`;
   }
-  return `${pattern.weight_kg ?? 0}×${pattern.reps ?? 0}${pattern.note ? `（${pattern.note}）` : ""}`;
+  return `${pattern.weight_kg ?? 0}×${pattern.reps ?? 0}${label ? `（${label}）` : ""}`;
 }
 
 async function replaceWorkoutSetsWithScheme(workoutExerciseId: string, scheme: WorkoutSetPattern[]) {
@@ -5018,6 +5063,7 @@ function groupWorkoutHistory(history: WorkoutHistoryItem[], grouping: HistoryGro
 
 function pickBestWorkoutSet(exercise: WorkoutExercise, sets: WorkoutSet[]) {
   const candidates = sets
+    .filter((set) => !isFinisherPulseSet(set))
     .map((set) => {
       if (exercise.body_part === "有酸素" || set.duration_min) {
         const duration = set.duration_min ?? 0;
