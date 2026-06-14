@@ -713,8 +713,16 @@ function App() {
 
   useEffect(() => {
     const root = document.documentElement;
+    const themeColor = resolvedTheme === "dark" ? "#111613" : "#f7f6f2";
     root.dataset.theme = resolvedTheme;
     root.style.colorScheme = resolvedTheme;
+    document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]').forEach((meta) => {
+      if (!meta.media) meta.content = themeColor;
+    });
+    document.querySelector<HTMLMetaElement>('meta[name="apple-mobile-web-app-status-bar-style"]')?.setAttribute(
+      "content",
+      resolvedTheme === "dark" ? "black-translucent" : "default",
+    );
   }, [resolvedTheme]);
 
   useEffect(() => {
