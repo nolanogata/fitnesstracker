@@ -24,6 +24,7 @@ import { externalNutritionFoods } from "./externalNutrition";
 import { gyudonTeishokuOfficialCoverageFoods } from "./chains/gyudonTeishokuOfficialCoverage";
 import { italianRestaurantMenuFoods } from "./chains/italianRestaurantMenus";
 import { kfcOfficialFoods } from "./chains/kfcOfficial";
+import { komerakuMenuFoods } from "./chains/komerakuMenu";
 import { matsuyaOfficialFoods } from "./chains/matsuyaOfficial";
 import { mcdonaldsOfficialFoods } from "./chains/mcdonaldsOfficial";
 import { mcdonaldsKfcOfficialCoverageFoods } from "./chains/mcdonaldsKfcOfficialCoverage";
@@ -58,6 +59,7 @@ export const foodSeeds = [
   ...yayoikenOfficialFoods,
   ...mosOfficialFoods,
   ...kfcOfficialFoods,
+  ...komerakuMenuFoods,
   ...mcdonaldsOfficialFoods,
   ...mcdonaldsKfcOfficialCoverageFoods,
   ...gyudonTeishokuOfficialCoverageFoods,

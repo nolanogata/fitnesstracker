@@ -6,7 +6,7 @@ const asahiSource = "https://www.asahi-gf.co.jp/special/1pon-manzoku/";
 const savasMilkSource = "https://www.meiji.co.jp/sports/savas/products/muscle_sports/savas_milk.html?flavor=cocoa_30";
 const savasBarSource = "https://www.meiji.co.jp/sports/savas/products/muscle_sports/bar.html";
 const savasSoyBarSource = "https://www.meiji.co.jp/sports/savas/products/shape_wellness/soy_bar.html";
-const oikosProteinShakeSource = "https://www.bonappetit.com/story/best-protein-shakes";
+const oikosSource = "https://www.danone.co.jp/oikos/";
 const morinagaJellySource = "https://www.morinaga.co.jp/in/jelly/products/protein/";
 const morinagaBarSource = "https://www.morinaga.co.jp/in/bar/lp3/";
 
@@ -40,14 +40,6 @@ const estimatedProduct = (input: ProductInput) =>
     fetched_at: fetchedAt,
   });
 
-const secondaryProduct = (input: ProductInput) =>
-  estimated({
-    ...input,
-    tags: ["プロテイン", "タンパク質", "二次情報", "栄養推定", ...input.tags],
-    default_meal_type: "snack",
-    fetched_at: fetchedAt,
-  });
-
 export const proteinProductFoods = [
   officialProduct({ brand: "アサヒグループ食品", name: "１本満足バー プロテインチョコ", category: "プロテイン", tags: ["プロテインバー", "一本満足"], calories: 181, protein_g: 16, fat_g: 8.3, carbs_g: 11.45, salt_g: 0.49, serving_label: "1本", source_url: asahiSource }),
   officialProduct({ brand: "アサヒグループ食品", name: "１本満足バー プロテインブラック", category: "プロテイン", tags: ["プロテインバー", "一本満足"], calories: 174, protein_g: 16, fat_g: 8.7, carbs_g: 12.4, salt_g: 0.49, serving_label: "1本", source_url: asahiSource }),
@@ -66,8 +58,21 @@ export const proteinProductFoods = [
   officialProduct({ brand: "明治", name: "ザバス ソイプロテインバー", category: "プロテイン", tags: ["プロテインバー", "ザバス", "ソイ"], calories: 227, protein_g: 16.5, fat_g: 13.7, carbs_g: 10.7, salt_g: 0.49, serving_label: "45g", source_url: savasSoyBarSource }),
   officialProduct({ brand: "明治", name: "ザバス プロテインバー 1/2日分の鉄分", category: "プロテイン", tags: ["プロテインバー", "ザバス", "鉄分"], calories: 196, protein_g: 14.7, fat_g: 11.4, carbs_g: 8.7, salt_g: 0.32, serving_label: "38g", source_url: savasBarSource }),
 
-  secondaryProduct({ brand: "Oikos", name: "オイコス プロテインシェイク バニラ", category: "プロテイン", tags: ["プロテインドリンク", "オイコス", "海外品", "推定塩分"], calories: 170, protein_g: 30, fat_g: 3.5, carbs_g: 8, salt_g: 0.7, serving_label: "1本", source_url: oikosProteinShakeSource }),
-  secondaryProduct({ brand: "Oikos", name: "オイコス プロテインシェイク チョコレート", category: "プロテイン", tags: ["プロテインドリンク", "オイコス", "海外品", "推定栄養"], calories: 170, protein_g: 30, fat_g: 3.5, carbs_g: 8, salt_g: 0.7, serving_label: "1本", source_url: oikosProteinShakeSource }),
+  officialProduct({ brand: "ダノン", name: "オイコス 高吸収タンパク質 プレーン 砂糖不使用 中容量", category: "プロテイン", tags: ["オイコス", "ヨーグルト", "脂肪0", "砂糖不使用"], calories: 100, protein_g: 18, fat_g: 0, carbs_g: 6.1, salt_g: 0.1, serving_label: "170g", source_url: oikosSource }),
+  officialProduct({ brand: "ダノン", name: "オイコス 高吸収タンパク質 プレーン 砂糖不使用", category: "プロテイン", tags: ["オイコス", "ヨーグルト", "脂肪0", "砂糖不使用"], calories: 72, protein_g: 13, fat_g: 0, carbs_g: 4.4, salt_g: 0.1, serving_label: "123g", source_url: oikosSource }),
+  officialProduct({ brand: "ダノン", name: "オイコス 高吸収タンパク質 プレーン 加糖", category: "プロテイン", tags: ["オイコス", "ヨーグルト", "脂肪0"], calories: 95, protein_g: 11, fat_g: 0, carbs_g: 12.4, salt_g: 0.1, serving_label: "123g", source_url: oikosSource }),
+  officialProduct({ brand: "ダノン", name: "オイコス 高吸収タンパク質 ストロベリー", category: "プロテイン", tags: ["オイコス", "ヨーグルト", "脂肪0", "ストロベリー"], calories: 87, protein_g: 10.2, fat_g: 0, carbs_g: 11, salt_g: 0.1, serving_label: "113g", source_url: oikosSource }),
+  officialProduct({ brand: "ダノン", name: "オイコス 高吸収タンパク質 ブルーベリー", category: "プロテイン", tags: ["オイコス", "ヨーグルト", "脂肪0", "ブルーベリー"], calories: 87, protein_g: 10.1, fat_g: 0, carbs_g: 11.3, salt_g: 0.1, serving_label: "113g", source_url: oikosSource }),
+  officialProduct({ brand: "ダノン", name: "オイコス 高吸収タンパク質 レモン&ハニー", category: "プロテイン", tags: ["オイコス", "ヨーグルト", "脂肪0", "レモン", "はちみつ"], calories: 89, protein_g: 10.1, fat_g: 0, carbs_g: 11.7, salt_g: 0.1, serving_label: "113g", source_url: oikosSource }),
+  officialProduct({ brand: "ダノン", name: "オイコス 高吸収タンパク質 ピーチ", category: "プロテイン", tags: ["オイコス", "ヨーグルト", "脂肪0", "ピーチ"], calories: 85, protein_g: 10.1, fat_g: 0, carbs_g: 10.7, salt_g: 0.1, serving_label: "113g", source_url: oikosSource }),
+  officialProduct({ brand: "ダノン", name: "オイコス 高吸収タンパク質 マンゴー", category: "プロテイン", tags: ["オイコス", "ヨーグルト", "脂肪0", "マンゴー"], calories: 85, protein_g: 10.1, fat_g: 0, carbs_g: 10.8, salt_g: 0.1, serving_label: "113g", source_url: oikosSource }),
+  officialProduct({ brand: "ダノン", name: "オイコス 高吸収タンパク質 メロンミックス", category: "プロテイン", tags: ["オイコス", "ヨーグルト", "脂肪0", "メロン", "期間限定"], calories: 84, protein_g: 10.1, fat_g: 0, carbs_g: 11, salt_g: 0.1, serving_label: "113g", source_url: oikosSource }),
+  officialProduct({ brand: "ダノン", name: "オイコス プロテインドリンク カカオ", category: "プロテイン", tags: ["オイコス", "プロテインドリンク", "脂肪0", "砂糖不使用", "カカオ"], calories: 125, protein_g: 18, fat_g: 0, carbs_g: 13.2, salt_g: 0.26, serving_label: "240ml", source_url: oikosSource }),
+  officialProduct({ brand: "ダノン", name: "オイコス プロテインドリンク カフェラテ", category: "プロテイン", tags: ["オイコス", "プロテインドリンク", "脂肪0", "砂糖不使用", "カフェラテ"], calories: 125, protein_g: 18, fat_g: 0, carbs_g: 13.2, salt_g: 0.25, serving_label: "240ml", source_url: oikosSource }),
+  officialProduct({ brand: "ダノン", name: "オイコス プロテインドリンク バナナ", category: "プロテイン", tags: ["オイコス", "プロテインドリンク", "脂肪0", "砂糖不使用", "バナナ"], calories: 125, protein_g: 18, fat_g: 0, carbs_g: 13.2, salt_g: 0.26, serving_label: "240ml", source_url: oikosSource }),
+  officialProduct({ brand: "ダノン", name: "オイコス プロテインドリンク ストロベリー", category: "プロテイン", tags: ["オイコス", "プロテインドリンク", "脂肪0", "砂糖不使用", "ストロベリー"], calories: 120, protein_g: 18, fat_g: 0, carbs_g: 12, salt_g: 0.26, serving_label: "240ml", source_url: oikosSource }),
+  officialProduct({ brand: "ダノン", name: "オイコス プロテインドリンク ヘーゼルナッツ&チョコ", category: "プロテイン", tags: ["オイコス", "プロテインドリンク", "脂肪0", "砂糖不使用", "ヘーゼルナッツ", "チョコ"], calories: 120, protein_g: 18, fat_g: 0, carbs_g: 12, salt_g: 0.26, serving_label: "240ml", source_url: oikosSource }),
+  officialProduct({ brand: "ダノン", name: "オイコス プロテインドリンク PRO リッチバニラ", category: "プロテイン", tags: ["オイコス", "プロテインドリンク", "PRO", "脂肪0", "砂糖不使用", "バニラ"], calories: 138, protein_g: 25, fat_g: 0, carbs_g: 9.6, salt_g: 0.31, serving_label: "240ml", source_url: oikosSource }),
 
   estimatedProduct({ brand: "森永製菓", name: "inゼリー プロテイン5g", category: "プロテイン", tags: ["プロテインゼリー", "inゼリー"], calories: 35, protein_g: 5, fat_g: 0, carbs_g: 4.5, salt_g: 0.1, serving_label: "180g", source_url: morinagaJellySource }),
   estimatedProduct({ brand: "森永製菓", name: "inゼリー プロテイン15g", category: "プロテイン", tags: ["プロテインゼリー", "inゼリー"], calories: 94, protein_g: 15.6, fat_g: 0.8, carbs_g: 6.1, salt_g: 0.1, serving_label: "180g", source_url: "https://www.morinaga.co.jp/in/jelly/products/protein15000/" }),
