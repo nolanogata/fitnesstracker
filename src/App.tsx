@@ -159,7 +159,7 @@ const mealLabels: Record<MealType, string> = {
 const chainCategories: Record<string, string[]> = {
   "牛丼・丼": ["松屋", "すき家", "吉野家", "なか卯"],
   "うどん・そば": ["丸亀製麺", "はなまるうどん", "ウエスト", "資さんうどん"],
-  ファストフード: ["マクドナルド", "モスバーガー", "ケンタッキー", "バーガーキング", "サブウェイ"],
+  ファストフード: ["マクドナルド", "モスバーガー", "ケンタッキー", "バーガーキング", "サブウェイ", "コストコ"],
   "カレー・弁当": ["CoCo壱番屋", "ほっともっと"],
   "中華・麺": ["リンガーハット", "餃子の王将"],
   天丼: ["天丼てんや"],
@@ -220,6 +220,15 @@ const weightStepOptions = [1, 2.5, 5, 10];
 const finisherPulseIntensity = "finisher_pulse";
 const finisherPulseNote = "仕上げパルス（部分可動域・素早く）";
 const appUpdates: AppUpdate[] = [
+  {
+    id: "2026-06-14-costco-food-court-menu",
+    title: "コストコのフードコートメニューを追加",
+    date: "2026-06-14",
+    items: [
+      "チェーン検索のファストフードにコストコを追加しました。",
+      "ホットドッグ、ピザ、プルコギベイク、クラムチャウダー、ソフトクリームなどを推定栄養値で追加しました。",
+    ],
+  },
   {
     id: "2026-06-14-food-search-fit-filter",
     title: "食事検索に栄養バランスフィルターを追加",
