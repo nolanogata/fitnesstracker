@@ -219,6 +219,16 @@ const finisherPulseIntensity = "finisher_pulse";
 const finisherPulseNote = "仕上げパルス（部分可動域・素早く）";
 const appUpdates: AppUpdate[] = [
   {
+    id: "2026-06-14-dark-home-black-gradient",
+    title: "ダークモードのHome背景を調整",
+    date: "2026-06-14",
+    items: [
+      "Safariで見える上部の白いブラウザ枠を活かすため、Home上部を黒いグラデーションにしました。",
+      "ヒーローカードより下は黒ベースにして、カードが浮いて見えるようにしました。",
+      "Safari系ブラウザ表示では日付まわりの白を少し柔らかく調整しました。",
+    ],
+  },
+  {
     id: "2026-06-14-workout-pr-celebration",
     title: "記録更新の演出を追加",
     date: "2026-06-14",
@@ -769,7 +779,7 @@ function App() {
 
   useEffect(() => {
     const root = document.documentElement;
-    const themeColor = resolvedTheme === "dark" ? "#111613" : "#f7f6f2";
+    const themeColor = resolvedTheme === "dark" ? "#000000" : "#f7f6f2";
     root.dataset.theme = resolvedTheme;
     root.style.colorScheme = resolvedTheme;
     document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]').forEach((meta) => {
