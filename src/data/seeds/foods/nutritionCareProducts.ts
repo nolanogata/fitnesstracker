@@ -1,4 +1,4 @@
-import { official } from "./helpers";
+import { official, unofficial } from "./helpers";
 
 const fetchedAt = "2026-06-14T00:00:00.000Z";
 
@@ -8,6 +8,7 @@ const sources = {
   miniYogurt: "https://www.meiji.co.jp/meiji-eiyoucare/products/nutritionfood/meibalance_mini_yogurt/detail.html",
   gyuttoMini: "https://www.meiji.co.jp/meiji-nutrition-info/products/carefood/meibalance_gyuttomini/",
   softJelly: "https://www.meiji.co.jp/meiji-eiyoucare/products/nutritionfood/softjelly/",
+  michitasCup: "https://www.matsukiyococokara-online.com/store/catalog/product/view/id/4902705078598",
 };
 
 type NutritionCareInput = {
@@ -28,6 +29,15 @@ const meibalance = (item: NutritionCareInput) =>
     brand: "明治",
     ...item,
     tags: ["市販品", "栄養補助", "メイバランス", "公式栄養", ...item.tags],
+    default_meal_type: "snack",
+    fetched_at: fetchedAt,
+  });
+
+const michitas = (item: NutritionCareInput) =>
+  unofficial({
+    brand: "明治",
+    ...item,
+    tags: ["市販品", "栄養補助", "ミチタス", "MICHITAS", "販売店栄養表示", ...item.tags],
     default_meal_type: "snack",
     fetched_at: fetchedAt,
   });
@@ -89,6 +99,8 @@ const softJelly = (flavor: string) =>
   });
 
 export const nutritionCareProductFoods = [
+  michitas({ name: "明治MICHITAS カップ 乳酸菌飲料風味", category: "ドリンク", tags: ["栄養サポート飲料", "ドリンク", "乳酸菌飲料風味"], calories: 100, protein_g: 9.0, fat_g: 1.6, carbs_g: 14.3, salt_g: 0.02, serving_label: "125ml", source_url: sources.michitasCup }),
+
   miniMilk("コーヒー味"),
   miniMilk("ストロベリー味"),
   miniMilk("ヨーグルト味"),
