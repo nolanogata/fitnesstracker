@@ -236,6 +236,7 @@ function settingsGoalDraftFrom(activeGoal?: Goal, profile?: Profile) {
     target_cardio_sessions_per_week: activeGoal?.target_cardio_sessions_per_week ?? 1,
   };
 }
+type SettingsGoalDraft = ReturnType<typeof settingsGoalDraftFrom>;
 
 const backupStorageKey = "phase-log-last-backup-at";
 const updateSeenStorageKey = "phase-log-seen-update-id";
@@ -247,6 +248,16 @@ const weightStepOptions = [1, 2.5, 5, 10];
 const finisherPulseIntensity = "finisher_pulse";
 const finisherPulseNote = "仕上げパルス（部分可動域・素早く）";
 const appUpdates: AppUpdate[] = [
+  {
+    id: "2026-06-15-goal-override-name-settings",
+    title: "ゴール設定の見た目を整理",
+    date: "2026-06-15",
+    items: [
+      "目標kcal/P/F/Cの上書き設定を、ゴール設定内の専用モーダルに移動しました。",
+      "上書きモーダル内で、kcal/P/F/Cそれぞれを自動計算に戻せるボタンを追加しました。",
+      "Settings下部から、AI相談レポートに含めるユーザー名を変更できるようにしました。",
+    ],
+  },
   {
     id: "2026-06-15-goal-setup-help",
     title: "ゴール設定の案内を追加",
@@ -3768,6 +3779,9 @@ function SettingsTab(props: {
   const [copiedReport, setCopiedReport] = useState(false);
   const [backupImportMessage, setBackupImportMessage] = useState("");
   const [goalHelpTopic, setGoalHelpTopic] = useState<GoalHelpTopic>();
+  const [isMacroOverrideOpen, setIsMacroOverrideOpen] = useState(false);
+  const [isProfileNameOpen, setIsProfileNameOpen] = useState(false);
+  const [profileNameDraft, setProfileNameDraft] = useState(props.profile?.name ?? "");
   const goalSectionRef = useRef<HTMLElement | null>(null);
   const backupSectionRef = useRef<HTMLElement | null>(null);
   const myMenuSectionRef = useRef<HTMLElement | null>(null);
@@ -3808,6 +3822,10 @@ function SettingsTab(props: {
     setGoalDraft(settingsGoalDraftFrom(props.activeGoal, props.profile));
   }, [props.activeGoal?.id, props.profile?.current_weight_kg, props.profile?.body_fat_percentage]);
 
+  useEffect(() => {
+    setProfileNameDraft(props.profile?.name ?? "");
+  }, [props.profile?.name]);
+
   const calculated = props.profile
     ? calculateTargets({
         profile: props.profile,
@@ -3824,6 +3842,12 @@ function SettingsTab(props: {
         manual_carbs_g: goalDraft.manual_carbs_g || undefined,
       })
     : undefined;
+  const macroOverrideSummary = [
+    goalDraft.manual_target_calories ? `kcal ${goalDraft.manual_target_calories}` : "",
+    goalDraft.manual_protein_g ? `P ${goalDraft.manual_protein_g}g` : "",
+    goalDraft.manual_fat_g ? `F ${goalDraft.manual_fat_g}g` : "",
+    goalDraft.manual_carbs_g ? `C ${goalDraft.manual_carbs_g}g` : "",
+  ].filter(Boolean).join(" / ") || "すべて自動";
 
   const aiReportSection = (
     <section className={`compact-card p-4 ${props.focus === "ai" ? "border-2 border-leaf" : ""}`}>
@@ -3929,11 +3953,11 @@ function SettingsTab(props: {
           </SelectField>
           <NumberInput label="筋トレ/週" value={goalDraft.target_workouts_per_week} onChange={(value) => setGoalDraft({ ...goalDraft, target_workouts_per_week: value })} />
           <NumberInput label="有酸素/週" value={goalDraft.target_cardio_sessions_per_week} onChange={(value) => setGoalDraft({ ...goalDraft, target_cardio_sessions_per_week: value })} />
-          <NumberInput label="kcal上書き (0=自動)" value={goalDraft.manual_target_calories} onChange={(value) => setGoalDraft({ ...goalDraft, manual_target_calories: value })} />
-          <NumberInput label="P上書き (0=自動)" value={goalDraft.manual_protein_g} onChange={(value) => setGoalDraft({ ...goalDraft, manual_protein_g: value })} />
-          <NumberInput label="F上書き (0=自動)" value={goalDraft.manual_fat_g} onChange={(value) => setGoalDraft({ ...goalDraft, manual_fat_g: value })} />
-          <NumberInput label="C上書き (0=自動)" value={goalDraft.manual_carbs_g} onChange={(value) => setGoalDraft({ ...goalDraft, manual_carbs_g: value })} />
         </div>
+        <button className="secondary-button mt-3 w-full justify-between px-4" onClick={() => setIsMacroOverrideOpen(true)}>
+          <span>目標kcal/PFCを上書き</span>
+          <span className="mini-chip">{macroOverrideSummary}</span>
+        </button>
         <p className="mt-3 rounded-md bg-rice p-3 text-sm">
           計算: {calculated?.target_calories ?? "-"} kcal / P{calculated?.target_protein_g ?? "-"} F{calculated?.target_fat_g ?? "-"} C{calculated?.target_carbs_g ?? "-"}
           {typeof calculated?.target_daily_calorie_adjustment === "number" && <span className="block text-xs text-moss">期間補正: {calculated.target_daily_calorie_adjustment > 0 ? "+" : ""}{calculated.target_daily_calorie_adjustment} kcal/日</span>}
@@ -4059,8 +4083,38 @@ function SettingsTab(props: {
         <p className="font-semibold text-ink">ゴールトラッカー</p>
         <p>IndexedDB local-only · no login · no backend</p>
         <p className="mt-2">同じURLを友達が開いても、ログは各iPhone内に別々に保存されます。</p>
-        <button className="secondary-button mt-3 w-full" onClick={props.openUpdateNotes}><FileText size={17} />更新内容</button>
+        <p className="mt-2 text-xs">レポート名: <span className="font-bold text-ink">{props.profile?.name || "未設定"}</span></p>
+        <div className="mt-3 grid gap-2">
+          <button className="secondary-button w-full" onClick={() => {
+            setProfileNameDraft(props.profile?.name ?? "");
+            setIsProfileNameOpen(true);
+          }}><Pencil size={17} />ユーザー名変更</button>
+          <button className="secondary-button w-full" onClick={props.openUpdateNotes}><FileText size={17} />更新内容</button>
+        </div>
       </section>
+      {isMacroOverrideOpen && (
+        <MacroOverrideModal
+          draft={goalDraft}
+          setDraft={setGoalDraft}
+          calculated={calculated}
+          onClose={() => setIsMacroOverrideOpen(false)}
+        />
+      )}
+      {isProfileNameOpen && (
+        <ProfileNameModal
+          value={profileNameDraft}
+          setValue={setProfileNameDraft}
+          onClose={() => setIsProfileNameOpen(false)}
+          onSave={async () => {
+            const name = profileNameDraft.trim();
+            if (!props.profile || !name) return;
+            await db.profile.update(props.profile.id, { name, updated_at: nowIso() });
+            await props.refresh();
+            setIsProfileNameOpen(false);
+            props.showToast("ユーザー名を保存しました");
+          }}
+        />
+      )}
       {goalHelpTopic && <GoalHelpModal topic={goalHelpTopic} onClose={() => setGoalHelpTopic(undefined)} />}
     </div>
   );
@@ -5458,6 +5512,101 @@ function SelectField({ label, hint, labelAction, children }: { label: string; hi
       <span className="font-normal text-moss">{hint}</span>
       <div className="mt-1">{children}</div>
     </label>
+  );
+}
+
+function MacroOverrideModal({ draft, setDraft, calculated, onClose }: {
+  draft: SettingsGoalDraft;
+  setDraft: (draft: SettingsGoalDraft) => void;
+  calculated?: ReturnType<typeof calculateTargets>;
+  onClose: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-end bg-ink/30 px-4 pb-4" onClick={onClose}>
+      <div className="compact-card max-h-[82vh] w-full overflow-y-auto p-4" onClick={(event) => event.stopPropagation()}>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-lg font-bold">目標kcal/PFCを上書き</p>
+            <p className="mt-1 text-xs text-moss">0にすると自動計算に戻ります。上書き中はAIレポートにもカスタム設定として明記されます。</p>
+          </div>
+          <button className="icon-button h-9 w-9" aria-label="閉じる" onClick={onClose}>×</button>
+        </div>
+        <div className="mt-4 rounded-md bg-rice p-3 text-xs leading-relaxed text-moss">
+          <p className="font-bold text-ink">現在の自動計算</p>
+          <p className="mt-1">kcal {calculated?.target_calories ?? "-"} / P{calculated?.target_protein_g ?? "-"} F{calculated?.target_fat_g ?? "-"} C{calculated?.target_carbs_g ?? "-"}</p>
+        </div>
+        <div className="mt-4 grid gap-3">
+          <NumberInput
+            label="目標kcal"
+            labelAction={<AutoValueButton onClick={() => setDraft({ ...draft, manual_target_calories: 0 })} />}
+            value={draft.manual_target_calories}
+            onChange={(value) => setDraft({ ...draft, manual_target_calories: value })}
+          />
+          <NumberInput
+            label="目標P"
+            labelAction={<AutoValueButton onClick={() => setDraft({ ...draft, manual_protein_g: 0 })} />}
+            value={draft.manual_protein_g}
+            onChange={(value) => setDraft({ ...draft, manual_protein_g: value })}
+          />
+          <NumberInput
+            label="目標F"
+            labelAction={<AutoValueButton onClick={() => setDraft({ ...draft, manual_fat_g: 0 })} />}
+            value={draft.manual_fat_g}
+            onChange={(value) => setDraft({ ...draft, manual_fat_g: value })}
+          />
+          <NumberInput
+            label="目標C"
+            labelAction={<AutoValueButton onClick={() => setDraft({ ...draft, manual_carbs_g: 0 })} />}
+            value={draft.manual_carbs_g}
+            onChange={(value) => setDraft({ ...draft, manual_carbs_g: value })}
+          />
+        </div>
+        <button className="primary-button mt-4 w-full" onClick={onClose}><Check size={17} />完了</button>
+      </div>
+    </div>
+  );
+}
+
+function AutoValueButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      className="rounded-full border border-line bg-rice px-2 py-0.5 text-[10px] font-black text-moss"
+      onClick={(event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        onClick();
+      }}
+    >
+      自動
+    </button>
+  );
+}
+
+function ProfileNameModal({ value, setValue, onClose, onSave }: {
+  value: string;
+  setValue: (value: string) => void;
+  onClose: () => void;
+  onSave: () => void | Promise<void>;
+}) {
+  const trimmed = value.trim();
+  return (
+    <div className="fixed inset-0 z-50 flex items-end bg-ink/30 px-4 pb-4" onClick={onClose}>
+      <div className="compact-card w-full p-4" onClick={(event) => event.stopPropagation()}>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-lg font-bold">ユーザー名変更</p>
+            <p className="mt-1 text-xs text-moss">AI相談レポートのプロフィール名として使います。</p>
+          </div>
+          <button className="icon-button h-9 w-9" aria-label="閉じる" onClick={onClose}>×</button>
+        </div>
+        <label className="mt-4 block text-xs font-semibold">
+          レポートに含める名前
+          <input className="mt-1 w-full" value={value} onChange={(event) => setValue(event.target.value)} placeholder="例: Nick" />
+        </label>
+        <button className="primary-button mt-4 w-full" disabled={!trimmed} onClick={onSave}><Save size={17} />保存</button>
+      </div>
+    </div>
   );
 }
 
