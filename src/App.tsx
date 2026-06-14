@@ -246,6 +246,15 @@ const finisherPulseIntensity = "finisher_pulse";
 const finisherPulseNote = "仕上げパルス（部分可動域・素早く）";
 const appUpdates: AppUpdate[] = [
   {
+    id: "2026-06-15-past-edit-glow-performance",
+    title: "過去日編集の表示と一覧処理を調整",
+    date: "2026-06-15",
+    items: [
+      "過去日編集中の画面外枠を、UIに馴染む黄色グローに調整しました。",
+      "食事検索、Home集計、Workout、Historyの一部一覧計算をメモ化し、記録やメニューが増えても不要な再計算を抑えるようにしました。",
+    ],
+  },
+  {
     id: "2026-06-15-past-edit-frame-home-history",
     title: "過去日編集とHomeの記録導線を調整",
     date: "2026-06-15",
@@ -1093,11 +1102,11 @@ function App() {
     };
   }, []);
 
-  const todayEntries = foodEntries.filter((entry) => entry.app_date === appDate);
-  const todayWorkouts = workoutSessions.filter((session) => session.app_date === appDate);
+  const todayEntries = useMemo(() => foodEntries.filter((entry) => entry.app_date === appDate), [foodEntries, appDate]);
+  const todayWorkouts = useMemo(() => workoutSessions.filter((session) => session.app_date === appDate), [workoutSessions, appDate]);
   const latestWeight = weightLogs.at(-1);
-  const dayTotals = sumFood(todayEntries);
-  const target = activeGoal ?? defaultGoal(profile);
+  const dayTotals = useMemo(() => sumFood(todayEntries), [todayEntries]);
+  const target = useMemo(() => activeGoal ?? defaultGoal(profile), [activeGoal, profile]);
   const needsGoalTargetPeriod = !!activeGoal && !activeGoal.target_date;
   const isCheatDay = cheatDayDates.includes(appDate);
   const targetCalories = target?.target_calories ?? 0;
@@ -1110,8 +1119,8 @@ function App() {
       : targetCalories - dayTotals.calories <= 100
         ? "on-track"
         : "under";
-  const backupInfo = getBackupInfo(lastBackupAt, foodEntries.length + weightLogs.length + workoutSessions.length + workoutSets.length);
-  const weeklyWorkoutStatus = getWeeklyWorkoutStatus(target, workoutSessions, workoutExercises, appDate);
+  const backupInfo = useMemo(() => getBackupInfo(lastBackupAt, foodEntries.length + weightLogs.length + workoutSessions.length + workoutSets.length), [lastBackupAt, foodEntries.length, weightLogs.length, workoutSessions.length, workoutSets.length]);
+  const weeklyWorkoutStatus = useMemo(() => getWeeklyWorkoutStatus(target, workoutSessions, workoutExercises, appDate), [target, workoutSessions, workoutExercises, appDate]);
   const markBackupNow = () => {
     const timestamp = nowIso();
     localStorage.setItem(backupStorageKey, timestamp);
@@ -1531,12 +1540,17 @@ function HomeTab(props: {
   const average7 = movingAverage(props.weightLogs, 7);
   const caloriePercent = props.goal?.target_calories ? Math.min(100, Math.round((props.dayTotals.calories / props.goal.target_calories) * 100)) : 0;
   const backupTitle = props.backupInfo.level === "danger" ? "バックアップ推奨" : "そろそろバックアップ";
-  const todayWorkoutExerciseIds = props.workoutExercises
-    .filter((exercise) => props.todayWorkouts.some((session) => session.id === exercise.session_id))
-    .map((exercise) => exercise.id);
-  const todayWorkoutCalories = props.workoutSets
-    .filter((set) => todayWorkoutExerciseIds.includes(set.workout_exercise_id))
-    .reduce((sum, set) => sum + (set.active_calories ?? 0), 0);
+  const todayWorkoutCalories = useMemo(() => {
+    const sessionIds = new Set(props.todayWorkouts.map((session) => session.id));
+    const exerciseIds = new Set(
+      props.workoutExercises
+        .filter((exercise) => sessionIds.has(exercise.session_id))
+        .map((exercise) => exercise.id),
+    );
+    return props.workoutSets
+      .filter((set) => exerciseIds.has(set.workout_exercise_id))
+      .reduce((sum, set) => sum + (set.active_calories ?? 0), 0);
+  }, [props.todayWorkouts, props.workoutExercises, props.workoutSets]);
   const previousWeight = props.weightLogs.length > 1 ? props.weightLogs.at(-2)?.weight_kg : undefined;
   const weightDelta = typeof previousWeight === "number" ? round1(weight - previousWeight) : undefined;
   const calorieDelta = props.goal?.target_calories ? props.dayTotals.calories - props.goal.target_calories : undefined;
@@ -2107,9 +2121,9 @@ function FoodTab(props: {
   const [isFoodFilterOpen, setIsFoodFilterOpen] = useState(false);
   const [showFoodFilterIntro, setShowFoodFilterIntro] = useState(() => localStorage.getItem(foodFitFilterSeenStorageKey) !== "1");
 
-  const recentIds = new Set(props.foodEntries.slice(0, 20).map((entry) => entry.menu_item_id).filter(Boolean));
-  const favoriteItems = props.menuItems.filter((item) => item.is_favorite);
-  const recentItems = props.menuItems.filter((item) => recentIds.has(item.id));
+  const recentIds = useMemo(() => new Set(props.foodEntries.slice(0, 20).map((entry) => entry.menu_item_id).filter(Boolean)), [props.foodEntries]);
+  const favoriteItems = useMemo(() => props.menuItems.filter((item) => item.is_favorite), [props.menuItems]);
+  const recentItems = useMemo(() => props.menuItems.filter((item) => recentIds.has(item.id)), [props.menuItems, recentIds]);
   const scrollToFoodTop = () => {
     window.requestAnimationFrame(() => foodTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
   };
@@ -2393,7 +2407,7 @@ function FoodTab(props: {
     await props.refresh();
     props.showToast("食事ログを修正しました");
   };
-  const todayFoodEntries = props.foodEntries.filter((entry) => entry.app_date === props.appDate);
+  const todayFoodEntries = useMemo(() => props.foodEntries.filter((entry) => entry.app_date === props.appDate), [props.foodEntries, props.appDate]);
   const foodLogTitle = `${formatJapaneseDate(props.appDate)}の食事ログ`;
 
   return (
@@ -2735,10 +2749,20 @@ function WorkoutTab(props: {
   const sessionSectionRef = useRef<HTMLElement | null>(null);
   const activeSession = props.workoutSessions.find((session) => session.id === sessionId);
   const editingTemplate = props.workoutTemplates.find((template) => template.id === editingTemplateId);
-  const activeExercises = props.workoutExercises
+  const activeExercises = useMemo(() => props.workoutExercises
     .filter((exercise) => exercise.session_id === sessionId)
-    .sort((a, b) => a.order - b.order);
-  const dateSessions = props.workoutSessions.filter((session) => session.app_date === props.appDate);
+    .sort((a, b) => a.order - b.order), [props.workoutExercises, sessionId]);
+  const dateSessions = useMemo(() => props.workoutSessions.filter((session) => session.app_date === props.appDate), [props.workoutSessions, props.appDate]);
+  const setsByExerciseId = useMemo(() => {
+    const grouped = new Map<string, WorkoutSet[]>();
+    props.workoutSets.forEach((set) => {
+      const current = grouped.get(set.workout_exercise_id);
+      if (current) current.push(set);
+      else grouped.set(set.workout_exercise_id, [set]);
+    });
+    grouped.forEach((sets) => sets.sort((a, b) => a.set_order - b.set_order));
+    return grouped;
+  }, [props.workoutSets]);
 
   useEffect(() => {
     setSessionId(undefined);
@@ -3131,15 +3155,19 @@ function WorkoutTab(props: {
     props.showToast("前回のワークアウトをコピーしました");
   };
 
-  const favoriteExercises = props.exercisePresets.filter((item) => item.is_favorite);
-  const exerciseResults = props.exercisePresets
+  const favoriteExercises = useMemo(() => props.exercisePresets.filter((item) => item.is_favorite), [props.exercisePresets]);
+  const exerciseResults = useMemo(() => props.exercisePresets
     .filter((item) => {
       if (mode === "body" && filter) return item.body_part === filter;
       if (mode === "equipment" && filter) return item.equipment_type === filter;
       if (mode === "search" && filter) return item.name.includes(filter) || item.body_part.includes(filter) || item.equipment_type.includes(filter);
       return mode === "search";
     })
-    .slice(0, 40);
+    .slice(0, 40), [props.exercisePresets, mode, filter]);
+  const workoutFilterOptions = useMemo(
+    () => unique(props.exercisePresets.map((item) => mode === "body" ? item.body_part : item.equipment_type)),
+    [props.exercisePresets, mode],
+  );
 
   return (
     <div className="space-y-4" ref={workoutTopRef}>
@@ -3238,7 +3266,7 @@ function WorkoutTab(props: {
             <input className="h-12 w-full text-base" value={filter} onChange={(event) => setFilter(event.target.value)} placeholder="種目検索" />
           ) : (
             <div className="grid grid-cols-2 gap-2">
-              {unique(props.exercisePresets.map((item) => mode === "body" ? item.body_part : item.equipment_type)).map((item) => (
+              {workoutFilterOptions.map((item) => (
                 <button className={`tap-tile ${filter === item ? "tap-tile-active" : ""}`} key={item} onClick={() => setFilter(item)}>{item}</button>
               ))}
             </div>
@@ -3277,7 +3305,7 @@ function WorkoutTab(props: {
             >
               <WorkoutExerciseEditor
                 exercise={exercise}
-                sets={props.workoutSets.filter((set) => set.workout_exercise_id === exercise.id).sort((a, b) => a.set_order - b.set_order)}
+                sets={setsByExerciseId.get(exercise.id) ?? []}
                 bodyWeightKg={props.profile?.current_weight_kg ?? 70}
                 onDeleteExercise={() => deleteWorkoutExercise(exercise)}
                 onPickTemplate={props.workoutTemplates.length ? (item) => setTemplateTargetItem(item) : undefined}
@@ -3369,14 +3397,14 @@ function RecordsTab(props: {
   const [selectedReportDate, setSelectedReportDate] = useState(props.appDate);
   const [historyReport, setHistoryReport] = useState("");
   const [historyReportCopied, setHistoryReportCopied] = useState(false);
-  const sortedWeightLogs = [...props.weightLogs].sort((a, b) => a.logged_at.localeCompare(b.logged_at));
+  const sortedWeightLogs = useMemo(() => [...props.weightLogs].sort((a, b) => a.logged_at.localeCompare(b.logged_at)), [props.weightLogs]);
   const latestWeight = sortedWeightLogs.at(-1);
   const firstWeight = sortedWeightLogs[0];
-  const latestBodyFat = [...sortedWeightLogs].reverse().find((log) => typeof log.body_fat_percentage === "number");
+  const latestBodyFat = useMemo(() => [...sortedWeightLogs].reverse().find((log) => typeof log.body_fat_percentage === "number"), [sortedWeightLogs]);
   const firstBodyFat = sortedWeightLogs.find((log) => typeof log.body_fat_percentage === "number");
-  const workoutHistory = buildWorkoutHistory(props.workoutSessions, props.workoutExercises, props.workoutSets);
-  const workoutGroups = groupWorkoutHistory(workoutHistory, historyGrouping);
-  const recentPrs = workoutHistory.flatMap((session) => session.prs.map((pr) => ({ ...pr, app_date: session.app_date }))).slice(0, 8);
+  const workoutHistory = useMemo(() => buildWorkoutHistory(props.workoutSessions, props.workoutExercises, props.workoutSets), [props.workoutSessions, props.workoutExercises, props.workoutSets]);
+  const workoutGroups = useMemo(() => groupWorkoutHistory(workoutHistory, historyGrouping), [workoutHistory, historyGrouping]);
+  const recentPrs = useMemo(() => workoutHistory.flatMap((session) => session.prs.map((pr) => ({ ...pr, app_date: session.app_date }))).slice(0, 8), [workoutHistory]);
   const recordsByDate = useMemo(() => {
     const summaries = new Map<string, DayRecordSummary>();
     const summaryFor = (date: string) => {
@@ -3399,11 +3427,11 @@ function RecordsTab(props: {
   }, [props.foodEntries, props.weightLogs, props.workoutSessions]);
   const calendarCells = useMemo(() => buildMonthCalendar(reportMonth), [reportMonth]);
   const selectedSummary = recordsByDate.get(selectedReportDate);
-  const selectedFoodEntries = selectedReportDate ? props.foodEntries.filter((entry) => entry.app_date === selectedReportDate) : [];
-  const selectedFoodTotal = sumFood(selectedFoodEntries);
-  const selectedWeight = selectedReportDate
+  const selectedFoodEntries = useMemo(() => selectedReportDate ? props.foodEntries.filter((entry) => entry.app_date === selectedReportDate) : [], [props.foodEntries, selectedReportDate]);
+  const selectedFoodTotal = useMemo(() => sumFood(selectedFoodEntries), [selectedFoodEntries]);
+  const selectedWeight = useMemo(() => selectedReportDate
     ? [...props.weightLogs].reverse().find((entry) => entry.app_date === selectedReportDate)
-    : undefined;
+    : undefined, [props.weightLogs, selectedReportDate]);
   const selectedHasRecords = !!selectedSummary;
   const generateHistoryDayReport = async () => {
     if (!selectedReportDate || !selectedHasRecords) return;
