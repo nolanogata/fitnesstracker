@@ -225,6 +225,7 @@ function settingsGoalDraftFrom(activeGoal?: Goal, profile?: Profile) {
     age: activeGoal?.age ?? 35,
     activity_level: activeGoal?.activity_level ?? ("moderate" as ActivityLevel),
     target_weight_kg: activeGoal?.target_weight_kg ?? profile?.current_weight_kg ?? 70,
+    target_body_fat_percentage: activeGoal?.target_body_fat_percentage ?? profile?.body_fat_percentage ?? 0,
     target_date: activeGoal?.target_date ?? fallbackTargetDate,
     manual_target_calories: activeGoal?.manual_target_calories ?? (isLegacyCustomGoal ? activeGoal?.target_calories ?? 0 : 0),
     manual_protein_g: activeGoal?.manual_protein_g ?? (isLegacyCustomGoal ? activeGoal?.target_protein_g ?? 0 : 0),
@@ -245,6 +246,16 @@ const weightStepOptions = [1, 2.5, 5, 10];
 const finisherPulseIntensity = "finisher_pulse";
 const finisherPulseNote = "仕上げパルス（部分可動域・素早く）";
 const appUpdates: AppUpdate[] = [
+  {
+    id: "2026-06-15-goal-body-fat-target",
+    title: "目標体脂肪率を追加",
+    date: "2026-06-15",
+    items: [
+      "ゴール設定とオンボーディングで目標体脂肪率を設定できるようにしました。",
+      "目標体重・目標体脂肪率から体脂肪量と除脂肪量の変化を計算し、プレビューに表示します。",
+      "AI相談レポートに目標体脂肪率と体組成の目標差分を含め、リコンプやバルクの判断材料にできるようにしました。",
+    ],
+  },
   {
     id: "2026-06-15-past-edit-glow-performance",
     title: "過去日編集の表示と一覧処理を調整",
@@ -3753,7 +3764,7 @@ function SettingsTab(props: {
 
   useEffect(() => {
     setGoalDraft(settingsGoalDraftFrom(props.activeGoal, props.profile));
-  }, [props.activeGoal?.id, props.profile?.current_weight_kg]);
+  }, [props.activeGoal?.id, props.profile?.current_weight_kg, props.profile?.body_fat_percentage]);
 
   const calculated = props.profile
     ? calculateTargets({
@@ -3763,6 +3774,7 @@ function SettingsTab(props: {
         activity_level: goalDraft.activity_level,
         phase: goalDraft.phase,
         target_weight_kg: goalDraft.target_weight_kg,
+        target_body_fat_percentage: goalDraft.target_body_fat_percentage || undefined,
         target_date: goalDraft.target_date || undefined,
         manual_target_calories: goalDraft.manual_target_calories || undefined,
         manual_protein_g: goalDraft.manual_protein_g || undefined,
@@ -3864,6 +3876,7 @@ function SettingsTab(props: {
           </SelectField>
           <NumberInput label="年齢" value={goalDraft.age} onChange={(value) => setGoalDraft({ ...goalDraft, age: value })} />
           <NumberInput label="目標体重" value={goalDraft.target_weight_kg} step={0.1} onChange={(value) => setGoalDraft({ ...goalDraft, target_weight_kg: value })} />
+          <NumberInput label="目標体脂肪 % (0=未設定)" value={goalDraft.target_body_fat_percentage} step={0.1} onChange={(value) => setGoalDraft({ ...goalDraft, target_body_fat_percentage: clampBodyFat(value) })} />
           <SelectField label="目標達成日" hint="体重差からkcal補正">
             <input
               type="date"
@@ -3882,8 +3895,13 @@ function SettingsTab(props: {
         <p className="mt-3 rounded-md bg-rice p-3 text-sm">
           計算: {calculated?.target_calories ?? "-"} kcal / P{calculated?.target_protein_g ?? "-"} F{calculated?.target_fat_g ?? "-"} C{calculated?.target_carbs_g ?? "-"}
           {typeof calculated?.target_daily_calorie_adjustment === "number" && <span className="block text-xs text-moss">期間補正: {calculated.target_daily_calorie_adjustment > 0 ? "+" : ""}{calculated.target_daily_calorie_adjustment} kcal/日</span>}
+          {typeof calculated?.target_fat_mass_kg === "number" && typeof calculated?.target_lean_mass_kg === "number" && (
+            <span className="block text-xs text-moss">
+              体組成: 脂肪 {calculated.target_fat_mass_kg}kg{typeof calculated.target_fat_mass_change_kg === "number" ? ` (${formatSignedNumber(calculated.target_fat_mass_change_kg)}kg)` : ""} / 除脂肪 {calculated.target_lean_mass_kg}kg{typeof calculated.target_lean_mass_change_kg === "number" ? ` (${formatSignedNumber(calculated.target_lean_mass_change_kg)}kg)` : ""}
+            </span>
+          )}
         </p>
-        <p className="mt-2 text-xs text-moss">自動計算は現在体重から消費カロリーを出し、目標体重・目標達成日・フェーズ・運動強度・総カロリーからP/F/Cを配分します。kcal/P/F/Cを手動上書きしている場合、その値は保存時に上書きしません。</p>
+        <p className="mt-2 text-xs text-moss">自動計算は現在体重から消費カロリーを出し、目標体重・目標体脂肪率・目標達成日・フェーズ・運動強度・総カロリーからP/F/Cと体組成の目標差分を出します。kcal/P/F/Cを手動上書きしている場合、その値は保存時に上書きしません。</p>
         <button className="primary-button mt-3 w-full" onClick={async () => {
           if (!props.profile) return;
           const timestamp = nowIso();
@@ -3894,6 +3912,7 @@ function SettingsTab(props: {
             activity_level: goalDraft.activity_level,
             age: goalDraft.age,
             target_weight_kg: goalDraft.target_weight_kg,
+            target_body_fat_percentage: goalDraft.target_body_fat_percentage || undefined,
             target_date: goalDraft.target_date || undefined,
             manual_target_calories: goalDraft.manual_target_calories || undefined,
             manual_protein_g: goalDraft.manual_protein_g || undefined,
@@ -4017,6 +4036,7 @@ function Onboarding({ refresh }: { refresh: () => Promise<void> }) {
     phase: "maintenance" as Phase,
     activity_level: "moderate" as ActivityLevel,
     target_weight_kg: 70,
+    target_body_fat_percentage: "",
     target_date: addDays(todayAppDate(), 90),
     target_calories: 0,
     target_protein_g: 0,
@@ -4046,6 +4066,7 @@ function Onboarding({ refresh }: { refresh: () => Promise<void> }) {
     activity_level: draft.activity_level,
     phase: draft.phase,
     target_weight_kg: draft.target_weight_kg,
+    target_body_fat_percentage: draft.target_body_fat_percentage === "" ? undefined : Number(draft.target_body_fat_percentage),
     target_date: draft.target_date,
     manual_target_calories: draft.target_calories || undefined,
     manual_protein_g: draft.target_protein_g || undefined,
@@ -4083,6 +4104,7 @@ function Onboarding({ refresh }: { refresh: () => Promise<void> }) {
     { title: "目標", subtitle: "体重や筋肉の方向性を選びます。" },
     { title: "運動量", subtitle: "日常活動も含めた消費量の補正です。迷ったら普通がおすすめ。" },
     { title: "目標体重", subtitle: "PFCの基準にする体重です。維持でも今の体重でOK。" },
+    { title: "目標体脂肪率", subtitle: "リコンプやバルクで、体重だけでは見えない変化をAI相談に渡せます。未定なら空欄でOK。" },
     { title: "目標達成日", subtitle: "体重差と期間から、減量・増量に必要なカロリー補正を計算します。" },
     { title: "筋トレ頻度", subtitle: "Homeの今週の運動カードに使います。" },
     { title: "有酸素頻度", subtitle: "歩く・バイク・ランなどの週目標です。" },
@@ -4100,6 +4122,7 @@ function Onboarding({ refresh }: { refresh: () => Promise<void> }) {
       activity_level: draft.activity_level,
       age,
       target_weight_kg: draft.target_weight_kg,
+      target_body_fat_percentage: draft.target_body_fat_percentage === "" ? undefined : Number(draft.target_body_fat_percentage),
       target_date: draft.target_date,
       manual_target_calories: draft.target_calories || undefined,
       manual_protein_g: draft.target_protein_g || undefined,
@@ -4201,7 +4224,8 @@ function Onboarding({ refresh }: { refresh: () => Promise<void> }) {
       );
     }
     if (step === 9) return <NumberInput label="目標体重 kg" value={draft.target_weight_kg} step={0.1} onChange={(value) => setDraft({ ...draft, target_weight_kg: value })} />;
-    if (step === 10) {
+    if (step === 10) return <PartialNumberInput label="目標体脂肪 %" value={draft.target_body_fat_percentage} step={0.1} onChange={(value) => setDraft({ ...draft, target_body_fat_percentage: value })} />;
+    if (step === 11) {
       return (
         <label className="onboarding-field">
           <span>目標達成日</span>
@@ -4209,8 +4233,8 @@ function Onboarding({ refresh }: { refresh: () => Promise<void> }) {
         </label>
       );
     }
-    if (step === 11) return <NumberInput label="筋トレ / 週" value={draft.workouts} onChange={(value) => setDraft({ ...draft, workouts: Math.max(0, Math.round(value)) })} />;
-    if (step === 12) return <NumberInput label="有酸素 / 週" value={draft.cardio} onChange={(value) => setDraft({ ...draft, cardio: Math.max(0, Math.round(value)) })} />;
+    if (step === 12) return <NumberInput label="筋トレ / 週" value={draft.workouts} onChange={(value) => setDraft({ ...draft, workouts: Math.max(0, Math.round(value)) })} />;
+    if (step === 13) return <NumberInput label="有酸素 / 週" value={draft.cardio} onChange={(value) => setDraft({ ...draft, cardio: Math.max(0, Math.round(value)) })} />;
     return (
       <div className="grid gap-3">
         <div className="onboarding-target-card">
@@ -4221,7 +4245,12 @@ function Onboarding({ refresh }: { refresh: () => Promise<void> }) {
             <div><span>F</span><strong>{calculated.target_fat_g}g</strong></div>
             <div><span>C</span><strong>{calculated.target_carbs_g}g</strong></div>
           </div>
-          <p className="mt-3 text-xs leading-relaxed text-moss">現在体重・年齢・目標・運動量・目標達成日からざっくり計算しています。AI相談後や実際の変化を見ながらSettingsで調整できます。</p>
+          {typeof calculated.target_fat_mass_kg === "number" && typeof calculated.target_lean_mass_kg === "number" && (
+            <p className="numeric-text mt-3 rounded-2xl bg-white/45 px-3 py-2 text-xs font-bold text-moss">
+              体組成目標: 脂肪 {calculated.target_fat_mass_kg}kg / 除脂肪 {calculated.target_lean_mass_kg}kg
+            </p>
+          )}
+          <p className="mt-3 text-xs leading-relaxed text-moss">現在体重・年齢・目標・運動量・目標体脂肪率・目標達成日からざっくり計算しています。AI相談後や実際の変化を見ながらSettingsで調整できます。</p>
         </div>
         <button className="secondary-button w-full" onClick={() => setShowAdvanced((current) => !current)}>
           {showAdvanced ? "詳細上書きを閉じる" : "kcal/PFCを手で上書きする"}
@@ -6253,6 +6282,13 @@ function formatSignedDelta(latest?: number, first?: number, unit = "") {
   if (delta > 0) return `+${delta}${unit}`;
   if (delta < 0) return `${delta}${unit}`;
   return `±0${unit}`;
+}
+
+function formatSignedNumber(value: number) {
+  const rounded = round1(value);
+  if (rounded > 0) return `+${rounded}`;
+  if (rounded < 0) return `${rounded}`;
+  return "±0";
 }
 
 function movingAverage(logs: WeightLog[], count: number) {
