@@ -504,18 +504,16 @@ button {
 .app-bottom-nav {
   left: 50% !important;
   right: auto !important;
-  bottom: 0 !important;
-  width: min(100%, 430px);
+  bottom: max(0.8rem, calc(env(safe-area-inset-bottom) + 0.25rem)) !important;
+  width: min(calc(100% - 2rem), 400px);
   transform: translateX(-50%) translateZ(0);
-  border-top: 1px solid rgba(255, 255, 255, 0.64);
-  border-right: 1px solid rgba(255, 255, 255, 0.42);
-  border-left: 1px solid rgba(255, 255, 255, 0.42);
-  border-radius: 24px 24px 0 0;
-  background: rgba(255, 255, 255, 0.76);
+  border: 1px solid rgba(255, 255, 255, 0.56);
+  border-radius: 30px;
+  background: rgba(255, 255, 255, 0.54);
   background-clip: padding-box;
-  box-shadow: 0 -8px 24px rgba(35, 45, 38, 0.06), var(--glass-highlight);
-  backdrop-filter: blur(28px) saturate(145%);
-  -webkit-backdrop-filter: blur(28px) saturate(145%);
+  box-shadow: 0 12px 34px rgba(35, 45, 38, 0.12), var(--glass-highlight);
+  backdrop-filter: blur(30px) saturate(160%);
+  -webkit-backdrop-filter: blur(30px) saturate(160%);
   will-change: transform;
 }
 
@@ -558,7 +556,7 @@ button {
 }
 
 .safe-bottom {
-  padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+  padding-bottom: 0.65rem;
 }
 
 .safe-top {
