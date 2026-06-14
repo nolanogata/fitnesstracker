@@ -119,11 +119,13 @@ type WorkoutExerciseDraft = {
   setSchemeText: string;
 };
 type ManualFoodDraft = {
+  entry_kind: "meal" | "ingredient";
   name: string;
   brand: string;
   meal_type: MealType;
   category: string;
   subcategory: string;
+  ingredient_grams: string;
   calories: string;
   protein_g: string;
   fat_g: string;
@@ -197,11 +199,13 @@ const commercialGeneralCategories = new Set(["チェーン店", "コンビニ", 
 const generalFoodCategoryLabels = [...Object.keys(genericCategories).filter((category) => !commercialGeneralCategories.has(category)), "ざっくり"];
 
 const emptyManual: ManualFoodDraft = {
+  entry_kind: "meal",
   name: "",
   brand: "",
   meal_type: "lunch" as MealType,
   category: "自炊",
   subcategory: "白米",
+  ingredient_grams: "100",
   calories: "",
   protein_g: "",
   fat_g: "",
@@ -222,6 +226,16 @@ const weightStepOptions = [1, 2.5, 5, 10];
 const finisherPulseIntensity = "finisher_pulse";
 const finisherPulseNote = "仕上げパルス（部分可動域・素早く）";
 const appUpdates: AppUpdate[] = [
+  {
+    id: "2026-06-14-ingredient-grams-meibalance",
+    title: "材料のグラム記録とメイバランスを追加",
+    date: "2026-06-14",
+    items: [
+      "マニュアル入力で材料(g)モードを選び、鶏むね肉などをグラム指定で記録できるようにしました。",
+      "材料(g)モードでは100gあたりの栄養値から、使用量に合わせてkcal/P/F/Cを自動換算します。",
+      "明治メイバランスMini、ぎゅっとMini、ソフトJellyを公式栄養値で追加しました。",
+    ],
+  },
   {
     id: "2026-06-14-royalhost-konamono-menus",
     title: "ロイヤルホスト・粉物メニューを追加",
@@ -1955,6 +1969,7 @@ function FoodTab(props: {
     }
   };
   const portionOptions = selected ? getPortionOptions(selected) : [];
+  const selectedServingGrams = selected ? menuItemServingGrams(selected) : undefined;
   const isGlobalSearch = query.trim().length > 0;
   const remainingNutrition = getRemainingNutrition(props.dayTotals, props.goal);
   const canUseOverGoalFilter = !!props.goal && props.goal.target_calories > 0;
@@ -2008,12 +2023,13 @@ function FoodTab(props: {
   const saveSelected = async () => {
     if (!selected) return;
     const timestamp = nowIso();
+    const loggedName = selectedServingGrams && multiplier !== 1 ? `${selected.name}（${formatControlValue(round1(selectedServingGrams * multiplier))}g）` : selected.name;
     await db.food_entries.put({
       id: makeId("food"),
       app_date: props.appDate,
       logged_at: timestamp,
       meal_type: mealType,
-      name: formatMenuItemName(selected),
+      name: loggedName,
       brand: selected.brand,
       calories: Math.round(selected.calories * multiplier),
       protein_g: round1(selected.protein_g * multiplier),
@@ -2030,7 +2046,7 @@ function FoodTab(props: {
     setSelected(undefined);
     setMultiplier(1);
     await props.refresh();
-    props.showToast(`${formatMenuItemName(selected)}を記録しました`);
+    props.showToast(`${loggedName}を記録しました`);
   };
 
   const cloneSelectedToManual = () => {
@@ -2044,16 +2060,23 @@ function FoodTab(props: {
     const timestamp = nowIso();
     let menuItemId: string | undefined;
     const nutrition = draftNutrition(manual);
-    const displayName = manual.name.trim() || `${mealLabels[manual.meal_type]}のマニュアル`;
+    const baseName = manual.name.trim() || `${mealLabels[manual.meal_type]}のマニュアル`;
+    const ingredientGrams = manual.entry_kind === "ingredient" ? ingredientGramValue(manual) : undefined;
+    const ingredientServingLabel = ingredientGrams === undefined ? undefined : `${formatControlValue(ingredientGrams)}g`;
+    const displayName = manual.entry_kind === "ingredient" && ingredientServingLabel ? `${baseName}（${ingredientServingLabel}）` : baseName;
     const brand = manual.brand.trim();
-    const tags = unique([manual.category, manual.subcategory, brand, ...(nutrition.unknown.length ? ["栄養素一部不明"] : [])]);
-    const note = unique([manual.note, nutrition.unknown.length ? `未入力: ${nutrition.unknown.join("/")}` : ""]).join(" / ") || undefined;
+    const tags = unique([manual.category, manual.subcategory, brand, manual.entry_kind === "ingredient" ? "材料" : "", ...(nutrition.unknown.length ? ["栄養素一部不明"] : [])]);
+    const note = unique([
+      manual.note,
+      manual.entry_kind === "ingredient" ? `材料入力: ${ingredientServingLabel ?? "g未入力"} / 栄養値は100gあたりから換算` : "",
+      nutrition.unknown.length ? `未入力: ${nutrition.unknown.join("/")}` : "",
+    ]).join(" / ") || undefined;
     const confidence = nutrition.unknown.length ? "low" : "high";
     if (manual.savePreset) {
       menuItemId = makeId("menu_user");
       await db.menu_items.put({
         id: menuItemId,
-        name: displayName,
+        name: baseName,
         brand: brand || undefined,
         category: manual.category,
         tags,
@@ -2062,6 +2085,8 @@ function FoodTab(props: {
         fat_g: nutrition.fat_g,
         carbs_g: nutrition.carbs_g,
         salt_g: nutrition.salt_g,
+        serving_label: ingredientServingLabel,
+        weight_g: ingredientGrams,
         default_meal_type: manual.meal_type,
         data_source: "user",
         confidence,
@@ -2077,7 +2102,7 @@ function FoodTab(props: {
       app_date: props.appDate,
       logged_at: timestamp,
       meal_type: manual.meal_type,
-      name: displayName,
+      name: menuItemId ? baseName : displayName,
       brand: brand || undefined,
       calories: nutrition.calories,
       protein_g: nutrition.protein_g,
@@ -2338,6 +2363,20 @@ function FoodTab(props: {
               ))}
             </div>
             <input className="mt-3 w-full" type="number" step="0.05" value={multiplier} onChange={(event) => setMultiplier(Number(event.target.value))} />
+            {selectedServingGrams && (
+              <label className="mt-3 block text-xs font-semibold text-moss">
+                グラム指定
+                <input
+                  className="mt-1 w-full"
+                  type="number"
+                  inputMode="decimal"
+                  min="0"
+                  step="1"
+                  value={formatControlValue(round1(selectedServingGrams * multiplier))}
+                  onChange={(event) => setMultiplier(Math.max(0, Number(event.target.value) || 0) / selectedServingGrams)}
+                />
+              </label>
+            )}
             <div className="mt-4 grid grid-cols-2 gap-2">
               <button className="secondary-button" onClick={() => setSelected(undefined)}>閉じる</button>
               <button className="primary-button" onClick={saveSelected}><Check size={17} />記録</button>
@@ -3924,15 +3963,34 @@ function ManualFoodForm({ manual, setManual, onSave, compact = false, mode = "lo
 }) {
   const subcategories = genericCategories[manual.category] ?? [];
   const isPresetOnly = mode === "preset";
+  const isIngredient = manual.entry_kind === "ingredient";
+  const previewNutrition = draftNutrition(manual);
+  const switchManualKind = (entryKind: ManualFoodDraft["entry_kind"]) => {
+    if (entryKind === "ingredient") {
+      setManual({
+        ...manual,
+        entry_kind: "ingredient",
+        category: manual.category === "自炊" ? "肉・魚" : manual.category,
+        subcategory: manual.category === "自炊" ? "鶏" : manual.subcategory,
+        ingredient_grams: manual.ingredient_grams || "100",
+      });
+      return;
+    }
+    setManual({ ...manual, entry_kind: "meal" });
+  };
   return (
     <section className={compact ? "" : "compact-card p-4"}>
       {!compact && (
         <div>
           <h2 className="font-bold">マニュアル</h2>
-          <p className="mt-1 text-xs leading-relaxed text-moss">名前・ブランドは空欄でも保存できます。名前が空なら食事タイミングから自動でラベルを付けます。</p>
+          <p className="mt-1 text-xs leading-relaxed text-moss">名前・ブランドは空欄でも保存できます。材料(g)なら100gあたりの栄養値と使用量から自動換算します。</p>
         </div>
       )}
       <div className="mt-3 grid grid-cols-2 gap-2">
+        <div className="col-span-2 grid grid-cols-2 gap-2">
+          <button className={`mode-button ${!isIngredient ? "mode-button-active" : ""}`} onClick={() => switchManualKind("meal")}>1食分</button>
+          <button className={`mode-button ${isIngredient ? "mode-button-active" : ""}`} onClick={() => switchManualKind("ingredient")}>材料(g)</button>
+        </div>
         <input className="col-span-2" value={manual.name} onChange={(event) => setManual({ ...manual, name: event.target.value })} placeholder={isPresetOnly ? "メニュー名" : "名前（空欄OK）"} />
         <input className={isPresetOnly ? "col-span-2" : ""} value={manual.brand} onChange={(event) => setManual({ ...manual, brand: event.target.value })} placeholder="ブランド（空欄OK）" />
         {!isPresetOnly && (
@@ -3955,12 +4013,21 @@ function ManualFoodForm({ manual, setManual, onSave, compact = false, mode = "lo
             </div>
           )}
         </div>
-        <PartialNumberInput label="kcal" value={manual.calories} onChange={(value) => setManual({ ...manual, calories: value })} />
-        <PartialNumberInput label="P" value={manual.protein_g} step={0.1} onChange={(value) => setManual({ ...manual, protein_g: value })} />
-        <PartialNumberInput label="F" value={manual.fat_g} step={0.1} onChange={(value) => setManual({ ...manual, fat_g: value })} />
-        <PartialNumberInput label="C" value={manual.carbs_g} step={0.1} onChange={(value) => setManual({ ...manual, carbs_g: value })} />
-        <input value={manual.salt_g} onChange={(event) => setManual({ ...manual, salt_g: event.target.value })} placeholder="塩分 optional" />
+        {isIngredient && (
+          <PartialNumberInput label="使用量 g" value={manual.ingredient_grams} step={1} onChange={(value) => setManual({ ...manual, ingredient_grams: value })} />
+        )}
+        <PartialNumberInput label={isIngredient ? "kcal / 100g" : "kcal"} value={manual.calories} onChange={(value) => setManual({ ...manual, calories: value })} />
+        <PartialNumberInput label={isIngredient ? "P / 100g" : "P"} value={manual.protein_g} step={0.1} onChange={(value) => setManual({ ...manual, protein_g: value })} />
+        <PartialNumberInput label={isIngredient ? "F / 100g" : "F"} value={manual.fat_g} step={0.1} onChange={(value) => setManual({ ...manual, fat_g: value })} />
+        <PartialNumberInput label={isIngredient ? "C / 100g" : "C"} value={manual.carbs_g} step={0.1} onChange={(value) => setManual({ ...manual, carbs_g: value })} />
+        <input value={manual.salt_g} onChange={(event) => setManual({ ...manual, salt_g: event.target.value })} placeholder={isIngredient ? "塩分 / 100g optional" : "塩分 optional"} />
         <input value={manual.note} onChange={(event) => setManual({ ...manual, note: event.target.value })} placeholder="メモ" />
+        {isIngredient && (
+          <div className="col-span-2 rounded-2xl border border-line bg-rice/60 px-3 py-2 text-xs text-moss">
+            <p className="font-semibold text-ink">記録される栄養</p>
+            <p className="numeric-text mt-1">使用量 {formatControlValue(ingredientGramValue(manual) ?? 0)}g · {previewNutrition.calories}kcal · P{previewNutrition.protein_g} F{previewNutrition.fat_g} C{previewNutrition.carbs_g}</p>
+          </div>
+        )}
       </div>
       <div className="mt-3 flex flex-wrap gap-2">
         {!isPresetOnly && <label className="chip"><input type="checkbox" checked={manual.savePreset} onChange={(event) => setManual({ ...manual, savePreset: event.target.checked })} />メニューとして登録</label>}
@@ -6030,17 +6097,21 @@ function foodModeLabel(mode: FoodMode) {
 function toManualDraft(item: MenuItem, mealType: MealType = "lunch"): ManualFoodDraft {
   const category = genericCategories[item.category] ? item.category : "チェーン店";
   const subcategory = item.tags.find((tag) => genericCategories[category]?.includes(tag)) ?? genericCategories[category]?.[0] ?? "";
+  const isIngredient = item.tags.includes("材料") || !!item.weight_g;
+  const ingredientScale = isIngredient && item.weight_g ? item.weight_g / 100 : 1;
   return {
-    name: formatMenuItemName(item),
+    entry_kind: isIngredient ? "ingredient" : "meal",
+    name: isIngredient ? item.name : formatMenuItemName(item),
     brand: item.brand ?? "",
     meal_type: item.default_meal_type ?? mealType,
     category,
     subcategory,
-    calories: String(item.calories),
-    protein_g: String(item.protein_g),
-    fat_g: String(item.fat_g),
-    carbs_g: String(item.carbs_g),
-    salt_g: item.salt_g === undefined ? "" : String(item.salt_g),
+    ingredient_grams: item.weight_g ? String(item.weight_g) : "100",
+    calories: String(round1(item.calories / ingredientScale)),
+    protein_g: String(round1(item.protein_g / ingredientScale)),
+    fat_g: String(round1(item.fat_g / ingredientScale)),
+    carbs_g: String(round1(item.carbs_g / ingredientScale)),
+    salt_g: item.salt_g === undefined ? "" : String(round1(item.salt_g / ingredientScale)),
     note: item.data_source === "estimated" ? "推定メニューから編集" : item.data_source === "unofficial" ? "非公式メニューから編集" : "",
     savePreset: true,
     favorite: item.is_favorite,
@@ -6102,19 +6173,28 @@ function draftNutrition(manual: ManualFoodDraft) {
   const fat = draftNumber(manual.fat_g);
   const carbs = draftNumber(manual.carbs_g);
   const salt = manual.salt_g.trim() === "" ? undefined : draftNumber(manual.salt_g).value;
+  const grams = ingredientGramValue(manual);
+  const scale = manual.entry_kind === "ingredient" ? (grams ?? 0) / 100 : 1;
   return {
-    calories: Math.round(calories.value),
-    protein_g: round1(protein.value),
-    fat_g: round1(fat.value),
-    carbs_g: round1(carbs.value),
-    salt_g: salt === undefined ? undefined : round1(salt),
+    calories: Math.round(calories.value * scale),
+    protein_g: round1(protein.value * scale),
+    fat_g: round1(fat.value * scale),
+    carbs_g: round1(carbs.value * scale),
+    salt_g: salt === undefined ? undefined : round1(salt * scale),
     unknown: [
+      manual.entry_kind === "ingredient" && grams === undefined ? "g" : "",
       calories.unknown ? "kcal" : "",
       protein.unknown ? "P" : "",
       fat.unknown ? "F" : "",
       carbs.unknown ? "C" : "",
     ].filter(Boolean),
   };
+}
+
+function ingredientGramValue(manual: ManualFoodDraft) {
+  const grams = draftNumber(manual.ingredient_grams);
+  if (grams.unknown || grams.value <= 0) return undefined;
+  return round1(grams.value);
 }
 
 function draftNumber(value: string) {
@@ -6218,6 +6298,12 @@ function formatFoodEntryName(entry: FoodEntry, menuItems: MenuItem[]) {
   const menuItem = menuItems.find((item) => item.id === entry.menu_item_id);
   if (!menuItem || entry.name !== menuItem.name) return entry.name;
   return formatMenuItemName(menuItem);
+}
+
+function menuItemServingGrams(item: Pick<MenuItem, "serving_label" | "weight_g">) {
+  if (item.weight_g && item.weight_g > 0) return item.weight_g;
+  const match = item.serving_label?.match(/(\d+(?:\.\d+)?)\s*g/i);
+  return match ? Number(match[1]) : undefined;
 }
 
 function getPortionOptions(item: MenuItem): PortionOption[] {

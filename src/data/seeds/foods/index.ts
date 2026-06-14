@@ -1,5 +1,6 @@
 import { genericFoods } from "./generic";
 import { genericKonamonoFoods } from "./genericKonamono";
+import { nutritionCareProductFoods } from "./nutritionCareProducts";
 import { proteinProductFoods } from "./proteinProducts";
 import { quickEstimateFoods } from "./quickEstimates";
 import { snackDrinkFoods } from "./snacksDrinks";
@@ -47,6 +48,7 @@ export const foodSeeds = [
   ...genericKonamonoFoods,
   ...userMenuImportFoods,
   ...proteinProductFoods,
+  ...nutritionCareProductFoods,
   ...snackDrinkFoods,
   ...quickEstimateFoods,
   ...burgerKingMenuFoods,
