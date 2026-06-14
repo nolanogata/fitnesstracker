@@ -184,9 +184,7 @@ button {
   gap: 0.85rem;
   border: 1px solid rgba(217, 122, 104, 0.34);
   border-radius: 24px;
-  background:
-    linear-gradient(135deg, rgba(243, 221, 211, 0.84), rgba(246, 235, 221, 0.62)),
-    rgba(255, 255, 255, 0.46);
+  background: rgba(243, 221, 211, 0.72);
   padding: 0.9rem 0.95rem;
   color: #6f3f35;
   box-shadow: 0 14px 32px rgba(104, 58, 48, 0.12), var(--glass-highlight);
@@ -400,9 +398,7 @@ button {
 }
 
 .home-hero-over {
-  background:
-    linear-gradient(180deg, rgba(217, 122, 104, 0.12) 0%, rgba(255, 255, 255, 0.9) 48%, rgba(255, 255, 255, 0.96) 100%),
-    var(--glass-bg-strong);
+  background: var(--glass-bg-strong);
   box-shadow:
     0 0 0 1px rgba(217, 122, 104, 0.22),
     0 0 22px rgba(217, 122, 104, 0.18),
@@ -411,9 +407,7 @@ button {
 }
 
 .home-hero-on-track {
-  background:
-    linear-gradient(180deg, rgba(140, 167, 152, 0.16) 0%, rgba(255, 255, 255, 0.9) 48%, rgba(255, 255, 255, 0.96) 100%),
-    var(--glass-bg-strong);
+  background: var(--glass-bg-strong);
   box-shadow:
     0 0 0 1px rgba(111, 143, 125, 0.22),
     0 0 22px rgba(111, 143, 125, 0.16),
@@ -423,9 +417,7 @@ button {
 
 .home-hero-left,
 .home-hero-neutral {
-  background:
-    linear-gradient(180deg, rgba(246, 235, 221, 0.28) 0%, rgba(255, 255, 255, 0.9) 48%, rgba(255, 255, 255, 0.96) 100%),
-    var(--glass-bg-strong);
+  background: var(--glass-bg-strong);
   box-shadow:
     0 0 0 1px rgba(246, 235, 221, 0.34),
     0 0 22px rgba(246, 235, 221, 0.2),
@@ -753,10 +745,7 @@ button {
 }
 
 .onboarding-shell {
-  background:
-    radial-gradient(circle at 16% 8%, rgba(171, 201, 183, 0.24), transparent 30%),
-    radial-gradient(circle at 86% 18%, rgba(201, 214, 235, 0.22), transparent 30%),
-    linear-gradient(180deg, #f8f7f3 0%, #f3f1eb 100%);
+  background: #ffffff;
 }
 
 .onboarding-card {
@@ -768,9 +757,7 @@ button {
 .onboarding-target-card {
   border: 1px solid var(--glass-border);
   border-radius: 24px;
-  background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.42), rgba(255, 255, 255, 0.24)),
-    rgba(255, 255, 255, 0.34);
+  background: rgba(255, 255, 255, 0.58);
   padding: 1rem;
   box-shadow: var(--glass-highlight);
 }
@@ -809,9 +796,7 @@ button {
 
 .onboarding-choice-active {
   border-color: rgba(111, 143, 125, 0.5);
-  background:
-    linear-gradient(135deg, rgba(221, 232, 225, 0.72), rgba(221, 229, 240, 0.44)),
-    rgba(255, 255, 255, 0.46);
+  background: rgba(221, 232, 225, 0.72);
 }
 
 .onboarding-choice:active {
@@ -850,23 +835,17 @@ button {
 
 .calorie-card-under {
   border-color: var(--glass-border);
-  background:
-    linear-gradient(180deg, rgba(246, 235, 221, 0.24), rgba(255, 255, 255, 0.96)),
-    var(--glass-bg-strong);
+  background: var(--glass-bg-strong);
 }
 
 .calorie-card-over {
   border-color: rgba(217, 122, 104, 0.28);
-  background:
-    linear-gradient(180deg, rgba(217, 122, 104, 0.1), rgba(255, 255, 255, 0.96)),
-    var(--glass-bg-strong);
+  background: var(--glass-bg-strong);
 }
 
 .calorie-card-on-track {
   border-color: rgba(111, 143, 125, 0.28);
-  background:
-    linear-gradient(180deg, rgba(140, 167, 152, 0.14), rgba(255, 255, 255, 0.96)),
-    var(--glass-bg-strong);
+  background: var(--glass-bg-strong);
 }
 
 .icon-button {
@@ -908,9 +887,7 @@ button {
 
 .chip-active {
   border-color: rgba(111, 143, 125, 0.54);
-  background:
-    linear-gradient(135deg, rgba(221, 232, 225, 0.68), rgba(221, 229, 240, 0.42)),
-    rgba(255, 255, 255, 0.44);
+  background: rgba(221, 232, 225, 0.72);
   color: #1f2722;
 }
 
@@ -991,9 +968,7 @@ button {
   min-height: 1.55rem;
   border: 1px solid rgba(111, 143, 125, 0.36);
   border-radius: 999px;
-  background:
-    linear-gradient(135deg, rgba(111, 143, 125, 0.2), rgba(221, 232, 225, 0.68)),
-    rgba(255, 255, 255, 0.62);
+  background: rgba(221, 232, 225, 0.72);
   padding: 0.22rem 0.58rem;
   color: #466355;
   font-family: var(--rounded-number-font);
@@ -1005,9 +980,7 @@ button {
 }
 
 .recommendation-divider {
-  background:
-    linear-gradient(90deg, transparent, rgba(111, 143, 125, 0.14), transparent),
-    rgba(255, 255, 255, 0.22);
+  background: rgba(111, 143, 125, 0.14);
 }
 
 .mode-button {
@@ -1099,9 +1072,7 @@ button {
 
 .perfect-food-item-over {
   border-color: rgba(217, 122, 104, 0.34);
-  background:
-    linear-gradient(135deg, rgba(243, 221, 211, 0.34), rgba(255, 255, 255, 0.52)),
-    rgba(255, 255, 255, 0.56) !important;
+  background: rgba(243, 221, 211, 0.46) !important;
 }
 
 .perfect-food-fit-badge {
@@ -1357,9 +1328,7 @@ button {
 
 .tab-button-active {
   border: 1px solid rgba(255, 255, 255, 0.72);
-  background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.58), rgba(221, 232, 225, 0.36)),
-    rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.38);
   color: #4f6a5b;
   box-shadow:
     0 10px 24px rgba(35, 45, 38, 0.1),
@@ -1371,7 +1340,8 @@ button {
 
 .pictogram {
   border-radius: 18px;
-  background-image: linear-gradient(135deg, rgba(255, 255, 255, 0.48), rgba(255, 255, 255, 0.18));
+  background-color: rgba(255, 255, 255, 0.38);
+  background-image: none;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.62), 0 6px 16px rgba(35, 45, 38, 0.04);
   backdrop-filter: blur(18px) saturate(135%);
   -webkit-backdrop-filter: blur(18px) saturate(135%);
@@ -1391,9 +1361,7 @@ button {
 
 .app-shell-records svg[role="img"] {
   border-radius: 22px;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0.08)),
-    rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.18);
 }
 
 .app-shell-records svg[role="img"] line {
