@@ -75,6 +75,7 @@ type Tab = "home" | "food" | "workout" | "records" | "settings";
 type FoodMode = "search" | "favorite" | "chain" | "category" | "quick" | "manual" | "personal";
 type WorkoutMode = "favorite" | "preset" | "body" | "equipment" | "previous" | "search";
 type FoodFocus = "todayLog" | undefined;
+type WorkoutFocus = "dateLog" | undefined;
 type SettingsFocus = "ai" | "backup" | "myMenu" | "goal" | undefined;
 type HistoryGrouping = "day" | "week" | "month";
 type EditableRecordTab = "food" | "workout";
@@ -244,6 +245,15 @@ const weightStepOptions = [1, 2.5, 5, 10];
 const finisherPulseIntensity = "finisher_pulse";
 const finisherPulseNote = "仕上げパルス（部分可動域・素早く）";
 const appUpdates: AppUpdate[] = [
+  {
+    id: "2026-06-15-past-edit-frame-home-history",
+    title: "過去日編集とHomeの記録導線を調整",
+    date: "2026-06-15",
+    items: [
+      "過去日を編集中は画面外枠を黄色で囲み、通常モードではないことをわかりやすくしました。",
+      "Homeの今日の記録カードで、食事行は食事履歴へ、筋トレ行はワークアウト履歴へ直接移動できるようにしました。",
+    ],
+  },
   {
     id: "2026-06-15-goal-target-period",
     title: "目標期間をカロリー計算に反映",
@@ -917,6 +927,7 @@ function App() {
   const [workoutSets, setWorkoutSets] = useState<WorkoutSet[]>([]);
   const [tab, setTab] = useState<Tab>(() => (localStorage.getItem("phase-log-tab") as Tab) || "home");
   const [foodFocus, setFoodFocus] = useState<FoodFocus>();
+  const [workoutFocus, setWorkoutFocus] = useState<WorkoutFocus>();
   const [settingsFocus, setSettingsFocus] = useState<SettingsFocus>();
   const [lastBackupAt, setLastBackupAt] = useState<string | undefined>(() => localStorage.getItem(backupStorageKey) || undefined);
   const [seenUpdateId, setSeenUpdateId] = useState<string | undefined>(() => localStorage.getItem(updateSeenStorageKey) || undefined);
@@ -1149,6 +1160,7 @@ function App() {
     setSelectedAppDate(date === actualAppDate ? undefined : date);
     setSettingsFocus(undefined);
     setFoodFocus(targetTab === "food" ? "todayLog" : undefined);
+    setWorkoutFocus(targetTab === "workout" ? "dateLog" : undefined);
     setTab(targetTab);
     showToast(`${formatJapaneseDate(date)}を編集します`);
   };
@@ -1178,6 +1190,7 @@ function App() {
   const selectBottomTab = (nextTab: Tab) => {
     setSettingsFocus(undefined);
     setFoodFocus(undefined);
+    setWorkoutFocus(undefined);
     if (nextTab === tab) {
       scrollCurrentTabToTop();
       return;
@@ -1190,7 +1203,7 @@ function App() {
   }
 
   return (
-    <main className={`theme-${resolvedTheme} app-shell app-shell-${tab} mx-auto min-h-screen max-w-[430px] md:max-w-[760px] text-ink ${tab === "home" ? `home-shell home-shell-${homeTone}` : ""}`} data-theme={resolvedTheme}>
+    <main className={`theme-${resolvedTheme} app-shell app-shell-${tab} mx-auto min-h-screen max-w-[430px] md:max-w-[760px] text-ink ${tab === "home" ? `home-shell home-shell-${homeTone}` : ""} ${isEditingPastDate ? "app-shell-past-editing" : ""}`} data-theme={resolvedTheme}>
       <header className={`safe-top app-header sticky top-0 z-20 px-4 pb-3 ${tab === "home" ? "home-header" : ""}`}>
         <div className="flex items-center justify-between">
           <div>
@@ -1261,6 +1274,7 @@ function App() {
             workoutSets={workoutSets}
             weeklyWorkoutStatus={weeklyWorkoutStatus}
             isCheatDay={isCheatDay}
+            isEditingPastDate={isEditingPastDate}
             latestWeight={latestWeight}
             weightLogs={weightLogs}
             backupInfo={backupInfo}
@@ -1268,26 +1282,37 @@ function App() {
             setTab={(nextTab) => {
               setSettingsFocus(undefined);
               setFoodFocus(undefined);
+              setWorkoutFocus(undefined);
               setTab(nextTab);
             }}
             openGoalSettings={() => {
               setSettingsFocus("goal");
               setFoodFocus(undefined);
+              setWorkoutFocus(undefined);
               setTab("settings");
             }}
             openTodayFoodLog={() => {
               setSettingsFocus(undefined);
               setFoodFocus("todayLog");
+              setWorkoutFocus(undefined);
               setTab("food");
+            }}
+            openTodayWorkoutLog={() => {
+              setSettingsFocus(undefined);
+              setFoodFocus(undefined);
+              setWorkoutFocus("dateLog");
+              setTab("workout");
             }}
             openAiReport={() => {
               setSettingsFocus("ai");
               setFoodFocus(undefined);
+              setWorkoutFocus(undefined);
               setTab("settings");
             }}
             openBackup={() => {
               setSettingsFocus("backup");
               setFoodFocus(undefined);
+              setWorkoutFocus(undefined);
               setTab("settings");
             }}
             latestUpdate={latestUpdate}
@@ -1310,6 +1335,7 @@ function App() {
             openMyMenuSettings={() => {
               setSettingsFocus("myMenu");
               setFoodFocus(undefined);
+              setWorkoutFocus(undefined);
               setTab("settings");
             }}
             onFocusHandled={() => setFoodFocus(undefined)}
@@ -1327,6 +1353,8 @@ function App() {
             workoutExercises={workoutExercises}
             workoutSets={workoutSets}
             setWorkoutTemplates={setWorkoutTemplates}
+            focus={workoutFocus}
+            onFocusHandled={() => setWorkoutFocus(undefined)}
             refresh={refresh}
             showToast={showToast}
             showPrCelebration={showWorkoutPrCelebration}
@@ -1470,6 +1498,7 @@ function HomeTab(props: {
   workoutSets: WorkoutSet[];
   weeklyWorkoutStatus: WeeklyWorkoutStatus;
   isCheatDay: boolean;
+  isEditingPastDate: boolean;
   latestWeight?: WeightLog;
   weightLogs: WeightLog[];
   backupInfo: BackupInfo;
@@ -1477,6 +1506,7 @@ function HomeTab(props: {
   setTab: (tab: Tab) => void;
   openGoalSettings: () => void;
   openTodayFoodLog: () => void;
+  openTodayWorkoutLog: () => void;
   openAiReport: () => void;
   openBackup: () => void;
   latestUpdate?: AppUpdate;
@@ -1744,19 +1774,17 @@ function HomeTab(props: {
 
       <div className="grid grid-cols-2 gap-3">
         <section className="home-glass-card p-4">
-          <button className="w-full text-left" onClick={props.openTodayFoodLog}>
-            <p className="text-sm font-bold">今日の記録</p>
-            <div className="mt-5 space-y-4">
-              <div className="flex items-center justify-between gap-3">
-                <span className="text-sm text-moss">食事</span>
-                <span className="numeric-text text-right text-sm font-semibold">{foodSummary}</span>
-              </div>
-              <div className="flex items-center justify-between gap-3">
-                <span className="text-sm text-moss">筋トレ</span>
-                <span className="numeric-text text-right text-sm font-semibold">{workoutSummary}</span>
-              </div>
-            </div>
-          </button>
+          <p className="text-sm font-bold">{props.isEditingPastDate ? "この日の記録" : "今日の記録"}</p>
+          <div className="mt-5 space-y-3">
+            <button className="flex w-full items-center justify-between gap-2 rounded-2xl px-1 py-1 text-left transition active:scale-[0.98]" onClick={props.openTodayFoodLog}>
+              <span className="text-sm text-moss">食事</span>
+              <span className="numeric-text min-w-0 truncate text-right text-sm font-semibold">{foodSummary}</span>
+            </button>
+            <button className="flex w-full items-center justify-between gap-2 rounded-2xl px-1 py-1 text-left transition active:scale-[0.98]" onClick={props.openTodayWorkoutLog}>
+              <span className="text-sm text-moss">筋トレ</span>
+              <span className="numeric-text min-w-0 truncate text-right text-sm font-semibold">{workoutSummary}</span>
+            </button>
+          </div>
         </section>
 
         <section className="home-glass-card p-4">
@@ -2680,6 +2708,8 @@ function WorkoutTab(props: {
   workoutExercises: WorkoutExercise[];
   workoutSets: WorkoutSet[];
   setWorkoutTemplates: (templates: WorkoutTemplate[]) => void;
+  focus?: WorkoutFocus;
+  onFocusHandled: () => void;
   refresh: () => Promise<void>;
   showToast: (text: string) => void;
   showPrCelebration: (celebration: Omit<WorkoutPrCelebration, "id">) => void;
@@ -2701,6 +2731,7 @@ function WorkoutTab(props: {
   const exerciseEditorRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const workoutTopRef = useRef<HTMLDivElement | null>(null);
   const templateEditorRef = useRef<HTMLElement | null>(null);
+  const dateSessionsRef = useRef<HTMLElement | null>(null);
   const sessionSectionRef = useRef<HTMLElement | null>(null);
   const activeSession = props.workoutSessions.find((session) => session.id === sessionId);
   const editingTemplate = props.workoutTemplates.find((template) => template.id === editingTemplateId);
@@ -2715,6 +2746,15 @@ function WorkoutTab(props: {
     setSessionScrollKey(0);
     celebratedPrKeysRef.current.clear();
   }, [props.appDate]);
+
+  useEffect(() => {
+    if (props.focus !== "dateLog") return;
+    const timer = window.setTimeout(() => {
+      (dateSessionsRef.current ?? workoutTopRef.current)?.scrollIntoView({ behavior: "smooth", block: "start" });
+      props.onFocusHandled();
+    }, 80);
+    return () => window.clearTimeout(timer);
+  }, [props.focus, props.appDate]);
 
   useEffect(() => {
     if (!focusedExerciseId) return;
@@ -3110,7 +3150,7 @@ function WorkoutTab(props: {
       </div>
 
       {dateSessions.length > 0 && (
-        <section className="compact-card divide-y divide-line">
+        <section className="compact-card divide-y divide-line scroll-mt-24" ref={dateSessionsRef}>
           <ListHeader title={`${formatJapaneseDate(props.appDate)}のワークアウト`} value={`${dateSessions.length}件`} />
           {dateSessions.map((session) => (
             <div className="flex items-center justify-between gap-3 px-4 py-3" key={session.id}>
