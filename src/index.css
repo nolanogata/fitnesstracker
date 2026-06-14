@@ -7,16 +7,14 @@
   background: #ffffff;
   --rounded-number-font: ui-rounded, "SF Pro Rounded", "SF Pro Display", -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Hiragino Sans", "Yu Gothic", system-ui, sans-serif;
   --page-bg: #ffffff;
-  --page-top-bg:
-    radial-gradient(circle at 16% 0%, rgba(171, 201, 183, 0.28), transparent 36%),
-    radial-gradient(circle at 86% 6%, rgba(201, 214, 235, 0.24), transparent 34%),
-    radial-gradient(circle at 48% 12rem, rgba(246, 235, 221, 0.38), transparent 34%),
-    linear-gradient(180deg, #faf9f5 0%, #ffffff 100%);
+  --page-top-bg: #ffffff;
   --glass-bg: rgba(255, 255, 255, 0.92);
   --glass-bg-strong: rgba(255, 255, 255, 0.97);
   --glass-bg-soft: rgba(255, 255, 255, 0.82);
   --glass-border: rgba(218, 226, 220, 0.82);
-  --glass-shadow: 0 18px 42px rgba(44, 56, 48, 0.12), 0 2px 8px rgba(44, 56, 48, 0.05);
+  --card-glow: 0 18px 44px rgba(111, 143, 125, 0.1), 0 12px 32px rgba(201, 214, 235, 0.12), 0 2px 8px rgba(44, 56, 48, 0.05);
+  --card-glow-strong: 0 24px 58px rgba(111, 143, 125, 0.16), 0 16px 38px rgba(243, 221, 211, 0.18), 0 4px 12px rgba(44, 56, 48, 0.06);
+  --glass-shadow: var(--card-glow);
   --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.92);
   --text-secondary: #5e6961;
   --text-muted: #8e978f;
@@ -35,11 +33,14 @@
   color: #edf4ee;
   background: #000;
   --page-bg: #000;
+  --page-top-bg: #000;
   --glass-bg: rgba(24, 32, 27, 0.66);
   --glass-bg-strong: rgba(28, 37, 31, 0.78);
   --glass-bg-soft: rgba(255, 255, 255, 0.08);
   --glass-border: rgba(255, 255, 255, 0.16);
-  --glass-shadow: 0 18px 38px rgba(0, 0, 0, 0.38);
+  --card-glow: 0 20px 46px rgba(159, 190, 169, 0.12), 0 12px 34px rgba(126, 151, 177, 0.1), 0 18px 38px rgba(0, 0, 0, 0.36);
+  --card-glow-strong: 0 26px 64px rgba(159, 190, 169, 0.18), 0 14px 42px rgba(126, 151, 177, 0.14), 0 20px 44px rgba(0, 0, 0, 0.42);
+  --glass-shadow: var(--card-glow);
   --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.12);
   --text-secondary: #b7c4bc;
   --text-muted: #85928a;
@@ -67,8 +68,7 @@ body {
 }
 
 :root[data-theme="dark"] body {
-  background:
-    linear-gradient(180deg, #030504 0%, #07100c 11rem, #000 25rem, #000 100%);
+  background: #000;
 }
 
 button,
@@ -149,9 +149,7 @@ button {
   height: 12.5rem;
   max-width: 430px;
   margin: 0 auto;
-  background:
-    var(--page-top-bg),
-    linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, #fff 100%);
+  background: var(--page-top-bg);
   content: "";
   pointer-events: none;
 }
@@ -218,10 +216,8 @@ button {
 }
 
 .sticky-panel {
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(255, 255, 255, 0.78)),
-    linear-gradient(90deg, rgba(221, 232, 225, 0.1), rgba(221, 229, 240, 0.08));
-  box-shadow: 0 14px 24px rgba(44, 56, 48, 0.05);
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: var(--card-glow);
   backdrop-filter: blur(28px) saturate(140%);
   -webkit-backdrop-filter: blur(28px) saturate(140%);
 }
@@ -231,31 +227,23 @@ button {
 }
 
 .home-shell-over {
-  --page-top-bg:
-    radial-gradient(circle at 18% 0%, rgba(217, 122, 104, 0.18), transparent 36%),
-    radial-gradient(circle at 90% 10%, rgba(221, 229, 240, 0.24), transparent 34%),
-    linear-gradient(180deg, #faf9f5 0%, #ffffff 100%);
+  --card-glow: 0 18px 44px rgba(217, 122, 104, 0.14), 0 12px 32px rgba(201, 214, 235, 0.11), 0 2px 8px rgba(44, 56, 48, 0.05);
+  --card-glow-strong: 0 24px 58px rgba(217, 122, 104, 0.2), 0 16px 38px rgba(201, 214, 235, 0.14), 0 4px 12px rgba(44, 56, 48, 0.06);
 }
 
 .home-shell-under {
-  --page-top-bg:
-    radial-gradient(circle at 20% 0%, rgba(246, 235, 221, 0.38), transparent 36%),
-    radial-gradient(circle at 90% 10%, rgba(140, 167, 152, 0.2), transparent 34%),
-    linear-gradient(180deg, #faf9f5 0%, #ffffff 100%);
+  --card-glow: 0 18px 44px rgba(246, 235, 221, 0.26), 0 12px 32px rgba(140, 167, 152, 0.12), 0 2px 8px rgba(44, 56, 48, 0.05);
+  --card-glow-strong: 0 24px 58px rgba(246, 235, 221, 0.34), 0 16px 38px rgba(140, 167, 152, 0.17), 0 4px 12px rgba(44, 56, 48, 0.06);
 }
 
 .home-shell-on-track {
-  --page-top-bg:
-    radial-gradient(circle at 18% 0%, rgba(140, 167, 152, 0.24), transparent 36%),
-    radial-gradient(circle at 88% 10%, rgba(221, 229, 240, 0.2), transparent 34%),
-    linear-gradient(180deg, #faf9f5 0%, #ffffff 100%);
+  --card-glow: 0 18px 44px rgba(140, 167, 152, 0.18), 0 12px 32px rgba(221, 229, 240, 0.11), 0 2px 8px rgba(44, 56, 48, 0.05);
+  --card-glow-strong: 0 24px 58px rgba(140, 167, 152, 0.24), 0 16px 38px rgba(221, 229, 240, 0.14), 0 4px 12px rgba(44, 56, 48, 0.06);
 }
 
 .home-shell-cheat {
-  --page-top-bg:
-    radial-gradient(circle at 14% 0%, rgba(171, 201, 183, 0.22), transparent 32%),
-    radial-gradient(circle at 88% 8%, rgba(201, 214, 235, 0.22), transparent 34%),
-    linear-gradient(180deg, #faf9f5 0%, #ffffff 100%);
+  --card-glow: 0 18px 44px rgba(171, 201, 183, 0.18), 0 12px 32px rgba(201, 214, 235, 0.16), 0 2px 8px rgba(44, 56, 48, 0.05);
+  --card-glow-strong: 0 24px 58px rgba(171, 201, 183, 0.24), 0 16px 38px rgba(201, 214, 235, 0.2), 0 4px 12px rgba(44, 56, 48, 0.06);
 }
 
 .home-header {
@@ -404,7 +392,7 @@ button {
   min-height: unset;
   padding: 1.35rem 1.4rem 1.2rem;
   box-shadow:
-    0 22px 52px rgba(44, 56, 48, 0.14),
+    var(--card-glow-strong),
     0 3px 10px rgba(44, 56, 48, 0.06),
     var(--glass-highlight);
 }
@@ -639,9 +627,9 @@ button {
   transform: translateX(-50%) translateZ(0);
   border: 1px solid rgba(218, 226, 220, 0.72);
   border-radius: 30px;
-  background: rgba(255, 255, 255, 0.72);
+  background: rgba(255, 255, 255, 0.64);
   background-clip: padding-box;
-  box-shadow: 0 20px 48px rgba(44, 56, 48, 0.18), 0 4px 12px rgba(44, 56, 48, 0.08), var(--glass-highlight);
+  box-shadow: 0 20px 48px rgba(44, 56, 48, 0.16), 0 4px 12px rgba(44, 56, 48, 0.07), var(--glass-highlight);
   backdrop-filter: blur(30px) saturate(160%);
   -webkit-backdrop-filter: blur(30px) saturate(160%);
   will-change: transform;
@@ -826,7 +814,7 @@ button {
   border-radius: 26px;
   background: var(--glass-bg);
   box-shadow:
-    0 20px 48px rgba(44, 56, 48, 0.13),
+    var(--card-glow-strong),
     0 3px 10px rgba(44, 56, 48, 0.06),
     var(--glass-highlight);
   backdrop-filter: blur(28px) saturate(145%);
@@ -1360,12 +1348,17 @@ button {
 }
 
 .tab-button-active {
-  border: 1px solid rgba(255, 255, 255, 0.62);
+  border: 1px solid rgba(255, 255, 255, 0.72);
   background:
-    linear-gradient(135deg, rgba(221, 232, 225, 0.62), rgba(255, 255, 255, 0.36)),
-    rgba(255, 255, 255, 0.44);
+    linear-gradient(135deg, rgba(255, 255, 255, 0.58), rgba(221, 232, 225, 0.36)),
+    rgba(255, 255, 255, 0.28);
   color: #4f6a5b;
-  box-shadow: 0 8px 22px rgba(35, 45, 38, 0.07), var(--glass-highlight);
+  box-shadow:
+    0 10px 24px rgba(35, 45, 38, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.72),
+    inset 0 -1px 0 rgba(111, 143, 125, 0.12);
+  backdrop-filter: blur(22px) saturate(150%);
+  -webkit-backdrop-filter: blur(22px) saturate(150%);
 }
 
 .pictogram {
@@ -1412,18 +1405,29 @@ button {
 .theme-dark.home-shell-on-track,
 .theme-dark.home-shell-cheat {
   color: #edf4ee;
-  background:
-    linear-gradient(180deg, #020302 0%, #06110c 7rem, #09130e 16rem, #000 25rem, #000 100%);
+  background: #000;
+}
+
+.theme-dark.home-shell-over {
+  --card-glow: 0 20px 46px rgba(240, 154, 134, 0.15), 0 12px 34px rgba(126, 151, 177, 0.09), 0 18px 38px rgba(0, 0, 0, 0.36);
+  --card-glow-strong: 0 26px 64px rgba(240, 154, 134, 0.2), 0 14px 42px rgba(126, 151, 177, 0.12), 0 20px 44px rgba(0, 0, 0, 0.42);
+}
+
+.theme-dark.home-shell-under {
+  --card-glow: 0 20px 46px rgba(246, 235, 221, 0.1), 0 12px 34px rgba(159, 190, 169, 0.13), 0 18px 38px rgba(0, 0, 0, 0.36);
+  --card-glow-strong: 0 26px 64px rgba(246, 235, 221, 0.14), 0 14px 42px rgba(159, 190, 169, 0.18), 0 20px 44px rgba(0, 0, 0, 0.42);
+}
+
+.theme-dark.home-shell-on-track,
+.theme-dark.home-shell-cheat {
+  --card-glow: 0 20px 46px rgba(159, 190, 169, 0.14), 0 12px 34px rgba(126, 151, 177, 0.1), 0 18px 38px rgba(0, 0, 0, 0.36);
+  --card-glow-strong: 0 26px 64px rgba(159, 190, 169, 0.2), 0 14px 42px rgba(126, 151, 177, 0.14), 0 20px 44px rgba(0, 0, 0, 0.42);
 }
 
 .theme-dark.app-shell::before {
   inset: 0 0 auto;
-  height: min(28rem, 62vh);
-  background:
-    radial-gradient(circle at 78% 12%, rgba(126, 151, 177, 0.18), transparent 30%),
-    radial-gradient(circle at 12% 16%, rgba(125, 154, 142, 0.16), transparent 34%),
-    radial-gradient(circle at 54% 56%, rgba(255, 255, 255, 0.055), transparent 34%),
-    linear-gradient(180deg, rgba(0, 0, 0, 0.98) 0%, rgba(9, 20, 14, 0.88) 44%, rgba(0, 0, 0, 0.42) 74%, rgba(0, 0, 0, 0) 100%);
+  height: 12.5rem;
+  background: #000;
 }
 
 .theme-dark .app-header,
@@ -1431,8 +1435,7 @@ button {
 .theme-dark .home-header,
 .theme-dark.home-header {
   border-bottom-color: rgba(255, 255, 255, 0.08);
-  background:
-    linear-gradient(180deg, rgba(0, 0, 0, 0.94) 0%, rgba(4, 8, 6, 0.86) 58%, rgba(8, 17, 12, 0.58) 100%);
+  background: rgba(0, 0, 0, 0.86);
   box-shadow: 0 14px 30px rgba(0, 0, 0, 0.26);
 }
 
@@ -1470,10 +1473,8 @@ button {
 }
 
 .theme-dark .sticky-panel {
-  background:
-    linear-gradient(180deg, rgba(17, 22, 19, 0.74), rgba(17, 22, 19, 0.44)),
-    linear-gradient(90deg, rgba(143, 176, 154, 0.1), rgba(108, 130, 155, 0.1));
-  box-shadow: 0 18px 26px rgba(0, 0, 0, 0.18);
+  background: rgba(0, 0, 0, 0.72);
+  box-shadow: var(--card-glow);
 }
 
 .theme-dark .compact-card,
@@ -1485,7 +1486,7 @@ button {
   border-color: var(--glass-border);
   background: var(--glass-bg);
   color: #edf4ee;
-  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.34), var(--glass-highlight);
+  box-shadow: var(--card-glow), var(--glass-highlight);
 }
 
 .theme-dark .onboarding-shell,
@@ -1862,13 +1863,23 @@ button {
 }
 
 .theme-dark .tab-button-active {
+  border-color: rgba(255, 255, 255, 0.22);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.18), rgba(159, 190, 169, 0.16)),
+    rgba(255, 255, 255, 0.08);
   color: #dff0e5;
+  box-shadow:
+    0 12px 28px rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    inset 0 -1px 0 rgba(159, 190, 169, 0.1);
+  backdrop-filter: blur(22px) saturate(150%);
+  -webkit-backdrop-filter: blur(22px) saturate(150%);
 }
 
 .theme-dark .app-bottom-nav {
   border-color: rgba(255, 255, 255, 0.14);
-  background: rgba(20, 26, 22, 0.62);
-  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.34), var(--glass-highlight);
+  background: rgba(12, 16, 13, 0.54);
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.32), var(--glass-highlight);
 }
 
 .theme-dark .sticky-panel form.compact-card {
