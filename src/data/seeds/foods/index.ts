@@ -35,6 +35,7 @@ import { ootoyaMenuFoods } from "./chains/ootoyaMenu";
 import { shinpachiAllEstimatedFoods } from "./chains/shinpachiEstimated";
 import { subwayOfficialFoods } from "./chains/subwayOfficial";
 import { sukiyaOfficialFoods } from "./chains/sukiyaOfficial";
+import { tondenMenuFoods } from "./chains/tondenMenu";
 import { tullysOfficialFoods } from "./chains/tullysOfficial";
 import { yayoikenOfficialFoods } from "./chains/yayoikenOfficial";
 import { yoshinoyaOfficialFoods } from "./chains/yoshinoyaOfficial";
@@ -73,6 +74,7 @@ export const foodSeeds = [
   ...fastFoodFoods,
   ...bamiyanMenuFoods,
   ...italianRestaurantMenuFoods,
+  ...tondenMenuFoods,
   ...monsoonCafeMenuFoods,
   ...externalNutritionFoods,
   ...familyRestaurantMenuFoods,
