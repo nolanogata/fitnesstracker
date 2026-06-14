@@ -83,6 +83,12 @@ type BackupInfo = {
   trackedRecords: number;
   level: "ok" | "soon" | "danger";
 };
+type WorkoutPrCelebration = {
+  id: string;
+  exerciseName: string;
+  label: string;
+  previousLabel?: string;
+};
 type DayRecordSummary = {
   foodCount: number;
   weightCount: number;
@@ -212,6 +218,15 @@ const weightStepOptions = [1, 2.5, 5, 10];
 const finisherPulseIntensity = "finisher_pulse";
 const finisherPulseNote = "仕上げパルス（部分可動域・素早く）";
 const appUpdates: AppUpdate[] = [
+  {
+    id: "2026-06-14-workout-pr-celebration",
+    title: "記録更新の演出を追加",
+    date: "2026-06-14",
+    items: [
+      "筋トレで自己ベストを更新したとき、記録更新ポップアップと紙吹雪を表示するようにしました。",
+      "Foodタブの残り内フィルターを「目標内のメニューのみ表示」に変更しました。",
+    ],
+  },
   {
     id: "2026-06-14-perfect-food-filter-balance",
     title: "ぴったりフードと食事検索を調整",
@@ -688,10 +703,12 @@ function App() {
   const [currentTime, setCurrentTime] = useState(() => new Date());
   const [selectedAppDate, setSelectedAppDate] = useState<string>();
   const [toast, setToast] = useState<{ id: string; text: string }>();
+  const [prCelebration, setPrCelebration] = useState<WorkoutPrCelebration>();
   const [prefersDarkTheme, setPrefersDarkTheme] = useState(() => (
     typeof window !== "undefined" && typeof window.matchMedia === "function" && window.matchMedia("(prefers-color-scheme: dark)").matches
   ));
   const toastTimerRef = useRef<number | undefined>(undefined);
+  const prCelebrationTimerRef = useRef<number | undefined>(undefined);
   const appOpenedAtRef = useRef(Date.now());
   const actualAppDate = todayAppDate(settings?.day_boundary_hour ?? 3, currentTime);
   const appDate = selectedAppDate ?? actualAppDate;
@@ -815,6 +832,11 @@ function App() {
     if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
     setToast({ id: makeId("toast"), text });
     toastTimerRef.current = window.setTimeout(() => setToast(undefined), 2200);
+  };
+  const showWorkoutPrCelebration = (celebration: Omit<WorkoutPrCelebration, "id">) => {
+    if (prCelebrationTimerRef.current) window.clearTimeout(prCelebrationTimerRef.current);
+    setPrCelebration({ id: makeId("pr"), ...celebration });
+    prCelebrationTimerRef.current = window.setTimeout(() => setPrCelebration(undefined), 3200);
   };
   const reloadLatestApp = async () => {
     await refresh();
@@ -1006,6 +1028,7 @@ function App() {
             setWorkoutTemplates={setWorkoutTemplates}
             refresh={refresh}
             showToast={showToast}
+            showPrCelebration={showWorkoutPrCelebration}
           />
         )}
         {tab === "records" && (
@@ -1050,6 +1073,7 @@ function App() {
 
       {isUpdateNotesOpen && <UpdateNotesModal updates={appUpdates} onClose={() => setIsUpdateNotesOpen(false)} />}
       {toast && <QuickToast key={toast.id} text={toast.text} />}
+      <WorkoutPrCelebrationOverlay celebration={prCelebration} />
 
       <nav className="safe-bottom app-bottom-nav fixed inset-x-0 bottom-0 z-30 mx-auto max-w-[430px] px-3 pt-1.5">
         <div className="grid grid-cols-5 gap-1">
@@ -1070,6 +1094,54 @@ function QuickToast({ text }: { text: string }) {
       <div className="mx-auto flex w-fit max-w-full items-center gap-2 rounded-xl border border-moss/20 bg-ink px-4 py-3 text-sm font-bold text-white shadow-lg">
         <Check size={16} />
         <span className="truncate">{text}</span>
+      </div>
+    </div>
+  );
+}
+
+function WorkoutPrCelebrationOverlay({ celebration }: { celebration?: WorkoutPrCelebration }) {
+  if (!celebration) return null;
+  const colors = ["#D97A68", "#E7B85B", "#8CA798", "#8FB2D8", "#C79BD8", "#F3DDD3"];
+  const pieces = Array.from({ length: 42 }, (_, index) => ({
+    id: index,
+    left: `${(index * 17) % 100}%`,
+    delay: `${(index % 9) * 0.045}s`,
+    drift: `${((index % 7) - 3) * 18}px`,
+    rotate: `${(index * 31) % 180}deg`,
+    color: colors[index % colors.length],
+    width: `${6 + (index % 3) * 2}px`,
+    height: `${10 + (index % 4) * 2}px`,
+  }));
+
+  return (
+    <div className="pr-celebration pointer-events-none fixed inset-0 z-[70] mx-auto max-w-[430px] overflow-hidden">
+      <div className="absolute inset-0">
+        {pieces.map((piece) => (
+          <span
+            className="pr-confetti-piece"
+            key={piece.id}
+            style={{
+              "--confetti-left": piece.left,
+              "--confetti-delay": piece.delay,
+              "--confetti-drift": piece.drift,
+              "--confetti-rotate": piece.rotate,
+              "--confetti-color": piece.color,
+              width: piece.width,
+              height: piece.height,
+            } as React.CSSProperties}
+          />
+        ))}
+      </div>
+      <div className="absolute inset-x-4 top-[22vh]">
+        <div className="pr-celebration-card mx-auto w-full max-w-[360px] p-5 text-center">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-sun/40 bg-sun/20 text-[#8a5d13]">
+            <Trophy size={24} />
+          </div>
+          <p className="mt-3 text-xl font-black">記録を更新しました</p>
+          <p className="mt-2 text-sm font-bold text-moss">{celebration.exerciseName}</p>
+          <p className="numeric-text mt-1 text-lg font-black">{celebration.label}</p>
+          {celebration.previousLabel && <p className="mt-1 text-xs font-semibold text-muted">これまで: {celebration.previousLabel}</p>}
+        </div>
       </div>
     </div>
   );
@@ -1915,7 +1987,7 @@ function FoodTab(props: {
       {mode !== "manual" && (
         <section className="compact-card flex items-center justify-between gap-3 p-3">
           <div className="min-w-0">
-            <p className="text-sm font-bold">残り内だけ表示</p>
+            <p className="text-sm font-bold">目標内のメニューのみ表示</p>
             <p className="numeric-text mt-1 truncate text-[11px] font-semibold text-moss">
               あと {Math.max(0, Math.round(remainingNutrition.calories))}kcal / F{round1(remainingNutrition.fat)} C{round1(remainingNutrition.carbs)}
             </p>
@@ -2111,6 +2183,7 @@ function WorkoutTab(props: {
   setWorkoutTemplates: (templates: WorkoutTemplate[]) => void;
   refresh: () => Promise<void>;
   showToast: (text: string) => void;
+  showPrCelebration: (celebration: Omit<WorkoutPrCelebration, "id">) => void;
 }) {
   const [sessionId, setSessionId] = useState<string>();
   const [mode, setMode] = useState<WorkoutMode>("favorite");
@@ -2125,6 +2198,7 @@ function WorkoutTab(props: {
   const [draggingTemplateId, setDraggingTemplateId] = useState<string>();
   const draggingTemplateIdRef = useRef<string | undefined>(undefined);
   const dragReorderLockRef = useRef(false);
+  const celebratedPrKeysRef = useRef<Set<string>>(new Set());
   const exerciseEditorRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const workoutTopRef = useRef<HTMLDivElement | null>(null);
   const templateEditorRef = useRef<HTMLElement | null>(null);
@@ -2140,6 +2214,7 @@ function WorkoutTab(props: {
     setSessionId(undefined);
     setFocusedExerciseId(undefined);
     setSessionScrollKey(0);
+    celebratedPrKeysRef.current.clear();
   }, [props.appDate]);
 
   useEffect(() => {
@@ -2217,10 +2292,11 @@ function WorkoutTab(props: {
         weight_kg: weightKg ?? 0,
       }));
     let targetSessionId = sessionId;
+    let targetSessionForPr = props.workoutSessions.find((session) => session.id === targetSessionId);
     if (!targetSessionId) {
       targetSessionId = makeId("session");
       const timestamp = nowIso();
-      await db.workout_sessions.put({
+      targetSessionForPr = {
         id: targetSessionId,
         app_date: props.appDate,
         logged_at: timestamp,
@@ -2229,7 +2305,8 @@ function WorkoutTab(props: {
         body_parts: [exercise.body_part],
         created_at: timestamp,
         updated_at: timestamp,
-      });
+      };
+      await db.workout_sessions.put(targetSessionForPr);
       setSessionId(targetSessionId);
     }
     const addedExerciseId = await addExerciseToSession(
@@ -2247,9 +2324,49 @@ function WorkoutTab(props: {
       props.workoutExercises,
       { bodyWeightKg: props.profile?.current_weight_kg ?? 70, preferItemValues: true },
     );
+    const previewExercise: WorkoutExercise = {
+      id: addedExerciseId,
+      session_id: targetSessionId,
+      exercise_id: exercise.id,
+      exercise_name: exercise.name,
+      body_part: exercise.body_part,
+      equipment_type: exercise.equipment_type,
+      machine_name: exercise.machine_name,
+      order: props.workoutExercises.filter((item) => item.session_id === targetSessionId).length,
+      created_at: nowIso(),
+      updated_at: nowIso(),
+    };
+    maybeCelebratePr(
+      previewExercise,
+      [],
+      workoutSetPatternsToPreviewSets(addedExerciseId, setScheme),
+      targetSessionForPr ? [...props.workoutSessions.filter((session) => session.id !== targetSessionForPr?.id), targetSessionForPr] : props.workoutSessions,
+      props.workoutExercises,
+      props.workoutSets,
+    );
     await props.refresh();
     setFocusedExerciseId(addedExerciseId);
     props.showToast(`${exercise.name}を今日のワークアウトに追加しました`);
+  };
+
+  const maybeCelebratePr = (
+    exercise: WorkoutExercise,
+    previousSets: WorkoutSet[],
+    nextSets: WorkoutSet[],
+    sessions = props.workoutSessions,
+    exercises = props.workoutExercises,
+    allSets = props.workoutSets,
+  ) => {
+    const pr = detectWorkoutPrUpdate(exercise, previousSets, nextSets, sessions, exercises, allSets);
+    if (!pr) return;
+    const key = `${exercise.session_id}:${exercise.exercise_name}:${pr.previousScore}`;
+    if (celebratedPrKeysRef.current.has(key)) return;
+    celebratedPrKeysRef.current.add(key);
+    props.showPrCelebration({
+      exerciseName: exercise.exercise_name,
+      label: pr.label,
+      previousLabel: pr.previousLabel,
+    });
   };
 
   const toggleExerciseFavorite = async (exercise: ExercisePreset) => {
@@ -2625,6 +2742,7 @@ function WorkoutTab(props: {
                 bodyWeightKg={props.profile?.current_weight_kg ?? 70}
                 onDeleteExercise={() => deleteWorkoutExercise(exercise)}
                 onPickTemplate={props.workoutTemplates.length ? (item) => setTemplateTargetItem(item) : undefined}
+                onPrUpdate={maybeCelebratePr}
                 refresh={props.refresh}
               />
             </div>
@@ -4089,6 +4207,7 @@ function WorkoutExerciseEditor({
   bodyWeightKg,
   onDeleteExercise,
   onPickTemplate,
+  onPrUpdate,
   refresh,
 }: {
   exercise: WorkoutExercise;
@@ -4096,6 +4215,7 @@ function WorkoutExerciseEditor({
   bodyWeightKg: number;
   onDeleteExercise: () => void | Promise<void>;
   onPickTemplate?: (item: { label: string; item: TemplateExercise }) => void;
+  onPrUpdate: (exercise: WorkoutExercise, previousSets: WorkoutSet[], nextSets: WorkoutSet[]) => void;
   refresh: () => Promise<void>;
 }) {
   const isCardio = exercise.body_part === "有酸素" || exercise.equipment_type === "有酸素";
@@ -4112,8 +4232,9 @@ function WorkoutExerciseEditor({
   }, [exercise.exercise_name, exercise.equipment_type]);
   const updateCardioDuration = async (value: number) => {
     const timestamp = nowIso();
+    let nextSets: WorkoutSet[];
     if (!sets.length) {
-      await db.workout_sets.put({
+      const nextSet = {
         id: makeId("set"),
         workout_exercise_id: exercise.id,
         set_order: 1,
@@ -4123,14 +4244,23 @@ function WorkoutExerciseEditor({
         is_warmup: false,
         created_at: timestamp,
         updated_at: timestamp,
-      });
+      };
+      nextSets = [nextSet];
+      await db.workout_sets.put(nextSet);
     } else {
+      nextSets = sets.map((set) => ({
+        ...set,
+        duration_min: value,
+        active_calories: estimateActiveCalories(exercise.exercise_name, value, bodyWeightKg),
+        updated_at: timestamp,
+      }));
       await Promise.all(sets.map((set) => db.workout_sets.update(set.id, {
         duration_min: value,
         active_calories: estimateActiveCalories(exercise.exercise_name, value, bodyWeightKg),
         updated_at: timestamp,
       })));
     }
+    onPrUpdate(exercise, sets, nextSets);
     await refresh();
   };
   const applySetScheme = async () => {
@@ -4139,7 +4269,9 @@ function WorkoutExerciseEditor({
       setSetSchemeStatus("入力を読み取れませんでした");
       return;
     }
+    const nextSets = workoutSetPatternsToPreviewSets(exercise.id, scheme);
     await replaceWorkoutSetsWithScheme(exercise.id, scheme);
+    onPrUpdate(exercise, sets, nextSets);
     await refresh();
     setSetSchemeStatus(`${scheme.length}セットに置き換えました`);
   };
@@ -4258,7 +4390,13 @@ function WorkoutExerciseEditor({
                   step={weightStep}
                   min={0}
                   max={sliderMax(set.weight_kg ?? 0, 200, weightStep)}
-                  onChange={async (value) => { await db.workout_sets.update(set.id, { weight_kg: value, updated_at: nowIso() }); await refresh(); }}
+                  onChange={async (value) => {
+                    const timestamp = nowIso();
+                    const nextSets = sets.map((item) => item.id === set.id ? { ...item, weight_kg: value, updated_at: timestamp } : item);
+                    await db.workout_sets.update(set.id, { weight_kg: value, updated_at: timestamp });
+                    onPrUpdate(exercise, sets, nextSets);
+                    await refresh();
+                  }}
                 />
                 <TapSliderControl
                   value={set.reps ?? 0}
@@ -4267,7 +4405,14 @@ function WorkoutExerciseEditor({
                   step={1}
                   min={0}
                   max={50}
-                  onChange={async (value) => { await db.workout_sets.update(set.id, { reps: Math.round(value), updated_at: nowIso() }); await refresh(); }}
+                  onChange={async (value) => {
+                    const timestamp = nowIso();
+                    const reps = Math.round(value);
+                    const nextSets = sets.map((item) => item.id === set.id ? { ...item, reps, updated_at: timestamp } : item);
+                    await db.workout_sets.update(set.id, { reps, updated_at: timestamp });
+                    onPrUpdate(exercise, sets, nextSets);
+                    await refresh();
+                  }}
                 />
               </div>
             )}
@@ -4894,6 +5039,24 @@ function workoutSetsToPattern(sets: WorkoutSet[]): WorkoutSetPattern[] {
     }));
 }
 
+function workoutSetPatternsToPreviewSets(workoutExerciseId: string, scheme: WorkoutSetPattern[]): WorkoutSet[] {
+  const timestamp = nowIso();
+  return scheme.map((pattern, index) => ({
+    id: `preview_${index}`,
+    workout_exercise_id: workoutExerciseId,
+    set_order: index + 1,
+    weight_kg: pattern.weight_kg,
+    reps: pattern.reps,
+    duration_min: pattern.duration_min,
+    active_calories: pattern.active_calories,
+    intensity: pattern.intensity,
+    note: pattern.note,
+    is_warmup: false,
+    created_at: timestamp,
+    updated_at: timestamp,
+  }));
+}
+
 function formatWorkoutSetPatternText(patterns: WorkoutSetPattern[] | undefined, isCardio: boolean) {
   if (!patterns?.length) return "";
   return patterns.map((pattern) => formatWorkoutSetPatternToken(pattern, isCardio)).join(" / ");
@@ -5185,6 +5348,44 @@ function pickBestWorkoutSet(exercise: WorkoutExercise, sets: WorkoutSet[]) {
     })
     .filter((candidate): candidate is { score: number; label: string } => !!candidate);
   return candidates.sort((a, b) => b.score - a.score)[0];
+}
+
+function detectWorkoutPrUpdate(
+  exercise: WorkoutExercise,
+  previousSets: WorkoutSet[],
+  nextSets: WorkoutSet[],
+  sessions: WorkoutSession[],
+  exercises: WorkoutExercise[],
+  allSets: WorkoutSet[],
+) {
+  const previousBest = getPreviousWorkoutBest(exercise, sessions, exercises, allSets);
+  if (!previousBest) return undefined;
+  const before = pickBestWorkoutSet(exercise, previousSets);
+  const after = pickBestWorkoutSet(exercise, nextSets);
+  if (!after) return undefined;
+  if ((before?.score ?? 0) > previousBest.score) return undefined;
+  if (after.score <= previousBest.score) return undefined;
+  return {
+    score: after.score,
+    label: after.label,
+    previousScore: previousBest.score,
+    previousLabel: previousBest.label,
+  };
+}
+
+function getPreviousWorkoutBest(exercise: WorkoutExercise, sessions: WorkoutSession[], exercises: WorkoutExercise[], allSets: WorkoutSet[]) {
+  const currentSession = sessions.find((session) => session.id === exercise.session_id);
+  if (!currentSession) return undefined;
+  const previousSessionIds = new Set(
+    sessions
+      .filter((session) => session.id !== currentSession.id && session.logged_at < currentSession.logged_at)
+      .map((session) => session.id),
+  );
+  const previousExercises = exercises.filter((item) => item.exercise_name === exercise.exercise_name && previousSessionIds.has(item.session_id));
+  const bests = previousExercises
+    .map((item) => pickBestWorkoutSet(item, allSets.filter((set) => set.workout_exercise_id === item.id)))
+    .filter((best): best is { score: number; label: string } => !!best);
+  return bests.sort((a, b) => b.score - a.score)[0];
 }
 
 function formatSignedDelta(latest?: number, first?: number, unit = "") {
