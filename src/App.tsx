@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ChangeEvent, type ReactNode, type RefObject, type TouchEvent } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState, type ChangeEvent, type ReactNode, type RefObject, type TouchEvent } from "react";
 import {
   Activity,
   Archive,
@@ -242,6 +242,16 @@ const weightStepOptions = [1, 2.5, 5, 10];
 const finisherPulseIntensity = "finisher_pulse";
 const finisherPulseNote = "仕上げパルス（部分可動域・素早く）";
 const appUpdates: AppUpdate[] = [
+  {
+    id: "2026-06-14-food-recommend-badge-zoom-edge-back",
+    title: "おすすめ表示と入力中の拡大を調整",
+    date: "2026-06-14",
+    items: [
+      "Food検索の残り栄養素おすすめ順で、上位候補に順位バッジと区切りを表示するようにしました。",
+      "iPhoneで入力後に画面が拡大したまま戻らない問題を起きにくくしました。",
+      "左端からのスワイプで、直前に開いていたアプリ内タブへ戻れるようにしました。",
+    ],
+  },
   {
     id: "2026-06-14-goal-custom-general-food-filter",
     title: "ゴール上書き保存と一般メニュー検索を修正",
@@ -911,6 +921,10 @@ function App() {
   const toastTimerRef = useRef<number | undefined>(undefined);
   const prCelebrationTimerRef = useRef<number | undefined>(undefined);
   const appOpenedAtRef = useRef(Date.now());
+  const tabHistoryRef = useRef<Tab[]>([]);
+  const lastTabRef = useRef(tab);
+  const suppressTabHistoryRef = useRef(false);
+  const edgeSwipeStartRef = useRef<{ x: number; y: number; startedAt: number } | undefined>(undefined);
   const actualAppDate = todayAppDate(settings?.day_boundary_hour ?? 3, currentTime);
   const appDate = selectedAppDate ?? actualAppDate;
   const isEditingPastDate = appDate !== actualAppDate;
@@ -954,6 +968,55 @@ function App() {
   useEffect(() => {
     localStorage.setItem("phase-log-tab", tab);
   }, [tab]);
+
+  useEffect(() => {
+    const previous = lastTabRef.current;
+    if (previous === tab) return;
+    if (suppressTabHistoryRef.current) {
+      suppressTabHistoryRef.current = false;
+    } else {
+      tabHistoryRef.current = [...tabHistoryRef.current, previous].slice(-8);
+    }
+    lastTabRef.current = tab;
+  }, [tab]);
+
+  useEffect(() => {
+    const isBlockedTarget = (target: EventTarget | null) => {
+      if (!(target instanceof HTMLElement)) return true;
+      return Boolean(target.closest("input, select, textarea, button, a, [role='button'], [draggable='true']"));
+    };
+    const hasBlockingOverlay = () => Boolean(document.querySelector(".fixed.inset-0"));
+    const handleTouchStart = (event: globalThis.TouchEvent) => {
+      const touch = event.touches[0];
+      if (!touch || touch.clientX > 18 || isBlockedTarget(event.target) || hasBlockingOverlay()) {
+        edgeSwipeStartRef.current = undefined;
+        return;
+      }
+      edgeSwipeStartRef.current = { x: touch.clientX, y: touch.clientY, startedAt: Date.now() };
+    };
+    const handleTouchEnd = (event: globalThis.TouchEvent) => {
+      const start = edgeSwipeStartRef.current;
+      edgeSwipeStartRef.current = undefined;
+      const touch = event.changedTouches[0];
+      if (!start || !touch) return;
+      const dx = touch.clientX - start.x;
+      const dy = Math.abs(touch.clientY - start.y);
+      const elapsed = Date.now() - start.startedAt;
+      if (dx < 76 || dy > 52 || elapsed > 800) return;
+      const previousTab = tabHistoryRef.current.pop();
+      if (!previousTab || previousTab === lastTabRef.current) return;
+      suppressTabHistoryRef.current = true;
+      setSettingsFocus(undefined);
+      setFoodFocus(undefined);
+      setTab(previousTab);
+    };
+    window.addEventListener("touchstart", handleTouchStart, { passive: true });
+    window.addEventListener("touchend", handleTouchEnd, { passive: true });
+    return () => {
+      window.removeEventListener("touchstart", handleTouchStart);
+      window.removeEventListener("touchend", handleTouchEnd);
+    };
+  }, []);
 
   useEffect(() => {
     if (typeof window.matchMedia !== "function") return;
@@ -2426,15 +2489,20 @@ function FoodTab(props: {
           )}
           <section className="compact-card divide-y divide-line overflow-hidden scroll-mt-24" ref={foodResultsRef}>
             <ListHeader title={isGlobalSearch ? (isChainScopedSearch ? `${brand}の検索結果` : "検索結果") : mode === "category" ? categoryGenre : mode === "quick" ? generalCategory : foodModeLabel(mode)} value={`${results.length}件`} />
-            {results.map((item) => (
-              <FoodItemRow
-                key={item.id}
-                item={item}
-                onPick={selectFoodItem}
-                onClone={setManualFromItem(setManual, setMode)}
-                refresh={props.refresh}
-                balanceTarget={(showFoodBalance && canShowFoodBalance) || isSortFoodByFitActive ? remainingNutrition : undefined}
-              />
+            {results.map((item, index) => (
+              <Fragment key={item.id}>
+                {isSortFoodByFitActive && index === 10 && (
+                  <div className="recommendation-divider px-4 py-2 text-center text-[11px] font-black text-moss">ここから通常候補</div>
+                )}
+                <FoodItemRow
+                  item={item}
+                  onPick={selectFoodItem}
+                  onClone={setManualFromItem(setManual, setMode)}
+                  refresh={props.refresh}
+                  balanceTarget={(showFoodBalance && canShowFoodBalance) || isSortFoodByFitActive ? remainingNutrition : undefined}
+                  recommendationRank={isSortFoodByFitActive && index < 10 ? index + 1 : undefined}
+                />
+              </Fragment>
             ))}
             {results.length === 0 && <EmptyLine text="見つかりません" />}
           </section>
@@ -4149,12 +4217,13 @@ function ManualFoodForm({ manual, setManual, onSave, compact = false, mode = "lo
   );
 }
 
-function FoodItemRow({ item, onPick, onClone, refresh, balanceTarget }: {
+function FoodItemRow({ item, onPick, onClone, refresh, balanceTarget, recommendationRank }: {
   item: MenuItem;
   onPick: (item: MenuItem) => void;
   onClone: (item: MenuItem) => void;
   refresh: () => Promise<void>;
   balanceTarget?: { calories: number; protein: number; fat: number; carbs: number };
+  recommendationRank?: number;
 }) {
   const pictogram = getFoodPictogram(item);
   const fit = balanceTarget ? getPerfectFoodFit(item, balanceTarget) : undefined;
@@ -4165,6 +4234,7 @@ function FoodItemRow({ item, onPick, onClone, refresh, balanceTarget }: {
         <p className="truncate text-sm font-semibold">{formatMenuItemName(item)}</p>
         <p className="numeric-text truncate text-xs text-moss">{item.brand ?? item.category} · {item.calories}kcal · P{item.protein_g} F{item.fat_g} C{item.carbs_g}</p>
         <div className="mt-1 flex flex-wrap items-center gap-1.5">
+          {recommendationRank && <span className="recommendation-rank-badge">おすすめ{recommendationRank}位</span>}
           <SourceBadge item={item} source={item.data_source} confidence={item.confidence} />
           {fit && <span className={`perfect-food-fit-badge perfect-food-fit-${fit.tone}`}>{fit.label}</span>}
           {fit?.details.map((detail) => (
