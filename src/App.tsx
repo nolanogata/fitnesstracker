@@ -221,6 +221,16 @@ const finisherPulseIntensity = "finisher_pulse";
 const finisherPulseNote = "仕上げパルス（部分可動域・素早く）";
 const appUpdates: AppUpdate[] = [
   {
+    id: "2026-06-14-protein-products-expanded",
+    title: "プロテイン商品を拡充",
+    date: "2026-06-14",
+    items: [
+      "ザバスのプロテインドリンクとプロテインバーを追加しました。",
+      "オイコスのプロテインシェイクを推定値で追加しました。",
+      "森永inバーの複数フレーバーを公式栄養値ベースで追加しました。",
+    ],
+  },
+  {
     id: "2026-06-14-onboarding-readability-layout",
     title: "初回設定と表示の読みやすさを改善",
     date: "2026-06-14",
