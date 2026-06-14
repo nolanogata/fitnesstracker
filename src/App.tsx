@@ -1422,6 +1422,7 @@ function PerfectFoodModal({ dayTotals, goal, menuItems, onClose, onLog }: {
 }) {
   const [page, setPage] = useState<0 | 1 | 2>(0);
   const [plans, setPlans] = useState<PerfectFoodPlan[]>(["none"]);
+  const [expandedGroups, setExpandedGroups] = useState<string[]>([]);
   const remaining = getRemainingNutrition(dayTotals, goal);
   const planned = getPlannedNutrition(plans);
   const adjusted = {
@@ -1437,6 +1438,9 @@ function PerfectFoodModal({ dayTotals, goal, menuItems, onClose, onLog }: {
       const next = current.includes(plan) ? current.filter((item) => item !== plan) : [...current.filter((item) => item !== "none"), plan];
       return next.length ? next : ["none"];
     });
+  };
+  const toggleSuggestionGroup = (label: string) => {
+    setExpandedGroups((current) => current.includes(label) ? current.filter((item) => item !== label) : [...current, label]);
   };
 
   return (
@@ -1490,14 +1494,18 @@ function PerfectFoodModal({ dayTotals, goal, menuItems, onClose, onLog }: {
 
         {page === 2 && (
           <div className="mt-5 space-y-4">
-            {suggestionGroups.length ? suggestionGroups.map((group) => (
+            {suggestionGroups.length ? suggestionGroups.map((group) => {
+              const isExpanded = expandedGroups.includes(group.label);
+              const visibleItems = group.items.slice(0, isExpanded ? 9 : 3);
+              const hiddenCount = Math.max(0, group.items.length - visibleItems.length);
+              return (
               <section className="rounded-md border border-line bg-rice/70 p-3" key={group.label}>
                 <div className="mb-2 flex items-center justify-between gap-2">
                   <h2 className="text-sm font-bold">{group.label}</h2>
-                  <span className="text-xs font-semibold text-moss">上位{group.items.length}件</span>
+                  <span className="text-xs font-semibold text-moss">{visibleItems.length}/{group.items.length}件</span>
                 </div>
                 <div className="space-y-2">
-                  {group.items.map((item) => (
+                  {visibleItems.map((item) => (
                     <div className="rounded-xl bg-surface/70 p-3" key={item.id}>
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
@@ -1509,8 +1517,13 @@ function PerfectFoodModal({ dayTotals, goal, menuItems, onClose, onLog }: {
                     </div>
                   ))}
                 </div>
+                {group.items.length > 3 && (
+                  <button className="secondary-button mt-3 w-full py-2 text-xs" onClick={() => toggleSuggestionGroup(group.label)}>
+                    {isExpanded ? "候補を閉じる" : `他の候補を表示${hiddenCount ? `（あと${hiddenCount}件）` : ""}`}
+                  </button>
+                )}
               </section>
-            )) : (
+            );}) : (
               <p className="rounded-md bg-rice p-4 text-center text-sm font-semibold text-moss">候補を出すにはゴール設定が必要です</p>
             )}
             <div className="grid grid-cols-2 gap-2">
@@ -4605,7 +4618,7 @@ function buildPerfectFoodSuggestions(menuItems: MenuItem[], target: { calories: 
       items: candidates
         .filter(group.test)
         .sort((a, b) => perfectFoodScore(a, target) - perfectFoodScore(b, target))
-        .slice(0, 3),
+        .slice(0, 9),
     }))
     .filter((group) => group.items.length > 0);
 }
