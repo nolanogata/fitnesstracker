@@ -221,6 +221,16 @@ const finisherPulseIntensity = "finisher_pulse";
 const finisherPulseNote = "仕上げパルス（部分可動域・素早く）";
 const appUpdates: AppUpdate[] = [
   {
+    id: "2026-06-14-onboarding-readability-layout",
+    title: "初回設定と表示の読みやすさを改善",
+    date: "2026-06-14",
+    items: [
+      "オンボーディングを1画面1質問の流れに戻し、目標や運動量の説明を追加しました。",
+      "数値入力を手入力とプラス/マイナスのどちらでも調整できるようにし、入力中に0を消せるようにしました。",
+      "ダークモードのフォームやカードのコントラストを上げ、PCやタブレット横向きでも中央に読みやすく収まるよう調整しました。",
+    ],
+  },
+  {
     id: "2026-06-14-costco-food-court-menu",
     title: "コストコのフードコートメニューを追加",
     date: "2026-06-14",
@@ -953,7 +963,7 @@ function App() {
   }
 
   return (
-    <main className={`theme-${resolvedTheme} app-shell app-shell-${tab} mx-auto min-h-screen max-w-[430px] text-ink ${tab === "home" ? `home-shell home-shell-${homeTone}` : ""}`} data-theme={resolvedTheme}>
+    <main className={`theme-${resolvedTheme} app-shell app-shell-${tab} mx-auto min-h-screen max-w-[430px] md:max-w-[760px] text-ink ${tab === "home" ? `home-shell home-shell-${homeTone}` : ""}`} data-theme={resolvedTheme}>
       <header className={`safe-top app-header sticky top-0 z-20 px-4 pb-3 ${tab === "home" ? "home-header" : ""}`}>
         <div className="flex items-center justify-between">
           <div>
@@ -3598,6 +3608,8 @@ function SettingsTab(props: {
 }
 
 function Onboarding({ refresh }: { refresh: () => Promise<void> }) {
+  const [step, setStep] = useState(0);
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const [draft, setDraft] = useState({
     name: "Nick",
     height_cm: 170,
@@ -3616,7 +3628,8 @@ function Onboarding({ refresh }: { refresh: () => Promise<void> }) {
     cardio: 1,
   });
   const [restoreMessage, setRestoreMessage] = useState("");
-  const age = new Date().getFullYear() - draft.birth_year;
+  const currentYear = new Date().getFullYear();
+  const age = currentYear - draft.birth_year;
   const profile: Profile = {
     id: "local",
     name: draft.name,
@@ -3640,15 +3653,71 @@ function Onboarding({ refresh }: { refresh: () => Promise<void> }) {
     manual_fat_g: draft.target_fat_g || undefined,
     manual_carbs_g: draft.target_carbs_g || undefined,
   });
-
-  return (
-    <main className="mx-auto min-h-screen max-w-[430px] bg-rice px-4 py-8 text-ink">
-      <div className="compact-card p-5">
-        <h1 className="text-2xl font-black tracking-normal">ゴールトラッカー</h1>
-        <section className="mt-4 rounded-md border border-leaf/30 bg-leaf/10 p-3 text-sm">
-          <p className="font-bold">前に使っていたデータがある場合</p>
-          <p className="mt-1 text-xs text-moss">アップデート後や別のiPhoneでこの画面が出たら、設定で保存したバックアップJSONを読み込んで復元してください。読み込みは追加ではなく、バックアップ内容への置き換えです。</p>
-          <label className="secondary-button mt-3 w-full cursor-pointer">
+  const phaseDescriptions: Record<Phase, string> = {
+    weight_loss: "体重をしっかり落としたい時。カロリーはやや強めに抑えます。",
+    slow_cut: "無理なく少しずつ落としたい時。続けやすい赤字幅にします。",
+    maintenance: "今の体重を大きく変えず、食事と運動を安定させます。",
+    recomposition: "体重より見た目重視。脂肪を抑えつつ筋肉を残す配分にします。",
+    lean_bulk: "脂肪を増やしすぎず、筋肉を増やすために少しだけ多めに食べます。",
+    strength_focus: "筋力とトレーニング出力を優先し、エネルギーを少し厚めにします。",
+    custom: "自分でkcal/PFCを決めたい時。あとからSettingsで細かく直せます。",
+  };
+  const activityDescriptions: Record<ActivityLevel, string> = {
+    low: "在宅や座り仕事が中心で、運動日以外はあまり歩かない。",
+    moderate: "日常でそこそこ歩く、または週2〜4回くらい運動する。",
+    high: "立ち仕事・よく歩く生活、または週4〜6回しっかり運動する。",
+    very_high: "肉体労働や競技練習など、毎日の消費がかなり多い。",
+  };
+  const sexOptions: Array<{ value: Profile["sex"]; label: string; description: string }> = [
+    { value: "unspecified", label: "未指定", description: "迷う場合は未指定でOK。あとから変えられます。" },
+    { value: "male", label: "男性", description: "基礎代謝の自動計算に反映します。" },
+    { value: "female", label: "女性", description: "基礎代謝の自動計算に反映します。" },
+  ];
+  const steps = [
+    { title: "まずは復元", subtitle: "以前のバックアップがなければ、そのまま次へ進めます。" },
+    { title: "呼び名", subtitle: "アプリ内で表示する名前です。あとから変更できます。" },
+    { title: "身長", subtitle: "基礎代謝の自動計算に使います。" },
+    { title: "今の体重", subtitle: "今日のスタート地点です。記録しながら後で更新できます。" },
+    { title: "体脂肪率", subtitle: "わからなければ空欄でOK。空欄でも目標は計算できます。" },
+    { title: "生まれ年", subtitle: "年齢による消費量の違いをざっくり反映します。" },
+    { title: "性別", subtitle: "基礎代謝の推定に使います。未指定でも開始できます。" },
+    { title: "目標", subtitle: "体重や筋肉の方向性を選びます。" },
+    { title: "運動量", subtitle: "日常活動も含めた消費量の補正です。迷ったら普通がおすすめ。" },
+    { title: "目標体重", subtitle: "PFCの基準にする体重です。維持でも今の体重でOK。" },
+    { title: "筋トレ頻度", subtitle: "Homeの今週の運動カードに使います。" },
+    { title: "有酸素頻度", subtitle: "歩く・バイク・ランなどの週目標です。" },
+    { title: "確認", subtitle: "自動計算した目標で始めます。細かい上書きは後からでもOKです。" },
+  ];
+  const lastStep = steps.length - 1;
+  const goNext = () => setStep((current) => Math.min(lastStep, current + 1));
+  const goBack = () => setStep((current) => Math.max(0, current - 1));
+  const finish = async () => {
+    const timestamp = nowIso();
+    await db.profile.put(profile);
+    const goal = buildGoal({
+      profile,
+      phase: draft.phase,
+      activity_level: draft.activity_level,
+      age,
+      target_weight_kg: draft.target_weight_kg,
+      manual_target_calories: draft.target_calories || undefined,
+      manual_protein_g: draft.target_protein_g || undefined,
+      manual_fat_g: draft.target_fat_g || undefined,
+      manual_carbs_g: draft.target_carbs_g || undefined,
+      target_workouts_per_week: draft.workouts,
+      target_cardio_sessions_per_week: draft.cardio,
+    });
+    await db.goals.put(goal);
+    await db.settings.update("local", { onboarding_completed: true, active_goal_id: goal.id, updated_at: timestamp });
+    await refresh();
+  };
+  const renderStep = () => {
+    if (step === 0) {
+      return (
+        <section className="onboarding-panel">
+          <p className="text-sm font-bold text-ink">前に使っていたデータがある場合</p>
+          <p className="mt-2 text-sm leading-relaxed text-moss">アップデート後や別のiPhoneでこの画面が出たら、設定で保存したバックアップJSONを読み込むと復元できます。読み込みは追加ではなく置き換えです。</p>
+          <label className="secondary-button mt-4 w-full cursor-pointer">
             <Archive size={17} />バックアップJSONを読み込む
             <input className="hidden" type="file" accept="application/json" onChange={async (event: ChangeEvent<HTMLInputElement>) => {
               const file = event.target.files?.[0];
@@ -3666,60 +3735,130 @@ function Onboarding({ refresh }: { refresh: () => Promise<void> }) {
               }
             }} />
           </label>
-          {restoreMessage && <p className="mt-2 text-xs font-semibold text-clay">{restoreMessage}</p>}
+          {restoreMessage && <p className="mt-3 rounded-2xl bg-clay/10 px-3 py-2 text-xs font-semibold text-clay">{restoreMessage}</p>}
         </section>
-        <div className="mt-5 grid grid-cols-2 gap-2">
-          <label className="col-span-2 text-xs font-semibold">名前<input className="mt-1 w-full" value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} /></label>
-          <NumberInput label="身長cm" value={draft.height_cm} onChange={(value) => setDraft({ ...draft, height_cm: value })} />
-          <NumberInput label="体重kg" value={draft.current_weight_kg} step={0.1} onChange={(value) => setDraft({ ...draft, current_weight_kg: value })} />
-          <label className="text-xs font-semibold">体脂肪%<input className="mt-1 w-full" type="number" value={draft.body_fat_percentage} onChange={(event) => setDraft({ ...draft, body_fat_percentage: event.target.value })} /></label>
-          <NumberInput label="生年" value={draft.birth_year} onChange={(value) => setDraft({ ...draft, birth_year: value })} />
-          <select value={draft.sex} onChange={(event) => setDraft({ ...draft, sex: event.target.value as Profile["sex"] })}>
-            <option value="unspecified">未指定</option>
-            <option value="male">男性</option>
-            <option value="female">女性</option>
-          </select>
-          <SelectField label="フェーズ" hint="体重・筋量の方向">
-            <select value={draft.phase} onChange={(event) => setDraft({ ...draft, phase: event.target.value as Phase })}>
-              {Object.entries(phaseLabels).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
-            </select>
-          </SelectField>
-          <SelectField label="運動強度" hint="消費量の補正">
-            <select value={draft.activity_level} onChange={(event) => setDraft({ ...draft, activity_level: event.target.value as ActivityLevel })}>
-              {Object.entries(activityLabels).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
-            </select>
-          </SelectField>
-          <NumberInput label="目標体重" value={draft.target_weight_kg} step={0.1} onChange={(value) => setDraft({ ...draft, target_weight_kg: value })} />
-          <NumberInput label="筋トレ/週" value={draft.workouts} onChange={(value) => setDraft({ ...draft, workouts: value })} />
-          <NumberInput label="有酸素/週" value={draft.cardio} onChange={(value) => setDraft({ ...draft, cardio: value })} />
-          <NumberInput label="kcal上書き (0=自動)" value={draft.target_calories} onChange={(value) => setDraft({ ...draft, target_calories: value })} />
-          <NumberInput label="P上書き (0=自動)" value={draft.target_protein_g} onChange={(value) => setDraft({ ...draft, target_protein_g: value })} />
-          <NumberInput label="F上書き (0=自動)" value={draft.target_fat_g} onChange={(value) => setDraft({ ...draft, target_fat_g: value })} />
-          <NumberInput label="C上書き (0=自動)" value={draft.target_carbs_g} onChange={(value) => setDraft({ ...draft, target_carbs_g: value })} />
+      );
+    }
+    if (step === 1) {
+      return (
+        <label className="onboarding-field">
+          <span>名前</span>
+          <input value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} placeholder="例: Nick" />
+        </label>
+      );
+    }
+    if (step === 2) return <NumberInput label="身長 cm" value={draft.height_cm} onChange={(value) => setDraft({ ...draft, height_cm: value })} />;
+    if (step === 3) return <NumberInput label="体重 kg" value={draft.current_weight_kg} step={0.1} onChange={(value) => setDraft({ ...draft, current_weight_kg: value, target_weight_kg: draft.target_weight_kg || value })} />;
+    if (step === 4) return <PartialNumberInput label="体脂肪 %" value={draft.body_fat_percentage} step={0.1} onChange={(value) => setDraft({ ...draft, body_fat_percentage: value })} />;
+    if (step === 5) return <NumberInput label="生まれ年" value={draft.birth_year} onChange={(value) => setDraft({ ...draft, birth_year: Math.round(value) })} />;
+    if (step === 6) {
+      return (
+        <div className="grid gap-2">
+          {sexOptions.map((option) => (
+            <button
+              key={option.value}
+              className={`onboarding-choice ${draft.sex === option.value ? "onboarding-choice-active" : ""}`}
+              onClick={() => setDraft({ ...draft, sex: option.value })}
+            >
+              <span>{option.label}</span>
+              <small>{option.description}</small>
+            </button>
+          ))}
         </div>
-        <p className="mt-3 rounded-md bg-surface p-3 text-xs text-moss">初回設定後は、Settingsのバックアップから週1回くらいJSONエクスポートしておくと、次にこの画面が出ても復元できます。</p>
-        <p className="mt-4 rounded-md bg-rice p-3 text-sm">目標: {calculated.target_calories} kcal / P{calculated.target_protein_g} F{calculated.target_fat_g} C{calculated.target_carbs_g}</p>
-        <p className="mt-2 text-xs text-moss">カロリーは現在体重の消費量、自動PFCは目標体重・フェーズ・運動強度・総カロリーをもとに計算します。</p>
-        <button className="primary-button mt-4 w-full" onClick={async () => {
-          const timestamp = nowIso();
-          await db.profile.put(profile);
-          const goal = buildGoal({
-            profile,
-            phase: draft.phase,
-            activity_level: draft.activity_level,
-            age,
-            target_weight_kg: draft.target_weight_kg,
-            manual_target_calories: draft.target_calories || undefined,
-            manual_protein_g: draft.target_protein_g || undefined,
-            manual_fat_g: draft.target_fat_g || undefined,
-            manual_carbs_g: draft.target_carbs_g || undefined,
-            target_workouts_per_week: draft.workouts,
-            target_cardio_sessions_per_week: draft.cardio,
-          });
-          await db.goals.put(goal);
-          await db.settings.update("local", { onboarding_completed: true, active_goal_id: goal.id, updated_at: timestamp });
-          await refresh();
-        }}><Check size={17} />開始</button>
+      );
+    }
+    if (step === 7) {
+      return (
+        <div className="grid gap-2">
+          {(Object.keys(phaseLabels) as Phase[]).map((key) => (
+            <button
+              key={key}
+              className={`onboarding-choice ${draft.phase === key ? "onboarding-choice-active" : ""}`}
+              onClick={() => setDraft({ ...draft, phase: key })}
+            >
+              <span>{phaseLabels[key]}</span>
+              <small>{phaseDescriptions[key]}</small>
+            </button>
+          ))}
+        </div>
+      );
+    }
+    if (step === 8) {
+      return (
+        <div className="grid gap-2">
+          {(Object.keys(activityLabels) as ActivityLevel[]).map((key) => (
+            <button
+              key={key}
+              className={`onboarding-choice ${draft.activity_level === key ? "onboarding-choice-active" : ""}`}
+              onClick={() => setDraft({ ...draft, activity_level: key })}
+            >
+              <span>{activityLabels[key]}</span>
+              <small>{activityDescriptions[key]}</small>
+            </button>
+          ))}
+        </div>
+      );
+    }
+    if (step === 9) return <NumberInput label="目標体重 kg" value={draft.target_weight_kg} step={0.1} onChange={(value) => setDraft({ ...draft, target_weight_kg: value })} />;
+    if (step === 10) return <NumberInput label="筋トレ / 週" value={draft.workouts} onChange={(value) => setDraft({ ...draft, workouts: Math.max(0, Math.round(value)) })} />;
+    if (step === 11) return <NumberInput label="有酸素 / 週" value={draft.cardio} onChange={(value) => setDraft({ ...draft, cardio: Math.max(0, Math.round(value)) })} />;
+    return (
+      <div className="grid gap-3">
+        <div className="onboarding-target-card">
+          <p className="text-xs font-bold text-moss">自動計算された目標</p>
+          <p className="numeric-text mt-2 text-3xl font-black">{calculated.target_calories} kcal</p>
+          <div className="mt-3 grid grid-cols-3 gap-2 text-center">
+            <div><span>P</span><strong>{calculated.target_protein_g}g</strong></div>
+            <div><span>F</span><strong>{calculated.target_fat_g}g</strong></div>
+            <div><span>C</span><strong>{calculated.target_carbs_g}g</strong></div>
+          </div>
+          <p className="mt-3 text-xs leading-relaxed text-moss">現在体重・年齢・目標・運動量からざっくり計算しています。AI相談後や実際の変化を見ながらSettingsで調整できます。</p>
+        </div>
+        <button className="secondary-button w-full" onClick={() => setShowAdvanced((current) => !current)}>
+          {showAdvanced ? "詳細上書きを閉じる" : "kcal/PFCを手で上書きする"}
+        </button>
+        {showAdvanced && (
+          <div className="grid grid-cols-2 gap-2">
+            <NumberInput label="kcal (0=自動)" value={draft.target_calories} onChange={(value) => setDraft({ ...draft, target_calories: Math.max(0, Math.round(value)) })} />
+            <NumberInput label="P g (0=自動)" value={draft.target_protein_g} onChange={(value) => setDraft({ ...draft, target_protein_g: Math.max(0, Math.round(value)) })} />
+            <NumberInput label="F g (0=自動)" value={draft.target_fat_g} onChange={(value) => setDraft({ ...draft, target_fat_g: Math.max(0, Math.round(value)) })} />
+            <NumberInput label="C g (0=自動)" value={draft.target_carbs_g} onChange={(value) => setDraft({ ...draft, target_carbs_g: Math.max(0, Math.round(value)) })} />
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  return (
+    <main className="onboarding-shell mx-auto min-h-screen max-w-[430px] px-4 py-8 text-ink">
+      <div className="onboarding-card compact-card p-5">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.16em] text-moss">Goal Tracker</p>
+            <h1 className="mt-2 text-2xl font-black tracking-normal">初回設定</h1>
+          </div>
+          <span className="numeric-text mini-chip">{step + 1}/{steps.length}</span>
+        </div>
+        <div className="mt-5 h-1.5 overflow-hidden rounded-full bg-ink/5">
+          <div className="h-full rounded-full bg-leaf transition-all" style={{ width: `${((step + 1) / steps.length) * 100}%` }} />
+        </div>
+        <section className="onboarding-hero mt-5">
+          <p className="text-xs font-bold text-moss">STEP {step + 1}</p>
+          <h2 className="mt-2 text-2xl font-black leading-tight">{steps[step].title}</h2>
+          <p className="mt-2 text-sm leading-relaxed text-moss">{steps[step].subtitle}</p>
+        </section>
+        <div className="mt-5 min-h-[16rem]">
+          {renderStep()}
+        </div>
+        <p className="mt-4 rounded-3xl bg-surface p-3 text-xs leading-relaxed text-moss">初回設定後は、Settingsのバックアップから週1回くらいJSONエクスポートしておくと安心です。</p>
+        <div className="mt-5 grid grid-cols-2 gap-2">
+          <button className="secondary-button" disabled={step === 0} onClick={goBack}><ChevronLeft size={17} />戻る</button>
+          {step === lastStep ? (
+            <button className="primary-button" onClick={finish}><Check size={17} />開始</button>
+          ) : (
+            <button className="primary-button" onClick={goNext}>次へ<ChevronRight size={17} /></button>
+          )}
+        </div>
       </div>
     </main>
   );
@@ -4749,10 +4888,48 @@ function TapSliderControl({ label, value, suffix, step, min, max, onChange }: {
 }
 
 function NumberInput({ label, value, step = 1, onChange }: { label: string; value: number; step?: number; onChange: (value: number) => void }) {
+  const [inputValue, setInputValue] = useState(String(value));
+  useEffect(() => {
+    setInputValue(String(value));
+  }, [value]);
+  const decimalPlaces = step.toString().includes(".") ? step.toString().split(".")[1].length : 0;
+  const normalize = (nextValue: number) => Number(nextValue.toFixed(decimalPlaces));
+  const commit = (nextValue: number) => {
+    if (!Number.isFinite(nextValue)) return;
+    const normalized = normalize(nextValue);
+    setInputValue(String(normalized));
+    onChange(normalized);
+  };
+  const current = Number.parseFloat(inputValue);
+  const baseValue = Number.isFinite(current) ? current : value;
   return (
     <label className="text-xs font-semibold">
       {label}
-      <input className="mt-1 w-full" type="number" step={step} value={value} onChange={(event) => onChange(Number(event.target.value))} />
+      <div className="number-stepper mt-1">
+        <button type="button" className="number-stepper-button" onClick={() => commit(baseValue - step)} aria-label={`${label}を減らす`}>
+          <Minus size={14} />
+        </button>
+        <input
+          className="number-stepper-input"
+          type="number"
+          inputMode="decimal"
+          step={step}
+          value={inputValue}
+          onBlur={() => {
+            if (inputValue === "" || inputValue === "-" || inputValue === ".") setInputValue(String(value));
+          }}
+          onChange={(event) => {
+            const nextValue = event.target.value;
+            setInputValue(nextValue);
+            if (nextValue === "" || nextValue === "-" || nextValue === ".") return;
+            const parsed = Number.parseFloat(nextValue);
+            if (Number.isFinite(parsed)) onChange(parsed);
+          }}
+        />
+        <button type="button" className="number-stepper-button" onClick={() => commit(baseValue + step)} aria-label={`${label}を増やす`}>
+          <Plus size={14} />
+        </button>
+      </div>
     </label>
   );
 }
@@ -4768,10 +4945,34 @@ function SelectField({ label, hint, children }: { label: string; hint: string; c
 }
 
 function PartialNumberInput({ label, value, step = 1, onChange }: { label: string; value: string; step?: number; onChange: (value: string) => void }) {
+  const decimalPlaces = step.toString().includes(".") ? step.toString().split(".")[1].length : 0;
+  const normalize = (nextValue: number) => String(Number(nextValue.toFixed(decimalPlaces)));
+  const parsed = Number.parseFloat(value);
+  const baseValue = Number.isFinite(parsed) ? parsed : 0;
+  const commit = (nextValue: number) => {
+    if (!Number.isFinite(nextValue)) return;
+    onChange(normalize(nextValue));
+  };
   return (
     <label className="text-xs font-semibold">
       {label}
-      <input className="mt-1 w-full" inputMode="decimal" type="number" step={step} value={value} onChange={(event) => onChange(event.target.value)} placeholder="不明なら空欄" />
+      <div className="number-stepper mt-1">
+        <button type="button" className="number-stepper-button" onClick={() => commit(baseValue - step)} aria-label={`${label}を減らす`}>
+          <Minus size={14} />
+        </button>
+        <input
+          className="number-stepper-input"
+          inputMode="decimal"
+          type="number"
+          step={step}
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          placeholder="不明なら空欄"
+        />
+        <button type="button" className="number-stepper-button" onClick={() => commit(baseValue + step)} aria-label={`${label}を増やす`}>
+          <Plus size={14} />
+        </button>
+      </div>
     </label>
   );
 }

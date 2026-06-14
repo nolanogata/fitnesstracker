@@ -96,6 +96,11 @@ textarea {
   color: #edf4ee;
 }
 
+:root[data-theme="dark"] select option {
+  background: #101812;
+  color: #edf4ee;
+}
+
 input::placeholder,
 textarea::placeholder {
   color: rgba(94, 105, 97, 0.68);
@@ -689,6 +694,124 @@ button {
   box-shadow: var(--glass-shadow), var(--glass-highlight);
   backdrop-filter: blur(28px) saturate(145%);
   -webkit-backdrop-filter: blur(28px) saturate(145%);
+}
+
+.number-stepper {
+  display: grid;
+  grid-template-columns: 2.5rem minmax(0, 1fr) 2.5rem;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.number-stepper-input {
+  width: 100%;
+  min-width: 0;
+  text-align: center;
+  font-weight: 800;
+}
+
+.number-stepper-button {
+  display: inline-flex;
+  height: 2.5rem;
+  width: 2.5rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.44);
+  color: var(--primary-tint);
+  box-shadow: var(--glass-highlight);
+  transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
+}
+
+.number-stepper-button:active {
+  transform: scale(0.96);
+}
+
+.number-stepper-button:disabled,
+.secondary-button:disabled {
+  opacity: 0.48;
+}
+
+.onboarding-shell {
+  background:
+    radial-gradient(circle at 16% 8%, rgba(171, 201, 183, 0.24), transparent 30%),
+    radial-gradient(circle at 86% 18%, rgba(201, 214, 235, 0.22), transparent 30%),
+    linear-gradient(180deg, #f8f7f3 0%, #f3f1eb 100%);
+}
+
+.onboarding-card {
+  min-height: min(720px, calc(100vh - 4rem));
+}
+
+.onboarding-hero,
+.onboarding-panel,
+.onboarding-target-card {
+  border: 1px solid var(--glass-border);
+  border-radius: 24px;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.42), rgba(255, 255, 255, 0.24)),
+    rgba(255, 255, 255, 0.34);
+  padding: 1rem;
+  box-shadow: var(--glass-highlight);
+}
+
+.onboarding-field {
+  display: grid;
+  gap: 0.5rem;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.onboarding-choice {
+  display: grid;
+  gap: 0.35rem;
+  border: 1px solid var(--glass-border);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.42);
+  padding: 0.9rem 1rem;
+  text-align: left;
+  color: #1f2722;
+  box-shadow: var(--glass-highlight);
+  transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
+}
+
+.onboarding-choice span {
+  font-size: 0.95rem;
+  font-weight: 900;
+}
+
+.onboarding-choice small {
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  font-weight: 650;
+  line-height: 1.5;
+}
+
+.onboarding-choice-active {
+  border-color: rgba(111, 143, 125, 0.5);
+  background:
+    linear-gradient(135deg, rgba(221, 232, 225, 0.72), rgba(221, 229, 240, 0.44)),
+    rgba(255, 255, 255, 0.46);
+}
+
+.onboarding-choice:active {
+  transform: scale(0.985);
+}
+
+.onboarding-target-card strong {
+  display: block;
+  font-family: var(--rounded-number-font);
+  font-size: 1rem;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+.onboarding-target-card span {
+  display: block;
+  color: var(--text-secondary);
+  font-size: 0.7rem;
+  font-weight: 900;
 }
 
 .calorie-card {
@@ -1330,6 +1453,55 @@ button {
   box-shadow: 0 18px 42px rgba(0, 0, 0, 0.34), var(--glass-highlight);
 }
 
+.theme-dark .onboarding-shell,
+:root[data-theme="dark"] .onboarding-shell {
+  color: #edf4ee;
+  background:
+    radial-gradient(circle at 18% 0%, rgba(125, 154, 142, 0.16), transparent 30%),
+    radial-gradient(circle at 88% 12%, rgba(126, 151, 177, 0.14), transparent 34%),
+    linear-gradient(180deg, #020302 0%, #07100c 14rem, #000 34rem, #000 100%);
+}
+
+.theme-dark .onboarding-hero,
+.theme-dark .onboarding-panel,
+.theme-dark .onboarding-target-card,
+:root[data-theme="dark"] .onboarding-hero,
+:root[data-theme="dark"] .onboarding-panel,
+:root[data-theme="dark"] .onboarding-target-card {
+  border-color: rgba(255, 255, 255, 0.15);
+  background:
+    linear-gradient(135deg, rgba(38, 51, 43, 0.78), rgba(16, 25, 20, 0.72)),
+    rgba(255, 255, 255, 0.06);
+  color: #f4faf5;
+}
+
+.theme-dark .onboarding-choice,
+:root[data-theme="dark"] .onboarding-choice {
+  border-color: rgba(255, 255, 255, 0.13);
+  background: rgba(255, 255, 255, 0.07);
+  color: #f4faf5;
+}
+
+.theme-dark .onboarding-choice small,
+:root[data-theme="dark"] .onboarding-choice small {
+  color: rgba(215, 228, 218, 0.82);
+}
+
+.theme-dark .onboarding-choice-active,
+:root[data-theme="dark"] .onboarding-choice-active {
+  border-color: rgba(159, 190, 169, 0.36);
+  background:
+    linear-gradient(135deg, rgba(159, 190, 169, 0.2), rgba(143, 178, 216, 0.1)),
+    rgba(255, 255, 255, 0.08);
+}
+
+.theme-dark .number-stepper-button,
+:root[data-theme="dark"] .number-stepper-button {
+  border-color: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.08);
+  color: #d8eadc;
+}
+
 .theme-dark .home-hero-left,
 .theme-dark .home-hero-neutral {
   background:
@@ -1817,5 +1989,49 @@ button {
   .exercise-preset-actions .icon-button {
     width: 1.9rem;
     height: 1.9rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .app-shell,
+  .onboarding-shell {
+    max-width: 760px;
+  }
+
+  .app-shell::before {
+    max-width: 760px;
+  }
+
+  .app-header,
+  .home-header {
+    padding-inline: 2rem;
+  }
+
+  .app-shell > section {
+    padding-inline: 2rem;
+  }
+
+  .app-bottom-nav {
+    width: min(calc(100% - 4rem), 520px);
+  }
+
+  .onboarding-shell {
+    display: grid;
+    align-items: center;
+    padding-block: 3rem;
+  }
+
+  .onboarding-card {
+    width: min(100%, 560px);
+    min-height: 0;
+    margin-inline: auto;
+  }
+
+  .app-shell-food > section,
+  .app-shell-workout > section,
+  .app-shell-records > section,
+  .app-shell-settings > section {
+    max-width: 680px;
+    margin-inline: auto;
   }
 }
