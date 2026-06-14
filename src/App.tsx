@@ -54,6 +54,7 @@ import type {
   Profile,
   Settings as AppSettings,
   TemplateExercise,
+  ThemeMode,
   WeightLog,
   WorkoutExercise,
   WorkoutSession,
@@ -203,6 +204,16 @@ const cheatDayStorageKey = "phase-log-cheat-day-dates";
 const staleAppPromptDelayMs = 6 * 60 * 60 * 1000;
 const weightStepOptions = [1, 2.5, 5, 10];
 const appUpdates: AppUpdate[] = [
+  {
+    id: "2026-06-14-dark-mode-settings",
+    title: "ダークモードを追加",
+    date: "2026-06-14",
+    items: [
+      "Settingsからライト、ダーク、端末に合わせる表示を選べるようにしました。",
+      "Liquid Glass UIの背景、カード、入力、下部ナビ、グラフを暗い画面でも読みやすく調整しました。",
+      "過去日編集バナーやチートデー表示も、ダークモードで視認性が落ちないようにしました。",
+    ],
+  },
   {
     id: "2026-06-14-workout-flow-labels-nav",
     title: "ワークアウト操作と下部ナビを改善",
@@ -638,6 +649,9 @@ function App() {
   const [currentTime, setCurrentTime] = useState(() => new Date());
   const [selectedAppDate, setSelectedAppDate] = useState<string>();
   const [toast, setToast] = useState<{ id: string; text: string }>();
+  const [prefersDarkTheme, setPrefersDarkTheme] = useState(() => (
+    typeof window !== "undefined" && typeof window.matchMedia === "function" && window.matchMedia("(prefers-color-scheme: dark)").matches
+  ));
   const toastTimerRef = useRef<number | undefined>(undefined);
   const appOpenedAtRef = useRef(Date.now());
   const actualAppDate = todayAppDate(settings?.day_boundary_hour ?? 3, currentTime);
@@ -645,6 +659,8 @@ function App() {
   const isEditingPastDate = appDate !== actualAppDate;
   const activeGoal = goals.find((goal) => goal.is_active);
   const latestUpdate = appUpdates[0];
+  const themeMode = settings?.theme_mode ?? "system";
+  const resolvedTheme: "light" | "dark" = themeMode === "system" ? (prefersDarkTheme ? "dark" : "light") : themeMode;
 
   const refresh = async () => {
     const [nextSettings, nextProfile, nextGoals, nextMenu, nextFood, nextWeights, nextExercises, nextTemplates, nextSessions, nextWorkoutExercises, nextSets] =
@@ -681,6 +697,25 @@ function App() {
   useEffect(() => {
     localStorage.setItem("phase-log-tab", tab);
   }, [tab]);
+
+  useEffect(() => {
+    if (typeof window.matchMedia !== "function") return;
+    const query = window.matchMedia("(prefers-color-scheme: dark)");
+    const update = () => setPrefersDarkTheme(query.matches);
+    update();
+    if (typeof query.addEventListener === "function") {
+      query.addEventListener("change", update);
+      return () => query.removeEventListener("change", update);
+    }
+    query.addListener(update);
+    return () => query.removeListener(update);
+  }, []);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    root.dataset.theme = resolvedTheme;
+    root.style.colorScheme = resolvedTheme;
+  }, [resolvedTheme]);
 
   useEffect(() => {
     const refreshCurrentTime = () => setCurrentTime(new Date());
@@ -791,7 +826,7 @@ function App() {
   }
 
   return (
-    <main className={`app-shell app-shell-${tab} mx-auto min-h-screen max-w-[430px] text-ink ${tab === "home" ? `home-shell home-shell-${homeTone}` : ""}`}>
+    <main className={`theme-${resolvedTheme} app-shell app-shell-${tab} mx-auto min-h-screen max-w-[430px] text-ink ${tab === "home" ? `home-shell home-shell-${homeTone}` : ""}`} data-theme={resolvedTheme}>
       <header className={`safe-top app-header sticky top-0 z-20 px-4 pb-3 ${tab === "home" ? "home-header" : ""}`}>
         <div className="flex items-center justify-between">
           <div>
@@ -952,6 +987,9 @@ function App() {
             workoutTemplates={workoutTemplates}
             focus={settingsFocus}
             backupInfo={backupInfo}
+            settings={settings}
+            themeMode={themeMode}
+            resolvedTheme={resolvedTheme}
             markBackupNow={markBackupNow}
             openUpdateNotes={openUpdateNotes}
             refresh={refresh}
@@ -2704,6 +2742,9 @@ function SettingsTab(props: {
   workoutTemplates: WorkoutTemplate[];
   focus?: SettingsFocus;
   backupInfo: BackupInfo;
+  settings?: AppSettings;
+  themeMode: ThemeMode;
+  resolvedTheme: "light" | "dark";
   markBackupNow: () => void;
   openUpdateNotes: () => void;
   refresh: () => Promise<void>;
@@ -2736,6 +2777,29 @@ function SettingsTab(props: {
   const [backupImportMessage, setBackupImportMessage] = useState("");
   const backupSectionRef = useRef<HTMLElement | null>(null);
   const myMenuSectionRef = useRef<HTMLElement | null>(null);
+  const themeOptions: Array<{ value: ThemeMode; label: string; description: string }> = [
+    { value: "system", label: "端末に合わせる", description: props.resolvedTheme === "dark" ? "現在はダーク" : "現在はライト" },
+    { value: "light", label: "ライト", description: "明るいガラスUI" },
+    { value: "dark", label: "ダーク", description: "暗いガラスUI" },
+  ];
+
+  const updateThemeMode = async (theme_mode: ThemeMode) => {
+    const timestamp = nowIso();
+    if (props.settings) {
+      await db.settings.update("local", { theme_mode, updated_at: timestamp });
+    } else {
+      await db.settings.put({
+        id: "local",
+        day_boundary_hour: 3,
+        onboarding_completed: true,
+        theme_mode,
+        created_at: timestamp,
+        updated_at: timestamp,
+      });
+    }
+    await props.refresh();
+    props.showToast(theme_mode === "system" ? "表示を端末設定に合わせます" : `${theme_mode === "dark" ? "ダーク" : "ライト"}モードにしました`);
+  };
 
   useEffect(() => {
     if (props.focus !== "backup" && props.focus !== "myMenu") return;
@@ -2819,6 +2883,28 @@ function SettingsTab(props: {
   return (
     <div className="space-y-4">
       {props.focus === "ai" && aiReportSection}
+
+      <section className="compact-card p-4">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h2 className="font-bold">表示設定</h2>
+            <p className="mt-1 text-xs text-moss">Liquid Glass UIの明るさを切り替えます。</p>
+          </div>
+          <span className="mini-chip">{props.resolvedTheme === "dark" ? "Dark" : "Light"}</span>
+        </div>
+        <div className="mt-3 grid grid-cols-3 gap-2">
+          {themeOptions.map((option) => (
+            <button
+              key={option.value}
+              className={`mode-button flex-col gap-0.5 px-2 text-center ${props.themeMode === option.value ? "mode-button-active" : ""}`}
+              onClick={() => updateThemeMode(option.value)}
+            >
+              <span>{option.label}</span>
+              <span className="text-[10px] font-semibold text-moss">{option.description}</span>
+            </button>
+          ))}
+        </div>
+      </section>
 
       <section className="compact-card p-4">
         <h2 className="font-bold">ゴール設定</h2>
@@ -4223,11 +4309,11 @@ function HistoryLineChart({
       {recent.length > 0 ? (
         <>
           <svg className="mt-3 h-36 w-full overflow-visible" viewBox={`0 0 ${width} ${height}`} role="img" aria-label={title}>
-            <line x1={pad} y1={height - pad} x2={width - pad} y2={height - pad} stroke="#ded9cf" strokeWidth="1" />
-            <line x1={pad} y1={pad} x2={width - pad} y2={pad} stroke="#ded9cf" strokeWidth="1" strokeDasharray="4 4" />
+            <line x1={pad} y1={height - pad} x2={width - pad} y2={height - pad} stroke="var(--chart-grid)" strokeWidth="1" />
+            <line x1={pad} y1={pad} x2={width - pad} y2={pad} stroke="var(--chart-grid)" strokeWidth="1" strokeDasharray="4 4" />
             {path && <path d={path} fill="none" stroke={color} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />}
             {points.map((point, index) => (
-              <circle key={`${point.date}-${index}`} cx={point.x} cy={point.y} r={index === points.length - 1 ? 4 : 2.5} fill={index === points.length - 1 ? "#f7f6f2" : color} stroke={color} strokeWidth="2" />
+              <circle key={`${point.date}-${index}`} cx={point.x} cy={point.y} r={index === points.length - 1 ? 4 : 2.5} fill={index === points.length - 1 ? "var(--chart-point-fill)" : color} stroke={color} strokeWidth="2" />
             ))}
           </svg>
           <div className="numeric-text mt-1 flex justify-between text-[11px] font-semibold text-moss">
