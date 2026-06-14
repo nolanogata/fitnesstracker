@@ -980,6 +980,44 @@ button {
   color: #b85f4f;
 }
 
+.perfect-food-detail-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.35rem;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 0.16rem 0.44rem;
+  font-family: var(--rounded-number-font);
+  font-size: 0.64rem;
+  font-weight: 850;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.perfect-food-detail-protein {
+  border-color: rgba(92, 133, 168, 0.24);
+  background: rgba(221, 229, 240, 0.68);
+  color: #506f89;
+}
+
+.perfect-food-detail-ok {
+  border-color: rgba(140, 167, 152, 0.24);
+  background: rgba(221, 232, 225, 0.62);
+  color: #566e61;
+}
+
+.perfect-food-detail-warn {
+  border-color: rgba(190, 142, 67, 0.24);
+  background: rgba(246, 235, 221, 0.78);
+  color: #8c6630;
+}
+
+.perfect-food-detail-over {
+  border-color: rgba(217, 122, 104, 0.3);
+  background: rgba(243, 221, 211, 0.82);
+  color: #b85f4f;
+}
+
 .workout-template-row,
 .exercise-preset-row {
   display: grid;
@@ -1394,6 +1432,34 @@ button {
 :root[data-theme="dark"] .perfect-food-fit-over {
   border-color: rgba(240, 154, 134, 0.34);
   background: rgba(240, 154, 134, 0.18);
+  color: #ffc3b7;
+}
+
+.theme-dark .perfect-food-detail-protein,
+:root[data-theme="dark"] .perfect-food-detail-protein {
+  border-color: rgba(143, 178, 216, 0.24);
+  background: rgba(143, 178, 216, 0.14);
+  color: #c9def4;
+}
+
+.theme-dark .perfect-food-detail-ok,
+:root[data-theme="dark"] .perfect-food-detail-ok {
+  border-color: rgba(159, 190, 169, 0.22);
+  background: rgba(159, 190, 169, 0.13);
+  color: #d8eadc;
+}
+
+.theme-dark .perfect-food-detail-warn,
+:root[data-theme="dark"] .perfect-food-detail-warn {
+  border-color: rgba(238, 191, 108, 0.28);
+  background: rgba(238, 191, 108, 0.14);
+  color: #f8dca5;
+}
+
+.theme-dark .perfect-food-detail-over,
+:root[data-theme="dark"] .perfect-food-detail-over {
+  border-color: rgba(240, 154, 134, 0.32);
+  background: rgba(240, 154, 134, 0.16);
   color: #ffc3b7;
 }
 
