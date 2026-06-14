@@ -247,8 +247,9 @@ button {
 }
 
 .home-header {
-  border-bottom: 1px solid rgba(218, 226, 220, 0.62);
-  background: rgba(255, 255, 255, 0.42);
+  border-bottom-color: transparent;
+  background: var(--page-top-bg);
+  box-shadow: none;
 }
 
 .home-status-pill {
@@ -392,8 +393,9 @@ button {
   min-height: unset;
   padding: 1.35rem 1.4rem 1.2rem;
   box-shadow:
-    var(--card-glow-strong),
-    0 3px 10px rgba(44, 56, 48, 0.06),
+    0 0 0 1px rgba(255, 255, 255, 0.58),
+    0 0 22px rgba(111, 143, 125, 0.13),
+    0 0 10px rgba(44, 56, 48, 0.04),
     var(--glass-highlight);
 }
 
@@ -401,12 +403,22 @@ button {
   background:
     linear-gradient(180deg, rgba(217, 122, 104, 0.12) 0%, rgba(255, 255, 255, 0.9) 48%, rgba(255, 255, 255, 0.96) 100%),
     var(--glass-bg-strong);
+  box-shadow:
+    0 0 0 1px rgba(217, 122, 104, 0.22),
+    0 0 22px rgba(217, 122, 104, 0.18),
+    0 0 10px rgba(44, 56, 48, 0.04),
+    var(--glass-highlight);
 }
 
 .home-hero-on-track {
   background:
     linear-gradient(180deg, rgba(140, 167, 152, 0.16) 0%, rgba(255, 255, 255, 0.9) 48%, rgba(255, 255, 255, 0.96) 100%),
     var(--glass-bg-strong);
+  box-shadow:
+    0 0 0 1px rgba(111, 143, 125, 0.22),
+    0 0 22px rgba(111, 143, 125, 0.16),
+    0 0 10px rgba(44, 56, 48, 0.04),
+    var(--glass-highlight);
 }
 
 .home-hero-left,
@@ -414,6 +426,11 @@ button {
   background:
     linear-gradient(180deg, rgba(246, 235, 221, 0.28) 0%, rgba(255, 255, 255, 0.9) 48%, rgba(255, 255, 255, 0.96) 100%),
     var(--glass-bg-strong);
+  box-shadow:
+    0 0 0 1px rgba(246, 235, 221, 0.34),
+    0 0 22px rgba(246, 235, 221, 0.2),
+    0 0 10px rgba(44, 56, 48, 0.04),
+    var(--glass-highlight);
 }
 
 .home-hero-cheat {
@@ -1425,9 +1442,9 @@ button {
 .theme-dark.app-header,
 .theme-dark .home-header,
 .theme-dark.home-header {
-  border-bottom-color: rgba(255, 255, 255, 0.08);
+  border-bottom-color: transparent;
   background: rgba(0, 0, 0, 0.86);
-  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.26);
+  box-shadow: none;
 }
 
 .theme-dark.home-shell .home-header h1 {
@@ -1482,8 +1499,9 @@ button {
 
 .theme-dark .home-hero-card {
   box-shadow:
-    var(--card-glow-strong),
-    0 8px 24px rgba(0, 0, 0, 0.28),
+    0 0 0 1px rgba(255, 255, 255, 0.12),
+    0 0 22px rgba(159, 190, 169, 0.12),
+    0 0 12px rgba(0, 0, 0, 0.22),
     var(--glass-highlight);
 }
 
@@ -1541,6 +1559,11 @@ button {
   background:
     linear-gradient(180deg, rgba(165, 143, 105, 0.12) 0%, rgba(255, 255, 255, 0.04) 48%, rgba(255, 255, 255, 0.03) 100%),
     var(--glass-bg);
+  box-shadow:
+    0 0 0 1px rgba(165, 143, 105, 0.22),
+    0 0 22px rgba(165, 143, 105, 0.14),
+    0 0 12px rgba(0, 0, 0, 0.22),
+    var(--glass-highlight);
 }
 
 .theme-dark .home-hero-over {
@@ -1548,6 +1571,11 @@ button {
   background:
     linear-gradient(180deg, rgba(240, 154, 134, 0.13) 0%, rgba(255, 255, 255, 0.04) 48%, rgba(255, 255, 255, 0.03) 100%),
     var(--glass-bg);
+  box-shadow:
+    0 0 0 1px rgba(240, 154, 134, 0.24),
+    0 0 22px rgba(240, 154, 134, 0.18),
+    0 0 12px rgba(0, 0, 0, 0.22),
+    var(--glass-highlight);
 }
 
 .theme-dark .home-hero-on-track {
@@ -1555,6 +1583,11 @@ button {
   background:
     linear-gradient(180deg, rgba(159, 190, 169, 0.15) 0%, rgba(255, 255, 255, 0.04) 48%, rgba(255, 255, 255, 0.03) 100%),
     var(--glass-bg);
+  box-shadow:
+    0 0 0 1px rgba(159, 190, 169, 0.24),
+    0 0 22px rgba(159, 190, 169, 0.16),
+    0 0 12px rgba(0, 0, 0, 0.22),
+    var(--glass-highlight);
 }
 
 .theme-dark .home-hero-cheat {
