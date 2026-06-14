@@ -249,6 +249,16 @@ const finisherPulseIntensity = "finisher_pulse";
 const finisherPulseNote = "仕上げパルス（部分可動域・素早く）";
 const appUpdates: AppUpdate[] = [
   {
+    id: "2026-06-15-walk-cardio-home-label",
+    title: "散歩を有酸素に追加",
+    date: "2026-06-15",
+    items: [
+      "Homeの「筋トレを記録」を「ワークアウトを記録」に変更しました。",
+      "有酸素メニューに散歩を追加し、ゆっくり・普通・早歩きから選べるようにしました。",
+      "散歩は分数で記録でき、強度に応じた消費カロリーを推定します。",
+    ],
+  },
+  {
     id: "2026-06-15-goal-override-name-settings",
     title: "ゴール設定の見た目を整理",
     date: "2026-06-15",
@@ -1826,7 +1836,7 @@ function HomeTab(props: {
 
       <div className="home-action-row">
         <button className="home-primary-action" onClick={() => props.setTab("food")}>食事を記録 <ChevronRight size={17} /></button>
-        <button className="home-secondary-action" onClick={() => props.setTab("workout")}>筋トレを記録 <ChevronRight size={17} /></button>
+        <button className="home-secondary-action" onClick={() => props.setTab("workout")}>ワークアウトを記録 <ChevronRight size={17} /></button>
       </div>
       <div className="flex justify-center gap-3 text-xs font-semibold text-moss/80">
         <button className="px-1.5 py-1" onClick={() => setIsPerfectFoodOpen(true)}>ぴったりフード</button>
@@ -5769,7 +5779,7 @@ function getFoodPictogram(item: { name: string; brand?: string; category?: strin
 
 function getWorkoutPictogram(bodyPart = "", equipmentType = "") {
   const text = `${bodyPart} ${equipmentType}`;
-  if (/有酸素|バイク|トレッドミル|ランニング|ウォーキング|クロストレーナー|ローイング/.test(text)) return { icon: Bike, tone: "sky" as PictogramTone };
+  if (/有酸素|バイク|トレッドミル|ランニング|ウォーキング|散歩|クロストレーナー|ローイング/.test(text)) return { icon: Bike, tone: "sky" as PictogramTone };
   if (/胸|肩|腕|上腕|三頭|二頭/.test(text)) return { icon: BicepsFlexed, tone: "clay" as PictogramTone };
   if (/脚|下半身|尻|ヒップ/.test(text)) return { icon: Dumbbell, tone: "sun" as PictogramTone };
   if (/背中|広背|ロー|プル/.test(text)) return { icon: Activity, tone: "moss" as PictogramTone };
@@ -6330,6 +6340,9 @@ const cardioMets: Record<string, number> = {
   トレッドミル: 6.0,
   傾斜ウォーキング: 6.5,
   早歩き: 4.3,
+  "散歩（ゆっくり）": 2.8,
+  "散歩（普通）": 3.5,
+  "散歩（早歩き）": 4.3,
   バイク: 5.8,
   リカンベントバイク: 4.8,
   エアロバイク高負荷: 7.0,
