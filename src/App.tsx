@@ -840,6 +840,15 @@ function App() {
       </header>
 
       <section className={tab === "home" ? "px-4 pb-28 pt-2" : "px-4 pb-28 pt-4"}>
+        {isEditingPastDate && (
+          <div className="past-edit-banner mb-4">
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-black">過去の記録を編集中</p>
+              <p className="mt-1 text-xs font-semibold">{formatJapaneseDate(appDate)} の食事・ワークアウトに記録されます</p>
+            </div>
+            <button className="past-edit-banner-button" onClick={() => setSelectedAppDate(undefined)}>今日に戻る</button>
+          </div>
+        )}
         {tab === "home" && (
           <HomeTab
             profile={profile}
