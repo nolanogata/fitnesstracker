@@ -219,6 +219,15 @@ const finisherPulseIntensity = "finisher_pulse";
 const finisherPulseNote = "仕上げパルス（部分可動域・素早く）";
 const appUpdates: AppUpdate[] = [
   {
+    id: "2026-06-14-perfect-food-macro-breakdown",
+    title: "ぴったりフードの判定を詳しく表示",
+    date: "2026-06-14",
+    items: [
+      "Pは追加後にあと何g足りないか、F/Cは何g超えるかを候補ごとに表示しました。",
+      "F/Cやkcalが大きく超える候補は上位に出にくくして、ぴったり感を改善しました。",
+    ],
+  },
+  {
     id: "2026-06-14-perfect-food-fit-badge",
     title: "ぴったりフードに余裕度を表示",
     date: "2026-06-14",
@@ -1625,6 +1634,11 @@ function PerfectFoodModal({ dayTotals, goal, menuItems, onClose, onLog }: {
                           <div className="min-w-0">
                             <p className="truncate text-sm font-bold">{formatMenuItemName(item)}</p>
                             <p className="numeric-text mt-1 text-xs text-moss">{item.brand ? `${item.brand} · ` : ""}{item.calories}kcal · P{round1(item.protein_g)} F{round1(item.fat_g)} C{round1(item.carbs_g)}</p>
+                            <div className="mt-2 flex flex-wrap gap-1.5">
+                              {fit.details.map((detail) => (
+                                <span className={`perfect-food-detail-chip perfect-food-detail-${detail.tone}`} key={detail.label}>{detail.label}</span>
+                              ))}
+                            </div>
                           </div>
                           <div className="flex shrink-0 flex-col items-end gap-2">
                             <span className={`perfect-food-fit-badge perfect-food-fit-${fit.tone}`}>
@@ -1658,19 +1672,35 @@ function PerfectFoodModal({ dayTotals, goal, menuItems, onClose, onLog }: {
 }
 
 function getPerfectFoodFit(item: MenuItem, target: { calories: number; protein: number; fat: number; carbs: number }) {
-  const ratios = [
-    target.calories > 0 ? item.calories / target.calories : 0,
-    target.fat > 0 ? item.fat_g / target.fat : 0,
-    target.carbs > 0 ? item.carbs_g / target.carbs : 0,
-  ].filter((ratio) => Number.isFinite(ratio));
-  const load = Math.max(...ratios, 0);
-  const percent = Math.round(load * 100);
-  const proteinCover = target.protein > 0 ? Math.round((item.protein_g / target.protein) * 100) : 0;
-  const proteinLabel = proteinCover > 0 ? ` / P${Math.min(proteinCover, 999)}%` : "";
-  if (percent > 105) return { tone: "over" as const, label: `超過 ${percent}%${proteinLabel}` };
-  if (percent >= 88) return { tone: "tight" as const, label: `ギリ ${percent}%${proteinLabel}` };
-  if (percent >= 55) return { tone: "good" as const, label: `枠 ${percent}%${proteinLabel}` };
-  return { tone: "easy" as const, label: `余裕 ${percent}%${proteinLabel}` };
+  const balance = getPerfectFoodBalance(item, target);
+  const details: { label: string; tone: "protein" | "ok" | "warn" | "over" }[] = [];
+  if (target.protein > 0) {
+    details.push(balance.proteinLeft > 0.5
+      ? { label: `Pあと${round1(balance.proteinLeft)}g`, tone: "protein" }
+      : { label: "Pクリア", tone: "ok" });
+  }
+  const hasFatOrCarbsTarget = target.fat > 0 || target.carbs > 0;
+  if (target.fat > 0) {
+    if (balance.fatOver > 0.5) details.push({ label: `F+${round1(balance.fatOver)}g`, tone: "over" });
+  }
+  if (target.carbs > 0) {
+    if (balance.carbsOver > 0.5) details.push({ label: `C+${round1(balance.carbsOver)}g`, tone: "over" });
+  }
+  if (hasFatOrCarbsTarget && balance.fatOver <= 0.5 && balance.carbsOver <= 0.5) {
+    details.push({
+      label: "F/C内",
+      tone: balance.nonProteinLoad >= 0.88 ? "warn" : "ok",
+    });
+  }
+  if (balance.calorieOver > 25) {
+    details.push({ label: `kcal+${Math.round(balance.calorieOver)}`, tone: "over" });
+  }
+
+  if (balance.hasOver) return { tone: "over" as const, label: "超過あり", details };
+  if (balance.proteinLeft > Math.max(8, target.protein * 0.35)) return { tone: "easy" as const, label: "P不足", details };
+  if (balance.nonProteinLoad >= 0.88) return { tone: "tight" as const, label: "枠ギリ", details };
+  if (balance.proteinLeft <= 0.5 && balance.nonProteinLoad >= 0.45) return { tone: "good" as const, label: "ぴったり寄り", details };
+  return { tone: "good" as const, label: "候補OK", details };
 }
 
 function PerfectFoodMetric({ label, value, suffix }: { label: string; value: number; suffix: string }) {
@@ -4908,16 +4938,53 @@ function pickDiversePerfectFoodItems(items: MenuItem[], maxItems = 9) {
   return picked;
 }
 
+function getPerfectFoodBalance(item: MenuItem, target: { calories: number; protein: number; fat: number; carbs: number }) {
+  const calorieLeft = target.calories - item.calories;
+  const proteinLeft = target.protein - item.protein_g;
+  const fatLeft = target.fat - item.fat_g;
+  const carbsLeft = target.carbs - item.carbs_g;
+  const calorieOver = Math.max(0, -calorieLeft);
+  const fatOver = Math.max(0, -fatLeft);
+  const carbsOver = Math.max(0, -carbsLeft);
+  const nonProteinLoad = Math.max(
+    target.calories > 0 ? item.calories / target.calories : 0,
+    target.fat > 0 ? item.fat_g / target.fat : 0,
+    target.carbs > 0 ? item.carbs_g / target.carbs : 0,
+  );
+  return {
+    calorieLeft,
+    calorieOver,
+    proteinLeft,
+    fatLeft,
+    fatOver,
+    carbsLeft,
+    carbsOver,
+    hasOver: calorieOver > 25 || fatOver > 0.5 || carbsOver > 0.5,
+    nonProteinLoad: Number.isFinite(nonProteinLoad) ? nonProteinLoad : 0,
+  };
+}
+
 function perfectFoodScore(item: MenuItem, target: { calories: number; protein: number; fat: number; carbs: number }) {
-  const calorieTarget = Math.max(120, target.calories || item.calories);
-  const macroScore =
-    Math.abs((item.protein_g - target.protein) / Math.max(12, target.protein || item.protein_g || 12)) * 1.35 +
-    Math.abs((item.fat_g - target.fat) / Math.max(8, target.fat || item.fat_g || 8)) +
-    Math.abs((item.carbs_g - target.carbs) / Math.max(18, target.carbs || item.carbs_g || 18));
+  const balance = getPerfectFoodBalance(item, target);
+  const calorieTarget = Math.max(140, Math.min(target.calories || item.calories, 820));
   const calorieScore = Math.abs(item.calories - calorieTarget) / calorieTarget;
-  const overshootPenalty = item.calories > calorieTarget * 1.18 ? 0.9 : 0;
+  const proteinShortageScore = Math.max(0, balance.proteinLeft) / Math.max(18, target.protein || 18);
+  const proteinCoverageBonus = target.protein > 0 ? Math.min(item.protein_g / target.protein, 1) * -0.42 : 0;
+  const fatOverPenalty = balance.fatOver / Math.max(4, target.fat * 0.28 || 8);
+  const carbsOverPenalty = balance.carbsOver / Math.max(12, target.carbs * 0.22 || 24);
+  const calorieOverPenalty = balance.calorieOver / Math.max(160, target.calories * 0.18 || 240);
+  const loadPenalty = balance.nonProteinLoad > 1 ? (balance.nonProteinLoad - 1) * 2.8 : Math.abs(balance.nonProteinLoad - 0.72) * 0.35;
   const sourceBonus = sourceRank(item.data_source) * 0.06;
-  return calorieScore * 1.6 + macroScore + overshootPenalty + sourceBonus;
+  return (
+    calorieScore * 0.72 +
+    proteinShortageScore * 0.56 +
+    proteinCoverageBonus +
+    fatOverPenalty * 2.5 +
+    carbsOverPenalty * 2.1 +
+    calorieOverPenalty * 1.8 +
+    loadPenalty +
+    sourceBonus
+  );
 }
 
 function getCalorieState(remaining: number, target: number) {
