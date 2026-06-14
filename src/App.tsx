@@ -1650,7 +1650,7 @@ function HomeTab(props: {
             {calorieDisplayText}<span className="ml-2 text-xl font-semibold">kcal</span>
           </p>
           <p className="mt-2 text-sm font-semibold text-moss">{calorieMoodLabel}</p>
-          {props.isCheatDay && <p className="mt-1 text-sm font-bold text-ink">今日はチートデーです。目標差分は参考値として見ます。</p>}
+          {props.isCheatDay && <p className="mt-1 text-sm font-bold text-ink">今日はチートデーです。</p>}
           <p className="numeric-text mt-1 text-sm text-moss">摂取 {props.dayTotals.calories} / 目標 {props.goal?.target_calories ?? "-"} kcal</p>
           <div className="mt-6 h-2 overflow-hidden rounded-full bg-white/55">
             <div className={`h-full rounded-full ${props.isCheatDay ? "home-progress-cheat" : calorieDelta && calorieDelta > 0 ? "bg-clay" : "bg-moss"}`} style={{ width: `${caloriePercent}%` }} />
@@ -3600,10 +3600,10 @@ function SettingsTab(props: {
   const [backupImportMessage, setBackupImportMessage] = useState("");
   const backupSectionRef = useRef<HTMLElement | null>(null);
   const myMenuSectionRef = useRef<HTMLElement | null>(null);
-  const themeOptions: Array<{ value: ThemeMode; label: string; description: string }> = [
-    { value: "system", label: "端末に合わせる", description: props.resolvedTheme === "dark" ? "現在はダーク" : "現在はライト" },
-    { value: "light", label: "ライト", description: "明るいガラスUI" },
-    { value: "dark", label: "ダーク", description: "暗いガラスUI" },
+  const themeOptions: Array<{ value: ThemeMode; label: string }> = [
+    { value: "system", label: "端末に合わせる" },
+    { value: "light", label: "ライト" },
+    { value: "dark", label: "ダーク" },
   ];
 
   const updateThemeMode = async (theme_mode: ThemeMode) => {
@@ -3715,21 +3715,18 @@ function SettingsTab(props: {
         <div className="flex items-start justify-between gap-3">
           <div>
             <h2 className="font-bold">表示設定</h2>
-            <p className="mt-1 text-xs text-moss">Liquid Glass UIの明るさを切り替えます。</p>
+            <p className="mt-1 text-xs text-moss">現在は{props.resolvedTheme === "dark" ? "ダーク" : "ライト"}で表示中です。</p>
           </div>
-          <span className="mini-chip">{props.resolvedTheme === "dark" ? "Dark" : "Light"}</span>
-        </div>
-        <div className="mt-3 grid grid-cols-3 gap-2">
-          {themeOptions.map((option) => (
-            <button
-              key={option.value}
-              className={`mode-button flex-col gap-0.5 px-2 text-center ${props.themeMode === option.value ? "mode-button-active" : ""}`}
-              onClick={() => updateThemeMode(option.value)}
-            >
-              <span>{option.label}</span>
-              <span className="text-[10px] font-semibold text-moss">{option.description}</span>
-            </button>
-          ))}
+          <select
+            className="min-w-[9.5rem] text-sm font-bold"
+            value={props.themeMode}
+            aria-label="表示設定"
+            onChange={(event) => updateThemeMode(event.target.value as ThemeMode)}
+          >
+            {themeOptions.map((option) => (
+              <option key={option.value} value={option.value}>{option.label}</option>
+            ))}
+          </select>
         </div>
       </section>
 
