@@ -12,11 +12,13 @@ export type ActivityLevel = "low" | "moderate" | "high" | "very_high";
 export type DataSource = "official" | "unofficial" | "estimated" | "quick_estimate" | "user";
 export type Confidence = "high" | "medium" | "low";
 export type MealType = "breakfast" | "lunch" | "dinner" | "snack";
+export type ThemeMode = "system" | "light" | "dark";
 
 export type Settings = {
   id: string;
   day_boundary_hour: number;
   onboarding_completed: boolean;
+  theme_mode?: ThemeMode;
   active_goal_id?: string;
   hidden_workout_template_ids?: string[];
   created_at: string;

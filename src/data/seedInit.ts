@@ -65,6 +65,7 @@ export async function initializeSeeds() {
         id: "local",
         day_boundary_hour: 3,
         onboarding_completed: false,
+        theme_mode: "system",
         created_at: timestamp,
         updated_at: timestamp,
       });
