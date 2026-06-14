@@ -216,6 +216,22 @@ const emptyManual: ManualFoodDraft = {
   favorite: false,
 };
 
+function settingsGoalDraftFrom(activeGoal?: Goal, profile?: Profile) {
+  const isLegacyCustomGoal = activeGoal?.phase === "custom";
+  return {
+    phase: activeGoal?.phase ?? ("maintenance" as Phase),
+    age: activeGoal?.age ?? 35,
+    activity_level: activeGoal?.activity_level ?? ("moderate" as ActivityLevel),
+    target_weight_kg: activeGoal?.target_weight_kg ?? profile?.current_weight_kg ?? 70,
+    manual_target_calories: activeGoal?.manual_target_calories ?? (isLegacyCustomGoal ? activeGoal?.target_calories ?? 0 : 0),
+    manual_protein_g: activeGoal?.manual_protein_g ?? (isLegacyCustomGoal ? activeGoal?.target_protein_g ?? 0 : 0),
+    manual_fat_g: activeGoal?.manual_fat_g ?? (isLegacyCustomGoal ? activeGoal?.target_fat_g ?? 0 : 0),
+    manual_carbs_g: activeGoal?.manual_carbs_g ?? (isLegacyCustomGoal ? activeGoal?.target_carbs_g ?? 0 : 0),
+    target_workouts_per_week: activeGoal?.target_workouts_per_week ?? 3,
+    target_cardio_sessions_per_week: activeGoal?.target_cardio_sessions_per_week ?? 1,
+  };
+}
+
 const backupStorageKey = "phase-log-last-backup-at";
 const updateSeenStorageKey = "phase-log-seen-update-id";
 const foodFitFilterSeenStorageKey = "phase-log-food-fit-filter-seen-2026-06-14";
@@ -226,6 +242,15 @@ const weightStepOptions = [1, 2.5, 5, 10];
 const finisherPulseIntensity = "finisher_pulse";
 const finisherPulseNote = "仕上げパルス（部分可動域・素早く）";
 const appUpdates: AppUpdate[] = [
+  {
+    id: "2026-06-14-goal-custom-general-food-filter",
+    title: "ゴール上書き保存と一般メニュー検索を修正",
+    date: "2026-06-14",
+    items: [
+      "ゴール設定のカスタムkcal/P/F/Cが再編集時に抜けないようにしました。",
+      "Foodタブの検索フィルターに、一般メニューのみで検索するオプションを追加しました。",
+    ],
+  },
   {
     id: "2026-06-14-food-chain-recommend-sort",
     title: "チェーン・コンビニメニューのおすすめ順を追加",
@@ -1935,6 +1960,7 @@ function FoodTab(props: {
   const [brand, setBrand] = useState("松屋");
   const [categoryGenre, setCategoryGenre] = useState("ごはん・丼");
   const [generalCategory, setGeneralCategory] = useState("ごはん・丼");
+  const [showGeneralFoodsOnly, setShowGeneralFoodsOnly] = useState(false);
   const [hideOverGoalItems, setHideOverGoalItems] = useState(false);
   const [showFoodBalance, setShowFoodBalance] = useState(false);
   const [sortFoodByFit, setSortFoodByFit] = useState(false);
@@ -2022,7 +2048,7 @@ function FoodTab(props: {
   const isChainOrConvenienceMenuView = mode === "chain" || (mode === "category" && ["チェーン店", "コンビニ"].includes(categoryGenre));
   const canSortFoodByFit = canUseOverGoalFilter && isChainOrConvenienceMenuView;
   const isSortFoodByFitActive = sortFoodByFit && canSortFoodByFit;
-  const isFoodFitFilterActive = (hideOverGoalItems && canUseOverGoalFilter) || (showFoodBalance && canShowFoodBalance) || isSortFoodByFitActive;
+  const isFoodFitFilterActive = showGeneralFoodsOnly || (hideOverGoalItems && canUseOverGoalFilter) || (showFoodBalance && canShowFoodBalance) || isSortFoodByFitActive;
   const searchPlaceholder = isChainScopedSearch ? `${brand}内を検索` : "食品・ブランド検索";
   const results = useMemo(() => {
     const needle = query.trim().toLowerCase();
@@ -2051,9 +2077,10 @@ function FoodTab(props: {
         return tokens.every((token) => haystack.includes(token));
       })
       : sorted;
+    const generalFiltered = showGeneralFoodsOnly ? matched.filter(isGeneralFoodMenuItem) : matched;
     const filtered = hideOverGoalItems && canUseOverGoalFilter
-      ? matched.filter((item) => fitsRemainingFoodFilter(item, remainingNutrition))
-      : matched;
+      ? generalFiltered.filter((item) => fitsRemainingFoodFilter(item, remainingNutrition))
+      : generalFiltered;
     const recommended = isSortFoodByFitActive
       ? [...filtered].sort((a, b) => {
         const scoreDiff = perfectFoodScore(a, remainingNutrition) - perfectFoodScore(b, remainingNutrition);
@@ -2072,6 +2099,7 @@ function FoodTab(props: {
     isChainScopedSearch,
     categoryGenre,
     generalCategory,
+    showGeneralFoodsOnly,
     hideOverGoalItems,
     canUseOverGoalFilter,
     sortFoodByFit,
@@ -2270,6 +2298,16 @@ function FoodTab(props: {
               <button className="icon-button h-8 w-8" aria-label="フィルターを閉じる" onClick={() => setIsFoodFilterOpen(false)}>×</button>
             </div>
             <div className="mt-3 space-y-2">
+              <button
+                className={`food-filter-option ${showGeneralFoodsOnly ? "food-filter-option-active" : ""}`}
+                onClick={() => setShowGeneralFoodsOnly((value) => !value)}
+              >
+                <span>
+                  <span className="block text-sm font-bold">一般メニューのみで検索</span>
+                  <span className="mt-1 block text-xs text-moss">チェーン店・コンビニ・市販プロテイン・サプリなどを除いて表示します。</span>
+                </span>
+                <span className="mini-chip shrink-0">{showGeneralFoodsOnly ? "ON" : "OFF"}</span>
+              </button>
               <button
                 className={`food-filter-option ${hideOverGoalItems ? "food-filter-option-active" : ""} ${!canUseOverGoalFilter ? "opacity-50" : ""}`}
                 disabled={!canUseOverGoalFilter}
@@ -3485,18 +3523,7 @@ function SettingsTab(props: {
     workoutSets: WorkoutSet[];
   };
 }) {
-  const [goalDraft, setGoalDraft] = useState({
-    phase: props.activeGoal?.phase ?? "maintenance" as Phase,
-    age: props.activeGoal?.age ?? 35,
-    activity_level: props.activeGoal?.activity_level ?? "moderate" as ActivityLevel,
-    target_weight_kg: props.activeGoal?.target_weight_kg ?? props.profile?.current_weight_kg ?? 70,
-    manual_target_calories: 0,
-    manual_protein_g: 0,
-    manual_fat_g: 0,
-    manual_carbs_g: 0,
-    target_workouts_per_week: props.activeGoal?.target_workouts_per_week ?? 3,
-    target_cardio_sessions_per_week: props.activeGoal?.target_cardio_sessions_per_week ?? 1,
-  });
+  const [goalDraft, setGoalDraft] = useState(() => settingsGoalDraftFrom(props.activeGoal, props.profile));
   const [presetDraft, setPresetDraft] = useState({ ...emptyManual, name: "", savePreset: true });
   const [reportMode, setReportMode] = useState<ReportMode>("day");
   const [question, setQuestion] = useState("");
@@ -3537,6 +3564,10 @@ function SettingsTab(props: {
     }, 50);
     return () => window.clearTimeout(timer);
   }, [props.focus]);
+
+  useEffect(() => {
+    setGoalDraft(settingsGoalDraftFrom(props.activeGoal, props.profile));
+  }, [props.activeGoal?.id, props.profile?.current_weight_kg]);
 
   const calculated = props.profile
     ? calculateTargets({
@@ -5367,6 +5398,13 @@ function fitsRemainingFoodFilter(item: MenuItem, remaining: { calories: number; 
   const fitsFat = remaining.fat <= 0 ? item.fat_g <= 0 : item.fat_g <= remaining.fat;
   const fitsCarbs = remaining.carbs <= 0 ? item.carbs_g <= 0 : item.carbs_g <= remaining.carbs;
   return fitsCalories && fitsFat && fitsCarbs;
+}
+
+function isGeneralFoodMenuItem(item: MenuItem) {
+  if (item.brand) return false;
+  if (item.data_source === "quick_estimate" || item.data_source === "user") return false;
+  if (commercialGeneralCategories.has(item.category)) return false;
+  return Boolean(genericCategories[item.category]);
 }
 
 function getPlannedNutrition(plans: PerfectFoodPlan[]) {
