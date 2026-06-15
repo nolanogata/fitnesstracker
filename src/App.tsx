@@ -2374,7 +2374,7 @@ function FoodTab(props: {
   const canUseOverGoalFilter = !!props.goal && props.goal.target_calories > 0;
   const canShowFoodBalance = canUseOverGoalFilter;
   const isChainScopedSearch = mode === "chain" && !!brand;
-  const isChainOrConvenienceMenuView = mode === "chain" || (mode === "category" && ["チェーン店", "コンビニ"].includes(categoryGenre));
+  const isChainOrConvenienceMenuView = mode === "chain" || (mode === "category" && ["チェーン店", "コンビニ", "冷凍食品"].includes(categoryGenre));
   const canSortFoodByFit = canUseOverGoalFilter && isChainOrConvenienceMenuView;
   const isSortFoodByFitActive = sortFoodByFit && canSortFoodByFit;
   const isFoodFitFilterActive = showGeneralFoodsOnly || (hideOverGoalItems && canUseOverGoalFilter) || (showFoodBalance && canShowFoodBalance) || isSortFoodByFitActive;
@@ -2395,6 +2395,7 @@ function FoodTab(props: {
         if (mode === "personal") return item.is_user_created;
         if (mode === "chain") return item.brand === brand;
         if (mode === "category") {
+          if (commercialGeneralCategories.has(categoryGenre)) return item.category === categoryGenre;
           return item.category === categoryGenre || item.tags.some((tag) => genericCategories[categoryGenre]?.includes(tag));
         }
         return true;
