@@ -243,11 +243,22 @@ const updateSeenStorageKey = "phase-log-seen-update-id";
 const foodFitFilterSeenStorageKey = "phase-log-food-fit-filter-seen-2026-06-14";
 const workoutWeightPresetStorageKey = "phase-log-workout-weight-presets";
 const cheatDayStorageKey = "phase-log-cheat-day-dates";
+const dismissedRecordReminderStorageKey = "phase-log-dismissed-record-reminders";
 const staleAppPromptDelayMs = 6 * 60 * 60 * 1000;
 const weightStepOptions = [1, 2.5, 5, 10];
 const finisherPulseIntensity = "finisher_pulse";
 const finisherPulseNote = "仕上げパルス（部分可動域・素早く）";
 const appUpdates: AppUpdate[] = [
+  {
+    id: "2026-06-15-record-reminder-banner",
+    title: "記録リマインダーを追加",
+    date: "2026-06-15",
+    items: [
+      "Homeに朝・昼・夜の記録リマインダーバナーを追加しました。",
+      "指定時間を過ぎても食事記録がない場合、次にアプリを開いた時に記録を促します。",
+      "Homeの食事・ワークアウト記録ボタンを同じ幅に揃え、小さい画面でも改行しにくくしました。",
+    ],
+  },
   {
     id: "2026-06-15-walk-cardio-home-label",
     title: "散歩を有酸素に追加",
@@ -1014,6 +1025,7 @@ function App() {
   const [lastBackupAt, setLastBackupAt] = useState<string | undefined>(() => localStorage.getItem(backupStorageKey) || undefined);
   const [seenUpdateId, setSeenUpdateId] = useState<string | undefined>(() => localStorage.getItem(updateSeenStorageKey) || undefined);
   const [cheatDayDates, setCheatDayDates] = useState<string[]>(() => loadCheatDayDates());
+  const [dismissedRecordReminderIds, setDismissedRecordReminderIds] = useState<string[]>(() => loadDismissedRecordReminders());
   const [isUpdateNotesOpen, setIsUpdateNotesOpen] = useState(false);
   const [showStaleAppPrompt, setShowStaleAppPrompt] = useState(false);
   const [isHeaderReloading, setIsHeaderReloading] = useState(false);
@@ -1194,6 +1206,13 @@ function App() {
         : "under";
   const backupInfo = useMemo(() => getBackupInfo(lastBackupAt, foodEntries.length + weightLogs.length + workoutSessions.length + workoutSets.length), [lastBackupAt, foodEntries.length, weightLogs.length, workoutSessions.length, workoutSets.length]);
   const weeklyWorkoutStatus = useMemo(() => getWeeklyWorkoutStatus(target, workoutSessions, workoutExercises, appDate), [target, workoutSessions, workoutExercises, appDate]);
+  const recordReminder = useMemo(() => getRecordReminder({
+    appDate,
+    actualAppDate,
+    currentTime,
+    todayEntries,
+    dismissedIds: dismissedRecordReminderIds,
+  }), [actualAppDate, appDate, currentTime, dismissedRecordReminderIds, todayEntries]);
   const markBackupNow = () => {
     const timestamp = nowIso();
     localStorage.setItem(backupStorageKey, timestamp);
@@ -1235,6 +1254,13 @@ function App() {
       const next = current.includes(appDate) ? current.filter((date) => date !== appDate) : [...current, appDate].sort();
       localStorage.setItem(cheatDayStorageKey, JSON.stringify(next));
       showToast(next.includes(appDate) ? "チートデーに設定しました" : "チートデーを解除しました");
+      return next;
+    });
+  };
+  const dismissRecordReminder = (id: string) => {
+    setDismissedRecordReminderIds((current) => {
+      const next = current.includes(id) ? current : [...current, id].slice(-60);
+      localStorage.setItem(dismissedRecordReminderStorageKey, JSON.stringify(next));
       return next;
     });
   };
@@ -1360,6 +1386,7 @@ function App() {
             latestWeight={latestWeight}
             weightLogs={weightLogs}
             backupInfo={backupInfo}
+            recordReminder={recordReminder}
             needsGoalTargetPeriod={needsGoalTargetPeriod}
             setTab={(nextTab) => {
               setSettingsFocus(undefined);
@@ -1397,6 +1424,7 @@ function App() {
               setWorkoutFocus(undefined);
               setTab("settings");
             }}
+            dismissRecordReminder={dismissRecordReminder}
             latestUpdate={latestUpdate}
             hasUnreadUpdate={!!latestUpdate && seenUpdateId !== latestUpdate.id}
             showStaleAppPrompt={showStaleAppPrompt}
@@ -1568,6 +1596,52 @@ function loadCheatDayDates() {
   }
 }
 
+function loadDismissedRecordReminders() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(dismissedRecordReminderStorageKey) || "[]");
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((id): id is string => typeof id === "string");
+  } catch {
+    return [];
+  }
+}
+
+type RecordReminder = {
+  id: string;
+  title: string;
+  message: string;
+  mealType: MealType;
+};
+
+const recordReminderSlots: Array<{ mealType: MealType; hour: number; title: string; label: string }> = [
+  { mealType: "breakfast", hour: 10, title: "朝の記録を忘れていませんか？", label: "朝食" },
+  { mealType: "lunch", hour: 14, title: "昼の記録を忘れていませんか？", label: "昼食" },
+  { mealType: "dinner", hour: 20, title: "夜の記録を忘れていませんか？", label: "夕食" },
+];
+
+function getRecordReminder(params: {
+  appDate: string;
+  actualAppDate: string;
+  currentTime: Date;
+  todayEntries: FoodEntry[];
+  dismissedIds: string[];
+}): RecordReminder | undefined {
+  if (params.appDate !== params.actualAppDate) return undefined;
+  const dismissed = new Set(params.dismissedIds);
+  const loggedMealTypes = new Set(params.todayEntries.map((entry) => entry.meal_type));
+  const currentHour = params.currentTime.getHours();
+  const slot = [...recordReminderSlots]
+    .reverse()
+    .find((candidate) => currentHour >= candidate.hour && !loggedMealTypes.has(candidate.mealType) && !dismissed.has(`${params.appDate}-${candidate.mealType}`));
+  if (!slot) return undefined;
+  return {
+    id: `${params.appDate}-${slot.mealType}`,
+    mealType: slot.mealType,
+    title: slot.title,
+    message: `${slot.label}がまだ記録されていません。次に開いた時でも、ここからすぐ追加できます。`,
+  };
+}
+
 function HomeTab(props: {
   profile?: Profile;
   goal?: Goal;
@@ -1584,6 +1658,7 @@ function HomeTab(props: {
   latestWeight?: WeightLog;
   weightLogs: WeightLog[];
   backupInfo: BackupInfo;
+  recordReminder?: RecordReminder;
   needsGoalTargetPeriod: boolean;
   setTab: (tab: Tab) => void;
   openGoalSettings: () => void;
@@ -1591,6 +1666,7 @@ function HomeTab(props: {
   openTodayWorkoutLog: () => void;
   openAiReport: () => void;
   openBackup: () => void;
+  dismissRecordReminder: (id: string) => void;
   latestUpdate?: AppUpdate;
   hasUnreadUpdate: boolean;
   showStaleAppPrompt: boolean;
@@ -1796,6 +1872,19 @@ function HomeTab(props: {
         </div>
       )}
 
+      {props.recordReminder && (
+        <div className="home-notice home-reminder-notice flex items-center gap-3 px-4 py-3">
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-bold">{props.recordReminder.title}</p>
+            <p className="mt-1 text-xs leading-relaxed text-moss">{props.recordReminder.message}</p>
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            <button className="secondary-button px-3 py-2 text-xs" onClick={() => props.dismissRecordReminder(props.recordReminder!.id)}>あとで</button>
+            <button className="primary-button px-3 py-2 text-xs" onClick={() => props.setTab("food")}>記録</button>
+          </div>
+        </div>
+      )}
+
       {props.backupInfo.level !== "ok" && (
         <button className="home-notice flex w-full items-center gap-3 px-4 py-3 text-left" onClick={props.openBackup}>
           <div className="min-w-0 flex-1">
@@ -1836,7 +1925,7 @@ function HomeTab(props: {
 
       <div className="home-action-row">
         <button className="home-primary-action" onClick={() => props.setTab("food")}>食事を記録 <ChevronRight size={17} /></button>
-        <button className="home-secondary-action" onClick={() => props.setTab("workout")}>ワークアウトを記録 <ChevronRight size={17} /></button>
+        <button className="home-secondary-action" onClick={() => props.setTab("workout")}>ワークアウト記録 <ChevronRight size={17} /></button>
       </div>
       <div className="flex justify-center gap-3 text-xs font-semibold text-moss/80">
         <button className="px-1.5 py-1" onClick={() => setIsPerfectFoodOpen(true)}>ぴったりフード</button>
