@@ -3952,7 +3952,7 @@ function SettingsTab(props: {
           </SelectField>
           <NumberInput label="年齢" value={goalDraft.age} onChange={(value) => setGoalDraft({ ...goalDraft, age: value })} />
           <NumberInput label="目標体重" value={goalDraft.target_weight_kg} step={0.1} onChange={(value) => setGoalDraft({ ...goalDraft, target_weight_kg: value })} />
-          <NumberInput label="目標体脂肪 % (0=未設定)" labelAction={<GoalHelpButton label="目標体脂肪率のヘルプ" onClick={() => setGoalHelpTopic("targetBodyFat")} />} value={goalDraft.target_body_fat_percentage} step={0.1} onChange={(value) => setGoalDraft({ ...goalDraft, target_body_fat_percentage: clampBodyFat(value) })} />
+          <NumberInput label="目標体脂肪 %" labelAction={<GoalHelpButton label="目標体脂肪率のヘルプ" onClick={() => setGoalHelpTopic("targetBodyFat")} />} value={goalDraft.target_body_fat_percentage} step={0.1} zeroDisplayLabel="自動" onChange={(value) => setGoalDraft({ ...goalDraft, target_body_fat_percentage: clampBodyFat(value) })} />
           <SelectField label="目標達成日" hint="体重差からkcal補正">
             <input
               type="date"
@@ -5462,17 +5462,18 @@ function TapSliderControl({ label, value, suffix, step, min, max, onChange }: {
   );
 }
 
-function NumberInput({ label, labelAction, value, step = 1, onChange }: { label: string; labelAction?: ReactNode; value: number; step?: number; onChange: (value: number) => void }) {
-  const [inputValue, setInputValue] = useState(String(value));
+function NumberInput({ label, labelAction, value, step = 1, zeroDisplayLabel, onChange }: { label: string; labelAction?: ReactNode; value: number; step?: number; zeroDisplayLabel?: string; onChange: (value: number) => void }) {
+  const getDisplayValue = (nextValue: number) => zeroDisplayLabel && nextValue === 0 ? "" : String(nextValue);
+  const [inputValue, setInputValue] = useState(getDisplayValue(value));
   useEffect(() => {
-    setInputValue(String(value));
-  }, [value]);
+    setInputValue(getDisplayValue(value));
+  }, [value, zeroDisplayLabel]);
   const decimalPlaces = step.toString().includes(".") ? step.toString().split(".")[1].length : 0;
   const normalize = (nextValue: number) => Number(nextValue.toFixed(decimalPlaces));
   const commit = (nextValue: number) => {
     if (!Number.isFinite(nextValue)) return;
     const normalized = normalize(nextValue);
-    setInputValue(String(normalized));
+    setInputValue(getDisplayValue(normalized));
     onChange(normalized);
   };
   const current = Number.parseFloat(inputValue);
@@ -5493,8 +5494,9 @@ function NumberInput({ label, labelAction, value, step = 1, onChange }: { label:
           inputMode="decimal"
           step={step}
           value={inputValue}
+          placeholder={value === 0 ? zeroDisplayLabel : undefined}
           onBlur={() => {
-            if (inputValue === "" || inputValue === "-" || inputValue === ".") setInputValue(String(value));
+            if (inputValue === "" || inputValue === "-" || inputValue === ".") setInputValue(getDisplayValue(value));
           }}
           onChange={(event) => {
             const nextValue = event.target.value;
