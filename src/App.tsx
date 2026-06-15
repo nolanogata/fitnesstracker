@@ -3947,6 +3947,30 @@ function SettingsTab(props: {
     goalDraft.manual_fat_g ? `F ${goalDraft.manual_fat_g}g` : "",
     goalDraft.manual_carbs_g ? `C ${goalDraft.manual_carbs_g}g` : "",
   ].filter(Boolean).join(" / ") || "すべて自動";
+  const saveGoalSettings = async () => {
+    if (!props.profile) return;
+    const timestamp = nowIso();
+    await Promise.all(props.goals.filter((goal) => goal.is_active).map((goal) => db.goals.update(goal.id, { is_active: false, end_date: addDays(todayAppDate(), -1), updated_at: timestamp })));
+    const goal = buildGoal({
+      profile: props.profile,
+      phase: goalDraft.phase,
+      activity_level: goalDraft.activity_level,
+      age: goalDraft.age,
+      target_weight_kg: goalDraft.target_weight_kg,
+      target_body_fat_percentage: goalDraft.target_body_fat_percentage || undefined,
+      target_date: goalDraft.target_date || undefined,
+      manual_target_calories: goalDraft.manual_target_calories || undefined,
+      manual_protein_g: goalDraft.manual_protein_g || undefined,
+      manual_fat_g: goalDraft.manual_fat_g || undefined,
+      manual_carbs_g: goalDraft.manual_carbs_g || undefined,
+      target_workouts_per_week: goalDraft.target_workouts_per_week,
+      target_cardio_sessions_per_week: goalDraft.target_cardio_sessions_per_week,
+    });
+    await db.goals.put(goal);
+    await db.settings.update("local", { active_goal_id: goal.id, updated_at: timestamp });
+    await props.refresh();
+    props.showToast("ゴールを保存しました");
+  };
 
   const aiReportSection = (
     <section className={`compact-card p-4 ${props.focus === "ai" ? "border-2 border-leaf" : ""}`}>
@@ -4027,7 +4051,10 @@ function SettingsTab(props: {
       </section>
 
       <section ref={goalSectionRef} className={`compact-card scroll-mt-24 p-4 ${props.focus === "goal" ? "border-2 border-leaf" : ""}`}>
-        <h2 className="font-bold">ゴール設定</h2>
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="font-bold">ゴール設定</h2>
+          <button className="primary-button shrink-0 px-3 py-2 text-xs" onClick={saveGoalSettings}><Save size={15} />保存</button>
+        </div>
         <div className="mt-3 grid grid-cols-2 gap-2">
           <SelectField label="フェーズ" hint="体重・筋量をどう動かしたいか" labelAction={<GoalHelpButton label="フェーズのヘルプ" onClick={() => setGoalHelpTopic("phase")} />}>
             <select value={goalDraft.phase} onChange={(event) => setGoalDraft({ ...goalDraft, phase: event.target.value as Phase })}>
@@ -4067,30 +4094,6 @@ function SettingsTab(props: {
           )}
         </p>
         <p className="mt-2 text-xs text-moss">自動計算は現在体重から消費カロリーを出し、目標体重・目標体脂肪率・目標達成日・フェーズ・運動強度・総カロリーからP/F/Cと体組成の目標差分を出します。kcal/P/F/Cを手動上書きしている場合、その値は保存時に上書きしません。</p>
-        <button className="primary-button mt-3 w-full" onClick={async () => {
-          if (!props.profile) return;
-          const timestamp = nowIso();
-          await Promise.all(props.goals.filter((goal) => goal.is_active).map((goal) => db.goals.update(goal.id, { is_active: false, end_date: addDays(todayAppDate(), -1), updated_at: timestamp })));
-          const goal = buildGoal({
-            profile: props.profile,
-            phase: goalDraft.phase,
-            activity_level: goalDraft.activity_level,
-            age: goalDraft.age,
-            target_weight_kg: goalDraft.target_weight_kg,
-            target_body_fat_percentage: goalDraft.target_body_fat_percentage || undefined,
-            target_date: goalDraft.target_date || undefined,
-            manual_target_calories: goalDraft.manual_target_calories || undefined,
-            manual_protein_g: goalDraft.manual_protein_g || undefined,
-            manual_fat_g: goalDraft.manual_fat_g || undefined,
-            manual_carbs_g: goalDraft.manual_carbs_g || undefined,
-            target_workouts_per_week: goalDraft.target_workouts_per_week,
-            target_cardio_sessions_per_week: goalDraft.target_cardio_sessions_per_week,
-          });
-          await db.goals.put(goal);
-          await db.settings.update("local", { active_goal_id: goal.id, updated_at: timestamp });
-          await props.refresh();
-          props.showToast("ゴールを保存しました");
-        }}><Save size={17} />保存</button>
       </section>
 
       <section ref={myMenuSectionRef} className={`compact-card scroll-mt-24 p-4 ${props.focus === "myMenu" ? "border-2 border-leaf" : ""}`}>
