@@ -1684,6 +1684,7 @@ function HomeTab(props: {
   const [isReloadingLatest, setIsReloadingLatest] = useState(false);
   const [isCheckInOpen, setIsCheckInOpen] = useState(false);
   const [isPerfectFoodOpen, setIsPerfectFoodOpen] = useState(false);
+  const [showMacroRemaining, setShowMacroRemaining] = useState(false);
   const [pullOffset, setPullOffset] = useState(0);
   const [isPullRefreshing, setIsPullRefreshing] = useState(false);
   const pullStartYRef = useRef<number | undefined>(undefined);
@@ -1721,12 +1722,13 @@ function HomeTab(props: {
     { label: "C", value: props.dayTotals.carbs, target: props.goal?.target_carbs_g ?? 0 },
   ].map((macro) => {
     const percent = macro.target > 0 ? Math.round((macro.value / macro.target) * 100) : undefined;
+    const remaining = macro.target > 0 ? round1(macro.target - macro.value) : undefined;
     const tone = typeof percent !== "number"
       ? "neutral"
       : macro.label === "P"
         ? percent < 80 ? "over" : "safe"
         : percent > 110 ? "over" : percent >= 80 ? "safe" : "low";
-    return { ...macro, percent, tone };
+    return { ...macro, percent, remaining, tone };
   });
   const saveCheckIn = async () => {
     const timestamp = nowIso();
@@ -1919,12 +1921,26 @@ function HomeTab(props: {
         </div>
         <div className="home-macro-row mt-5">
           {macroStats.map((macro) => (
-            <div className={`home-macro-pill home-macro-${macro.tone}`} key={macro.label}>
+            <button
+              type="button"
+              className={`home-macro-pill home-macro-${macro.tone} ${showMacroRemaining ? "home-macro-remaining-active" : ""}`}
+              key={macro.label}
+              onClick={() => setShowMacroRemaining((current) => !current)}
+              aria-label={`PFC表示を${showMacroRemaining ? "摂取量と達成率" : "残りグラム"}に切り替え`}
+            >
               <span className="home-macro-dot" />
               <span className="font-bold">{macro.label}</span>
-              <span className="home-macro-grams">{round1(macro.value)}g</span>
-              <span className="home-macro-percent">{typeof macro.percent === "number" ? `${macro.percent}%` : "-"}</span>
-            </div>
+              {showMacroRemaining ? (
+                <span className="home-macro-grams home-macro-remaining">
+                  {typeof macro.remaining === "number" ? `${macro.remaining >= 0 ? "残り" : "超過"} ${round1(Math.abs(macro.remaining))}g` : "-"}
+                </span>
+              ) : (
+                <>
+                  <span className="home-macro-grams">{round1(macro.value)}g</span>
+                  <span className="home-macro-percent">{typeof macro.percent === "number" ? `${macro.percent}%` : "-"}</span>
+                </>
+              )}
+            </button>
           ))}
         </div>
       </section>
