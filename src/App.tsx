@@ -2333,26 +2333,25 @@ function FoodTab(props: {
     if (showFoodFilterIntro) dismissFoodFilterIntro();
   };
   useEffect(() => {
-    const target = foodSearchFormRef.current;
-    if (!target) return undefined;
-    if (typeof IntersectionObserver === "undefined") {
-      const update = () => setIsFoodSearchHidden(target.getBoundingClientRect().bottom < 72);
-      update();
-      window.addEventListener("scroll", update, { passive: true });
-      window.addEventListener("resize", update);
-      return () => {
-        window.removeEventListener("scroll", update);
-        window.removeEventListener("resize", update);
-      };
-    }
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        setIsFoodSearchHidden(!entry.isIntersecting);
-      },
-      { root: null, rootMargin: "-78px 0px 0px 0px", threshold: 0.02 },
-    );
-    observer.observe(target);
-    return () => observer.disconnect();
+    const update = () => {
+      const target = foodSearchFormRef.current;
+      if (!target) {
+        setIsFoodSearchHidden(false);
+        return;
+      }
+      setIsFoodSearchHidden(target.getBoundingClientRect().bottom < 72);
+    };
+    window.requestAnimationFrame(update);
+    window.addEventListener("scroll", update, { passive: true });
+    document.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("resize", update);
+    const interval = window.setInterval(update, 250);
+    return () => {
+      window.removeEventListener("scroll", update);
+      document.removeEventListener("scroll", update);
+      window.removeEventListener("resize", update);
+      window.clearInterval(interval);
+    };
   }, []);
   useEffect(() => {
     if (props.focus !== "todayLog") return;
@@ -2408,7 +2407,6 @@ function FoodTab(props: {
   const isSortFoodByFitActive = sortFoodByFit && canSortFoodByFit;
   const isFoodFitFilterActive = showGeneralFoodsOnly || (hideOverGoalItems && canUseOverGoalFilter) || (showFoodBalance && canShowFoodBalance) || isSortFoodByFitActive;
   const searchPlaceholder = isChainScopedSearch ? `${brand}内を検索` : "食品・ブランド検索";
-  const floatingSearchLabel = query.trim() || searchPlaceholder;
   const shouldShowFloatingSearch = mode !== "manual" && !selected && !editingEntry && isFoodSearchHidden;
   const results = useMemo(() => {
     const needle = query.trim().toLowerCase();
@@ -2835,9 +2833,8 @@ function FoodTab(props: {
           onClick={focusFoodSearch}
           aria-label="検索バーへ戻る"
         >
-          <Search size={17} />
-          <span className="truncate">{floatingSearchLabel}</span>
-          <span className="floating-food-search-action">検索</span>
+          <ArrowUp size={15} />
+          <span>検索に戻る</span>
         </button>
       )}
 
