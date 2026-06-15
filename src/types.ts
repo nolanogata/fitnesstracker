@@ -13,6 +13,16 @@ export type DataSource = "official" | "unofficial" | "estimated" | "quick_estima
 export type Confidence = "high" | "medium" | "low";
 export type MealType = "breakfast" | "lunch" | "dinner" | "snack";
 export type ThemeMode = "system" | "light" | "dark";
+export type SpecialModeId = "hokkaido_trip" | string;
+
+export type SpecialModeSettings = {
+  id: SpecialModeId;
+  enabled: boolean;
+  start_month_day: string;
+  end_month_day: string;
+  test_active_until?: string;
+  updated_at?: string;
+};
 
 export type Settings = {
   id: string;
@@ -21,6 +31,7 @@ export type Settings = {
   theme_mode?: ThemeMode;
   active_goal_id?: string;
   hidden_workout_template_ids?: string[];
+  special_modes?: SpecialModeSettings[];
   created_at: string;
   updated_at: string;
 };

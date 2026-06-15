@@ -259,7 +259,8 @@ button {
   --card-glow-strong: 0 24px 58px rgba(140, 167, 152, 0.24), 0 16px 38px rgba(221, 229, 240, 0.14), 0 4px 12px rgba(44, 56, 48, 0.06);
 }
 
-.home-shell-cheat {
+.home-shell-cheat,
+.home-shell-special {
   --card-glow: 0 18px 44px rgba(171, 201, 183, 0.18), 0 12px 32px rgba(201, 214, 235, 0.16), 0 2px 8px rgba(44, 56, 48, 0.05);
   --card-glow-strong: 0 24px 58px rgba(171, 201, 183, 0.24), 0 16px 38px rgba(201, 214, 235, 0.2), 0 4px 12px rgba(44, 56, 48, 0.06);
 }
@@ -288,6 +289,7 @@ button {
 
 .home-header-reload,
 .home-header-cheat,
+.home-header-special,
 .home-header-today {
   display: inline-flex;
   width: 2.75rem;
@@ -310,6 +312,16 @@ button {
   line-height: 1;
 }
 
+.home-header-special {
+  border-color: rgba(111, 143, 125, 0.34);
+  background:
+    radial-gradient(circle at 30% 16%, rgba(255, 255, 255, 0.75), transparent 30%),
+    linear-gradient(135deg, rgba(201, 214, 235, 0.82), rgba(141, 177, 158, 0.74));
+  color: #294234;
+  font-size: 0.9rem;
+  font-weight: 950;
+}
+
 .home-header-today {
   width: auto;
   min-width: 2.75rem;
@@ -327,6 +339,14 @@ button {
   background: linear-gradient(135deg, rgba(255, 107, 107, 0.9) 0%, rgba(255, 209, 102, 0.9) 30%, rgba(78, 205, 196, 0.9) 62%, rgba(123, 97, 255, 0.88) 100%);
   color: #fff;
   text-shadow: 0 1px 8px rgba(36, 40, 32, 0.28);
+}
+
+.app-status-special {
+  border-color: rgba(111, 143, 125, 0.34);
+  background:
+    radial-gradient(circle at 30% 12%, rgba(255, 255, 255, 0.72), transparent 32%),
+    linear-gradient(135deg, rgba(221, 232, 225, 0.86), rgba(221, 229, 240, 0.74));
+  color: #294234;
 }
 
 .home-header-reload:active {
@@ -468,6 +488,46 @@ button {
     var(--glass-highlight);
 }
 
+.home-hero-trip {
+  position: relative;
+  overflow: hidden;
+  border-color: rgba(201, 214, 235, 0.62);
+  background:
+    radial-gradient(circle at 82% 18%, rgba(255, 255, 255, 0.66), transparent 22%),
+    linear-gradient(135deg, rgba(221, 229, 240, 0.8), rgba(221, 232, 225, 0.76) 45%, rgba(246, 235, 221, 0.68)),
+    rgba(255, 255, 255, 0.7);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.72),
+    0 0 22px rgba(111, 143, 125, 0.18),
+    0 0 34px rgba(126, 151, 177, 0.18),
+    var(--glass-highlight);
+}
+
+.home-hero-trip::after {
+  position: absolute;
+  right: 1.15rem;
+  bottom: 1rem;
+  width: 7.6rem;
+  height: 5.2rem;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.36), rgba(255, 255, 255, 0.08)),
+    rgba(111, 143, 125, 0.16);
+  clip-path: polygon(16% 44%, 30% 22%, 56% 12%, 76% 22%, 88% 42%, 80% 64%, 58% 58%, 48% 78%, 26% 76%, 12% 62%);
+  content: "";
+  filter: blur(0.2px);
+  pointer-events: none;
+}
+
+.home-hero-trip > * {
+  position: relative;
+  z-index: 1;
+}
+
+.home-trip-badge {
+  background: rgba(221, 232, 225, 0.58);
+  color: #294234;
+}
+
 .home-hero-cheat::before {
   position: absolute;
   inset: 0;
@@ -497,6 +557,44 @@ button {
 
 .home-progress-cheat {
   background: linear-gradient(90deg, #ff6b6b 0%, #ffd166 24%, #5ad66f 48%, #4ecdc4 68%, #7b61ff 100%);
+}
+
+.special-mode-food-banner,
+.special-mode-settings {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  border: 1px solid rgba(111, 143, 125, 0.28);
+  border-radius: 22px;
+  background:
+    radial-gradient(circle at 18% 0%, rgba(255, 255, 255, 0.72), transparent 28%),
+    linear-gradient(135deg, rgba(221, 232, 225, 0.72), rgba(221, 229, 240, 0.56)),
+    var(--glass-bg);
+  padding: 0.8rem 0.9rem;
+  color: var(--text-secondary);
+  box-shadow: 0 12px 28px rgba(44, 56, 48, 0.08), var(--glass-highlight);
+  backdrop-filter: blur(24px) saturate(140%);
+  -webkit-backdrop-filter: blur(24px) saturate(140%);
+}
+
+.special-mode-food-banner:active {
+  transform: scale(0.985);
+}
+
+.special-mode-test-button {
+  display: inline-flex;
+  min-height: 2.35rem;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(111, 143, 125, 0.26);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.6);
+  padding: 0 0.8rem;
+  color: #294234;
+  font-size: 0.72rem;
+  font-weight: 900;
+  box-shadow: 0 8px 18px rgba(44, 56, 48, 0.07), var(--glass-highlight);
 }
 
 .home-pull-shell {
@@ -1738,11 +1836,36 @@ button {
   background: linear-gradient(90deg, rgba(255, 255, 255, 0.08), transparent 24%, rgba(255, 255, 255, 0.06) 52%, transparent 76%);
 }
 
+.theme-dark .home-hero-trip {
+  border-color: rgba(159, 190, 169, 0.22);
+  background:
+    radial-gradient(circle at 82% 18%, rgba(255, 255, 255, 0.1), transparent 22%),
+    linear-gradient(135deg, rgba(85, 109, 98, 0.28), rgba(52, 72, 84, 0.18) 48%, rgba(114, 95, 66, 0.16)),
+    var(--glass-bg);
+  box-shadow:
+    0 0 0 1px rgba(159, 190, 169, 0.18),
+    0 0 26px rgba(159, 190, 169, 0.16),
+    0 0 34px rgba(126, 151, 177, 0.12),
+    0 18px 42px rgba(0, 0, 0, 0.34),
+    var(--glass-highlight);
+}
+
+.theme-dark .home-hero-trip::after {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.11), rgba(255, 255, 255, 0.03)),
+    rgba(159, 190, 169, 0.12);
+}
+
 .theme-dark .home-cheat-badge {
   border-color: rgba(255, 255, 255, 0.18);
   background: rgba(255, 255, 255, 0.1);
   color: #f7fbf8;
   box-shadow: 0 8px 18px rgba(0, 0, 0, 0.18), var(--glass-highlight);
+}
+
+.theme-dark .home-trip-badge {
+  background: rgba(159, 190, 169, 0.16);
+  color: #edf4ee;
 }
 
 .theme-dark .home-macro-pill {
@@ -1993,6 +2116,7 @@ button {
 .theme-dark .app-status-pill,
 .theme-dark .home-status-pill,
 .theme-dark .home-header-cheat,
+.theme-dark .home-header-special,
 .theme-dark .home-header-today,
 .theme-dark .home-header-reload,
 .theme-dark .icon-button,
@@ -2009,6 +2133,16 @@ button {
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.2), var(--glass-highlight);
 }
 
+.theme-dark .home-header-special,
+.theme-dark .app-status-special {
+  border-color: rgba(159, 190, 169, 0.26);
+  background:
+    radial-gradient(circle at 30% 12%, rgba(255, 255, 255, 0.12), transparent 34%),
+    linear-gradient(135deg, rgba(159, 190, 169, 0.18), rgba(126, 151, 177, 0.12)),
+    rgba(255, 255, 255, 0.08);
+  color: #dcebe0;
+}
+
 .theme-dark .home-header-cheat.home-header-cheat-active {
   border-color: rgba(255, 255, 255, 0.62);
   background:
@@ -2020,6 +2154,23 @@ button {
     0 0 18px rgba(255, 107, 107, 0.34),
     0 0 26px rgba(78, 205, 196, 0.24),
     0 12px 28px rgba(0, 0, 0, 0.34);
+}
+
+.theme-dark .special-mode-food-banner,
+.theme-dark .special-mode-settings {
+  border-color: rgba(159, 190, 169, 0.22);
+  background:
+    radial-gradient(circle at 18% 0%, rgba(255, 255, 255, 0.1), transparent 28%),
+    linear-gradient(135deg, rgba(159, 190, 169, 0.14), rgba(126, 151, 177, 0.08)),
+    rgba(255, 255, 255, 0.06);
+  color: rgba(218, 231, 222, 0.86);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.24), var(--glass-highlight);
+}
+
+.theme-dark .special-mode-test-button {
+  border-color: rgba(159, 190, 169, 0.22);
+  background: rgba(255, 255, 255, 0.08);
+  color: #dcebe0;
 }
 
 .theme-dark .primary-button,

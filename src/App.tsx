@@ -56,6 +56,7 @@ import type {
   Phase,
   Profile,
   Settings as AppSettings,
+  SpecialModeSettings,
   TemplateExercise,
   ThemeMode,
   WeightLog,
@@ -76,7 +77,7 @@ import { getWeeklyWorkoutStatus, type WeeklyWorkoutStatus } from "./lib/workoutS
 type Tab = "home" | "food" | "workout" | "records" | "settings";
 type FoodMode = "search" | "favorite" | "chain" | "category" | "quick" | "manual" | "personal";
 type WorkoutMode = "favorite" | "preset" | "body" | "equipment" | "previous" | "search";
-type FoodFocus = "todayLog" | undefined;
+type FoodFocus = "todayLog" | "specialMode" | undefined;
 type WorkoutFocus = "dateLog" | undefined;
 type SettingsFocus = "ai" | "backup" | "myMenu" | "goal" | undefined;
 type HistoryGrouping = "day" | "week" | "month";
@@ -154,6 +155,19 @@ type PerfectFoodSuggestionGroup = {
   label: string;
   items: MenuItem[];
 };
+type SpecialModeDefinition = {
+  id: "hokkaido_trip";
+  label: string;
+  shortLabel: string;
+  foodQuery: string;
+  startMonthDay: string;
+  endMonthDay: string;
+};
+type ActiveSpecialMode = SpecialModeDefinition & {
+  startDate: string;
+  endDate: string;
+  isTest: boolean;
+};
 
 const mealLabels: Record<MealType, string> = {
   breakfast: "朝",
@@ -203,6 +217,16 @@ const genericCategories: Record<string, string[]> = {
 };
 const commercialGeneralCategories = new Set(["チェーン店", "コンビニ", "冷凍食品", "プロテイン", "サプリ"]);
 const generalFoodCategoryLabels = [...Object.keys(genericCategories).filter((category) => !commercialGeneralCategories.has(category)), "ざっくり"];
+const specialModeDefinitions: SpecialModeDefinition[] = [
+  {
+    id: "hokkaido_trip",
+    label: "北海道旅行",
+    shortLabel: "北海道",
+    foodQuery: "北海道旅行",
+    startMonthDay: "06-24",
+    endMonthDay: "06-28",
+  },
+];
 
 const emptyManual: ManualFoodDraft = {
   entry_kind: "meal",
@@ -242,6 +266,51 @@ function settingsGoalDraftFrom(activeGoal?: Goal, profile?: Profile) {
 }
 type SettingsGoalDraft = ReturnType<typeof settingsGoalDraftFrom>;
 
+function getSpecialModeSettings(settings?: AppSettings): SpecialModeSettings[] {
+  return specialModeDefinitions.map((definition) => {
+    const saved = settings?.special_modes?.find((mode) => mode.id === definition.id);
+    return {
+      id: definition.id,
+      enabled: saved?.enabled ?? true,
+      start_month_day: saved?.start_month_day ?? definition.startMonthDay,
+      end_month_day: saved?.end_month_day ?? definition.endMonthDay,
+      test_active_until: saved?.test_active_until,
+      updated_at: saved?.updated_at,
+    };
+  });
+}
+
+function getActiveSpecialMode(appDate: string, settings: SpecialModeSettings[], now = new Date()): ActiveSpecialMode | undefined {
+  return specialModeDefinitions
+    .map((definition) => {
+      const modeSettings = settings.find((mode) => mode.id === definition.id);
+      if (!modeSettings?.enabled) return undefined;
+      const testUntil = modeSettings.test_active_until ? new Date(modeSettings.test_active_until) : undefined;
+      const isTest = !!testUntil && testUntil.getTime() > now.getTime() && appDate === todayAppDate(3, now);
+      const startDate = dateFromMonthDay(appDate, modeSettings.start_month_day);
+      const endDate = dateFromMonthDay(appDate, modeSettings.end_month_day, modeSettings.start_month_day);
+      const inPeriod = appDate >= startDate && appDate <= endDate;
+      if (!isTest && !inPeriod) return undefined;
+      return { ...definition, startDate, endDate, isTest };
+    })
+    .find(Boolean);
+}
+
+function getSpecialModeDaysInRange(start: string, end: string, settings: SpecialModeSettings[], now = new Date()) {
+  return dateRange(start, end)
+    .map((date) => {
+      const mode = getActiveSpecialMode(date, settings, now);
+      return mode ? { date, label: mode.label, isTest: mode.isTest } : undefined;
+    })
+    .filter((item): item is { date: string; label: string; isTest: boolean } => !!item);
+}
+
+function dateFromMonthDay(referenceDate: string, monthDay: string, startMonthDay?: string) {
+  const year = Number(referenceDate.slice(0, 4));
+  const nextYear = startMonthDay && monthDay < startMonthDay;
+  return `${year + (nextYear ? 1 : 0)}-${monthDay}`;
+}
+
 const backupStorageKey = "phase-log-last-backup-at";
 const updateSeenStorageKey = "phase-log-seen-update-id";
 const foodFitFilterSeenStorageKey = "phase-log-food-fit-filter-seen-2026-06-14";
@@ -253,6 +322,17 @@ const weightStepOptions = [1, 2.5, 5, 10];
 const finisherPulseIntensity = "finisher_pulse";
 const finisherPulseNote = "仕上げパルス（部分可動域・素早く）";
 const appUpdates: AppUpdate[] = [
+  {
+    id: "2026-06-16-hokkaido-special-mode",
+    title: "北海道旅行モードを追加",
+    date: "2026-06-16",
+    items: [
+      "6/24〜6/28は北海道旅行モードが自動で有効になり、Homeのカロリー評価を旅行中の例外表示にします。",
+      "Foodでは北海道旅行タグのメニューを上位表示し、右上の北海道モードボタンから旅行メニュー検索へ戻れます。",
+      "Settingsのゴールトラッカー情報から、5回タップで北海道旅行モードの動作テストを開始できます。",
+      "AI相談レポートに、北海道旅行中は通常日とは分けて評価するよう明記します。",
+    ],
+  },
   {
     id: "2026-06-15-record-reminder-banner",
     title: "記録リマインダーを追加",
@@ -1054,6 +1134,15 @@ function App() {
   const latestUpdate = appUpdates[0];
   const themeMode = settings?.theme_mode ?? "system";
   const resolvedTheme: "light" | "dark" = themeMode === "system" ? (prefersDarkTheme ? "dark" : "light") : themeMode;
+  const specialModeSettings = useMemo(() => getSpecialModeSettings(settings), [settings]);
+  const activeSpecialMode = useMemo(() => getActiveSpecialMode(appDate, specialModeSettings, currentTime), [appDate, currentTime, specialModeSettings]);
+  const openSpecialFoodMode = () => {
+    if (!activeSpecialMode) return;
+    setSettingsFocus(undefined);
+    setWorkoutFocus(undefined);
+    setFoodFocus("specialMode");
+    setTab("food");
+  };
 
   const refresh = async () => {
     const [nextSettings, nextProfile, nextGoals, nextMenu, nextFood, nextWeights, nextExercises, nextTemplates, nextSessions, nextWorkoutExercises, nextSets] =
@@ -1198,9 +1287,13 @@ function App() {
   const target = useMemo(() => activeGoal ?? defaultGoal(profile), [activeGoal, profile]);
   const needsGoalTargetPeriod = !!activeGoal && (!activeGoal.target_date || typeof activeGoal.target_body_fat_percentage !== "number");
   const isCheatDay = cheatDayDates.includes(appDate);
+  const isSpecialModeDay = !!activeSpecialMode;
+  const isExceptionDay = isCheatDay || isSpecialModeDay;
   const targetCalories = target?.target_calories ?? 0;
   const homeTone = isCheatDay
     ? "cheat"
+    : isSpecialModeDay
+      ? "special"
     : targetCalories <= 0
     ? "neutral"
     : dayTotals.calories > targetCalories
@@ -1336,6 +1429,16 @@ function App() {
                   今日
                 </button>
               )}
+              {activeSpecialMode && (
+                <button
+                  className="home-header-special"
+                  aria-label={`${activeSpecialMode.label}メニューを開く`}
+                  onClick={openSpecialFoodMode}
+                  title={`${activeSpecialMode.label}メニュー`}
+                >
+                  北
+                </button>
+              )}
               <button
                 className={`home-header-cheat ${isCheatDay ? "home-header-cheat-active" : ""}`}
                 aria-pressed={isCheatDay}
@@ -1353,6 +1456,10 @@ function App() {
             isEditingPastDate ? (
               <button className="app-status-pill" onClick={() => setSelectedAppDate(undefined)}>
                 {formatJapaneseDate(appDate)} / 今日へ
+              </button>
+            ) : activeSpecialMode ? (
+              <button className="app-status-pill app-status-special" onClick={openSpecialFoodMode}>
+                {activeSpecialMode.shortLabel}モード
               </button>
             ) : (
               <div className="app-status-pill">
@@ -1386,6 +1493,8 @@ function App() {
             workoutSets={workoutSets}
             weeklyWorkoutStatus={weeklyWorkoutStatus}
             isCheatDay={isCheatDay}
+            activeSpecialMode={activeSpecialMode}
+            isExceptionDay={isExceptionDay}
             isEditingPastDate={isEditingPastDate}
             latestWeight={latestWeight}
             weightLogs={weightLogs}
@@ -1445,6 +1554,7 @@ function App() {
             appDate={appDate}
             goal={target}
             dayTotals={dayTotals}
+            activeSpecialMode={activeSpecialMode}
             focus={foodFocus}
             openMyMenuSettings={() => {
               setSettingsFocus("myMenu");
@@ -1480,6 +1590,7 @@ function App() {
             goal={target}
             appDate={appDate}
             cheatDayDates={cheatDayDates}
+            specialModeSettings={specialModeSettings}
             foodEntries={foodEntries}
             weightLogs={weightLogs}
             workoutSessions={workoutSessions}
@@ -1500,6 +1611,8 @@ function App() {
             cheatDayDates={cheatDayDates}
             menuItems={menuItems}
             workoutTemplates={workoutTemplates}
+            specialModeSettings={specialModeSettings}
+            activeSpecialMode={activeSpecialMode}
             focus={settingsFocus}
             backupInfo={backupInfo}
             settings={settings}
@@ -1658,6 +1771,8 @@ function HomeTab(props: {
   workoutSets: WorkoutSet[];
   weeklyWorkoutStatus: WeeklyWorkoutStatus;
   isCheatDay: boolean;
+  activeSpecialMode?: ActiveSpecialMode;
+  isExceptionDay: boolean;
   isEditingPastDate: boolean;
   latestWeight?: WeightLog;
   weightLogs: WeightLog[];
@@ -1711,9 +1826,9 @@ function HomeTab(props: {
   const average7Trend = typeof average7Delta === "number" && Math.abs(average7Delta) >= 0.1 ? (average7Delta > 0 ? "up" : "down") : undefined;
   const calorieDelta = props.goal?.target_calories ? props.dayTotals.calories - props.goal.target_calories : undefined;
   const calorieDeltaText = typeof calorieDelta === "number" ? `${calorieDelta > 0 ? "+" : ""}${Math.round(calorieDelta)}` : "-";
-  const calorieDisplayText = props.isCheatDay ? "-" : calorieDeltaText;
-  const calorieMoodClass = props.isCheatDay ? "cheat" : typeof calorieDelta === "number" ? (calorieDelta > 0 ? "over" : Math.abs(calorieDelta) <= 100 ? "on-track" : "left") : "neutral";
-  const calorieMoodLabel = props.isCheatDay ? "cheat day" : typeof calorieDelta === "number" ? (calorieDelta > 0 ? "over" : Math.abs(calorieDelta) <= 100 ? "on track" : "left") : calorieState.label;
+  const calorieDisplayText = props.isExceptionDay ? "-" : calorieDeltaText;
+  const calorieMoodClass = props.isCheatDay ? "cheat" : props.activeSpecialMode ? "trip" : typeof calorieDelta === "number" ? (calorieDelta > 0 ? "over" : Math.abs(calorieDelta) <= 100 ? "on-track" : "left") : "neutral";
+  const calorieMoodLabel = props.isCheatDay ? "cheat day" : props.activeSpecialMode ? "travel mode" : typeof calorieDelta === "number" ? (calorieDelta > 0 ? "over" : Math.abs(calorieDelta) <= 100 ? "on track" : "left") : calorieState.label;
   const foodSummary = `${props.todayEntries.length}件 / ${props.dayTotals.calories} kcal`;
   const workoutSummary = todayWorkoutCalories > 0 ? `${props.todayWorkouts.length}回 / ${todayWorkoutCalories} kcal` : `${props.todayWorkouts.length}回`;
   const macroStats = [
@@ -1907,6 +2022,7 @@ function HomeTab(props: {
         <div className="flex items-center justify-between gap-3">
           <p className="text-sm font-semibold text-ink/80">今日のカロリー</p>
           {props.isCheatDay && <span className="home-cheat-badge">チートデー</span>}
+          {!props.isCheatDay && props.activeSpecialMode && <span className="home-cheat-badge home-trip-badge">{props.activeSpecialMode.label}</span>}
         </div>
         <div className="mt-6">
           <p className={`numeric-text text-[4.25rem] font-semibold leading-none tracking-normal ${calorieDelta && calorieDelta > 0 ? "text-clay" : "text-ink"}`}>
@@ -1914,9 +2030,14 @@ function HomeTab(props: {
           </p>
           <p className="mt-2 text-sm font-semibold text-moss">{calorieMoodLabel}</p>
           {props.isCheatDay && <p className="mt-1 text-sm font-bold text-ink">今日はチートデーです。</p>}
+          {!props.isCheatDay && props.activeSpecialMode && (
+            <p className="mt-1 text-sm font-bold text-ink">
+              {props.activeSpecialMode.label}中です。記録優先で、評価は参考扱いです。
+            </p>
+          )}
           <p className="numeric-text mt-1 text-sm text-moss">摂取 {props.dayTotals.calories} / 目標 {props.goal?.target_calories ?? "-"} kcal</p>
           <div className="mt-6 h-2 overflow-hidden rounded-full bg-white/55">
-            <div className={`h-full rounded-full ${props.isCheatDay ? "home-progress-cheat" : calorieDelta && calorieDelta > 0 ? "bg-clay" : "bg-moss"}`} style={{ width: `${caloriePercent}%` }} />
+            <div className={`h-full rounded-full ${props.isExceptionDay ? "home-progress-cheat" : calorieDelta && calorieDelta > 0 ? "bg-clay" : "bg-moss"}`} style={{ width: `${caloriePercent}%` }} />
           </div>
         </div>
         <div className="home-macro-row mt-5">
@@ -2282,6 +2403,7 @@ function FoodTab(props: {
   appDate: string;
   goal?: Goal;
   dayTotals: ReturnType<typeof sumFood>;
+  activeSpecialMode?: ActiveSpecialMode;
   focus?: FoodFocus;
   openMyMenuSettings: () => void;
   onFocusHandled: () => void;
@@ -2378,6 +2500,17 @@ function FoodTab(props: {
     }, 80);
     return () => window.clearTimeout(timer);
   }, [props.focus]);
+  useEffect(() => {
+    if (props.focus !== "specialMode" || !props.activeSpecialMode) return;
+    setMode("search");
+    setQuery(props.activeSpecialMode.foodQuery);
+    const timer = window.setTimeout(() => {
+      foodSearchInputRef.current?.focus({ preventScroll: true });
+      scrollToFoodResults();
+      props.onFocusHandled();
+    }, 80);
+    return () => window.clearTimeout(timer);
+  }, [props.focus, props.activeSpecialMode?.id]);
   const selectFoodItem = (item: MenuItem) => {
     setMultiplier(1);
     setSelected(item);
@@ -2450,7 +2583,7 @@ function FoodTab(props: {
         }
         return true;
       });
-    const sorted = dedupeMenuItemsBySource(base);
+    const sorted = sortSpecialModeFoodItems(dedupeMenuItemsBySource(base), props.activeSpecialMode);
     const matched = needle
       ? sorted.filter((item) => {
         const haystack = `${item.name} ${item.brand ?? ""} ${item.category} ${item.tags.join(" ")} ${item.serving_label ?? ""}`.toLowerCase();
@@ -2463,6 +2596,8 @@ function FoodTab(props: {
       : generalFiltered;
     const recommended = isSortFoodByFitActive
       ? [...filtered].sort((a, b) => {
+        const specialDiff = specialModeFoodRank(a, props.activeSpecialMode) - specialModeFoodRank(b, props.activeSpecialMode);
+        if (specialDiff !== 0) return specialDiff;
         const scoreDiff = perfectFoodScore(a, remainingNutrition) - perfectFoodScore(b, remainingNutrition);
         if (Math.abs(scoreDiff) > 0.0001) return scoreDiff;
         const sourceDiff = sourceRank(a.data_source) - sourceRank(b.data_source);
@@ -2485,6 +2620,7 @@ function FoodTab(props: {
     sortFoodByFit,
     canSortFoodByFit,
     isSortFoodByFitActive,
+    props.activeSpecialMode?.id,
     remainingNutrition.calories,
     remainingNutrition.protein,
     remainingNutrition.fat,
@@ -2739,6 +2875,21 @@ function FoodTab(props: {
             <span className="min-w-0 truncate">{brand}のメニュー内を検索中</span>
             <button className="shrink-0 text-ink" type="button" onClick={() => { setQuery(""); scrollToChainSection(); }}>チェーン変更</button>
           </div>
+        )}
+        {props.activeSpecialMode && mode !== "manual" && (
+          <button
+            className="special-mode-food-banner"
+            type="button"
+            onClick={() => {
+              setMode("search");
+              setQuery(props.activeSpecialMode!.foodQuery);
+              scrollToFoodResults();
+            }}
+          >
+            <span className="font-black">{props.activeSpecialMode.shortLabel}モード</span>
+            <span className="min-w-0 flex-1 truncate">旅行タグの候補を上位表示中</span>
+            <ChevronRight size={16} />
+          </button>
         )}
         {!isGlobalSearch && (
           <div className="grid grid-cols-3 gap-2">
@@ -3693,6 +3844,7 @@ function RecordsTab(props: {
   weeklyWorkoutStatus: WeeklyWorkoutStatus;
   showToast: (text: string) => void;
   onEditRecordDate: (date: string, targetTab: EditableRecordTab) => void;
+  specialModeSettings: SpecialModeSettings[];
 }) {
   const [historyGrouping, setHistoryGrouping] = useState<HistoryGrouping>("day");
   const [reportMonth, setReportMonth] = useState(() => monthKey(props.appDate));
@@ -3752,6 +3904,7 @@ function RecordsTab(props: {
       generatedAt,
       currentAppDate: props.appDate,
       cheatDayDates: props.cheatDayDates.filter((date) => date === selectedReportDate),
+      specialModeDays: getSpecialModeDaysInRange(selectedReportDate, selectedReportDate, props.specialModeSettings),
       workoutGrouping: "day",
       question: `${formatJapaneseDate(selectedReportDate)}の記録を翌朝に振り返る前提で、よかった点と次回の調整を簡潔に整理してください。`,
     });
@@ -3993,6 +4146,8 @@ function SettingsTab(props: {
   cheatDayDates: string[];
   menuItems: MenuItem[];
   workoutTemplates: WorkoutTemplate[];
+  specialModeSettings: SpecialModeSettings[];
+  activeSpecialMode?: ActiveSpecialMode;
   focus?: SettingsFocus;
   backupInfo: BackupInfo;
   settings?: AppSettings;
@@ -4021,6 +4176,7 @@ function SettingsTab(props: {
   const [isMacroOverrideOpen, setIsMacroOverrideOpen] = useState(false);
   const [isProfileNameOpen, setIsProfileNameOpen] = useState(false);
   const [profileNameDraft, setProfileNameDraft] = useState(props.profile?.name ?? "");
+  const [specialModeTapCount, setSpecialModeTapCount] = useState(0);
   const goalSectionRef = useRef<HTMLElement | null>(null);
   const backupSectionRef = useRef<HTMLElement | null>(null);
   const myMenuSectionRef = useRef<HTMLElement | null>(null);
@@ -4101,6 +4257,48 @@ function SettingsTab(props: {
     await props.refresh();
     props.showToast(`${name}をマイメニューから削除しました`);
   };
+  const saveSpecialModeSettings = async (nextModes: SpecialModeSettings[]) => {
+    const timestamp = nowIso();
+    const special_modes = nextModes.map((mode) => ({ ...mode, updated_at: timestamp }));
+    if (props.settings) {
+      await db.settings.update("local", { special_modes, updated_at: timestamp });
+    } else {
+      await db.settings.put({
+        id: "local",
+        day_boundary_hour: 3,
+        onboarding_completed: true,
+        special_modes,
+        created_at: timestamp,
+        updated_at: timestamp,
+      });
+    }
+    await props.refresh();
+  };
+  const toggleHokkaidoTestMode = async () => {
+    const hokkaido = props.specialModeSettings.find((mode) => mode.id === "hokkaido_trip");
+    if (!hokkaido) return;
+    const isTestActive = !!props.activeSpecialMode?.isTest;
+    const nextMode = {
+      ...hokkaido,
+      test_active_until: isTestActive ? undefined : new Date(Date.now() + 12 * 60 * 60 * 1000).toISOString(),
+    };
+    await saveSpecialModeSettings(props.specialModeSettings.map((mode) => mode.id === nextMode.id ? nextMode : mode));
+    setSpecialModeTapCount(0);
+    props.showToast(isTestActive ? "北海道モードのテストを終了しました" : "北海道モードのテストを開始しました");
+  };
+  const handleSpecialModeTestTap = async () => {
+    if (props.activeSpecialMode?.isTest) {
+      await toggleHokkaidoTestMode();
+      return;
+    }
+    const next = specialModeTapCount + 1;
+    if (next >= 5) {
+      await toggleHokkaidoTestMode();
+      return;
+    }
+    setSpecialModeTapCount(next);
+    props.showToast(`あと${5 - next}回タップで北海道モードをテスト`);
+  };
   const saveGoalSettings = async () => {
     if (!props.profile) return;
     const timestamp = nowIso();
@@ -4145,6 +4343,7 @@ function SettingsTab(props: {
         const start = reportMode === "day" ? end : addDays(end, reportMode === "week" ? -6 : -29);
         const range = dateRange(start, end);
         const scopedCheatDayDates = props.cheatDayDates.filter((date) => range.includes(date));
+        const scopedSpecialModeDays = getSpecialModeDaysInRange(start, end, props.specialModeSettings);
         const content = generateMarkdownReport({
           profile: props.profile,
           goal: props.activeGoal,
@@ -4159,6 +4358,7 @@ function SettingsTab(props: {
           generatedAt,
           currentAppDate: props.appDate,
           cheatDayDates: scopedCheatDayDates,
+          specialModeDays: scopedSpecialModeDays,
           workoutGrouping: reportMode,
           question,
         });
@@ -4350,6 +4550,20 @@ function SettingsTab(props: {
         <p>IndexedDB local-only · no login · no backend</p>
         <p className="mt-2">同じURLを友達が開いても、ログは各iPhone内に別々に保存されます。</p>
         <p className="mt-2 text-xs">レポート名: <span className="font-bold text-ink">{props.profile?.name || "未設定"}</span></p>
+        <div className="special-mode-settings mt-3">
+          <div className="min-w-0 flex-1">
+            <p className="font-bold text-ink">特別モード</p>
+            <p className="mt-1 text-xs">
+              北海道旅行は毎年6/24〜6/28に自動ON。AIレポートでは旅行中の例外日として扱います。
+            </p>
+            <p className="numeric-text mt-1 text-[11px] font-bold">
+              状態: {props.activeSpecialMode ? `${props.activeSpecialMode.label}${props.activeSpecialMode.isTest ? "（テスト中）" : ""}` : "通常"}
+            </p>
+          </div>
+          <button className="special-mode-test-button" onClick={handleSpecialModeTestTap}>
+            {props.activeSpecialMode?.isTest ? "テスト終了" : "5回タップでテスト"}
+          </button>
+        </div>
         <div className="mt-3 grid gap-2">
           <button className="secondary-button w-full" onClick={() => {
             setProfileNameDraft(props.profile?.name ?? "");
@@ -7120,6 +7334,25 @@ function draftNumber(value: string) {
 
 function sourceRank(source: MenuItem["data_source"]) {
   return { official: 0, user: 1, unofficial: 2, estimated: 3, quick_estimate: 4 }[source];
+}
+
+function sortSpecialModeFoodItems(items: MenuItem[], specialMode?: ActiveSpecialMode) {
+  if (!specialMode) return items;
+  return [...items].sort((a, b) => {
+    const specialDiff = specialModeFoodRank(a, specialMode) - specialModeFoodRank(b, specialMode);
+    if (specialDiff !== 0) return specialDiff;
+    return sourceRank(a.data_source) - sourceRank(b.data_source);
+  });
+}
+
+function specialModeFoodRank(item: MenuItem, specialMode?: ActiveSpecialMode) {
+  if (!specialMode) return 0;
+  const text = [item.name, item.brand, item.category, ...(item.tags ?? [])].join(" ");
+  if (specialMode.id === "hokkaido_trip") {
+    if (/北海道旅行2026|北海道旅行|旅行メニュー|旅行候補/.test(text)) return -30;
+    if (/北海道|トリトン|北々亭|碧の座|富良野|美瑛|支笏湖|苫小牧|ほっき|ザンギ|ジンギスカン|旭川|札幌/.test(text)) return -16;
+  }
+  return 0;
 }
 
 function sourceLabel(source: MenuItem["data_source"], confidence: MenuItem["confidence"], item?: MenuItem) {

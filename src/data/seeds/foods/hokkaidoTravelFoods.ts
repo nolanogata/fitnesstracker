@@ -48,7 +48,7 @@ const generalSushiTags = ["一般寿司", ...sushiTags];
 const aonozaTags = ["支笏湖", "碧の座", "公式料理ページ確認", "旅行候補"];
 
 const toritonRollSideFoods = [
-  travelFood({ brand: "トリトン", name: "とろにしん", category: "チェーン店", tags: [...tritonTags, "にしん", "とろにしん", "握り", "旅行候補"], calories: 125, protein_g: 8, fat_g: 5, carbs_g: 14, salt_g: 0.6, serving_label: "2貫", source_url: sources.toriton }),
+  travelFood({ brand: "トリトン", name: "とろにしん", category: "チェーン店", tags: ["トリトン", "回転寿司", ...sushiTags, "にしん", "とろにしん", "握り", "旅行候補"], calories: 125, protein_g: 8, fat_g: 5, carbs_g: 14, salt_g: 0.6, serving_label: "2貫" }),
   travelFood({ brand: "トリトン", name: "ツナサラダ", category: "チェーン店", tags: [...tritonTags, "ツナ", "軍艦"], calories: 145, protein_g: 5, fat_g: 6, carbs_g: 18, salt_g: 0.8, serving_label: "2貫", source_url: sources.toriton }),
   travelFood({ brand: "トリトン", name: "マヨコーン", category: "チェーン店", tags: [...tritonTags, "コーン", "軍艦"], calories: 145, protein_g: 3, fat_g: 6, carbs_g: 21, salt_g: 0.7, serving_label: "2貫", source_url: sources.toriton }),
   travelFood({ brand: "トリトン", name: "軍艦納豆", category: "チェーン店", tags: [...tritonTags, "納豆", "軍艦"], calories: 130, protein_g: 6, fat_g: 3, carbs_g: 20, salt_g: 0.6, serving_label: "2貫", source_url: sources.toriton }),
