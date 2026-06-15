@@ -191,6 +191,7 @@ const genericCategories: Record<string, string[]> = {
   スープ: ["味噌汁", "スープ", "豚汁", "汁物", "ユッケジャン"],
   スイーツ: ["ケーキ", "ドーナツ", "アイス", "和菓子", "焼き菓子", "スナック", "せんべい", "米菓", "チョコ", "グミ", "プリン", "果物", "ヨーグルト", "ギリシャヨーグルト", "高たんぱくヨーグルト", "水切りヨーグルト"],
   ドリンク: ["コーヒー", "カフェラテ", "牛乳", "豆乳", "ジュース", "炭酸", "アルコール"],
+  冷凍食品: ["冷凍食品", "市販品", "チャーハン", "ラーメン", "パスタ", "スパゲティ", "うどん", "焼きおにぎり", "唐揚げ", "餃子", "お弁当"],
   コンビニ: ["おにぎり", "弁当", "サンドイッチ", "サラダチキン", "カップ麺", "スイーツ"],
   チェーン店: ["牛丼", "うどん", "定食", "バーガー"],
   プロテイン: ["プロテイン", "プロテインバー", "プロテインドリンク", "プロテインゼリー"],
@@ -199,7 +200,7 @@ const genericCategories: Record<string, string[]> = {
   サプリ: ["ビタミン", "ミネラル", "クレアチン", "EAA", "BCAA", "グルタミン", "シトルリン", "プレワークアウト", "その他"],
   その他: ["不明"],
 };
-const commercialGeneralCategories = new Set(["チェーン店", "コンビニ", "プロテイン", "サプリ"]);
+const commercialGeneralCategories = new Set(["チェーン店", "コンビニ", "冷凍食品", "プロテイン", "サプリ"]);
 const generalFoodCategoryLabels = [...Object.keys(genericCategories).filter((category) => !commercialGeneralCategories.has(category)), "ざっくり"];
 
 const emptyManual: ManualFoodDraft = {
