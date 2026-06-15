@@ -717,6 +717,7 @@ button {
   .choice-button,
   .mode-button,
   .tap-tile,
+  .floating-food-search,
   .app-bottom-nav {
     background: rgba(255, 255, 255, 0.9);
   }
@@ -1207,6 +1208,59 @@ button {
 
 .food-filter-button-highlight {
   animation: food-filter-pulse 1.8s ease-in-out infinite;
+}
+
+.floating-food-search {
+  position: fixed;
+  left: 50%;
+  bottom: max(6.35rem, calc(env(safe-area-inset-bottom) + 5.75rem));
+  z-index: 31;
+  display: flex;
+  width: min(calc(100% - 2rem), 400px);
+  min-height: 3.25rem;
+  align-items: center;
+  gap: 0.65rem;
+  transform: translateX(-50%) translateY(1rem) scale(0.98);
+  border: 1px solid rgba(218, 226, 220, 0.76);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.68);
+  padding: 0.55rem 0.7rem 0.55rem 0.9rem;
+  color: var(--text-secondary);
+  opacity: 0;
+  pointer-events: none;
+  box-shadow: 0 18px 38px rgba(44, 56, 48, 0.14), var(--glass-highlight);
+  backdrop-filter: blur(28px) saturate(155%);
+  -webkit-backdrop-filter: blur(28px) saturate(155%);
+  transition:
+    opacity 180ms ease,
+    transform 180ms ease,
+    background 180ms ease;
+}
+
+.floating-food-search-visible {
+  transform: translateX(-50%) translateY(0) scale(1);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.floating-food-search svg {
+  flex-shrink: 0;
+  color: var(--primary);
+}
+
+.floating-food-search-action {
+  margin-left: auto;
+  flex-shrink: 0;
+  border-radius: 999px;
+  background: rgba(111, 143, 125, 0.16);
+  padding: 0.35rem 0.7rem;
+  color: var(--primary);
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.floating-food-search:active {
+  transform: translateX(-50%) translateY(1px) scale(0.99);
 }
 
 .food-filter-intro {
@@ -1849,6 +1903,20 @@ button {
   border-color: rgba(159, 190, 169, 0.34);
   background: rgba(159, 190, 169, 0.18);
   color: #f0fbf2;
+}
+
+.theme-dark .floating-food-search,
+:root[data-theme="dark"] .floating-food-search {
+  border-color: rgba(255, 255, 255, 0.14);
+  background: rgba(19, 25, 21, 0.72);
+  color: #dbe7de;
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.34), var(--glass-highlight);
+}
+
+.theme-dark .floating-food-search-action,
+:root[data-theme="dark"] .floating-food-search-action {
+  background: rgba(139, 174, 155, 0.18);
+  color: #d7eadb;
 }
 
 .theme-dark .food-filter-intro,

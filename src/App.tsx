@@ -2272,6 +2272,8 @@ function FoodTab(props: {
   showToast: (text: string) => void;
 }) {
   const foodTopRef = useRef<HTMLDivElement | null>(null);
+  const foodSearchFormRef = useRef<HTMLFormElement | null>(null);
+  const foodSearchInputRef = useRef<HTMLInputElement | null>(null);
   const chainSectionRef = useRef<HTMLElement | null>(null);
   const chainListRef = useRef<HTMLDivElement | null>(null);
   const categorySectionRef = useRef<HTMLElement | null>(null);
@@ -2294,6 +2296,7 @@ function FoodTab(props: {
   const [showFoodBalance, setShowFoodBalance] = useState(false);
   const [sortFoodByFit, setSortFoodByFit] = useState(false);
   const [isFoodFilterOpen, setIsFoodFilterOpen] = useState(false);
+  const [isFoodSearchHidden, setIsFoodSearchHidden] = useState(false);
   const [showFoodFilterIntro, setShowFoodFilterIntro] = useState(() => localStorage.getItem(foodFitFilterSeenStorageKey) !== "1");
 
   const recentIds = useMemo(() => new Set(props.foodEntries.slice(0, 20).map((entry) => entry.menu_item_id).filter(Boolean)), [props.foodEntries]);
@@ -2301,6 +2304,10 @@ function FoodTab(props: {
   const recentItems = useMemo(() => props.menuItems.filter((item) => recentIds.has(item.id)), [props.menuItems, recentIds]);
   const scrollToFoodTop = () => {
     window.requestAnimationFrame(() => foodTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
+  };
+  const focusFoodSearch = () => {
+    scrollToFoodTop();
+    window.setTimeout(() => foodSearchInputRef.current?.focus({ preventScroll: true }), 360);
   };
   const scrollToFoodResults = () => {
     window.setTimeout(() => foodResultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
@@ -2325,6 +2332,28 @@ function FoodTab(props: {
     setIsFoodFilterOpen((value) => !value);
     if (showFoodFilterIntro) dismissFoodFilterIntro();
   };
+  useEffect(() => {
+    const target = foodSearchFormRef.current;
+    if (!target) return undefined;
+    if (typeof IntersectionObserver === "undefined") {
+      const update = () => setIsFoodSearchHidden(target.getBoundingClientRect().bottom < 72);
+      update();
+      window.addEventListener("scroll", update, { passive: true });
+      window.addEventListener("resize", update);
+      return () => {
+        window.removeEventListener("scroll", update);
+        window.removeEventListener("resize", update);
+      };
+    }
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsFoodSearchHidden(!entry.isIntersecting);
+      },
+      { root: null, rootMargin: "-78px 0px 0px 0px", threshold: 0.02 },
+    );
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, []);
   useEffect(() => {
     if (props.focus !== "todayLog") return;
     const timer = window.setTimeout(() => {
@@ -2379,6 +2408,8 @@ function FoodTab(props: {
   const isSortFoodByFitActive = sortFoodByFit && canSortFoodByFit;
   const isFoodFitFilterActive = showGeneralFoodsOnly || (hideOverGoalItems && canUseOverGoalFilter) || (showFoodBalance && canShowFoodBalance) || isSortFoodByFitActive;
   const searchPlaceholder = isChainScopedSearch ? `${brand}内を検索` : "食品・ブランド検索";
+  const floatingSearchLabel = query.trim() || searchPlaceholder;
+  const shouldShowFloatingSearch = mode !== "manual" && !selected && !editingEntry && isFoodSearchHidden;
   const results = useMemo(() => {
     const needle = query.trim().toLowerCase();
     const tokens = needle.split(/\s+/).filter(Boolean);
@@ -2589,10 +2620,10 @@ function FoodTab(props: {
   return (
     <div className="scroll-mt-24 space-y-4" ref={foodTopRef}>
       <div className="sticky-panel sticky top-[74px] z-10 -mx-4 space-y-3 px-4 pb-2">
-        <form className="compact-card flex gap-2 p-2" onSubmit={(event) => { event.preventDefault(); if (mode !== "chain") setMode("search"); scrollToFoodResults(); }}>
+        <form ref={foodSearchFormRef} className="compact-card flex gap-2 p-2" onSubmit={(event) => { event.preventDefault(); if (mode !== "chain") setMode("search"); scrollToFoodResults(); }}>
           <div className="relative min-w-0 flex-1">
             <Search className="pointer-events-none absolute left-3 top-3.5 text-moss" size={20} />
-            <input className="h-12 w-full pl-10 text-base" value={query} onChange={(event) => updateSearchQuery(event.target.value)} placeholder={searchPlaceholder} />
+            <input ref={foodSearchInputRef} className="h-12 w-full pl-10 text-base" value={query} onChange={(event) => updateSearchQuery(event.target.value)} placeholder={searchPlaceholder} />
           </div>
           <button
             type="button"
@@ -2796,6 +2827,19 @@ function FoodTab(props: {
           />
         ))}
       </section>
+
+      {shouldShowFloatingSearch && (
+        <button
+          type="button"
+          className="floating-food-search floating-food-search-visible"
+          onClick={focusFoodSearch}
+          aria-label="検索バーへ戻る"
+        >
+          <Search size={17} />
+          <span className="truncate">{floatingSearchLabel}</span>
+          <span className="floating-food-search-action">検索</span>
+        </button>
+      )}
 
       {selected && (
         <div className="fixed inset-0 z-40 flex items-end bg-ink/30 px-4 pb-4" onClick={() => setSelected(undefined)}>
