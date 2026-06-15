@@ -1514,6 +1514,63 @@ button {
     linear-gradient(180deg, #020302 0%, #07100c 14rem, #000 34rem, #000 100%);
 }
 
+.theme-dark .onboarding-card,
+:root[data-theme="dark"] .onboarding-card {
+  border-color: rgba(255, 255, 255, 0.16);
+  background:
+    linear-gradient(180deg, rgba(22, 31, 26, 0.88), rgba(10, 15, 12, 0.82)),
+    rgba(255, 255, 255, 0.06);
+  color: #edf4ee;
+  box-shadow: 0 20px 54px rgba(0, 0, 0, 0.4), var(--glass-highlight);
+}
+
+.theme-dark .onboarding-shell .text-ink,
+:root[data-theme="dark"] .onboarding-shell .text-ink {
+  color: #f4faf5 !important;
+}
+
+.theme-dark .onboarding-shell .text-moss,
+.theme-dark .onboarding-shell .text-muted,
+:root[data-theme="dark"] .onboarding-shell .text-moss,
+:root[data-theme="dark"] .onboarding-shell .text-muted {
+  color: rgba(218, 231, 222, 0.84) !important;
+}
+
+.theme-dark .onboarding-shell :where(.bg-surface, .bg-rice, .bg-white\/45, .bg-white),
+:root[data-theme="dark"] .onboarding-shell :where(.bg-surface, .bg-rice, .bg-white\/45, .bg-white) {
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  background-color: rgba(255, 255, 255, 0.08) !important;
+  color: rgba(237, 244, 238, 0.9) !important;
+}
+
+.theme-dark .onboarding-shell .mini-chip,
+:root[data-theme="dark"] .onboarding-shell .mini-chip {
+  border-color: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.08);
+  color: #d8eadc;
+}
+
+.theme-dark .onboarding-shell .primary-button,
+:root[data-theme="dark"] .onboarding-shell .primary-button {
+  border-color: rgba(255, 255, 255, 0.18);
+  background: linear-gradient(135deg, rgba(128, 163, 142, 0.94), rgba(91, 129, 108, 0.9));
+  color: #f7fbf8;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.24), var(--glass-highlight);
+}
+
+.theme-dark .onboarding-shell .secondary-button,
+:root[data-theme="dark"] .onboarding-shell .secondary-button {
+  border-color: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.08);
+  color: #d8eadc;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.2), var(--glass-highlight);
+}
+
+.theme-dark .onboarding-shell .bg-ink\/5,
+:root[data-theme="dark"] .onboarding-shell .bg-ink\/5 {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
 .theme-dark .onboarding-hero,
 .theme-dark .onboarding-panel,
 .theme-dark .onboarding-target-card,
