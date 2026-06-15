@@ -18,8 +18,10 @@ export type SpecialModeId = "hokkaido_trip" | string;
 export type SpecialModeSettings = {
   id: SpecialModeId;
   enabled: boolean;
-  start_month_day: string;
-  end_month_day: string;
+  start_date?: string;
+  end_date?: string;
+  start_month_day?: string;
+  end_month_day?: string;
   test_active_until?: string;
   updated_at?: string;
 };

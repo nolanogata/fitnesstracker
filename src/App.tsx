@@ -160,8 +160,8 @@ type SpecialModeDefinition = {
   label: string;
   shortLabel: string;
   foodQuery: string;
-  startMonthDay: string;
-  endMonthDay: string;
+  defaultStartDate: string;
+  defaultEndDate: string;
 };
 type ActiveSpecialMode = SpecialModeDefinition & {
   startDate: string;
@@ -221,10 +221,10 @@ const specialModeDefinitions: SpecialModeDefinition[] = [
   {
     id: "hokkaido_trip",
     label: "北海道旅行",
-    shortLabel: "北海道",
+    shortLabel: "HKD",
     foodQuery: "北海道旅行",
-    startMonthDay: "06-24",
-    endMonthDay: "06-28",
+    defaultStartDate: "2026-06-24",
+    defaultEndDate: "2026-06-28",
   },
 ];
 
@@ -272,8 +272,8 @@ function getSpecialModeSettings(settings?: AppSettings): SpecialModeSettings[] {
     return {
       id: definition.id,
       enabled: saved?.enabled ?? true,
-      start_month_day: saved?.start_month_day ?? definition.startMonthDay,
-      end_month_day: saved?.end_month_day ?? definition.endMonthDay,
+      start_date: saved?.start_date ?? (saved?.start_month_day ? dateFromMonthDay(definition.defaultStartDate, saved.start_month_day) : definition.defaultStartDate),
+      end_date: saved?.end_date ?? (saved?.end_month_day ? dateFromMonthDay(definition.defaultStartDate, saved.end_month_day, saved.start_month_day) : definition.defaultEndDate),
       test_active_until: saved?.test_active_until,
       updated_at: saved?.updated_at,
     };
@@ -287,8 +287,8 @@ function getActiveSpecialMode(appDate: string, settings: SpecialModeSettings[], 
       if (!modeSettings?.enabled) return undefined;
       const testUntil = modeSettings.test_active_until ? new Date(modeSettings.test_active_until) : undefined;
       const isTest = !!testUntil && testUntil.getTime() > now.getTime() && appDate === todayAppDate(3, now);
-      const startDate = dateFromMonthDay(appDate, modeSettings.start_month_day);
-      const endDate = dateFromMonthDay(appDate, modeSettings.end_month_day, modeSettings.start_month_day);
+      const startDate = modeSettings.start_date ?? definition.defaultStartDate;
+      const endDate = modeSettings.end_date ?? definition.defaultEndDate;
       const inPeriod = appDate >= startDate && appDate <= endDate;
       if (!isTest && !inPeriod) return undefined;
       return { ...definition, startDate, endDate, isTest };
@@ -327,9 +327,9 @@ const appUpdates: AppUpdate[] = [
     title: "北海道旅行モードを追加",
     date: "2026-06-16",
     items: [
-      "6/24〜6/28は北海道旅行モードが自動で有効になり、Homeのカロリー評価を旅行中の例外表示にします。",
+      "今年の北海道旅行期間は、北海道旅行モードが自動で有効になり、Homeのカロリー評価を旅行中の例外表示にします。",
       "Foodでは北海道旅行タグのメニューを上位表示し、右上の北海道モードボタンから旅行メニュー検索へ戻れます。",
-      "Settingsのゴールトラッカー情報から、5回タップで北海道旅行モードの動作テストを開始できます。",
+      "Settingsのゴールトラッカー情報から、北海道旅行モードのON/OFFと5回タップの動作テストができます。",
       "AI相談レポートに、北海道旅行中は通常日とは分けて評価するよう明記します。",
     ],
   },
@@ -1436,7 +1436,7 @@ function App() {
                   onClick={openSpecialFoodMode}
                   title={`${activeSpecialMode.label}メニュー`}
                 >
-                  北
+                  HKD
                 </button>
               )}
               <button
@@ -4249,6 +4249,10 @@ function SettingsTab(props: {
       .sort((a, b) => (b.updated_at || b.created_at).localeCompare(a.updated_at || a.created_at)),
     [props.menuItems],
   );
+  const hokkaidoModeSettings = props.specialModeSettings.find((mode) => mode.id === "hokkaido_trip");
+  const hokkaidoPeriodLabel = hokkaidoModeSettings?.start_date && hokkaidoModeSettings.end_date
+    ? `${formatJapaneseDate(hokkaidoModeSettings.start_date)}〜${formatJapaneseDate(hokkaidoModeSettings.end_date)}`
+    : "未設定";
   const deleteUserMenuItem = async (item: MenuItem) => {
     const name = formatMenuItemName(item);
     const confirmed = window.confirm(`${name}をマイメニューから削除しますか？\n記録済みの食事ログは残ります。`);
@@ -4285,6 +4289,29 @@ function SettingsTab(props: {
     await saveSpecialModeSettings(props.specialModeSettings.map((mode) => mode.id === nextMode.id ? nextMode : mode));
     setSpecialModeTapCount(0);
     props.showToast(isTestActive ? "北海道モードのテストを終了しました" : "北海道モードのテストを開始しました");
+  };
+  const toggleHokkaidoModeEnabled = async () => {
+    const hokkaido = props.specialModeSettings.find((mode) => mode.id === "hokkaido_trip");
+    if (!hokkaido) return;
+    const nextEnabled = !hokkaido.enabled;
+    await saveSpecialModeSettings(props.specialModeSettings.map((mode) => (
+      mode.id === hokkaido.id
+        ? { ...mode, enabled: nextEnabled, test_active_until: nextEnabled ? mode.test_active_until : undefined }
+        : mode
+    )));
+    setSpecialModeTapCount(0);
+    props.showToast(nextEnabled ? "北海道モードを有効にしました" : "北海道モードをオフにしました");
+  };
+  const updateHokkaidoPeriod = async (field: "start_date" | "end_date", value: string) => {
+    const hokkaido = props.specialModeSettings.find((mode) => mode.id === "hokkaido_trip");
+    if (!hokkaido || !value) return;
+    const nextMode = { ...hokkaido, [field]: value };
+    if (nextMode.start_date && nextMode.end_date && nextMode.start_date > nextMode.end_date) {
+      if (field === "start_date") nextMode.end_date = value;
+      if (field === "end_date") nextMode.start_date = value;
+    }
+    await saveSpecialModeSettings(props.specialModeSettings.map((mode) => mode.id === nextMode.id ? nextMode : mode));
+    props.showToast("北海道モードの日程を保存しました");
   };
   const handleSpecialModeTestTap = async () => {
     if (props.activeSpecialMode?.isTest) {
@@ -4554,15 +4581,40 @@ function SettingsTab(props: {
           <div className="min-w-0 flex-1">
             <p className="font-bold text-ink">特別モード</p>
             <p className="mt-1 text-xs">
-              北海道旅行は毎年6/24〜6/28に自動ON。AIレポートでは旅行中の例外日として扱います。
+              北海道旅行は今年の予定期間だけ自動ON。旅行中でもここからOFFにできます。
             </p>
             <p className="numeric-text mt-1 text-[11px] font-bold">
-              状態: {props.activeSpecialMode ? `${props.activeSpecialMode.label}${props.activeSpecialMode.isTest ? "（テスト中）" : ""}` : "通常"}
+              期間: {hokkaidoPeriodLabel} / 状態: {!hokkaidoModeSettings?.enabled ? "OFF" : props.activeSpecialMode ? `${props.activeSpecialMode.label}${props.activeSpecialMode.isTest ? "（テスト中）" : ""}` : "通常"}
             </p>
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              <label className="text-[11px] font-bold text-moss">
+                開始
+                <input
+                  className="mt-1 h-9 w-full px-2 text-xs"
+                  type="date"
+                  value={hokkaidoModeSettings?.start_date ?? ""}
+                  onChange={(event) => updateHokkaidoPeriod("start_date", event.target.value)}
+                />
+              </label>
+              <label className="text-[11px] font-bold text-moss">
+                終了
+                <input
+                  className="mt-1 h-9 w-full px-2 text-xs"
+                  type="date"
+                  value={hokkaidoModeSettings?.end_date ?? ""}
+                  onChange={(event) => updateHokkaidoPeriod("end_date", event.target.value)}
+                />
+              </label>
+            </div>
           </div>
-          <button className="special-mode-test-button" onClick={handleSpecialModeTestTap}>
-            {props.activeSpecialMode?.isTest ? "テスト終了" : "5回タップでテスト"}
-          </button>
+          <div className="flex shrink-0 flex-col gap-2">
+            <button className="special-mode-test-button" onClick={toggleHokkaidoModeEnabled}>
+              {hokkaidoModeSettings?.enabled ? "OFF" : "ON"}
+            </button>
+            <button className="special-mode-test-button" disabled={!hokkaidoModeSettings?.enabled} onClick={handleSpecialModeTestTap}>
+              {props.activeSpecialMode?.isTest ? "テスト終了" : "5回タップ"}
+            </button>
+          </div>
         </div>
         <div className="mt-3 grid gap-2">
           <button className="secondary-button w-full" onClick={() => {
