@@ -1,5 +1,6 @@
 import { genericFoods } from "./generic";
 import { genericKonamonoFoods } from "./genericKonamono";
+import { frozenFoods } from "./frozenFoods";
 import { nutritionCareProductFoods } from "./nutritionCareProducts";
 import { proteinProductFoods } from "./proteinProducts";
 import { quickEstimateFoods } from "./quickEstimates";
@@ -47,6 +48,7 @@ import { yoshinoyaOfficialFoods } from "./chains/yoshinoyaOfficial";
 export const foodSeeds = [
   ...genericFoods,
   ...genericKonamonoFoods,
+  ...frozenFoods,
   ...userMenuImportFoods,
   ...proteinProductFoods,
   ...nutritionCareProductFoods,
