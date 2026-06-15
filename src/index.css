@@ -492,30 +492,41 @@ button {
 .home-hero-trip {
   position: relative;
   overflow: hidden;
-  border-color: rgba(201, 214, 235, 0.62);
-  background:
-    radial-gradient(circle at 82% 18%, rgba(255, 255, 255, 0.66), transparent 22%),
-    linear-gradient(135deg, rgba(221, 229, 240, 0.8), rgba(221, 232, 225, 0.76) 45%, rgba(246, 235, 221, 0.68)),
-    rgba(255, 255, 255, 0.7);
+  border-color: rgba(255, 255, 255, 0.54);
+  background: #101b21;
+  color: #f2f8f4;
   box-shadow:
-    0 0 0 1px rgba(255, 255, 255, 0.72),
-    0 0 22px rgba(111, 143, 125, 0.18),
-    0 0 34px rgba(126, 151, 177, 0.18),
+    0 0 0 1px rgba(255, 255, 255, 0.46),
+    -10px -8px 28px rgba(255, 107, 107, 0.18),
+    12px -8px 28px rgba(255, 209, 102, 0.16),
+    14px 14px 34px rgba(78, 205, 196, 0.18),
+    -10px 16px 34px rgba(123, 97, 255, 0.16),
+    0 18px 38px rgba(13, 25, 30, 0.2),
     var(--glass-highlight);
+}
+
+.home-hero-trip::before {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background:
+    linear-gradient(90deg, rgba(9, 14, 19, 0.78), rgba(12, 24, 29, 0.3) 52%, rgba(9, 16, 23, 0.66)),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.1), transparent 34%, rgba(0, 0, 0, 0.16)),
+    url("/hokkaido-hero.jpg") center / cover no-repeat;
+  content: "";
 }
 
 .home-hero-trip::after {
   position: absolute;
-  right: 1.15rem;
-  bottom: 1rem;
-  width: 7.6rem;
-  height: 5.2rem;
+  inset: -34%;
+  z-index: 0;
   background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.36), rgba(255, 255, 255, 0.08)),
-    rgba(111, 143, 125, 0.16);
-  clip-path: polygon(16% 44%, 30% 22%, 56% 12%, 76% 22%, 88% 42%, 80% 64%, 58% 58%, 48% 78%, 26% 76%, 12% 62%);
+    conic-gradient(from 145deg at 54% 48%, rgba(255, 107, 107, 0.34), rgba(255, 209, 102, 0.28), rgba(78, 205, 196, 0.26), rgba(123, 97, 255, 0.3), rgba(255, 107, 107, 0.34)),
+    radial-gradient(circle at 76% 20%, rgba(255, 255, 255, 0.32), transparent 28%);
   content: "";
-  filter: blur(0.2px);
+  filter: blur(26px) saturate(140%);
+  mix-blend-mode: screen;
+  opacity: 0.42;
   pointer-events: none;
 }
 
@@ -524,9 +535,16 @@ button {
   z-index: 1;
 }
 
+.home-hero-trip .text-ink,
+.home-hero-trip .text-ink\/80,
+.home-hero-trip .text-moss {
+  color: rgba(242, 248, 244, 0.92) !important;
+}
+
 .home-trip-badge {
-  background: rgba(221, 232, 225, 0.58);
-  color: #294234;
+  border-color: rgba(255, 255, 255, 0.34);
+  background: rgba(255, 255, 255, 0.14);
+  color: #f5fbf7;
 }
 
 .home-hero-cheat::before {
@@ -1843,23 +1861,27 @@ button {
 }
 
 .theme-dark .home-hero-trip {
-  border-color: rgba(159, 190, 169, 0.22);
-  background:
-    radial-gradient(circle at 82% 18%, rgba(255, 255, 255, 0.1), transparent 22%),
-    linear-gradient(135deg, rgba(85, 109, 98, 0.28), rgba(52, 72, 84, 0.18) 48%, rgba(114, 95, 66, 0.16)),
-    var(--glass-bg);
+  border-color: rgba(255, 255, 255, 0.16);
+  background: #101b21;
   box-shadow:
-    0 0 0 1px rgba(159, 190, 169, 0.18),
-    0 0 26px rgba(159, 190, 169, 0.16),
-    0 0 34px rgba(126, 151, 177, 0.12),
+    0 0 0 1px rgba(255, 255, 255, 0.16),
+    -12px -8px 30px rgba(255, 107, 107, 0.2),
+    12px -8px 30px rgba(255, 209, 102, 0.16),
+    14px 16px 36px rgba(78, 205, 196, 0.18),
+    -12px 18px 36px rgba(123, 97, 255, 0.2),
     0 18px 42px rgba(0, 0, 0, 0.34),
     var(--glass-highlight);
 }
 
-.theme-dark .home-hero-trip::after {
+.theme-dark .home-hero-trip::before {
   background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.11), rgba(255, 255, 255, 0.03)),
-    rgba(159, 190, 169, 0.12);
+    linear-gradient(90deg, rgba(5, 8, 11, 0.84), rgba(10, 22, 28, 0.32) 52%, rgba(5, 9, 14, 0.68)),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06), transparent 34%, rgba(0, 0, 0, 0.2)),
+    url("/hokkaido-hero.jpg") center / cover no-repeat;
+}
+
+.theme-dark .home-hero-trip::after {
+  opacity: 0.36;
 }
 
 .theme-dark .home-cheat-badge {

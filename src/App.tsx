@@ -323,17 +323,6 @@ const finisherPulseIntensity = "finisher_pulse";
 const finisherPulseNote = "仕上げパルス（部分可動域・素早く）";
 const appUpdates: AppUpdate[] = [
   {
-    id: "2026-06-16-hokkaido-special-mode",
-    title: "北海道旅行モードを追加",
-    date: "2026-06-16",
-    items: [
-      "今年の北海道旅行期間は、北海道旅行モードが自動で有効になり、Homeのカロリー評価を旅行中の例外表示にします。",
-      "Foodでは北海道旅行タグのメニューを上位表示し、右上の北海道モードボタンから旅行メニュー検索へ戻れます。",
-      "Settingsのゴールトラッカー情報から、北海道旅行モードのON/OFFと5回タップの動作テストができます。",
-      "AI相談レポートに、北海道旅行中は通常日とは分けて評価するよう明記します。",
-    ],
-  },
-  {
     id: "2026-06-15-record-reminder-banner",
     title: "記録リマインダーを追加",
     date: "2026-06-15",
@@ -2018,7 +2007,7 @@ function HomeTab(props: {
         </button>
       )}
 
-      <section className={`home-hero-card home-hero-${calorieMoodClass}`}>
+      <section className={`home-hero-card home-hero-${calorieMoodClass} ${props.activeSpecialMode?.id === "hokkaido_trip" ? "home-hero-hokkaido" : ""}`}>
         <div className="flex items-center justify-between gap-3">
           <p className="text-sm font-semibold text-ink/80">今日のカロリー</p>
           {props.isCheatDay && <span className="home-cheat-badge">チートデー</span>}
@@ -4288,7 +4277,7 @@ function SettingsTab(props: {
     };
     await saveSpecialModeSettings(props.specialModeSettings.map((mode) => mode.id === nextMode.id ? nextMode : mode));
     setSpecialModeTapCount(0);
-    props.showToast(isTestActive ? "北海道モードのテストを終了しました" : "北海道モードのテストを開始しました");
+    props.showToast(isTestActive ? "特別モードを終了しました" : "特別モードを開始しました");
   };
   const toggleHokkaidoModeEnabled = async () => {
     const hokkaido = props.specialModeSettings.find((mode) => mode.id === "hokkaido_trip");
@@ -4300,7 +4289,7 @@ function SettingsTab(props: {
         : mode
     )));
     setSpecialModeTapCount(0);
-    props.showToast(nextEnabled ? "北海道モードを有効にしました" : "北海道モードをオフにしました");
+    props.showToast(nextEnabled ? "特別モードをONにしました" : "特別モードをOFFにしました");
   };
   const updateHokkaidoPeriod = async (field: "start_date" | "end_date", value: string) => {
     const hokkaido = props.specialModeSettings.find((mode) => mode.id === "hokkaido_trip");
@@ -4311,7 +4300,7 @@ function SettingsTab(props: {
       if (field === "end_date") nextMode.start_date = value;
     }
     await saveSpecialModeSettings(props.specialModeSettings.map((mode) => mode.id === nextMode.id ? nextMode : mode));
-    props.showToast("北海道モードの日程を保存しました");
+    props.showToast("特別モードの日程を保存しました");
   };
   const handleSpecialModeTestTap = async () => {
     if (props.activeSpecialMode?.isTest) {
@@ -4324,7 +4313,7 @@ function SettingsTab(props: {
       return;
     }
     setSpecialModeTapCount(next);
-    props.showToast(`あと${5 - next}回タップで北海道モードをテスト`);
+    props.showToast(`あと${5 - next}回`);
   };
   const saveGoalSettings = async () => {
     if (!props.profile) return;
@@ -4580,11 +4569,8 @@ function SettingsTab(props: {
         <div className="special-mode-settings mt-3">
           <div className="min-w-0 flex-1">
             <p className="font-bold text-ink">特別モード</p>
-            <p className="mt-1 text-xs">
-              北海道旅行は今年の予定期間だけ自動ON。旅行中でもここからOFFにできます。
-            </p>
             <p className="numeric-text mt-1 text-[11px] font-bold">
-              期間: {hokkaidoPeriodLabel} / 状態: {!hokkaidoModeSettings?.enabled ? "OFF" : props.activeSpecialMode ? `${props.activeSpecialMode.label}${props.activeSpecialMode.isTest ? "（テスト中）" : ""}` : "通常"}
+              期間: {hokkaidoPeriodLabel} / 状態: {!hokkaidoModeSettings?.enabled ? "OFF" : props.activeSpecialMode?.isTest ? "ON（確認中）" : hokkaidoModeSettings?.enabled ? "ON" : "通常"}
             </p>
             <div className="mt-2 grid grid-cols-2 gap-2">
               <label className="text-[11px] font-bold text-moss">
@@ -4612,7 +4598,7 @@ function SettingsTab(props: {
               {hokkaidoModeSettings?.enabled ? "OFF" : "ON"}
             </button>
             <button className="special-mode-test-button" disabled={!hokkaidoModeSettings?.enabled} onClick={handleSpecialModeTestTap}>
-              {props.activeSpecialMode?.isTest ? "テスト終了" : "5回タップ"}
+              {props.activeSpecialMode?.isTest ? "終了" : "5回タップ"}
             </button>
           </div>
         </div>
