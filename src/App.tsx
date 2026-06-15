@@ -2429,6 +2429,7 @@ function FoodTab(props: {
         if (mode === "chain") return item.brand === brand;
         if (mode === "category") {
           if (commercialGeneralCategories.has(categoryGenre)) return item.category === categoryGenre;
+          if (categoryGenre === "自炊") return isGeneralFoodMenuItem(item) && (item.category === "自炊" || item.tags.includes("自炊"));
           return item.category === categoryGenre || item.tags.some((tag) => genericCategories[categoryGenre]?.includes(tag));
         }
         return true;
