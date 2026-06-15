@@ -6,7 +6,7 @@ const fetchedAt = "2026-06-16T00:00:00.000Z";
 const sources = {
   toriton: "https://toriton-kita1.jp/menu/hokkaido/",
   furanoCheese: "https://www.furano-cheese.jp/html/pizza.html",
-  aonoza: "https://www.shikotsuko-aonoza.com/",
+  aonoza: "https://www.aonoza.com/cuisine/",
 };
 
 type HokkaidoTravelFood = {
@@ -45,6 +45,64 @@ const sushiTags = ["寿司", "海鮮", "北海道"];
 const tritonTags = ["トリトン", "回転寿司", "公式メニュー確認", ...sushiTags];
 const hokuhokuteiTags = ["北々亭", "回転寿司", "旅行候補", ...sushiTags];
 const generalSushiTags = ["一般寿司", ...sushiTags];
+const aonozaTags = ["支笏湖", "碧の座", "公式料理ページ確認", "旅行候補"];
+
+const toritonRollSideFoods = [
+  travelFood({ brand: "トリトン", name: "とろにしん", category: "チェーン店", tags: [...tritonTags, "にしん", "とろにしん", "握り", "旅行候補"], calories: 125, protein_g: 8, fat_g: 5, carbs_g: 14, salt_g: 0.6, serving_label: "2貫", source_url: sources.toriton }),
+  travelFood({ brand: "トリトン", name: "ツナサラダ", category: "チェーン店", tags: [...tritonTags, "ツナ", "軍艦"], calories: 145, protein_g: 5, fat_g: 6, carbs_g: 18, salt_g: 0.8, serving_label: "2貫", source_url: sources.toriton }),
+  travelFood({ brand: "トリトン", name: "マヨコーン", category: "チェーン店", tags: [...tritonTags, "コーン", "軍艦"], calories: 145, protein_g: 3, fat_g: 6, carbs_g: 21, salt_g: 0.7, serving_label: "2貫", source_url: sources.toriton }),
+  travelFood({ brand: "トリトン", name: "軍艦納豆", category: "チェーン店", tags: [...tritonTags, "納豆", "軍艦"], calories: 130, protein_g: 6, fat_g: 3, carbs_g: 20, salt_g: 0.6, serving_label: "2貫", source_url: sources.toriton }),
+  travelFood({ brand: "トリトン", name: "えびマヨ", category: "チェーン店", tags: [...tritonTags, "えび", "マヨ", "軍艦"], calories: 150, protein_g: 6, fat_g: 6, carbs_g: 18, salt_g: 0.8, serving_label: "2貫", source_url: sources.toriton }),
+  travelFood({ brand: "トリトン", name: "トビッ子", category: "チェーン店", tags: [...tritonTags, "とびっこ", "軍艦"], calories: 105, protein_g: 5, fat_g: 2, carbs_g: 17, salt_g: 0.9, serving_label: "2貫", source_url: sources.toriton }),
+  travelFood({ brand: "トリトン", name: "まぐろたたき", category: "チェーン店", tags: [...tritonTags, "まぐろ", "軍艦"], calories: 130, protein_g: 7, fat_g: 4, carbs_g: 17, salt_g: 0.7, serving_label: "2貫", source_url: sources.toriton }),
+  travelFood({ brand: "トリトン", name: "納豆巻", category: "チェーン店", tags: [...tritonTags, "納豆", "巻物"], calories: 185, protein_g: 7, fat_g: 3, carbs_g: 34, salt_g: 0.8, serving_label: "1本", source_url: sources.toriton }),
+  travelFood({ brand: "トリトン", name: "梅じそ巻", category: "チェーン店", tags: [...tritonTags, "梅", "しそ", "巻物"], calories: 160, protein_g: 4, fat_g: 1, carbs_g: 35, salt_g: 1.2, serving_label: "1本", source_url: sources.toriton }),
+  travelFood({ brand: "トリトン", name: "かんぴょう巻", category: "チェーン店", tags: [...tritonTags, "かんぴょう", "巻物"], calories: 175, protein_g: 4, fat_g: 1, carbs_g: 39, salt_g: 1.0, serving_label: "1本", source_url: sources.toriton }),
+  travelFood({ brand: "トリトン", name: "おしんこ巻", category: "チェーン店", tags: [...tritonTags, "おしんこ", "奈良漬け", "巻物"], calories: 165, protein_g: 4, fat_g: 1, carbs_g: 36, salt_g: 1.3, serving_label: "1本", source_url: sources.toriton }),
+  travelFood({ brand: "トリトン", name: "かっぱ巻", category: "チェーン店", tags: [...tritonTags, "きゅうり", "巻物"], calories: 150, protein_g: 4, fat_g: 1, carbs_g: 33, salt_g: 0.6, serving_label: "1本", source_url: sources.toriton }),
+  travelFood({ brand: "トリトン", name: "たまご巻", category: "チェーン店", tags: [...tritonTags, "玉子", "巻物"], calories: 190, protein_g: 6, fat_g: 4, carbs_g: 34, salt_g: 0.9, serving_label: "1本", source_url: sources.toriton }),
+  travelFood({ brand: "トリトン", name: "大人の納豆巻", category: "チェーン店", tags: [...tritonTags, "納豆", "山わさび", "ねぎ", "巻物"], calories: 190, protein_g: 7, fat_g: 3, carbs_g: 35, salt_g: 0.9, serving_label: "1本", source_url: sources.toriton }),
+  travelFood({ brand: "トリトン", name: "ツナサラダ巻", category: "チェーン店", tags: [...tritonTags, "ツナ", "マヨ", "巻物"], calories: 240, protein_g: 7, fat_g: 9, carbs_g: 34, salt_g: 1.0, serving_label: "1本", source_url: sources.toriton }),
+  travelFood({ brand: "トリトン", name: "サーモン巻", category: "チェーン店", tags: [...tritonTags, "サーモン", "巻物"], calories: 210, protein_g: 9, fat_g: 4, carbs_g: 34, salt_g: 0.8, serving_label: "1本", source_url: sources.toriton }),
+  travelFood({ brand: "トリトン", name: "さばじそ巻", category: "チェーン店", tags: [...tritonTags, "さば", "しそ", "巻物"], calories: 230, protein_g: 10, fat_g: 6, carbs_g: 34, salt_g: 1.0, serving_label: "1本", source_url: sources.toriton }),
+  travelFood({ brand: "トリトン", name: "鉄火巻", category: "チェーン店", tags: [...tritonTags, "まぐろ", "巻物"], calories: 190, protein_g: 10, fat_g: 1, carbs_g: 34, salt_g: 0.8, serving_label: "1本", source_url: sources.toriton }),
+  travelFood({ brand: "トリトン", name: "まぐろたくあん巻", category: "チェーン店", tags: [...tritonTags, "まぐろ", "たくあん", "巻物"], calories: 210, protein_g: 9, fat_g: 2, carbs_g: 38, salt_g: 1.3, serving_label: "1本", source_url: sources.toriton }),
+  travelFood({ brand: "トリトン", name: "梅かっぱ巻", category: "チェーン店", tags: [...tritonTags, "梅", "きゅうり", "巻物"], calories: 160, protein_g: 4, fat_g: 1, carbs_g: 35, salt_g: 1.1, serving_label: "1本", source_url: sources.toriton }),
+  travelFood({ brand: "トリトン", name: "えび天巻", category: "チェーン店", tags: [...tritonTags, "えび天", "天ぷら", "巻物"], calories: 280, protein_g: 9, fat_g: 9, carbs_g: 40, salt_g: 1.3, serving_label: "1本", source_url: sources.toriton }),
+  travelFood({ brand: "トリトン", name: "山わさびかっぱ巻", category: "チェーン店", tags: [...tritonTags, "山わさび", "きゅうり", "巻物"], calories: 155, protein_g: 4, fat_g: 1, carbs_g: 34, salt_g: 0.7, serving_label: "1本", source_url: sources.toriton }),
+  travelFood({ brand: "トリトン", name: "山わさびかんぴょう巻", category: "チェーン店", tags: [...tritonTags, "山わさび", "かんぴょう", "巻物"], calories: 180, protein_g: 4, fat_g: 1, carbs_g: 40, salt_g: 1.0, serving_label: "1本", source_url: sources.toriton }),
+  travelFood({ brand: "トリトン", name: "から揚げマヨ巻", category: "チェーン店", tags: [...tritonTags, "唐揚げ", "マヨ", "巻物"], calories: 330, protein_g: 12, fat_g: 13, carbs_g: 42, salt_g: 1.4, serving_label: "1本", source_url: sources.toriton }),
+  travelFood({ brand: "トリトン", name: "まぐろアボカドロール", category: "チェーン店", tags: [...tritonTags, "まぐろ", "アボカド", "ロール", "巻物"], calories: 270, protein_g: 11, fat_g: 10, carbs_g: 35, salt_g: 1.0, serving_label: "1本", source_url: sources.toriton }),
+  travelFood({ brand: "トリトン", name: "サーモンアボカドロール", category: "チェーン店", tags: [...tritonTags, "サーモン", "アボカド", "ロール", "巻物"], calories: 285, protein_g: 11, fat_g: 12, carbs_g: 35, salt_g: 1.0, serving_label: "1本", source_url: sources.toriton }),
+  travelFood({ brand: "トリトン", name: "エビアボカドロール", category: "チェーン店", tags: [...tritonTags, "えび", "アボカド", "ロール", "巻物"], calories: 265, protein_g: 10, fat_g: 10, carbs_g: 35, salt_g: 1.0, serving_label: "1本", source_url: sources.toriton }),
+  travelFood({ brand: "トリトン", name: "ニクソンロール", category: "チェーン店", tags: [...tritonTags, "ロール", "巻物"], calories: 340, protein_g: 13, fat_g: 14, carbs_g: 42, salt_g: 1.5, serving_label: "1本", source_url: sources.toriton }),
+  travelFood({ brand: "トリトン", name: "とろたく巻", category: "チェーン店", tags: [...tritonTags, "中とろ", "たくあん", "巻物"], calories: 300, protein_g: 11, fat_g: 11, carbs_g: 39, salt_g: 1.3, serving_label: "1本", source_url: sources.toriton }),
+  travelFood({ brand: "トリトン", name: "厚焼玉子", category: "チェーン店", tags: [...tritonTags, "玉子", "サイド"], calories: 170, protein_g: 9, fat_g: 8, carbs_g: 15, salt_g: 1.0, serving_label: "1皿", source_url: sources.toriton }),
+  travelFood({ brand: "トリトン", name: "いなり", category: "チェーン店", tags: [...tritonTags, "いなり", "サイド"], calories: 190, protein_g: 6, fat_g: 5, carbs_g: 32, salt_g: 1.0, serving_label: "2個", source_url: sources.toriton }),
+  travelFood({ brand: "トリトン", name: "ポテトフライ", category: "チェーン店", tags: [...tritonTags, "ポテト", "サイド"], calories: 310, protein_g: 4, fat_g: 15, carbs_g: 40, salt_g: 1.2, serving_label: "1皿", source_url: sources.toriton }),
+  travelFood({ brand: "トリトン", name: "げそあげ", category: "チェーン店", tags: [...tritonTags, "いか", "げそ", "揚げ物", "サイド"], calories: 330, protein_g: 22, fat_g: 18, carbs_g: 20, salt_g: 2.0, serving_label: "1皿", source_url: sources.toriton }),
+  travelFood({ brand: "トリトン", name: "温かい海老天うどん", category: "チェーン店", tags: [...tritonTags, "うどん", "海老天", "サイド"], calories: 430, protein_g: 15, fat_g: 10, carbs_g: 70, salt_g: 5.5, serving_label: "1杯", source_url: sources.toriton }),
+  travelFood({ brand: "トリトン", name: "温かい海老天そば", category: "チェーン店", tags: [...tritonTags, "そば", "海老天", "サイド"], calories: 450, protein_g: 18, fat_g: 10, carbs_g: 72, salt_g: 5.6, serving_label: "1杯", source_url: sources.toriton }),
+  travelFood({ brand: "トリトン", name: "シルクアイス・アイスクリーム各種", category: "チェーン店", tags: [...tritonTags, "アイス", "デザート"], calories: 210, protein_g: 4, fat_g: 10, carbs_g: 27, salt_g: 0.2, serving_label: "1個", default_meal_type: "snack", source_url: sources.toriton }),
+  travelFood({ brand: "トリトン", name: "ビール中ジョッキ", category: "チェーン店", tags: [...tritonTags, "ビール", "アルコール", "ドリンク"], calories: 200, protein_g: 1, fat_g: 0, carbs_g: 15, salt_g: 0, serving_label: "中ジョッキ1杯", default_meal_type: "dinner", source_url: sources.toriton }),
+  travelFood({ brand: "トリトン", name: "ノンアルコールビール", category: "チェーン店", tags: [...tritonTags, "ノンアルコール", "ビール", "ドリンク"], calories: 55, protein_g: 0.5, fat_g: 0, carbs_g: 13, salt_g: 0.1, serving_label: "1本", default_meal_type: "dinner", source_url: sources.toriton }),
+  travelFood({ brand: "トリトン", name: "コカ・コーラ", category: "チェーン店", tags: [...tritonTags, "コーラ", "ドリンク"], calories: 90, protein_g: 0, fat_g: 0, carbs_g: 22.5, salt_g: 0, serving_label: "200ml", default_meal_type: "snack", source_url: sources.toriton }),
+];
+
+const aonozaExpandedFoods = [
+  travelFood({ brand: "碧の座", name: "水白 和食懐石 八寸", category: "おかず・惣菜", tags: [...aonozaTags, "水白", "懐石", "八寸", "夕食"], calories: 260, protein_g: 12, fat_g: 12, carbs_g: 24, salt_g: 1.8, serving_label: "1皿", default_meal_type: "dinner", source_url: sources.aonoza }),
+  travelFood({ brand: "碧の座", name: "水白 椀物", category: "スープ", tags: [...aonozaTags, "水白", "懐石", "椀物", "夕食"], calories: 120, protein_g: 8, fat_g: 4, carbs_g: 12, salt_g: 1.5, serving_label: "1椀", default_meal_type: "dinner", source_url: sources.aonoza }),
+  travelFood({ brand: "碧の座", name: "水白 焼き魚", category: "肉・魚", tags: [...aonozaTags, "水白", "懐石", "焼き魚", "夕食"], calories: 280, protein_g: 28, fat_g: 16, carbs_g: 4, salt_g: 1.8, serving_label: "1皿", default_meal_type: "dinner", source_url: sources.aonoza }),
+  travelFood({ brand: "碧の座", name: "水白 天ぷら", category: "おかず・惣菜", tags: [...aonozaTags, "水白", "懐石", "天ぷら", "夕食"], calories: 420, protein_g: 18, fat_g: 24, carbs_g: 36, salt_g: 1.5, serving_label: "1皿", default_meal_type: "dinner", source_url: sources.aonoza }),
+  travelFood({ brand: "碧の座", name: "水白 季節の甘味", category: "スイーツ", tags: [...aonozaTags, "水白", "懐石", "甘味", "デザート"], calories: 260, protein_g: 4, fat_g: 10, carbs_g: 38, salt_g: 0.2, serving_label: "1皿", default_meal_type: "dinner", source_url: sources.aonoza }),
+  travelFood({ brand: "碧の座", name: "青翠 鉄板焼き 道産野菜", category: "サラダ・野菜", tags: [...aonozaTags, "青翠", "鉄板焼き", "道産野菜", "夕食"], calories: 160, protein_g: 5, fat_g: 9, carbs_g: 18, salt_g: 1.0, serving_label: "1皿", default_meal_type: "dinner", source_url: sources.aonoza }),
+  travelFood({ brand: "碧の座", name: "青翠 鉄板焼き 道産牛サーロイン", category: "肉・魚", tags: [...aonozaTags, "青翠", "鉄板焼き", "道産牛", "ステーキ", "夕食"], calories: 760, protein_g: 42, fat_g: 62, carbs_g: 4, salt_g: 2.0, serving_label: "1皿", default_meal_type: "dinner", source_url: sources.aonoza }),
+  travelFood({ brand: "碧の座", name: "青翠 鉄板焼き 海鮮盛り", category: "肉・魚", tags: [...aonozaTags, "青翠", "鉄板焼き", "海鮮", "夕食"], calories: 360, protein_g: 38, fat_g: 18, carbs_g: 10, salt_g: 2.0, serving_label: "1皿", default_meal_type: "dinner", source_url: sources.aonoza }),
+  travelFood({ brand: "碧の座", name: "青翠 ガーリックライス", category: "ごはん・丼", tags: [...aonozaTags, "青翠", "鉄板焼き", "ガーリックライス", "夕食"], calories: 420, protein_g: 8, fat_g: 14, carbs_g: 66, salt_g: 1.8, serving_label: "1杯", default_meal_type: "dinner", source_url: sources.aonoza }),
+  travelFood({ brand: "碧の座", name: "水白 朝食 焼き魚", category: "肉・魚", tags: [...aonozaTags, "水白", "朝食", "焼き魚"], calories: 240, protein_g: 24, fat_g: 12, carbs_g: 4, salt_g: 1.6, serving_label: "1皿", default_meal_type: "breakfast", source_url: sources.aonoza }),
+  travelFood({ brand: "碧の座", name: "水白 朝食 ご飯・味噌汁セット", category: "ごはん・丼", tags: [...aonozaTags, "水白", "朝食", "ご飯", "味噌汁"], calories: 420, protein_g: 10, fat_g: 4, carbs_g: 82, salt_g: 2.2, serving_label: "1膳", default_meal_type: "breakfast", source_url: sources.aonoza }),
+  travelFood({ brand: "碧の座", name: "バーラウンジ青藍 食後のドリンク", category: "ドリンク", tags: [...aonozaTags, "青藍", "バーラウンジ", "ドリンク"], calories: 120, protein_g: 0, fat_g: 0, carbs_g: 8, salt_g: 0, serving_label: "1杯", default_meal_type: "snack", source_url: sources.aonoza }),
+];
 
 export const hokkaidoTravelFoods = [
   travelFood({ brand: "トリトン", name: "サーモン", category: "チェーン店", tags: [...tritonTags, "握り"], calories: 115, protein_g: 8, fat_g: 3.5, carbs_g: 14, salt_g: 0.5, serving_label: "2貫", source_url: sources.toriton }),
@@ -76,6 +134,7 @@ export const hokkaidoTravelFoods = [
   travelFood({ brand: "トリトン", name: "いももち", category: "チェーン店", tags: [...tritonTags, "いももち", "北海道産", "サイド"], calories: 180, protein_g: 3, fat_g: 5, carbs_g: 31, salt_g: 0.8, serving_label: "1皿", source_url: sources.toriton }),
   travelFood({ brand: "トリトン", name: "鶏から揚げ", category: "チェーン店", tags: [...tritonTags, "唐揚げ", "サイド"], calories: 360, protein_g: 22, fat_g: 23, carbs_g: 18, salt_g: 1.8, serving_label: "1皿", source_url: sources.toriton }),
   travelFood({ brand: "トリトン", name: "濃厚クリームプリン", category: "チェーン店", tags: [...tritonTags, "プリン", "デザート"], calories: 260, protein_g: 6, fat_g: 15, carbs_g: 26, salt_g: 0.2, serving_label: "1個", default_meal_type: "snack", source_url: sources.toriton }),
+  ...toritonRollSideFoods,
 
   travelFood({ brand: "北々亭", name: "北海三貫盛り", category: "チェーン店", tags: [...hokuhokuteiTags, "盛り合わせ", "いくら", "ほたて", "サーモン"], calories: 180, protein_g: 14, fat_g: 5, carbs_g: 22, salt_g: 1.0, serving_label: "3貫" }),
   travelFood({ brand: "北々亭", name: "まぐろ三貫盛り", category: "チェーン店", tags: [...hokuhokuteiTags, "盛り合わせ", "まぐろ"], calories: 210, protein_g: 18, fat_g: 6, carbs_g: 24, salt_g: 1.0, serving_label: "3貫" }),
@@ -138,4 +197,5 @@ export const hokkaidoTravelFoods = [
   travelFood({ brand: "碧の座", name: "毛蟹・蟹料理", category: "肉・魚", tags: ["支笏湖", "碧の座", "懐石", "蟹", "海鮮"], calories: 280, protein_g: 36, fat_g: 8, carbs_g: 8, salt_g: 2.0, serving_label: "1皿", default_meal_type: "dinner", source_url: sources.aonoza }),
   travelFood({ brand: "碧の座", name: "季節の炊き込みご飯", category: "ごはん・丼", tags: ["支笏湖", "碧の座", "懐石", "炊き込みご飯"], calories: 360, protein_g: 9, fat_g: 5, carbs_g: 68, salt_g: 1.8, serving_label: "茶碗1杯", default_meal_type: "dinner", source_url: sources.aonoza }),
   travelFood({ brand: "碧の座", name: "北海道朝食膳", category: "おかず・惣菜", tags: ["支笏湖", "碧の座", "朝食", "和食", "焼き魚"], calories: 850, protein_g: 40, fat_g: 28, carbs_g: 105, salt_g: 5.0, serving_label: "1膳", default_meal_type: "breakfast", source_url: sources.aonoza }),
+  ...aonozaExpandedFoods,
 ];
