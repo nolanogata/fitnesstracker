@@ -1,6 +1,8 @@
 import { Fragment, useEffect, useMemo, useRef, useState, type ChangeEvent, type ReactNode, type RefObject, type TouchEvent } from "react";
 import {
   Activity,
+  ArrowDown,
+  ArrowUp,
   Archive,
   BarChart3,
   Beef,
@@ -1702,6 +1704,8 @@ function HomeTab(props: {
   }, [props.todayWorkouts, props.workoutExercises, props.workoutSets]);
   const previousWeight = props.weightLogs.length > 1 ? props.weightLogs.at(-2)?.weight_kg : undefined;
   const weightDelta = typeof previousWeight === "number" ? round1(weight - previousWeight) : undefined;
+  const average7Delta = typeof average7 === "number" ? round1(weight - average7) : undefined;
+  const average7Trend = typeof average7Delta === "number" && Math.abs(average7Delta) >= 0.1 ? (average7Delta > 0 ? "up" : "down") : undefined;
   const calorieDelta = props.goal?.target_calories ? props.dayTotals.calories - props.goal.target_calories : undefined;
   const calorieDeltaText = typeof calorieDelta === "number" ? `${calorieDelta > 0 ? "+" : ""}${Math.round(calorieDelta)}` : "-";
   const calorieDisplayText = props.isCheatDay ? "-" : calorieDeltaText;
@@ -1938,7 +1942,15 @@ function HomeTab(props: {
         <div className="grid grid-cols-2 items-end gap-3">
           <div>
             <p className="text-sm font-bold">今日のチェックイン</p>
-            <p className="numeric-text mt-6 text-[2.6rem] font-semibold leading-none tracking-normal">{round1(weight)}<span className="ml-1 text-base font-semibold">kg</span></p>
+            <p className="numeric-text mt-6 flex items-end gap-1 text-[2.6rem] font-semibold leading-none tracking-normal">
+              <span>{round1(weight)}</span>
+              <span className="mb-1 text-base font-semibold">kg</span>
+              {average7Trend && (
+                <span className={`mb-1 inline-flex h-6 w-6 items-center justify-center rounded-full ${average7Trend === "up" ? "text-clay" : "text-moss"}`} aria-label={`7日平均より${average7Trend === "up" ? "上" : "下"}`} title={`7日平均より${average7Trend === "up" ? "上" : "下"}`}>
+                  {average7Trend === "up" ? <ArrowUp size={16} strokeWidth={2.6} /> : <ArrowDown size={16} strokeWidth={2.6} />}
+                </span>
+              )}
+            </p>
             <p className="numeric-text mt-2 text-xs text-moss">7日平均 {average7 ? `${average7}kg` : "-"}{typeof weightDelta === "number" ? ` / 前日比 ${weightDelta > 0 ? "+" : ""}${weightDelta}kg` : ""}</p>
           </div>
           <div className="text-right">
