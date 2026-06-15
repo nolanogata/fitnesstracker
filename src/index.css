@@ -676,7 +676,7 @@ button {
   transform: translateX(-50%) translateZ(0);
   border: 1px solid rgba(218, 226, 220, 0.72);
   border-radius: 30px;
-  background: rgba(255, 255, 255, 0.64);
+  background: rgba(255, 255, 255, 0.56);
   background-clip: padding-box;
   box-shadow: 0 20px 48px rgba(44, 56, 48, 0.16), 0 4px 12px rgba(44, 56, 48, 0.07), var(--glass-highlight);
   backdrop-filter: blur(30px) saturate(160%);
@@ -1972,7 +1972,7 @@ button {
 
 .theme-dark .app-bottom-nav {
   border-color: rgba(255, 255, 255, 0.14);
-  background: rgba(12, 16, 13, 0.54);
+  background: rgba(12, 16, 13, 0.46);
   box-shadow: 0 18px 42px rgba(0, 0, 0, 0.32), var(--glass-highlight);
 }
 
