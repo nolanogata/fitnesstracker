@@ -4669,8 +4669,19 @@ function SettingsTab(props: {
               状態: {isTravelModeEnabled ? `ON（${activeTravelMode?.label ?? "旅行"} / ${travelModePeriodLabel}）` : "OFF"}
             </p>
           </div>
-          <button className="special-mode-test-button" onClick={toggleTravelMode}>
-            {isTravelModeEnabled ? "OFF" : "ON"}
+          <button
+            className={`special-mode-toggle ${isTravelModeEnabled ? "special-mode-toggle-on" : ""}`}
+            type="button"
+            aria-pressed={isTravelModeEnabled}
+            onClick={toggleTravelMode}
+          >
+            <span className="special-mode-toggle-track">
+              <span className="special-mode-toggle-knob" />
+            </span>
+            <span className="special-mode-toggle-copy">
+              <span className="special-mode-toggle-state">{isTravelModeEnabled ? "ON" : "OFF"}</span>
+              <span className="special-mode-toggle-action">{isTravelModeEnabled ? "タップでOFF" : "タップでON"}</span>
+            </span>
           </button>
         </div>
         <div className="mt-3 grid gap-2">
