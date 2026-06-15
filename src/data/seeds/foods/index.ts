@@ -42,6 +42,7 @@ import { originBentoOfficialFoods } from "./chains/originBentoOfficial";
 import { shinpachiAllEstimatedFoods } from "./chains/shinpachiEstimated";
 import { subwayOfficialFoods } from "./chains/subwayOfficial";
 import { sukiyaOfficialFoods } from "./chains/sukiyaOfficial";
+import { sushiChainFoods } from "./chains/sushiChains";
 import { tondenMenuFoods } from "./chains/tondenMenu";
 import { tullysOfficialFoods } from "./chains/tullysOfficial";
 import { yayoikenOfficialFoods } from "./chains/yayoikenOfficial";
@@ -85,6 +86,7 @@ export const foodSeeds = [
   ...konamonoChainFoods,
   ...originBentoOfficialFoods,
   ...dailyChainOfficialFoods,
+  ...sushiChainFoods,
   ...fastFoodFoods,
   ...bamiyanMenuFoods,
   ...italianRestaurantMenuFoods,
