@@ -163,21 +163,22 @@ const mealLabels: Record<MealType, string> = {
 };
 
 const chainCategories: Record<string, string[]> = {
-  "牛丼・丼": ["松屋", "すき家", "吉野家", "なか卯"],
+  "牛丼・丼": ["松屋", "すき家", "吉野家", "なか卯", "こめらく"],
   "うどん・そば": ["丸亀製麺", "はなまるうどん", "ウエスト", "資さんうどん"],
   ファストフード: ["マクドナルド", "モスバーガー", "ケンタッキー", "バーガーキング", "サブウェイ", "コストコ"],
   "カレー・弁当": ["CoCo壱番屋", "ほっともっと", "オリジン弁当"],
-  "中華・麺": ["リンガーハット", "餃子の王将"],
+  "中華・麺": ["リンガーハット", "餃子の王将", "大阪王将", "バーミヤン"],
   天丼: ["天丼てんや"],
   定食: ["大戸屋", "やよい軒", "しんぱち食堂", "とんでん"],
   ファミレス: ["ガスト", "ロイヤルホスト", "サイゼリヤ", "オリーブの丘", "デニーズ", "ジョイフル", "ジョナサン", "華屋与兵衛", "藍屋"],
+  イタリアン: ["カプリチョーザ", "マンマパスタ"],
   エスニック: ["モンスーンカフェ"],
   カフェ: ["スターバックス", "ドトール", "タリーズ", "コメダ珈琲"],
   ドーナツ: ["ミスタードーナツ", "クリスピークリーム", "アイムドーナツ"],
   粉物: ["築地銀だこ", "たこ家道頓堀くくる", "道とん堀"],
   コンビニ: ["セブンイレブン", "ファミリーマート", "ローソン", "ミニストップ"],
   居酒屋: [],
-  その他: [],
+  その他: ["佐野PA"],
 };
 
 const genericCategories: Record<string, string[]> = {
@@ -185,10 +186,10 @@ const genericCategories: Record<string, string[]> = {
   麺類: ["ラーメン", "つけ麺", "油そば", "タンメン", "担々麺", "トッピング", "うどん", "そば", "冷やし", "パスタ", "スパゲティ", "焼きそば", "冷麺"],
   パン: ["サンドイッチ", "トースト", "食パン", "菓子パン", "惣菜パン", "食事パン", "ハード系", "ナン", "ピザ"],
   粉物: ["たこ焼き", "お好み焼き", "もんじゃ", "明石焼", "焼きそば", "そば飯", "イカ焼き"],
-  "肉・魚": ["鶏", "豚", "牛肉", "牛豚", "羊肉", "焼肉", "カルビ", "ロース", "ハラミ", "ホルモン", "牛タン", "鮭", "サバ", "刺身", "卵"],
+  "肉・魚": ["鶏", "豚", "牛肉", "牛豚", "羊肉", "焼肉", "カルビ", "ロース", "ハラミ", "ホルモン", "牛タン", "鮭", "サバ", "サバ缶", "ツナ", "缶詰", "刺身", "卵", "サラダチキン"],
   "サラダ・野菜": ["サラダ", "野菜", "海藻", "チョレギ", "サンチュ", "焼き野菜"],
-  "おかず・惣菜": ["納豆", "豆腐", "ご飯のお供", "ふりかけ", "漬物", "佃煮", "明太子", "たらこ", "しらす", "塩昆布", "なめ茸", "唐揚げ", "フライドポテト", "フライドチキン", "チキンナゲット", "ポテト", "副菜", "揚げ物", "惣菜", "洋食", "インド料理", "韓国料理", "ナムル", "キムチ"],
-  スープ: ["味噌汁", "スープ", "豚汁", "汁物", "ユッケジャン"],
+  "おかず・惣菜": ["納豆", "豆腐", "ご飯のお供", "ふりかけ", "漬物", "佃煮", "明太子", "たらこ", "しらす", "塩昆布", "なめ茸", "唐揚げ", "フライドポテト", "フライドチキン", "チキンナゲット", "ポテト", "副菜", "揚げ物", "惣菜", "おつまみ", "おでん", "もつ煮", "串揚げ", "缶詰", "洋食", "インド料理", "韓国料理", "ナムル", "キムチ"],
+  スープ: ["味噌汁", "スープ", "豚汁", "汁物", "ユッケジャン", "おでん", "もつ煮"],
   スイーツ: ["ケーキ", "ドーナツ", "アイス", "和菓子", "焼き菓子", "スナック", "せんべい", "米菓", "チョコ", "グミ", "プリン", "果物", "ヨーグルト", "ギリシャヨーグルト", "高たんぱくヨーグルト", "水切りヨーグルト"],
   ドリンク: ["コーヒー", "カフェラテ", "牛乳", "豆乳", "ジュース", "炭酸", "アルコール"],
   冷凍食品: ["冷凍食品", "市販品", "チャーハン", "ラーメン", "パスタ", "スパゲティ", "うどん", "焼きおにぎり", "唐揚げ", "餃子", "お弁当"],
@@ -196,7 +197,7 @@ const genericCategories: Record<string, string[]> = {
   チェーン店: ["牛丼", "うどん", "定食", "バーガー"],
   プロテイン: ["プロテイン", "プロテインバー", "プロテインドリンク", "プロテインゼリー"],
   自炊: ["白米", "鶏", "卵"],
-  居酒屋: ["飲み会", "ビール"],
+  居酒屋: ["飲み会", "ビール", "おつまみ", "おでん", "もつ煮", "串揚げ", "焼き鳥", "缶詰"],
   サプリ: ["ビタミン", "ミネラル", "クレアチン", "EAA", "BCAA", "グルタミン", "シトルリン", "プレワークアウト", "その他"],
   その他: ["不明"],
 };
@@ -2408,8 +2409,11 @@ function FoodTab(props: {
   const isFoodFitFilterActive = showGeneralFoodsOnly || (hideOverGoalItems && canUseOverGoalFilter) || (showFoodBalance && canShowFoodBalance) || isSortFoodByFitActive;
   const searchPlaceholder = isChainScopedSearch ? `${brand}内を検索` : "食品・ブランド検索";
   const shouldShowFloatingSearch = mode !== "manual" && !selected && !editingEntry && isFoodSearchHidden;
+  const floatingFoodSearchLabel = isChainScopedSearch ? "チェーン店内でメニュー検索" : "検索に戻る";
+  const floatingFoodSearchAriaLabel = isChainScopedSearch ? `${brand}内のメニュー検索へ戻る` : "検索バーへ戻る";
   const results = useMemo(() => {
     const needle = query.trim().toLowerCase();
+    if (mode === "search" && !needle) return [];
     const tokens = needle.split(/\s+/).filter(Boolean);
     const base = needle
       ? props.menuItems.filter((item) => !isChainScopedSearch || item.brand === brand)
@@ -2469,6 +2473,7 @@ function FoodTab(props: {
     remainingNutrition.fat,
     remainingNutrition.carbs,
   ]);
+  const shouldShowFoodResults = mode !== "search" || isGlobalSearch;
 
   const saveSelected = async () => {
     if (!selected) return;
@@ -2792,26 +2797,28 @@ function FoodTab(props: {
               <button className="primary-button w-full" onClick={props.openMyMenuSettings}><Plus size={17} />マイメニューを登録</button>
             </section>
           )}
-          <section className="compact-card divide-y divide-line overflow-hidden scroll-mt-24" ref={foodResultsRef}>
-            <ListHeader title={isGlobalSearch ? (isChainScopedSearch ? `${brand}の検索結果` : "検索結果") : mode === "category" ? categoryGenre : mode === "quick" ? generalCategory : foodModeLabel(mode)} value={`${results.length}件`} />
-            {results.map((item, index) => (
-              <Fragment key={item.id}>
-                {isSortFoodByFitActive && index === 10 && (
-                  <div className="recommendation-divider px-4 py-2 text-center text-[11px] font-black text-moss">ここから通常候補</div>
-                )}
-                <FoodItemRow
-                  item={item}
-                  onPick={selectFoodItem}
-                  onClone={setManualFromItem(setManual, setMode)}
-                  onDelete={deleteUserMenuItem}
-                  refresh={props.refresh}
-                  balanceTarget={(showFoodBalance && canShowFoodBalance) || isSortFoodByFitActive ? remainingNutrition : undefined}
-                  recommendationRank={isSortFoodByFitActive && index < 10 ? index + 1 : undefined}
-                />
-              </Fragment>
-            ))}
-            {results.length === 0 && <EmptyLine text="見つかりません" />}
-          </section>
+          {shouldShowFoodResults && (
+            <section className="compact-card divide-y divide-line overflow-hidden scroll-mt-24" ref={foodResultsRef}>
+              <ListHeader title={isGlobalSearch ? (isChainScopedSearch ? `${brand}の検索結果` : "検索結果") : mode === "category" ? categoryGenre : mode === "quick" ? generalCategory : foodModeLabel(mode)} value={`${results.length}件`} />
+              {results.map((item, index) => (
+                <Fragment key={item.id}>
+                  {isSortFoodByFitActive && index === 10 && (
+                    <div className="recommendation-divider px-4 py-2 text-center text-[11px] font-black text-moss">ここから通常候補</div>
+                  )}
+                  <FoodItemRow
+                    item={item}
+                    onPick={selectFoodItem}
+                    onClone={setManualFromItem(setManual, setMode)}
+                    onDelete={deleteUserMenuItem}
+                    refresh={props.refresh}
+                    balanceTarget={(showFoodBalance && canShowFoodBalance) || isSortFoodByFitActive ? remainingNutrition : undefined}
+                    recommendationRank={isSortFoodByFitActive && index < 10 ? index + 1 : undefined}
+                  />
+                </Fragment>
+              ))}
+              {results.length === 0 && <EmptyLine text="見つかりません" />}
+            </section>
+          )}
         </>
       )}
 
@@ -2841,10 +2848,10 @@ function FoodTab(props: {
           type="button"
           className="floating-food-search floating-food-search-visible"
           onClick={focusFoodSearch}
-          aria-label="検索バーへ戻る"
+          aria-label={floatingFoodSearchAriaLabel}
         >
           <ArrowUp size={15} />
-          <span>検索に戻る</span>
+          <span>{floatingFoodSearchLabel}</span>
         </button>
       )}
 
@@ -7157,11 +7164,22 @@ function dedupeMenuItemsBySource(items: MenuItem[]) {
   return [...items]
     .sort((a, b) => sourceRank(a.data_source) - sourceRank(b.data_source))
     .filter((item) => {
-      const key = [item.brand ?? "", item.name, item.serving_label ?? ""].join("|");
+      const key = [item.brand ?? "", item.name, item.serving_label ?? ""].map(normalizeExactMenuKeyPart).join("|");
       if (seen.has(key)) return false;
       seen.add(key);
       return true;
     });
+}
+
+function normalizeExactMenuKeyPart(value: string) {
+  return value
+    .toLowerCase()
+    .replace(/[（）]/g, (char) => (char === "（" ? "(" : ")"))
+    .replace(/[＆]/g, "&")
+    .replace(/[　\s]+/g, "")
+    .replace(/[・･]/g, "")
+    .replace(/[ー－―‐]/g, "-")
+    .trim();
 }
 
 function mergeGenericDuplicateMenuItems(items: MenuItem[]) {
