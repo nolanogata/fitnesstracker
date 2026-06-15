@@ -508,7 +508,9 @@ button {
 .home-hero-hokkaido {
   border-color: rgba(255, 255, 255, 0.54);
   background: #101b21;
+  contain: paint;
   color: #f2f8f4;
+  isolation: isolate;
   box-shadow:
     0 0 0 1px rgba(255, 255, 255, 0.46),
     -10px -8px 28px rgba(255, 107, 107, 0.18),
@@ -522,6 +524,7 @@ button {
 .home-hero-hokkaido::before {
   position: absolute;
   inset: 0;
+  border-radius: inherit;
   z-index: 0;
   background:
     linear-gradient(90deg, rgba(9, 14, 19, 0.78), rgba(12, 24, 29, 0.3) 52%, rgba(9, 16, 23, 0.66)),
@@ -532,16 +535,18 @@ button {
 
 .home-hero-hokkaido::after {
   position: absolute;
-  inset: -34%;
+  inset: 0;
+  border-radius: inherit;
   z-index: 0;
   background:
     conic-gradient(from 145deg at 54% 48%, rgba(255, 107, 107, 0.34), rgba(255, 209, 102, 0.28), rgba(78, 205, 196, 0.26), rgba(123, 97, 255, 0.3), rgba(255, 107, 107, 0.34)),
     radial-gradient(circle at 76% 20%, rgba(255, 255, 255, 0.32), transparent 28%);
   content: "";
-  filter: blur(26px) saturate(140%);
+  filter: blur(18px) saturate(140%);
   mix-blend-mode: screen;
   opacity: 0.42;
   pointer-events: none;
+  transform: scale(1.24);
 }
 
 .home-hero-trip > * {
