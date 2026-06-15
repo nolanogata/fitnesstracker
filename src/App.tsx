@@ -2405,7 +2405,7 @@ function FoodTab(props: {
         return tokens.every((token) => haystack.includes(token));
       })
       : sorted;
-    const generalFiltered = showGeneralFoodsOnly ? matched.filter(isGeneralFoodMenuItem) : matched;
+    const generalFiltered = showGeneralFoodsOnly ? matched.filter(isGeneralFoodMenuItem) : mergeGenericDuplicateMenuItems(matched);
     const filtered = hideOverGoalItems && canUseOverGoalFilter
       ? generalFiltered.filter((item) => fitsRemainingFoodFilter(item, remainingNutrition))
       : generalFiltered;
@@ -7030,6 +7030,33 @@ function dedupeMenuItemsBySource(items: MenuItem[]) {
       seen.add(key);
       return true;
     });
+}
+
+function mergeGenericDuplicateMenuItems(items: MenuItem[]) {
+  const brandedOrSourcedKeys = new Set(
+    items
+      .filter((item) => !isGeneralFoodMenuItem(item))
+      .filter((item) => item.brand || item.data_source === "official" || item.data_source === "unofficial" || hasOfficialPartialSignal(item))
+      .map((item) => duplicateMenuKey(item.name)),
+  );
+  if (brandedOrSourcedKeys.size === 0) return items;
+  return items.filter((item) => {
+    if (!isGeneralFoodMenuItem(item)) return true;
+    return !brandedOrSourcedKeys.has(duplicateMenuKey(item.name));
+  });
+}
+
+function duplicateMenuKey(name: string) {
+  return name
+    .toLowerCase()
+    .replace(/[（）]/g, (char) => (char === "（" ? "(" : ")"))
+    .replace(/\([^)]*(並|大|得|小|中|メガ|ミニ|一皿|1個|2個|3個|4個|5個|6個|7個|8個|9個|10個)[^)]*\)/g, "")
+    .replace(/[　\s]+/g, "")
+    .replace(/[・･]/g, "")
+    .replace(/[ー－―‐]/g, "-")
+    .replace(/ロースかつ/g, "カツ")
+    .replace(/とんかつ/g, "カツ")
+    .trim();
 }
 
 function workoutModeLabel(mode: WorkoutMode) {
