@@ -2612,6 +2612,15 @@ function FoodTab(props: {
     await props.refresh();
     props.showToast("食事ログを修正しました");
   };
+  const deleteUserMenuItem = async (item: MenuItem) => {
+    if (!item.is_user_created) return;
+    const name = formatMenuItemName(item);
+    const confirmed = window.confirm(`${name}をマイメニューから削除しますか？\n記録済みの食事ログは残ります。`);
+    if (!confirmed) return;
+    await db.menu_items.delete(item.id);
+    await props.refresh();
+    props.showToast(`${name}をマイメニューから削除しました`);
+  };
   const todayFoodEntries = useMemo(() => props.foodEntries.filter((entry) => entry.app_date === props.appDate), [props.foodEntries, props.appDate]);
   const foodLogTitle = `${formatJapaneseDate(props.appDate)}の食事ログ`;
 
@@ -2794,6 +2803,7 @@ function FoodTab(props: {
                   item={item}
                   onPick={selectFoodItem}
                   onClone={setManualFromItem(setManual, setMode)}
+                  onDelete={deleteUserMenuItem}
                   refresh={props.refresh}
                   balanceTarget={(showFoodBalance && canShowFoodBalance) || isSortFoodByFitActive ? remainingNutrition : undefined}
                   recommendationRank={isSortFoodByFitActive && index < 10 ? index + 1 : undefined}
@@ -4002,6 +4012,20 @@ function SettingsTab(props: {
     goalDraft.manual_fat_g ? `F ${goalDraft.manual_fat_g}g` : "",
     goalDraft.manual_carbs_g ? `C ${goalDraft.manual_carbs_g}g` : "",
   ].filter(Boolean).join(" / ") || "すべて自動";
+  const userMenuItems = useMemo(
+    () => props.menuItems
+      .filter((item) => item.is_user_created)
+      .sort((a, b) => (b.updated_at || b.created_at).localeCompare(a.updated_at || a.created_at)),
+    [props.menuItems],
+  );
+  const deleteUserMenuItem = async (item: MenuItem) => {
+    const name = formatMenuItemName(item);
+    const confirmed = window.confirm(`${name}をマイメニューから削除しますか？\n記録済みの食事ログは残ります。`);
+    if (!confirmed) return;
+    await db.menu_items.delete(item.id);
+    await props.refresh();
+    props.showToast(`${name}をマイメニューから削除しました`);
+  };
   const saveGoalSettings = async () => {
     if (!props.profile) return;
     const timestamp = nowIso();
@@ -4184,13 +4208,23 @@ function SettingsTab(props: {
           await props.refresh();
           props.showToast(`${presetDraft.name.trim()}をマイメニューに保存しました`);
         }} />
-        <div className="mt-3 divide-y divide-line">
-          {props.menuItems.filter((item) => item.is_user_created).slice(0, 10).map((item) => (
-            <div className="flex items-center justify-between py-2" key={item.id}>
-              <span className="text-sm font-semibold">{item.name}</span>
-              <button className="icon-button h-8 w-8" aria-label="削除" onClick={async () => { await db.menu_items.delete(item.id); await props.refresh(); }}><Trash2 size={14} /></button>
-            </div>
-          ))}
+        <div className="mt-4">
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <p className="text-xs font-bold text-moss">登録済みマイメニュー</p>
+            <span className="mini-chip">{userMenuItems.length}件</span>
+          </div>
+          <div className="divide-y divide-line overflow-hidden rounded-3xl border border-line/70 bg-white/30">
+            {userMenuItems.map((item) => (
+              <div className="flex items-center justify-between gap-3 px-3 py-2" key={item.id}>
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold">{formatMenuItemName(item)}</p>
+                  <p className="numeric-text truncate text-xs text-moss">{item.brand || item.category} · {item.calories}kcal · P{item.protein_g} F{item.fat_g} C{item.carbs_g}</p>
+                </div>
+                <button className="icon-button h-8 w-8 shrink-0 text-clay" aria-label={`${formatMenuItemName(item)}を削除`} onClick={() => deleteUserMenuItem(item)}><Trash2 size={14} /></button>
+              </div>
+            ))}
+            {userMenuItems.length === 0 && <EmptyLine text="登録済みのマイメニューはありません" />}
+          </div>
         </div>
       </section>
 
@@ -4640,10 +4674,11 @@ function ManualFoodForm({ manual, setManual, onSave, compact = false, mode = "lo
   );
 }
 
-function FoodItemRow({ item, onPick, onClone, refresh, balanceTarget, recommendationRank }: {
+function FoodItemRow({ item, onPick, onClone, onDelete, refresh, balanceTarget, recommendationRank }: {
   item: MenuItem;
   onPick: (item: MenuItem) => void;
   onClone: (item: MenuItem) => void;
+  onDelete?: (item: MenuItem) => void | Promise<void>;
   refresh: () => Promise<void>;
   balanceTarget?: { calories: number; protein: number; fat: number; carbs: number };
   recommendationRank?: number;
@@ -4670,6 +4705,9 @@ function FoodItemRow({ item, onPick, onClone, refresh, balanceTarget, recommenda
         await db.menu_items.update(item.id, { is_favorite: !item.is_favorite, updated_at: nowIso() });
         await refresh();
       }}><Heart size={14} fill={item.is_favorite ? "currentColor" : "none"} /></button>
+      {item.is_user_created && onDelete && (
+        <button className="icon-button h-8 w-8 text-clay" aria-label={`${formatMenuItemName(item)}をマイメニューから削除`} onClick={() => onDelete(item)}><Trash2 size={14} /></button>
+      )}
     </div>
   );
 }
