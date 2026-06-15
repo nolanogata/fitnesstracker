@@ -18,11 +18,14 @@ export type SpecialModeId = "hokkaido_trip" | string;
 export type SpecialModeSettings = {
   id: SpecialModeId;
   enabled: boolean;
+  label?: string;
+  short_label?: string;
+  food_query?: string;
+  deleted?: boolean;
   start_date?: string;
   end_date?: string;
   start_month_day?: string;
   end_month_day?: string;
-  test_active_until?: string;
   updated_at?: string;
 };
 
@@ -34,6 +37,7 @@ export type Settings = {
   active_goal_id?: string;
   hidden_workout_template_ids?: string[];
   special_modes?: SpecialModeSettings[];
+  developer_test_active_until?: string;
   created_at: string;
   updated_at: string;
 };
