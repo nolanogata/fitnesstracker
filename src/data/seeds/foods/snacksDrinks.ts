@@ -2,6 +2,7 @@ import { official } from "./helpers";
 
 const fetchedAt = "2026-06-12T00:00:00.000Z";
 const snackFetchedAt = "2026-06-13T00:00:00.000Z";
+const uhaFetchedAt = "2026-06-15T00:00:00.000Z";
 
 type PackagedItem = {
   brand: string;
@@ -44,6 +45,8 @@ export const snackDrinkFoods = [
   packaged({ brand: "UHA味覚糖", name: "コロロ グレープ", category: "スイーツ", tags: ["グミ", "グレープ", "間食"], calories: 130, protein_g: 0.8, fat_g: 0.0, carbs_g: 31.9, serving_label: "1袋 48g", source_url: "https://www.uha-mikakuto.co.jp/catalog/gummy/" }),
   packaged({ brand: "UHA味覚糖", name: "コロロ マスカット", category: "スイーツ", tags: ["グミ", "マスカット", "間食"], calories: 130, protein_g: 0.8, fat_g: 0.0, carbs_g: 31.9, serving_label: "1袋 48g", source_url: "https://www.uha-mikakuto.co.jp/catalog/gummy/" }),
   packaged({ brand: "UHA味覚糖", name: "忍者めし 巨峰", category: "スイーツ", tags: ["グミ", "ハードグミ", "間食"], calories: 63, protein_g: 1.0, fat_g: 0.0, carbs_g: 15.7, serving_label: "1袋 20g", source_url: "https://www.uha-mikakuto.co.jp/catalog/gummy/" }),
+  packaged({ brand: "UHA味覚糖", name: "シゲキックス グレープ", category: "スイーツ", tags: ["グミ", "ハードグミ", "シゲキックス", "グレープ", "すっぱい", "間食"], calories: 59, protein_g: 2.0, fat_g: 0.0, carbs_g: 15.2, salt_g: 0.01, serving_label: "1袋 20g", source_url: "https://www.uha-mikakuto.co.jp/catalog/gummy/si84.html", fetched_at: uhaFetchedAt }),
+  packaged({ brand: "UHA味覚糖", name: "激シゲキックス 極刺激ソーダ", category: "スイーツ", tags: ["グミ", "ハードグミ", "シゲキックス", "ソーダ", "すっぱい", "間食"], calories: 63, protein_g: 2.0, fat_g: 0.0, carbs_g: 16.2, salt_g: 0.01, serving_label: "1袋 20g", source_url: "https://www.uha-mikakuto.co.jp/catalog/gummy/si77.html", fetched_at: uhaFetchedAt }),
   packaged({ brand: "ノーベル製菓", name: "男梅グミ", category: "スイーツ", tags: ["グミ", "梅", "間食", "塩分"], calories: 121, protein_g: 2.4, fat_g: 0.0, carbs_g: 27.8, salt_g: 1.7, serving_label: "1袋 38g", source_url: "https://www.nobel.co.jp/artdetail.php?id=19" }),
   packaged({ brand: "ブルボン", name: "フェットチーネグミ イタリアングレープ味", category: "スイーツ", tags: ["グミ", "グレープ", "間食"], calories: 166, protein_g: 2.5, fat_g: 0.0, carbs_g: 39.0, serving_label: "1袋 50g", source_url: "https://www.bourbon.co.jp/fettuccine/" }),
   packaged({ brand: "HARIBO", name: "ゴールドベア", category: "スイーツ", tags: ["グミ", "輸入菓子", "間食"], calories: 275, protein_g: 5.5, fat_g: 0.5, carbs_g: 62.0, serving_label: "1袋 80g", source_url: "https://www.haribo.com/ja-jp/products/haribo/goldbears" }),
