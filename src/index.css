@@ -492,6 +492,20 @@ button {
 .home-hero-trip {
   position: relative;
   overflow: hidden;
+  border-color: rgba(111, 143, 125, 0.32);
+  background:
+    radial-gradient(circle at 76% 18%, rgba(143, 178, 216, 0.22), transparent 28%),
+    radial-gradient(circle at 18% 84%, rgba(159, 190, 169, 0.2), transparent 30%),
+    var(--glass-bg);
+  color: var(--text-primary);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.62),
+    0 0 24px rgba(111, 143, 125, 0.14),
+    0 14px 34px rgba(44, 56, 48, 0.08),
+    var(--glass-highlight);
+}
+
+.home-hero-hokkaido {
   border-color: rgba(255, 255, 255, 0.54);
   background: #101b21;
   color: #f2f8f4;
@@ -505,7 +519,7 @@ button {
     var(--glass-highlight);
 }
 
-.home-hero-trip::before {
+.home-hero-hokkaido::before {
   position: absolute;
   inset: 0;
   z-index: 0;
@@ -516,7 +530,7 @@ button {
   content: "";
 }
 
-.home-hero-trip::after {
+.home-hero-hokkaido::after {
   position: absolute;
   inset: -34%;
   z-index: 0;
@@ -535,9 +549,9 @@ button {
   z-index: 1;
 }
 
-.home-hero-trip .text-ink,
-.home-hero-trip .text-ink\/80,
-.home-hero-trip .text-moss {
+.home-hero-hokkaido .text-ink,
+.home-hero-hokkaido .text-ink\/80,
+.home-hero-hokkaido .text-moss {
   color: rgba(242, 248, 244, 0.92) !important;
 }
 
@@ -1861,6 +1875,19 @@ button {
 }
 
 .theme-dark .home-hero-trip {
+  border-color: rgba(159, 190, 169, 0.22);
+  background:
+    radial-gradient(circle at 76% 18%, rgba(143, 178, 216, 0.14), transparent 28%),
+    radial-gradient(circle at 18% 84%, rgba(159, 190, 169, 0.14), transparent 30%),
+    var(--glass-bg);
+  box-shadow:
+    0 0 0 1px rgba(159, 190, 169, 0.2),
+    0 0 22px rgba(159, 190, 169, 0.12),
+    0 18px 42px rgba(0, 0, 0, 0.28),
+    var(--glass-highlight);
+}
+
+.theme-dark .home-hero-hokkaido {
   border-color: rgba(255, 255, 255, 0.16);
   background: #101b21;
   box-shadow:
@@ -1873,14 +1900,14 @@ button {
     var(--glass-highlight);
 }
 
-.theme-dark .home-hero-trip::before {
+.theme-dark .home-hero-hokkaido::before {
   background:
     linear-gradient(90deg, rgba(5, 8, 11, 0.84), rgba(10, 22, 28, 0.32) 52%, rgba(5, 9, 14, 0.68)),
     linear-gradient(180deg, rgba(255, 255, 255, 0.06), transparent 34%, rgba(0, 0, 0, 0.2)),
     url("/hokkaido-hero.jpg") center / cover no-repeat;
 }
 
-.theme-dark .home-hero-trip::after {
+.theme-dark .home-hero-hokkaido::after {
   opacity: 0.36;
 }
 

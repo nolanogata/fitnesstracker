@@ -156,17 +156,16 @@ type PerfectFoodSuggestionGroup = {
   items: MenuItem[];
 };
 type SpecialModeDefinition = {
-  id: "hokkaido_trip";
+  id: string;
   label: string;
   shortLabel: string;
-  foodQuery: string;
+  foodQuery?: string;
   defaultStartDate: string;
   defaultEndDate: string;
 };
 type ActiveSpecialMode = SpecialModeDefinition & {
   startDate: string;
   endDate: string;
-  isTest: boolean;
 };
 
 const mealLabels: Record<MealType, string> = {
@@ -267,42 +266,70 @@ function settingsGoalDraftFrom(activeGoal?: Goal, profile?: Profile) {
 type SettingsGoalDraft = ReturnType<typeof settingsGoalDraftFrom>;
 
 function getSpecialModeSettings(settings?: AppSettings): SpecialModeSettings[] {
-  return specialModeDefinitions.map((definition) => {
+  const presetModes = specialModeDefinitions.flatMap((definition) => {
     const saved = settings?.special_modes?.find((mode) => mode.id === definition.id);
+    if (saved?.deleted) return [];
     return {
       id: definition.id,
-      enabled: saved?.enabled ?? true,
+      enabled: saved?.enabled ?? false,
+      label: saved?.label ?? definition.label,
+      short_label: saved?.short_label ?? definition.shortLabel,
+      food_query: saved?.food_query ?? definition.foodQuery,
       start_date: saved?.start_date ?? (saved?.start_month_day ? dateFromMonthDay(definition.defaultStartDate, saved.start_month_day) : definition.defaultStartDate),
       end_date: saved?.end_date ?? (saved?.end_month_day ? dateFromMonthDay(definition.defaultStartDate, saved.end_month_day, saved.start_month_day) : definition.defaultEndDate),
-      test_active_until: saved?.test_active_until,
       updated_at: saved?.updated_at,
     };
   });
+  const customModes = (settings?.special_modes ?? [])
+    .filter((mode) => !mode.deleted && !specialModeDefinitions.some((definition) => definition.id === mode.id))
+    .map((mode) => ({
+      ...mode,
+      label: mode.label ?? "旅行",
+      short_label: mode.short_label ?? "TRIP",
+    }));
+  return [...presetModes, ...customModes];
 }
 
-function getActiveSpecialMode(appDate: string, settings: SpecialModeSettings[], now = new Date()): ActiveSpecialMode | undefined {
-  return specialModeDefinitions
-    .map((definition) => {
-      const modeSettings = settings.find((mode) => mode.id === definition.id);
-      if (!modeSettings?.enabled) return undefined;
-      const testUntil = modeSettings.test_active_until ? new Date(modeSettings.test_active_until) : undefined;
-      const isTest = !!testUntil && testUntil.getTime() > now.getTime() && appDate === todayAppDate(3, now);
-      const startDate = modeSettings.start_date ?? definition.defaultStartDate;
-      const endDate = modeSettings.end_date ?? definition.defaultEndDate;
-      const inPeriod = appDate >= startDate && appDate <= endDate;
-      if (!isTest && !inPeriod) return undefined;
-      return { ...definition, startDate, endDate, isTest };
+function getActiveSpecialMode(appDate: string, settings: SpecialModeSettings[]): ActiveSpecialMode | undefined {
+  return settings
+    .map((modeSettings) => {
+      if (!modeSettings.enabled) return undefined;
+      const definition = specialModeDefinitions.find((item) => item.id === modeSettings.id);
+      const startDate = modeSettings.start_date ?? definition?.defaultStartDate;
+      const endDate = modeSettings.end_date ?? definition?.defaultEndDate;
+      if (!startDate || !endDate || appDate < startDate || appDate > endDate) return undefined;
+      return {
+        id: modeSettings.id,
+        label: modeSettings.label ?? definition?.label ?? "旅行",
+        shortLabel: modeSettings.short_label ?? definition?.shortLabel ?? "TRIP",
+        foodQuery: modeSettings.food_query ?? definition?.foodQuery,
+        defaultStartDate: definition?.defaultStartDate ?? startDate,
+        defaultEndDate: definition?.defaultEndDate ?? endDate,
+        startDate,
+        endDate,
+      };
     })
     .find(Boolean);
 }
 
-function getSpecialModeDaysInRange(start: string, end: string, settings: SpecialModeSettings[], now = new Date()) {
+function getSpecialModeDaysInRange(start: string, end: string, settings: SpecialModeSettings[]) {
   return dateRange(start, end)
     .map((date) => {
-      const mode = getActiveSpecialMode(date, settings, now);
-      return mode ? { date, label: mode.label, isTest: mode.isTest } : undefined;
+      const mode = getActiveSpecialMode(date, settings);
+      return mode ? { date, label: mode.label } : undefined;
     })
-    .filter((item): item is { date: string; label: string; isTest: boolean } => !!item);
+    .filter((item): item is { date: string; label: string } => !!item);
+}
+
+function isDeveloperTestModeActive(settings?: AppSettings, now = new Date()) {
+  const activeUntil = settings?.developer_test_active_until ? new Date(settings.developer_test_active_until) : undefined;
+  return !!activeUntil && activeUntil.getTime() > now.getTime();
+}
+
+function getDeveloperTestModeDaysInRange(start: string, end: string, settings?: AppSettings, now = new Date()) {
+  if (!isDeveloperTestModeActive(settings, now)) return [];
+  const currentDate = todayAppDate(settings?.day_boundary_hour ?? 3, now);
+  return currentDate >= start && currentDate <= end ? [{ date: currentDate, label: "テストモード", isTest: true }] : [];
 }
 
 function dateFromMonthDay(referenceDate: string, monthDay: string, startMonthDay?: string) {
@@ -1124,9 +1151,10 @@ function App() {
   const themeMode = settings?.theme_mode ?? "system";
   const resolvedTheme: "light" | "dark" = themeMode === "system" ? (prefersDarkTheme ? "dark" : "light") : themeMode;
   const specialModeSettings = useMemo(() => getSpecialModeSettings(settings), [settings]);
-  const activeSpecialMode = useMemo(() => getActiveSpecialMode(appDate, specialModeSettings, currentTime), [appDate, currentTime, specialModeSettings]);
+  const activeSpecialMode = useMemo(() => getActiveSpecialMode(appDate, specialModeSettings), [appDate, specialModeSettings]);
+  const isDeveloperTestMode = useMemo(() => isDeveloperTestModeActive(settings, currentTime), [settings?.developer_test_active_until, currentTime]);
   const openSpecialFoodMode = () => {
-    if (!activeSpecialMode) return;
+    if (!activeSpecialMode?.foodQuery) return;
     setSettingsFocus(undefined);
     setWorkoutFocus(undefined);
     setFoodFocus("specialMode");
@@ -1418,14 +1446,14 @@ function App() {
                   今日
                 </button>
               )}
-              {activeSpecialMode && (
+              {activeSpecialMode?.foodQuery && (
                 <button
                   className="home-header-special"
                   aria-label={`${activeSpecialMode.label}メニューを開く`}
                   onClick={openSpecialFoodMode}
                   title={`${activeSpecialMode.label}メニュー`}
                 >
-                  HKD
+                  {activeSpecialMode.shortLabel}
                 </button>
               )}
               <button
@@ -1446,7 +1474,7 @@ function App() {
               <button className="app-status-pill" onClick={() => setSelectedAppDate(undefined)}>
                 {formatJapaneseDate(appDate)} / 今日へ
               </button>
-            ) : activeSpecialMode ? (
+            ) : activeSpecialMode?.foodQuery ? (
               <button className="app-status-pill app-status-special" onClick={openSpecialFoodMode}>
                 {activeSpecialMode.shortLabel}モード
               </button>
@@ -1580,6 +1608,7 @@ function App() {
             appDate={appDate}
             cheatDayDates={cheatDayDates}
             specialModeSettings={specialModeSettings}
+            settings={settings}
             foodEntries={foodEntries}
             weightLogs={weightLogs}
             workoutSessions={workoutSessions}
@@ -1602,6 +1631,7 @@ function App() {
             workoutTemplates={workoutTemplates}
             specialModeSettings={specialModeSettings}
             activeSpecialMode={activeSpecialMode}
+            isDeveloperTestMode={isDeveloperTestMode}
             focus={settingsFocus}
             backupInfo={backupInfo}
             settings={settings}
@@ -2490,7 +2520,7 @@ function FoodTab(props: {
     return () => window.clearTimeout(timer);
   }, [props.focus]);
   useEffect(() => {
-    if (props.focus !== "specialMode" || !props.activeSpecialMode) return;
+    if (props.focus !== "specialMode" || !props.activeSpecialMode?.foodQuery) return;
     setMode("search");
     setQuery(props.activeSpecialMode.foodQuery);
     const timer = window.setTimeout(() => {
@@ -2865,13 +2895,15 @@ function FoodTab(props: {
             <button className="shrink-0 text-ink" type="button" onClick={() => { setQuery(""); scrollToChainSection(); }}>チェーン変更</button>
           </div>
         )}
-        {props.activeSpecialMode && mode !== "manual" && (
+        {props.activeSpecialMode?.foodQuery && mode !== "manual" && (
           <button
             className="special-mode-food-banner"
             type="button"
             onClick={() => {
+              const foodQuery = props.activeSpecialMode?.foodQuery;
+              if (!foodQuery) return;
               setMode("search");
-              setQuery(props.activeSpecialMode!.foodQuery);
+              setQuery(foodQuery);
               scrollToFoodResults();
             }}
           >
@@ -3834,6 +3866,7 @@ function RecordsTab(props: {
   showToast: (text: string) => void;
   onEditRecordDate: (date: string, targetTab: EditableRecordTab) => void;
   specialModeSettings: SpecialModeSettings[];
+  settings?: AppSettings;
 }) {
   const [historyGrouping, setHistoryGrouping] = useState<HistoryGrouping>("day");
   const [reportMonth, setReportMonth] = useState(() => monthKey(props.appDate));
@@ -3893,7 +3926,10 @@ function RecordsTab(props: {
       generatedAt,
       currentAppDate: props.appDate,
       cheatDayDates: props.cheatDayDates.filter((date) => date === selectedReportDate),
-      specialModeDays: getSpecialModeDaysInRange(selectedReportDate, selectedReportDate, props.specialModeSettings),
+      specialModeDays: [
+        ...getSpecialModeDaysInRange(selectedReportDate, selectedReportDate, props.specialModeSettings),
+        ...getDeveloperTestModeDaysInRange(selectedReportDate, selectedReportDate, props.settings),
+      ],
       workoutGrouping: "day",
       question: `${formatJapaneseDate(selectedReportDate)}の記録を翌朝に振り返る前提で、よかった点と次回の調整を簡潔に整理してください。`,
     });
@@ -4137,6 +4173,7 @@ function SettingsTab(props: {
   workoutTemplates: WorkoutTemplate[];
   specialModeSettings: SpecialModeSettings[];
   activeSpecialMode?: ActiveSpecialMode;
+  isDeveloperTestMode: boolean;
   focus?: SettingsFocus;
   backupInfo: BackupInfo;
   settings?: AppSettings;
@@ -4165,7 +4202,13 @@ function SettingsTab(props: {
   const [isMacroOverrideOpen, setIsMacroOverrideOpen] = useState(false);
   const [isProfileNameOpen, setIsProfileNameOpen] = useState(false);
   const [profileNameDraft, setProfileNameDraft] = useState(props.profile?.name ?? "");
-  const [specialModeTapCount, setSpecialModeTapCount] = useState(0);
+  const [isTravelModeOpen, setIsTravelModeOpen] = useState(false);
+  const [travelModalStep, setTravelModalStep] = useState<"select" | "period">("select");
+  const [selectedTravelModeId, setSelectedTravelModeId] = useState("");
+  const [travelNameDraft, setTravelNameDraft] = useState("");
+  const [travelStartDraft, setTravelStartDraft] = useState(props.appDate);
+  const [travelEndDraft, setTravelEndDraft] = useState(addDays(props.appDate, 4));
+  const [developerTapCount, setDeveloperTapCount] = useState(0);
   const goalSectionRef = useRef<HTMLElement | null>(null);
   const backupSectionRef = useRef<HTMLElement | null>(null);
   const myMenuSectionRef = useRef<HTMLElement | null>(null);
@@ -4238,9 +4281,10 @@ function SettingsTab(props: {
       .sort((a, b) => (b.updated_at || b.created_at).localeCompare(a.updated_at || a.created_at)),
     [props.menuItems],
   );
-  const hokkaidoModeSettings = props.specialModeSettings.find((mode) => mode.id === "hokkaido_trip");
-  const hokkaidoPeriodLabel = hokkaidoModeSettings?.start_date && hokkaidoModeSettings.end_date
-    ? `${formatJapaneseDate(hokkaidoModeSettings.start_date)}〜${formatJapaneseDate(hokkaidoModeSettings.end_date)}`
+  const activeTravelMode = props.specialModeSettings.find((mode) => mode.enabled);
+  const isTravelModeEnabled = !!activeTravelMode;
+  const travelModePeriodLabel = activeTravelMode?.start_date && activeTravelMode.end_date
+    ? `${formatJapaneseDate(activeTravelMode.start_date)}〜${formatJapaneseDate(activeTravelMode.end_date)}`
     : "未設定";
   const deleteUserMenuItem = async (item: MenuItem) => {
     const name = formatMenuItemName(item);
@@ -4267,53 +4311,102 @@ function SettingsTab(props: {
     }
     await props.refresh();
   };
-  const toggleHokkaidoTestMode = async () => {
-    const hokkaido = props.specialModeSettings.find((mode) => mode.id === "hokkaido_trip");
-    if (!hokkaido) return;
-    const isTestActive = !!props.activeSpecialMode?.isTest;
-    const nextMode = {
-      ...hokkaido,
-      test_active_until: isTestActive ? undefined : new Date(Date.now() + 12 * 60 * 60 * 1000).toISOString(),
+  const openTravelModeModal = () => {
+    const mode = activeTravelMode ?? props.specialModeSettings[0];
+    setSelectedTravelModeId(mode?.id ?? "");
+    setTravelStartDraft(mode?.start_date ?? props.appDate);
+    setTravelEndDraft(mode?.end_date ?? addDays(props.appDate, 4));
+    setTravelNameDraft("");
+    setTravelModalStep("select");
+    setIsTravelModeOpen(true);
+  };
+  const disableTravelMode = async () => {
+    await saveSpecialModeSettings(props.specialModeSettings.map((mode) => ({ ...mode, enabled: false })));
+    props.showToast("旅行モードをOFFにしました");
+  };
+  const toggleTravelMode = async () => {
+    if (isTravelModeEnabled) {
+      await disableTravelMode();
+      return;
+    }
+    openTravelModeModal();
+  };
+  const addTravelDestination = async () => {
+    const label = travelNameDraft.trim();
+    if (!label) return;
+    const id = makeId("trip");
+    const nextMode: SpecialModeSettings = {
+      id,
+      enabled: false,
+      label,
+      short_label: label.slice(0, 3).toUpperCase(),
+      start_date: props.appDate,
+      end_date: addDays(props.appDate, 2),
     };
-    await saveSpecialModeSettings(props.specialModeSettings.map((mode) => mode.id === nextMode.id ? nextMode : mode));
-    setSpecialModeTapCount(0);
-    props.showToast(isTestActive ? "特別モードを終了しました" : "特別モードを開始しました");
+    await saveSpecialModeSettings([...props.specialModeSettings, nextMode]);
+    setSelectedTravelModeId(id);
+    setTravelStartDraft(nextMode.start_date ?? props.appDate);
+    setTravelEndDraft(nextMode.end_date ?? addDays(props.appDate, 2));
+    setTravelNameDraft("");
+    setTravelModalStep("period");
   };
-  const toggleHokkaidoModeEnabled = async () => {
-    const hokkaido = props.specialModeSettings.find((mode) => mode.id === "hokkaido_trip");
-    if (!hokkaido) return;
-    const nextEnabled = !hokkaido.enabled;
+  const deleteTravelDestination = async (id: string) => {
+    const target = props.specialModeSettings.find((mode) => mode.id === id);
+    if (!target) return;
+    const confirmed = window.confirm(`${target.label ?? "旅行先"}を削除しますか？`);
+    if (!confirmed) return;
+    const isPreset = specialModeDefinitions.some((definition) => definition.id === id);
+    const nextModes = isPreset
+      ? props.specialModeSettings.map((mode) => mode.id === id ? { ...mode, enabled: false, deleted: true } : mode)
+      : props.specialModeSettings.filter((mode) => mode.id !== id);
+    await saveSpecialModeSettings(nextModes);
+    const nextSelected = nextModes.find((mode) => !mode.deleted && mode.id !== id)?.id ?? "";
+    setSelectedTravelModeId(nextSelected);
+    props.showToast("旅行先を削除しました");
+  };
+  const saveTravelModePeriod = async () => {
+    const selected = props.specialModeSettings.find((mode) => mode.id === selectedTravelModeId);
+    if (!selected || !travelStartDraft || !travelEndDraft) return;
+    const startDate = travelStartDraft <= travelEndDraft ? travelStartDraft : travelEndDraft;
+    const endDate = travelStartDraft <= travelEndDraft ? travelEndDraft : travelStartDraft;
     await saveSpecialModeSettings(props.specialModeSettings.map((mode) => (
-      mode.id === hokkaido.id
-        ? { ...mode, enabled: nextEnabled, test_active_until: nextEnabled ? mode.test_active_until : undefined }
-        : mode
+      mode.id === selected.id
+        ? { ...mode, enabled: true, start_date: startDate, end_date: endDate }
+        : { ...mode, enabled: false }
     )));
-    setSpecialModeTapCount(0);
-    props.showToast(nextEnabled ? "特別モードをONにしました" : "特別モードをOFFにしました");
+    setIsTravelModeOpen(false);
+    props.showToast("旅行モードをONにしました");
   };
-  const updateHokkaidoPeriod = async (field: "start_date" | "end_date", value: string) => {
-    const hokkaido = props.specialModeSettings.find((mode) => mode.id === "hokkaido_trip");
-    if (!hokkaido || !value) return;
-    const nextMode = { ...hokkaido, [field]: value };
-    if (nextMode.start_date && nextMode.end_date && nextMode.start_date > nextMode.end_date) {
-      if (field === "start_date") nextMode.end_date = value;
-      if (field === "end_date") nextMode.start_date = value;
+  const saveDeveloperTestMode = async (enabled: boolean) => {
+    const timestamp = nowIso();
+    const developer_test_active_until = enabled ? new Date(Date.now() + 12 * 60 * 60 * 1000).toISOString() : undefined;
+    if (props.settings) {
+      await db.settings.update("local", { developer_test_active_until, updated_at: timestamp });
+    } else {
+      await db.settings.put({
+        id: "local",
+        day_boundary_hour: 3,
+        onboarding_completed: true,
+        developer_test_active_until,
+        created_at: timestamp,
+        updated_at: timestamp,
+      });
     }
-    await saveSpecialModeSettings(props.specialModeSettings.map((mode) => mode.id === nextMode.id ? nextMode : mode));
-    props.showToast("特別モードの日程を保存しました");
+    await props.refresh();
+    setDeveloperTapCount(0);
+    props.showToast(enabled ? "テストモードに入りました" : "テストモードを終了しました");
   };
-  const handleSpecialModeTestTap = async () => {
-    if (props.activeSpecialMode?.isTest) {
-      await toggleHokkaidoTestMode();
+  const handleDeveloperModeTap = async () => {
+    if (props.isDeveloperTestMode) {
+      await saveDeveloperTestMode(false);
       return;
     }
-    const next = specialModeTapCount + 1;
+    const next = developerTapCount + 1;
     if (next >= 5) {
-      await toggleHokkaidoTestMode();
+      await saveDeveloperTestMode(true);
       return;
     }
-    setSpecialModeTapCount(next);
-    props.showToast(`あと${5 - next}回`);
+    setDeveloperTapCount(next);
   };
   const saveGoalSettings = async () => {
     if (!props.profile) return;
@@ -4359,7 +4452,10 @@ function SettingsTab(props: {
         const start = reportMode === "day" ? end : addDays(end, reportMode === "week" ? -6 : -29);
         const range = dateRange(start, end);
         const scopedCheatDayDates = props.cheatDayDates.filter((date) => range.includes(date));
-        const scopedSpecialModeDays = getSpecialModeDaysInRange(start, end, props.specialModeSettings);
+        const scopedSpecialModeDays = [
+          ...getSpecialModeDaysInRange(start, end, props.specialModeSettings),
+          ...getDeveloperTestModeDaysInRange(start, end, props.settings),
+        ];
         const content = generateMarkdownReport({
           profile: props.profile,
           goal: props.activeGoal,
@@ -4568,39 +4664,14 @@ function SettingsTab(props: {
         <p className="mt-2 text-xs">レポート名: <span className="font-bold text-ink">{props.profile?.name || "未設定"}</span></p>
         <div className="special-mode-settings mt-3">
           <div className="min-w-0 flex-1">
-            <p className="font-bold text-ink">特別モード</p>
+            <p className="font-bold text-ink">旅行モード</p>
             <p className="numeric-text mt-1 text-[11px] font-bold">
-              期間: {hokkaidoPeriodLabel} / 状態: {!hokkaidoModeSettings?.enabled ? "OFF" : props.activeSpecialMode?.isTest ? "ON（確認中）" : hokkaidoModeSettings?.enabled ? "ON" : "通常"}
+              状態: {isTravelModeEnabled ? `ON（${activeTravelMode?.label ?? "旅行"} / ${travelModePeriodLabel}）` : "OFF"}
             </p>
-            <div className="mt-2 grid grid-cols-2 gap-2">
-              <label className="text-[11px] font-bold text-moss">
-                開始
-                <input
-                  className="mt-1 h-9 w-full px-2 text-xs"
-                  type="date"
-                  value={hokkaidoModeSettings?.start_date ?? ""}
-                  onChange={(event) => updateHokkaidoPeriod("start_date", event.target.value)}
-                />
-              </label>
-              <label className="text-[11px] font-bold text-moss">
-                終了
-                <input
-                  className="mt-1 h-9 w-full px-2 text-xs"
-                  type="date"
-                  value={hokkaidoModeSettings?.end_date ?? ""}
-                  onChange={(event) => updateHokkaidoPeriod("end_date", event.target.value)}
-                />
-              </label>
-            </div>
           </div>
-          <div className="flex shrink-0 flex-col gap-2">
-            <button className="special-mode-test-button" onClick={toggleHokkaidoModeEnabled}>
-              {hokkaidoModeSettings?.enabled ? "OFF" : "ON"}
-            </button>
-            <button className="special-mode-test-button" disabled={!hokkaidoModeSettings?.enabled} onClick={handleSpecialModeTestTap}>
-              {props.activeSpecialMode?.isTest ? "終了" : "5回タップ"}
-            </button>
-          </div>
+          <button className="special-mode-test-button" onClick={toggleTravelMode}>
+            {isTravelModeEnabled ? "OFF" : "ON"}
+          </button>
         </div>
         <div className="mt-3 grid gap-2">
           <button className="secondary-button w-full" onClick={() => {
@@ -4608,6 +4679,10 @@ function SettingsTab(props: {
             setIsProfileNameOpen(true);
           }}><Pencil size={17} />ユーザー名変更</button>
           <button className="secondary-button w-full" onClick={props.openUpdateNotes}><FileText size={17} />更新内容</button>
+          <button className="secondary-button w-full" onClick={handleDeveloperModeTap}>
+            <Settings size={17} />開発者モード
+            {props.isDeveloperTestMode && <span className="mini-chip ml-auto">テスト中</span>}
+          </button>
         </div>
       </section>
       {isMacroOverrideOpen && (
@@ -4631,6 +4706,29 @@ function SettingsTab(props: {
             setIsProfileNameOpen(false);
             props.showToast("ユーザー名を保存しました");
           }}
+        />
+      )}
+      {isTravelModeOpen && (
+        <TravelModeModal
+          modes={props.specialModeSettings}
+          step={travelModalStep}
+          selectedId={selectedTravelModeId}
+          nameDraft={travelNameDraft}
+          startDraft={travelStartDraft}
+          endDraft={travelEndDraft}
+          onSelect={(mode) => {
+            setSelectedTravelModeId(mode.id);
+            setTravelStartDraft(mode.start_date ?? props.appDate);
+            setTravelEndDraft(mode.end_date ?? addDays(props.appDate, 2));
+          }}
+          onNameChange={setTravelNameDraft}
+          onAdd={addTravelDestination}
+          onDelete={deleteTravelDestination}
+          onStepChange={setTravelModalStep}
+          onStartChange={setTravelStartDraft}
+          onEndChange={setTravelEndDraft}
+          onSave={saveTravelModePeriod}
+          onClose={() => setIsTravelModeOpen(false)}
         />
       )}
       {goalHelpTopic && <GoalHelpModal topic={goalHelpTopic} onClose={() => setGoalHelpTopic(undefined)} />}
@@ -6104,6 +6202,95 @@ function AutoValueButton({ onClick }: { onClick: () => void }) {
     >
       自動
     </button>
+  );
+}
+
+function TravelModeModal({ modes, step, selectedId, nameDraft, startDraft, endDraft, onSelect, onNameChange, onAdd, onDelete, onStepChange, onStartChange, onEndChange, onSave, onClose }: {
+  modes: SpecialModeSettings[];
+  step: "select" | "period";
+  selectedId: string;
+  nameDraft: string;
+  startDraft: string;
+  endDraft: string;
+  onSelect: (mode: SpecialModeSettings) => void;
+  onNameChange: (value: string) => void;
+  onAdd: () => void | Promise<void>;
+  onDelete: (id: string) => void | Promise<void>;
+  onStepChange: (step: "select" | "period") => void;
+  onStartChange: (value: string) => void;
+  onEndChange: (value: string) => void;
+  onSave: () => void | Promise<void>;
+  onClose: () => void;
+}) {
+  const selectedMode = modes.find((mode) => mode.id === selectedId);
+  const canAdd = !!nameDraft.trim();
+  const canSave = !!selectedMode && !!startDraft && !!endDraft;
+  return (
+    <div className="fixed inset-0 z-50 flex items-end bg-ink/30 px-4 pb-4" onClick={onClose}>
+      <div className="compact-card max-h-[84vh] w-full overflow-y-auto p-4" onClick={(event) => event.stopPropagation()}>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-lg font-bold">旅行モード</p>
+            <p className="mt-1 text-xs text-moss">{step === "select" ? "登録済みの旅行先を選ぶか、新しく追加します。" : "旅行期間を指定します。"}</p>
+          </div>
+          <button className="icon-button h-9 w-9" aria-label="閉じる" onClick={onClose}>×</button>
+        </div>
+
+        {step === "select" ? (
+          <>
+            <div className="mt-4 space-y-2">
+              {modes.map((mode) => {
+                const isSelected = mode.id === selectedId;
+                const period = mode.start_date && mode.end_date ? `${formatJapaneseDate(mode.start_date)}〜${formatJapaneseDate(mode.end_date)}` : "期間未設定";
+                return (
+                  <div className={`flex items-center gap-2 rounded-3xl border p-2 ${isSelected ? "border-leaf bg-leaf/10" : "border-line bg-white/25"}`} key={mode.id}>
+                    <button className="min-w-0 flex-1 text-left" onClick={() => onSelect(mode)}>
+                      <span className="block truncate text-sm font-black text-ink">{mode.label ?? "旅行"}</span>
+                      <span className="numeric-text block truncate text-[11px] font-bold text-moss">{period}</span>
+                    </button>
+                    {isSelected && <span className="mini-chip mini-chip-active">選択中</span>}
+                    <button className="icon-button h-8 w-8 shrink-0 text-clay" aria-label={`${mode.label ?? "旅行先"}を削除`} onClick={() => onDelete(mode.id)}><Trash2 size={14} /></button>
+                  </div>
+                );
+              })}
+              {modes.length === 0 && <EmptyLine text="旅行先がまだありません" />}
+            </div>
+
+            <div className="mt-4 rounded-3xl border border-line bg-white/25 p-3">
+              <label className="block text-xs font-bold text-moss">
+                新しい旅行先
+                <input className="mt-2 w-full" value={nameDraft} onChange={(event) => onNameChange(event.target.value)} placeholder="例: 沖縄旅行" />
+              </label>
+              <button className="secondary-button mt-2 w-full" disabled={!canAdd} onClick={onAdd}><Plus size={16} />旅行先を追加</button>
+            </div>
+
+            <button className="primary-button mt-4 w-full" disabled={!selectedMode} onClick={() => onStepChange("period")}>
+              次へ<ChevronRight size={17} />
+            </button>
+          </>
+        ) : (
+          <>
+            <div className="mt-4 rounded-3xl border border-line bg-white/25 p-3">
+              <p className="font-black text-ink">{selectedMode?.label ?? "旅行"}</p>
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                <label className="text-xs font-bold text-moss">
+                  開始
+                  <input className="mt-1 h-10 w-full px-3 text-sm" type="date" value={startDraft} onChange={(event) => onStartChange(event.target.value)} />
+                </label>
+                <label className="text-xs font-bold text-moss">
+                  終了
+                  <input className="mt-1 h-10 w-full px-3 text-sm" type="date" value={endDraft} onChange={(event) => onEndChange(event.target.value)} />
+                </label>
+              </div>
+            </div>
+            <div className="mt-4 grid grid-cols-2 gap-2">
+              <button className="secondary-button" onClick={() => onStepChange("select")}><ChevronLeft size={17} />戻る</button>
+              <button className="primary-button" disabled={!canSave} onClick={onSave}><Save size={17} />ONにする</button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
   );
 }
 
