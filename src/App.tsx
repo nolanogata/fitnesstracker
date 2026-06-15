@@ -2971,9 +2971,13 @@ function WorkoutTab(props: {
   const celebratedPrKeysRef = useRef<Set<string>>(new Set());
   const exerciseEditorRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const workoutTopRef = useRef<HTMLDivElement | null>(null);
+  const workoutSearchSectionRef = useRef<HTMLElement | null>(null);
+  const workoutSearchControlsRef = useRef<HTMLDivElement | null>(null);
+  const workoutSearchInputRef = useRef<HTMLInputElement | null>(null);
   const templateEditorRef = useRef<HTMLElement | null>(null);
   const dateSessionsRef = useRef<HTMLElement | null>(null);
   const sessionSectionRef = useRef<HTMLElement | null>(null);
+  const [isWorkoutSearchHidden, setIsWorkoutSearchHidden] = useState(false);
   const activeSession = props.workoutSessions.find((session) => session.id === sessionId);
   const editingTemplate = props.workoutTemplates.find((template) => template.id === editingTemplateId);
   const activeExercises = useMemo(() => props.workoutExercises
@@ -3020,6 +3024,28 @@ function WorkoutTab(props: {
     if (!sessionScrollKey || focusedExerciseId || !activeSession) return;
     sessionSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, [activeSession, focusedExerciseId, sessionScrollKey]);
+
+  useEffect(() => {
+    const update = () => {
+      const target = workoutSearchControlsRef.current;
+      if (!target) {
+        setIsWorkoutSearchHidden(false);
+        return;
+      }
+      setIsWorkoutSearchHidden(target.getBoundingClientRect().bottom < 72);
+    };
+    window.requestAnimationFrame(update);
+    window.addEventListener("scroll", update, { passive: true });
+    document.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("resize", update);
+    const interval = window.setInterval(update, 250);
+    return () => {
+      window.removeEventListener("scroll", update);
+      document.removeEventListener("scroll", update);
+      window.removeEventListener("resize", update);
+      window.clearInterval(interval);
+    };
+  }, []);
 
   useEffect(() => {
     if (!draggingTemplateId) return;
@@ -3328,6 +3354,15 @@ function WorkoutTab(props: {
     window.setTimeout(() => workoutTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 60);
   };
 
+  const focusWorkoutSearch = () => {
+    setFocusedExerciseId(undefined);
+    setMode("search");
+    window.setTimeout(() => {
+      (workoutSearchSectionRef.current ?? workoutTopRef.current)?.scrollIntoView({ behavior: "smooth", block: "start" });
+      window.setTimeout(() => workoutSearchInputRef.current?.focus({ preventScroll: true }), 320);
+    }, 80);
+  };
+
   const startFromTemplate = async (template: WorkoutTemplate) => {
     const timestamp = nowIso();
     const newSession: WorkoutSession = {
@@ -3395,6 +3430,8 @@ function WorkoutTab(props: {
     () => unique(props.exercisePresets.map((item) => mode === "body" ? item.body_part : item.equipment_type)),
     [props.exercisePresets, mode],
   );
+  const isWorkoutSearchMode = mode === "body" || mode === "equipment" || mode === "search";
+  const shouldShowFloatingWorkoutSearch = isWorkoutSearchMode && !exerciseDraft && !templateTargetItem && isWorkoutSearchHidden;
 
   return (
     <div className="space-y-4" ref={workoutTopRef}>
@@ -3488,16 +3525,18 @@ function WorkoutTab(props: {
       )}
 
       {(mode === "body" || mode === "equipment" || mode === "search") && (
-        <section className="compact-card p-3">
-          {mode === "search" ? (
-            <input className="h-12 w-full text-base" value={filter} onChange={(event) => setFilter(event.target.value)} placeholder="種目検索" />
-          ) : (
-            <div className="grid grid-cols-2 gap-2">
+        <section className="compact-card p-3" ref={workoutSearchSectionRef}>
+          <div ref={workoutSearchControlsRef}>
+            {mode === "search" ? (
+              <input ref={workoutSearchInputRef} className="h-12 w-full text-base" value={filter} onChange={(event) => setFilter(event.target.value)} placeholder="種目検索" />
+            ) : (
+              <div className="grid grid-cols-2 gap-2">
               {workoutFilterOptions.map((item) => (
                 <button className={`tap-tile ${filter === item ? "tap-tile-active" : ""}`} key={item} onClick={() => setFilter(item)}>{item}</button>
               ))}
-            </div>
-          )}
+              </div>
+            )}
+          </div>
           <div className="mt-3 divide-y divide-line">
             {exerciseResults.map((exercise) => (
               <ExercisePresetRow
@@ -3511,6 +3550,18 @@ function WorkoutTab(props: {
             ))}
           </div>
         </section>
+      )}
+
+      {shouldShowFloatingWorkoutSearch && (
+        <button
+          type="button"
+          className="floating-workout-search floating-food-search-visible"
+          onClick={focusWorkoutSearch}
+          aria-label="種目検索へ戻る"
+        >
+          <ArrowUp size={15} />
+          <span>検索に戻る</span>
+        </button>
       )}
 
       {activeSession && (

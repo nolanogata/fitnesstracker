@@ -718,6 +718,7 @@ button {
   .mode-button,
   .tap-tile,
   .floating-food-search,
+  .floating-workout-search,
   .app-bottom-nav {
     background: rgba(255, 255, 255, 0.9);
   }
@@ -1210,7 +1211,8 @@ button {
   animation: food-filter-pulse 1.8s ease-in-out infinite;
 }
 
-.floating-food-search {
+.floating-food-search,
+.floating-workout-search {
   position: fixed;
   left: 50%;
   bottom: max(6.45rem, calc(env(safe-area-inset-bottom) + 5.85rem));
@@ -1246,12 +1248,14 @@ button {
   pointer-events: auto;
 }
 
-.floating-food-search svg {
+.floating-food-search svg,
+.floating-workout-search svg {
   flex-shrink: 0;
   color: currentColor;
 }
 
-.floating-food-search:active {
+.floating-food-search:active,
+.floating-workout-search:active {
   transform: translateX(-50%) translateY(1px) scale(0.99);
 }
 
@@ -1898,7 +1902,9 @@ button {
 }
 
 .theme-dark .floating-food-search,
-:root[data-theme="dark"] .floating-food-search {
+:root[data-theme="dark"] .floating-food-search,
+.theme-dark .floating-workout-search,
+:root[data-theme="dark"] .floating-workout-search {
   border-color: rgba(255, 255, 255, 0.14);
   background: rgba(19, 25, 21, 0.76);
   color: #dbe7de;
