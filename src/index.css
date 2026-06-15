@@ -640,6 +640,89 @@ button {
   opacity: 0.45;
 }
 
+.special-mode-toggle {
+  display: inline-flex;
+  min-height: 2.8rem;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 0.55rem;
+  justify-content: center;
+  border: 1px solid rgba(111, 143, 125, 0.24);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.56);
+  padding: 0.35rem 0.65rem 0.35rem 0.38rem;
+  color: var(--text-secondary);
+  box-shadow: 0 8px 18px rgba(44, 56, 48, 0.07), var(--glass-highlight);
+  transition: transform 0.16s ease, border-color 0.16s ease, background 0.16s ease;
+}
+
+.special-mode-toggle:active {
+  transform: scale(0.98);
+}
+
+.special-mode-toggle-track {
+  position: relative;
+  width: 2.35rem;
+  height: 1.45rem;
+  border-radius: 999px;
+  background: rgba(142, 151, 143, 0.28);
+  box-shadow: inset 0 1px 4px rgba(35, 45, 38, 0.16);
+  transition: background 0.18s ease;
+}
+
+.special-mode-toggle-knob {
+  position: absolute;
+  left: 0.18rem;
+  top: 0.18rem;
+  width: 1.09rem;
+  height: 1.09rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 3px 8px rgba(35, 45, 38, 0.18);
+  transition: transform 0.18s ease;
+}
+
+.special-mode-toggle-copy {
+  display: flex;
+  min-width: 3.7rem;
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: 1.05;
+}
+
+.special-mode-toggle-state {
+  font-size: 0.78rem;
+  font-weight: 950;
+  color: var(--text-primary);
+}
+
+.special-mode-toggle-action {
+  margin-top: 0.15rem;
+  font-size: 0.56rem;
+  font-weight: 850;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.special-mode-toggle-on {
+  border-color: rgba(111, 143, 125, 0.48);
+  background: linear-gradient(135deg, rgba(221, 232, 225, 0.82), rgba(255, 255, 255, 0.58));
+  color: #294234;
+}
+
+.special-mode-toggle-on .special-mode-toggle-track {
+  background: linear-gradient(135deg, #6f8f7d, #8caf9b);
+  box-shadow: inset 0 1px 4px rgba(35, 45, 38, 0.14), 0 0 14px rgba(111, 143, 125, 0.3);
+}
+
+.special-mode-toggle-on .special-mode-toggle-knob {
+  transform: translateX(0.9rem);
+}
+
+.special-mode-toggle-on .special-mode-toggle-state {
+  color: #294234;
+}
+
 .home-pull-shell {
   touch-action: pan-y;
 }
@@ -2231,6 +2314,40 @@ button {
   border-color: rgba(159, 190, 169, 0.22);
   background: rgba(255, 255, 255, 0.08);
   color: #dcebe0;
+}
+
+.theme-dark .special-mode-toggle {
+  border-color: rgba(159, 190, 169, 0.22);
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(218, 231, 222, 0.86);
+}
+
+.theme-dark .special-mode-toggle-state {
+  color: #eef8f1;
+}
+
+.theme-dark .special-mode-toggle-action {
+  color: rgba(218, 231, 222, 0.62);
+}
+
+.theme-dark .special-mode-toggle-track {
+  background: rgba(255, 255, 255, 0.14);
+  box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.24);
+}
+
+.theme-dark .special-mode-toggle-on {
+  border-color: rgba(159, 190, 169, 0.46);
+  background: linear-gradient(135deg, rgba(111, 143, 125, 0.34), rgba(255, 255, 255, 0.1));
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.24), 0 0 18px rgba(111, 143, 125, 0.14), var(--glass-highlight);
+}
+
+.theme-dark .special-mode-toggle-on .special-mode-toggle-track {
+  background: linear-gradient(135deg, #7fa58f, #5d816c);
+  box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.18), 0 0 14px rgba(127, 165, 143, 0.24);
+}
+
+.theme-dark .special-mode-toggle-on .special-mode-toggle-state {
+  color: #f2fff5;
 }
 
 .theme-dark .primary-button,
