@@ -29,6 +29,7 @@ const exercise = (
 
 export const exerciseSeeds: ExercisePreset[] = [
   exercise("チェストプレス", "胸", "マシン", "push"),
+  exercise("チェストプレス(B)", "胸", "マシン", "push"),
   exercise("インクラインチェストプレス", "胸", "マシン", "push"),
   exercise("ペックフライ", "胸", "マシン", "fly"),
   exercise("スミスマシンベンチプレス", "胸", "スミスマシン", "push"),
@@ -38,7 +39,10 @@ export const exerciseSeeds: ExercisePreset[] = [
   exercise("プッシュアップ", "胸", "自重・自宅", "push"),
   exercise("ディップス", "胸", "自重・自宅", "push", 3, 8),
   exercise("ラットプルダウン", "背中", "マシン", "pull"),
+  exercise("ラットロー", "背中", "マシン", "pull"),
+  exercise("プルダウン", "背中", "マシン", "pull"),
   exercise("シーテッドロー", "背中", "マシン", "pull"),
+  exercise("ワンハンドロー（左右）", "背中", "マシン", "pull"),
   exercise("ケーブルロー", "背中", "ケーブル", "pull"),
   exercise("ワンハンドケーブルロー", "背中", "ケーブル", "pull"),
   exercise("バーベルロー", "背中", "フリーウェイト", "pull"),
