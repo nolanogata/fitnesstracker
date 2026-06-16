@@ -377,6 +377,10 @@ const achievementDefinitions: AchievementDefinition[] = [
   { id: "first_workout", title: "初めての運動記録", description: "ワークアウトを1件記録した", tone: "training" },
   { id: "first_my_menu", title: "マイメニュー職人", description: "初めてマイメニューを登録した", tone: "nutrition" },
   { id: "first_ai_report", title: "AI相談デビュー", description: "AI相談レポートを生成した", tone: "system" },
+  { id: "used_food_search", title: "検索デビュー", description: "フード検索を使った", tone: "system" },
+  { id: "used_perfect_food", title: "ぴったり探し", description: "ぴったりフードを使った", tone: "system" },
+  { id: "used_food_filter", title: "フィルター入門", description: "フード検索フィルターを試した", tone: "system" },
+  { id: "edited_past_record", title: "過去ログ修正", description: "過去の日付の記録編集に入った", tone: "system" },
   { id: "goal_updated", title: "作戦会議", description: "ゴール設定を更新した", tone: "system" },
   { id: "food_10", title: "食事ログ10", description: "食事を10件記録した", tone: "nutrition" },
   { id: "food_50", title: "食事ログ50", description: "食事を50件記録した", tone: "nutrition" },
@@ -430,6 +434,8 @@ const appUpdates: AppUpdate[] = [
     items: [
       "Home右上にトロフィーボタンを追加しました。",
       "初めての食事・運動・AI相談に加えて、食事回数、カロリー管理、PFC、運動回数、セット数、PR、連続記録の段階実績を追加しました。",
+      "フード検索、ぴったりフード、検索フィルター、過去ログ編集など、便利な動線を試した時のトロフィーを追加しました。",
+      "テストモード中は獲得済みトロフィーの演出を一覧から再生できます。",
       "トロフィー獲得時は紙吹雪つきの通知から一覧へ移動できます。",
     ],
   },
@@ -1474,13 +1480,30 @@ function App() {
     setToast({ id: makeId("toast"), text });
     toastTimerRef.current = window.setTimeout(() => setToast(undefined), 2200);
   };
+  const showAchievementCelebration = (definition: AchievementDefinition, count = 1) => {
+    if (achievementCelebrationTimerRef.current) window.clearTimeout(achievementCelebrationTimerRef.current);
+    setAchievementCelebration({
+      id: definition.id,
+      title: definition.title,
+      description: definition.description,
+      count,
+    });
+    achievementCelebrationTimerRef.current = window.setTimeout(() => setAchievementCelebration(undefined), 5200);
+  };
   const unlockAchievements = async (ids: string[], announce = true) => {
     if (!settings) return;
     const knownIds = new Set(achievementDefinitions.map((achievement) => achievement.id));
     const current = settings.achievements ?? [];
     const currentIds = new Set(current.map((achievement) => achievement.id));
     const freshIds = unique(ids).filter((id) => knownIds.has(id) && !currentIds.has(id));
-    if (!freshIds.length) return;
+    if (!freshIds.length) {
+      if (announce && isDeveloperTestMode) {
+        const replayId = unique(ids).find((id) => knownIds.has(id));
+        const definition = replayId ? achievementDefinition(replayId) : undefined;
+        if (definition) showAchievementCelebration(definition);
+      }
+      return;
+    }
     const timestamp = nowIso();
     const nextAchievements: AchievementUnlock[] = [
       ...current,
@@ -1491,14 +1514,7 @@ function App() {
     if (announce) {
       const definition = achievementDefinition(freshIds[0]);
       if (definition) {
-        if (achievementCelebrationTimerRef.current) window.clearTimeout(achievementCelebrationTimerRef.current);
-        setAchievementCelebration({
-          id: definition.id,
-          title: definition.title,
-          description: definition.description,
-          count: freshIds.length,
-        });
-        achievementCelebrationTimerRef.current = window.setTimeout(() => setAchievementCelebration(undefined), 5200);
+        showAchievementCelebration(definition, freshIds.length);
       }
     }
   };
@@ -1550,6 +1566,7 @@ function App() {
     setFoodFocus(targetTab === "food" ? "todayLog" : undefined);
     setWorkoutFocus(targetTab === "workout" ? "dateLog" : undefined);
     setTab(targetTab);
+    if (date !== actualAppDate) void unlockAchievements(["edited_past_record"]);
     showToast(`${formatJapaneseDate(date)}を編集します`);
   };
 
@@ -1737,6 +1754,7 @@ function App() {
             reloadLatestApp={reloadLatestApp}
             refresh={refresh}
             showToast={showToast}
+            unlockAchievement={(id) => void unlockAchievements([id])}
           />
         )}
         {tab === "food" && (
@@ -1757,6 +1775,7 @@ function App() {
             onFocusHandled={() => setFoodFocus(undefined)}
             refresh={refresh}
             showToast={showToast}
+            unlockAchievement={(id) => void unlockAchievements([id])}
           />
         )}
         {tab === "workout" && (
@@ -1825,8 +1844,10 @@ function App() {
       {isUpdateNotesOpen && <UpdateNotesModal updates={appUpdates} onClose={() => setIsUpdateNotesOpen(false)} />}
       {isTrophyOpen && (
         <TrophyModal
+          isDeveloperTestMode={isDeveloperTestMode}
           unlocks={settings?.achievements ?? []}
           onClose={() => setIsTrophyOpen(false)}
+          onReplay={(achievement) => showAchievementCelebration(achievement)}
         />
       )}
       {toast && <QuickToast key={toast.id} text={toast.text} />}
@@ -1912,7 +1933,12 @@ function WorkoutPrCelebrationOverlay({ celebration }: { celebration?: WorkoutPrC
   );
 }
 
-function TrophyModal({ unlocks, onClose }: { unlocks: AchievementUnlock[]; onClose: () => void }) {
+function TrophyModal({ unlocks, isDeveloperTestMode, onClose, onReplay }: {
+  unlocks: AchievementUnlock[];
+  isDeveloperTestMode: boolean;
+  onClose: () => void;
+  onReplay: (achievement: AchievementDefinition) => void;
+}) {
   const unlockedById = new Map(unlocks.map((unlock) => [unlock.id, unlock]));
   const unlockedCount = achievementDefinitions.filter((achievement) => unlockedById.has(achievement.id)).length;
   return (
@@ -1938,6 +1964,11 @@ function TrophyModal({ unlocks, onClose }: { unlocks: AchievementUnlock[]; onClo
                 <p className="numeric-text mt-3 text-[11px] font-bold text-muted">
                   {unlock ? `${formatJapaneseDate(unlock.unlocked_at.slice(0, 10))} 獲得` : "未獲得"}
                 </p>
+                {unlock && isDeveloperTestMode && (
+                  <button className="secondary-button mt-3 w-full py-2 text-xs" onClick={() => onReplay(achievement)}>
+                    演出
+                  </button>
+                )}
               </div>
             );
           })}
@@ -2188,6 +2219,7 @@ function HomeTab(props: {
   reloadLatestApp: () => Promise<void>;
   refresh: () => Promise<void>;
   showToast: (text: string) => void;
+  unlockAchievement: (id: string) => void;
 }) {
   const [weight, setWeight] = useState(props.latestWeight?.weight_kg ?? props.profile?.current_weight_kg ?? 70);
   const [bodyFat, setBodyFat] = useState(props.latestWeight?.body_fat_percentage ?? props.profile?.body_fat_percentage ?? 20);
@@ -2466,7 +2498,10 @@ function HomeTab(props: {
         <button className="home-secondary-action" onClick={() => props.setTab("workout")}>ワークアウト記録 <ChevronRight size={17} /></button>
       </div>
       <div className="flex justify-center gap-3 text-xs font-semibold text-moss/80">
-        <button className="px-1.5 py-1" onClick={() => setIsPerfectFoodOpen(true)}>ぴったりフード</button>
+        <button className="px-1.5 py-1" onClick={() => {
+          props.unlockAchievement("used_perfect_food");
+          setIsPerfectFoodOpen(true);
+        }}>ぴったりフード</button>
         <button className="px-2 py-1" onClick={() => props.setTab("settings")}>ゴールを確認</button>
         <button className="px-2 py-1 text-moss/70" onClick={props.openAiReport}>AIレポート</button>
       </div>
@@ -2804,6 +2839,7 @@ function FoodTab(props: {
   onFocusHandled: () => void;
   refresh: () => Promise<void>;
   showToast: (text: string) => void;
+  unlockAchievement: (id: string) => void;
 }) {
   const foodTopRef = useRef<HTMLDivElement | null>(null);
   const foodSearchFormRef = useRef<HTMLFormElement | null>(null);
@@ -2866,6 +2902,7 @@ function FoodTab(props: {
     localStorage.setItem(foodFitFilterSeenStorageKey, "1");
   };
   const openFoodFilterOptions = () => {
+    props.unlockAchievement("used_food_filter");
     setIsFoodFilterOpen((value) => !value);
     if (showFoodFilterIntro) dismissFoodFilterIntro();
   };
@@ -2942,6 +2979,7 @@ function FoodTab(props: {
     const isSearching = nextQuery.trim().length > 0;
     setQuery(nextQuery);
     if (isSearching && !wasSearching) {
+      props.unlockAchievement("used_food_search");
       if (mode !== "chain") setMode("search");
       scrollToFoodResults();
     }
