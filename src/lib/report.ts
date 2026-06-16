@@ -100,9 +100,9 @@ export function generateMarkdownReport(input: {
     const activeCalories = sets.reduce((sum, set) => sum + (set.active_calories ?? 0), 0);
     const best = sets
       .filter((set) => set.weight_kg || set.reps)
-      .sort((a, b) => (b.weight_kg ?? 0) * (b.reps ?? 1) - (a.weight_kg ?? 0) * (a.reps ?? 1))[0];
+      .sort((a, b) => workoutSetScoreForReport(b) - workoutSetScoreForReport(a))[0];
     const cardio = activeCalories ? ` / active ${activeCalories}kcal` : "";
-    return `- ${exercise.exercise_name}: ${sets.length} set${best ? ` / best ${best.weight_kg ?? "-"}kg x ${best.reps ?? "-"}` : ""}${cardio}`;
+    return `- ${exercise.exercise_name}: ${sets.length} set${best ? ` / best ${formatWorkoutLoadForReport(best)} x ${best.reps ?? "-"}` : ""}${cardio}`;
   });
   const workoutSummaryLines = buildWorkoutSummaryLines({
     grouping: input.workoutGrouping ?? "day",
@@ -376,7 +376,7 @@ function formatWorkoutSetDetail(set: WorkoutSet) {
   const parts: string[] = [];
   if (typeof set.duration_min === "number") parts.push(`${set.duration_min}分`);
   if (typeof set.weight_kg === "number" || typeof set.reps === "number") {
-    parts.push(`${typeof set.weight_kg === "number" ? `${set.weight_kg}kg` : "重量未記録"} x ${typeof set.reps === "number" ? `${set.reps}回` : "回数未記録"}`);
+    parts.push(`${formatWorkoutLoadForReport(set)} x ${typeof set.reps === "number" ? `${set.reps}回` : "回数未記録"}`);
   }
   if (typeof set.active_calories === "number") parts.push(`${set.active_calories}kcal`);
   if (set.intensity === finisherPulseIntensity) parts.push("仕上げパルス");
@@ -384,6 +384,20 @@ function formatWorkoutSetDetail(set: WorkoutSet) {
   if (set.is_warmup) parts.push("ウォームアップ");
   if (set.note) parts.push(set.note);
   return parts.join(" / ") || "内容未記録";
+}
+
+function formatWorkoutLoadForReport(set: WorkoutSet) {
+  if (set.load_type === "bodyweight") return "自重";
+  if (set.load_type === "weighted") return `+${set.weight_kg ?? 0}kg`;
+  if (set.load_type === "assisted") return `補助${set.weight_kg ?? 0}kg`;
+  return typeof set.weight_kg === "number" ? `${set.weight_kg}kg` : "重量未記録";
+}
+
+function workoutSetScoreForReport(set: WorkoutSet) {
+  const weight = set.weight_kg ?? 0;
+  const reps = set.reps ?? 0;
+  if (set.load_type === "assisted") return reps - weight / 10;
+  return weight ? weight * (1 + reps / 30) : reps;
 }
 
 function groupingLabel(grouping: WorkoutGrouping) {

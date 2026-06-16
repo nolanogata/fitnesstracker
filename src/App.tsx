@@ -60,6 +60,7 @@ import type {
   TemplateExercise,
   ThemeMode,
   WeightLog,
+  WorkoutLoadType,
   WorkoutExercise,
   WorkoutSession,
   WorkoutSet,
@@ -121,6 +122,7 @@ type WorkoutExerciseDraft = {
   sets: number;
   reps: number;
   weight_kg: number;
+  load_type?: WorkoutLoadType;
   duration_min: number;
   setSchemeText: string;
 };
@@ -3454,16 +3456,19 @@ function WorkoutTab(props: {
 
   const openExerciseDraft = (exercise: ExercisePreset) => {
     const isCardio = isCardioWorkoutItem(exercise);
+    const isBodyweight = isBodyweightStrengthItem(exercise);
     const firstSet = exercise.default_set_scheme?.[0];
     const sets = isCardio ? 1 : Math.min(5, Math.max(1, Math.round(exercise.default_sets ?? exercise.default_set_scheme?.length ?? 3)));
     const reps = Math.max(0, Math.round(exercise.default_reps ?? firstSet?.reps ?? (isCardio ? 0 : 10)));
     const weight = round1(Math.max(0, exercise.default_weight_kg ?? firstSet?.weight_kg ?? 0));
+    const loadType = firstSet?.load_type ?? exercise.default_set_scheme?.find((set) => set.load_type)?.load_type ?? (isBodyweight ? "bodyweight" : undefined);
     const duration = Math.max(0, Math.round(exercise.default_duration_min ?? firstSet?.duration_min ?? 20));
     setExerciseDraft({
       exercise,
       sets,
       reps,
       weight_kg: weight,
+      load_type: loadType,
       duration_min: duration,
       setSchemeText: "",
     });
@@ -3472,9 +3477,11 @@ function WorkoutTab(props: {
   const addPresetExercise = async (draft: WorkoutExerciseDraft) => {
     const { exercise } = draft;
     const isCardio = isCardioWorkoutItem(exercise);
+    const isBodyweight = isBodyweightStrengthItem(exercise);
+    const loadType = isCardio ? undefined : draft.load_type ?? (isBodyweight ? "bodyweight" : undefined);
     const setCount = isCardio ? 1 : Math.min(5, Math.max(1, Math.round(draft.sets)));
     const reps = isCardio ? 0 : Math.max(0, Math.round(draft.reps));
-    const weightKg = isCardio ? undefined : round1(Math.max(0, draft.weight_kg));
+    const weightKg = isCardio || loadType === "bodyweight" ? undefined : round1(Math.max(0, draft.weight_kg));
     const durationMin = isCardio ? Math.max(0, Math.round(draft.duration_min)) : undefined;
     const setScheme: WorkoutSetPattern[] = isCardio
       ? [{
@@ -3484,7 +3491,8 @@ function WorkoutTab(props: {
       }]
       : Array.from({ length: setCount }, () => ({
         reps,
-        weight_kg: weightKg ?? 0,
+        weight_kg: weightKg,
+        load_type: loadType,
       }));
     let targetSessionId = sessionId;
     let targetSessionForPr = props.workoutSessions.find((session) => session.id === targetSessionId);
@@ -3511,6 +3519,7 @@ function WorkoutTab(props: {
         sets: setCount,
         reps,
         weight_kg: weightKg,
+        load_type: loadType,
         duration_min: durationMin,
         set_scheme: setScheme,
       },
@@ -5546,8 +5555,9 @@ function TemplateExerciseRow({ exercise, index, bodyWeightKg, onRemove, onUpdate
     const sets = Math.max(1, Math.round(next.sets ?? setsValue));
     const weight_kg = round1(next.weight_kg ?? weightValue);
     const reps = Math.max(0, Math.round(next.reps ?? repsValue));
-    const set_scheme = Array.from({ length: sets }, () => ({ weight_kg, reps }));
-    onUpdate(index, { ...exercise, sets, weight_kg, reps, set_scheme });
+    const load_type = exercise.load_type ?? firstPattern?.load_type;
+    const set_scheme = Array.from({ length: sets }, () => ({ weight_kg: load_type === "bodyweight" ? undefined : weight_kg, load_type, reps }));
+    onUpdate(index, { ...exercise, sets, weight_kg: load_type === "bodyweight" ? undefined : weight_kg, load_type, reps, set_scheme });
   };
 
   const saveSetSchemeText = () => {
@@ -5559,6 +5569,7 @@ function TemplateExerciseRow({ exercise, index, bodyWeightKg, onRemove, onUpdate
       sets: scheme.length,
       reps: first.reps,
       weight_kg: first.weight_kg,
+      load_type: first.load_type,
       duration_min: first.duration_min,
       set_scheme: scheme,
     });
@@ -5702,23 +5713,26 @@ function ExerciseAddModal({ draft, setDraft, onClose, onAddAnother, onSave }: {
   onSave: () => void | Promise<void>;
 }) {
   const isCardio = draft.exercise.body_part === "有酸素" || draft.exercise.equipment_type === "有酸素";
+  const isBodyweight = isBodyweightStrengthItem(draft.exercise);
   const pictogram = getWorkoutPictogram(draft.exercise.body_part, draft.exercise.equipment_type);
   const [weightStep, setWeightStep] = useState(() => inferWeightStep(draft.exercise));
-  const [step, setStep] = useState<"duration" | "weight" | "reps" | "sets" | "confirm" | "done">(isCardio ? "duration" : "weight");
+  const [step, setStep] = useState<"duration" | "load" | "weight" | "reps" | "sets" | "confirm" | "done">(isCardio ? "duration" : isBodyweight ? "load" : "weight");
   const [weightPresets, setWeightPresets] = useState(() => loadWorkoutWeightPresets(draft.exercise.id, draft.weight_kg, weightStep));
   const [hasUnsavedWeightPreset, setHasUnsavedWeightPreset] = useState(false);
   const [isWeightPresetPickerOpen, setIsWeightPresetPickerOpen] = useState(false);
   const [weightPresetMessage, setWeightPresetMessage] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const setCount = Math.min(5, Math.max(1, Math.round(draft.sets)));
+  const loadType = draft.load_type ?? (isBodyweight ? "bodyweight" : undefined);
   const summary = isCardio
     ? `${Math.max(0, Math.round(draft.duration_min))}分`
-    : `${formatControlValue(Math.max(0, draft.weight_kg))}kg × ${Math.max(0, Math.round(draft.reps))}回 × ${setCount}set`;
+    : `${formatWorkoutLoadLabel(draft.weight_kg, loadType)} × ${Math.max(0, Math.round(draft.reps))}回 × ${setCount}set`;
+  const totalStrengthSteps = isBodyweight && loadType !== "bodyweight" ? 5 : isBodyweight ? 4 : 4;
   const stepLabel = step === "done"
     ? "追加完了"
     : isCardio
       ? `${step === "duration" ? 1 : 2}/2`
-      : `${step === "weight" ? 1 : step === "reps" ? 2 : step === "sets" ? 3 : 4}/4`;
+      : `${step === "load" ? 1 : step === "weight" ? (isBodyweight ? 2 : 1) : step === "reps" ? (isBodyweight && loadType !== "bodyweight" ? 3 : isBodyweight ? 2 : 2) : step === "sets" ? totalStrengthSteps - 1 : totalStrengthSteps}/${totalStrengthSteps}`;
   const saveWeightPreset = (index: number) => {
     const normalized = roundToStep(Math.max(0, draft.weight_kg), weightStep);
     const nextPresets = weightPresets.map((value, valueIndex) => valueIndex === index ? normalized : value);
@@ -5745,7 +5759,7 @@ function ExerciseAddModal({ draft, setDraft, onClose, onAddAnother, onSave }: {
   };
   const restartSameExercise = () => {
     setIsSaving(false);
-    setStep(isCardio ? "duration" : "weight");
+    setStep(isCardio ? "duration" : isBodyweight ? "load" : "weight");
   };
   return (
     <div className="fixed inset-0 z-40 flex items-end bg-ink/30 px-4 pb-4" onClick={onClose}>
@@ -5767,7 +5781,7 @@ function ExerciseAddModal({ draft, setDraft, onClose, onAddAnother, onSave }: {
               <p className="mt-2 text-lg font-bold text-ink">{summary}</p>
             </div>
             <button className="secondary-button w-full" onClick={restartSameExercise}>
-              <Plus size={17} />{isCardio ? "同じ種目をもう1本追加" : "同じ種目の別重量を追加"}
+              <Plus size={17} />{isCardio ? "同じ種目をもう1本追加" : isBodyweight ? "同じ種目をもう1セット追加" : "同じ種目の別重量を追加"}
             </button>
             <div className="grid grid-cols-2 gap-2">
               <button className="secondary-button" onClick={onAddAnother}>次の種目を選ぶ</button>
@@ -5790,6 +5804,34 @@ function ExerciseAddModal({ draft, setDraft, onClose, onAddAnother, onSave }: {
               <button className="primary-button" onClick={() => setStep("confirm")}>次へ</button>
             </div>
           </div>
+        ) : !isCardio && step === "load" ? (
+          <div className="mt-4 space-y-4">
+            <div className="grid gap-2">
+              {[
+                { type: "bodyweight" as WorkoutLoadType, label: "自重のみ", detail: "重量入力をスキップして回数へ進みます。" },
+                { type: "weighted" as WorkoutLoadType, label: "加重あり", detail: "ベルトやダンベルなどの追加重量を記録します。" },
+                { type: "assisted" as WorkoutLoadType, label: "補助あり", detail: "アシストマシンやバンドの補助重量を記録します。" },
+              ].map((option) => (
+                <button
+                  className={`choice-button h-auto min-h-[4.25rem] flex-col items-start justify-center px-4 py-3 text-left ${loadType === option.type ? "choice-button-active" : ""}`}
+                  key={option.type}
+                  onClick={() => {
+                    setDraft({ ...draft, load_type: option.type, weight_kg: option.type === "bodyweight" ? 0 : draft.weight_kg });
+                    setHasUnsavedWeightPreset(false);
+                    setWeightPresetMessage("");
+                    setStep(option.type === "bodyweight" ? "reps" : "weight");
+                  }}
+                >
+                  <span className="font-black">{option.label}</span>
+                  <span className="mt-1 text-xs font-semibold text-moss">{option.detail}</span>
+                </button>
+              ))}
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <button className="secondary-button" onClick={onClose}>閉じる</button>
+              <button className="primary-button" onClick={() => setStep(loadType === "bodyweight" ? "reps" : "weight")}>次へ</button>
+            </div>
+          </div>
         ) : !isCardio && step === "weight" ? (
           <div className="mt-4 space-y-4">
             <div className="rounded-md bg-rice p-3">
@@ -5802,7 +5844,7 @@ function ExerciseAddModal({ draft, setDraft, onClose, onAddAnother, onSave }: {
                 </div>
               </div>
               <WizardNumberControl
-                label="重量"
+                label={loadType === "assisted" ? "補助重量" : loadType === "weighted" ? "追加重量" : "重量"}
                 value={draft.weight_kg}
                 suffix="kg"
                 step={weightStep}
@@ -5837,7 +5879,7 @@ function ExerciseAddModal({ draft, setDraft, onClose, onAddAnother, onSave }: {
               </div>
             </div>
             <div className="grid grid-cols-2 gap-2">
-              <button className="secondary-button" onClick={onClose}>閉じる</button>
+              <button className="secondary-button" onClick={() => isBodyweight ? setStep("load") : onClose()}>{isBodyweight ? "戻る" : "閉じる"}</button>
               <button className="primary-button" onClick={() => setStep("reps")}>次へ</button>
             </div>
           </div>
@@ -5853,7 +5895,7 @@ function ExerciseAddModal({ draft, setDraft, onClose, onAddAnother, onSave }: {
               onChange={(reps) => setDraft({ ...draft, reps: Math.max(0, Math.round(reps)) })}
             />
             <div className="grid grid-cols-2 gap-2">
-              <button className="secondary-button" onClick={() => setStep("weight")}>戻る</button>
+              <button className="secondary-button" onClick={() => setStep(isBodyweight && loadType === "bodyweight" ? "load" : "weight")}>戻る</button>
               <button className="primary-button" onClick={() => setStep("sets")}>次へ</button>
             </div>
           </div>
@@ -5963,7 +6005,7 @@ function WorkoutExerciseEditor({
 }) {
   const isCardio = exercise.body_part === "有酸素" || exercise.equipment_type === "有酸素";
   const pictogram = getWorkoutPictogram(exercise.body_part, exercise.equipment_type);
-  const setSignature = sets.map((set) => [set.set_order, set.weight_kg, set.reps, set.duration_min, set.active_calories, set.intensity, set.note].join(":")).join("|");
+  const setSignature = sets.map((set) => [set.set_order, set.weight_kg, set.load_type, set.reps, set.duration_min, set.active_calories, set.intensity, set.note].join(":")).join("|");
   const [setSchemeText, setSetSchemeText] = useState("");
   const [setSchemeStatus, setSetSchemeStatus] = useState("");
   const [weightStep, setWeightStep] = useState(() => inferWeightStep(exercise));
@@ -6060,6 +6102,7 @@ function WorkoutExerciseEditor({
       workout_exercise_id: exercise.id,
       set_order: sets.length + 1,
       weight_kg: previous?.weight_kg ?? 0,
+      load_type: previous?.load_type,
       reps: Math.max(20, previous?.reps ?? 20),
       intensity: finisherPulseIntensity,
       note: finisherPulseNote,
@@ -6126,21 +6169,28 @@ function WorkoutExerciseEditor({
               </div>
             ) : (
               <div className="space-y-3">
-                <TapSliderControl
-                  value={set.weight_kg ?? 0}
-                  label="重量"
-                  suffix="kg"
-                  step={weightStep}
-                  min={0}
-                  max={sliderMax(set.weight_kg ?? 0, 200, weightStep)}
-                  onChange={async (value) => {
-                    const timestamp = nowIso();
-                    const nextSets = sets.map((item) => item.id === set.id ? { ...item, weight_kg: value, updated_at: timestamp } : item);
-                    await db.workout_sets.update(set.id, { weight_kg: value, updated_at: timestamp });
-                    onPrUpdate(exercise, sets, nextSets);
-                    await refresh();
-                  }}
-                />
+                {set.load_type === "bodyweight" ? (
+                  <div className="flex items-center justify-between gap-2 rounded-md bg-rice px-3 py-2">
+                    <p className="text-xs font-bold text-moss">負荷</p>
+                    <p className="font-black text-ink">自重</p>
+                  </div>
+                ) : (
+                  <TapSliderControl
+                    value={set.weight_kg ?? 0}
+                    label={set.load_type === "assisted" ? "補助重量" : set.load_type === "weighted" ? "追加重量" : "重量"}
+                    suffix="kg"
+                    step={weightStep}
+                    min={0}
+                    max={sliderMax(set.weight_kg ?? 0, 200, weightStep)}
+                    onChange={async (value) => {
+                      const timestamp = nowIso();
+                      const nextSets = sets.map((item) => item.id === set.id ? { ...item, weight_kg: value, updated_at: timestamp } : item);
+                      await db.workout_sets.update(set.id, { weight_kg: value, updated_at: timestamp });
+                      onPrUpdate(exercise, sets, nextSets);
+                      await refresh();
+                    }}
+                  />
+                )}
                 <TapSliderControl
                   value={set.reps ?? 0}
                   label="回数"
@@ -6190,6 +6240,7 @@ function WorkoutExerciseEditor({
             workout_exercise_id: exercise.id,
             set_order: sets.length + 1,
             weight_kg: previous?.weight_kg ?? 0,
+            load_type: previous?.load_type,
             reps: isCardio ? 0 : previous?.reps ?? 10,
             duration_min: isCardio ? previous?.duration_min ?? 20 : undefined,
             active_calories: isCardio ? estimateActiveCalories(exercise.exercise_name, previous?.duration_min ?? 20, bodyWeightKg) : undefined,
@@ -7097,6 +7148,18 @@ function isCardioWorkoutItem(item: { body_part: string; equipment_type: string }
   return item.body_part === "有酸素" || item.equipment_type === "有酸素";
 }
 
+function isBodyweightStrengthItem(item: { body_part: string; equipment_type: string }) {
+  return !isCardioWorkoutItem(item) && /自重|自宅/.test(item.equipment_type);
+}
+
+function formatWorkoutLoadLabel(weight: number | undefined, loadType?: WorkoutLoadType) {
+  if (loadType === "bodyweight") return "自重";
+  const normalized = formatControlValue(Math.max(0, weight ?? 0));
+  if (loadType === "weighted") return `+${normalized}kg`;
+  if (loadType === "assisted") return `補助${normalized}kg`;
+  return `${normalized}kg`;
+}
+
 function isFinisherPulseSet(set: { intensity?: string; note?: string }) {
   return set.intensity === finisherPulseIntensity || /仕上げパルス|パーシャル|部分可動域|pulse/i.test(set.note ?? "");
 }
@@ -7135,10 +7198,22 @@ function parseWorkoutSetSegment(segment: string, isCardio: boolean, exerciseName
     }];
   }
 
+  if (/自重/.test(target)) {
+    const repeat = Math.max(1, Math.min(10, Math.round(numbers[1] ?? 1)));
+    return Array.from({ length: repeat }, () => ({
+      load_type: "bodyweight" as const,
+      reps: Math.round(numbers[0]),
+      intensity,
+      note,
+    }));
+  }
+
   if (numbers.length < 2) return [];
   const repeat = Math.max(1, Math.min(10, Math.round(numbers[2] ?? 1)));
+  const loadType = /補助|アシスト/.test(target) ? "assisted" : /加重|\+/.test(target) ? "weighted" : undefined;
   return Array.from({ length: repeat }, () => ({
     weight_kg: numbers[0],
+    load_type: loadType,
     reps: Math.round(numbers[1]),
     intensity,
     note,
@@ -7150,6 +7225,7 @@ function workoutSetsToPattern(sets: WorkoutSet[]): WorkoutSetPattern[] {
     .sort((a, b) => a.set_order - b.set_order)
     .map((set) => ({
       weight_kg: set.weight_kg,
+      load_type: set.load_type,
       reps: set.reps,
       duration_min: set.duration_min,
       active_calories: set.active_calories,
@@ -7165,6 +7241,7 @@ function workoutSetPatternsToPreviewSets(workoutExerciseId: string, scheme: Work
     workout_exercise_id: workoutExerciseId,
     set_order: index + 1,
     weight_kg: pattern.weight_kg,
+    load_type: pattern.load_type,
     reps: pattern.reps,
     duration_min: pattern.duration_min,
     active_calories: pattern.active_calories,
@@ -7183,7 +7260,8 @@ function formatWorkoutSetPatternText(patterns: WorkoutSetPattern[] | undefined, 
 
 function templateExerciseFallbackSetText(exercise: TemplateExercise, isCardio: boolean) {
   if (isCardio) return `${exercise.duration_min ?? exercise.set_scheme?.[0]?.duration_min ?? 20}分`;
-  return `${exercise.weight_kg ?? exercise.set_scheme?.[0]?.weight_kg ?? 0}×${exercise.reps ?? exercise.set_scheme?.[0]?.reps ?? 10}×${exercise.set_scheme?.length || exercise.sets || 3}`;
+  const loadType = exercise.load_type ?? exercise.set_scheme?.[0]?.load_type;
+  return `${formatWorkoutLoadLabel(exercise.weight_kg ?? exercise.set_scheme?.[0]?.weight_kg, loadType)}×${exercise.reps ?? exercise.set_scheme?.[0]?.reps ?? 10}×${exercise.set_scheme?.length || exercise.sets || 3}`;
 }
 
 function formatWorkoutSetText(sets: WorkoutSet[], isCardio: boolean) {
@@ -7195,7 +7273,7 @@ function formatWorkoutSetPatternToken(pattern: WorkoutSetPattern, isCardio: bool
   if (isCardio || typeof pattern.duration_min === "number") {
     return `${pattern.duration_min ?? 0}分${label ? `（${label}）` : ""}`;
   }
-  return `${pattern.weight_kg ?? 0}×${pattern.reps ?? 0}${label ? `（${label}）` : ""}`;
+  return `${formatWorkoutLoadLabel(pattern.weight_kg, pattern.load_type)}×${pattern.reps ?? 0}${label ? `（${label}）` : ""}`;
 }
 
 async function replaceWorkoutSetsWithScheme(workoutExerciseId: string, scheme: WorkoutSetPattern[]) {
@@ -7208,6 +7286,7 @@ async function replaceWorkoutSetsWithScheme(workoutExerciseId: string, scheme: W
       workout_exercise_id: workoutExerciseId,
       set_order: index + 1,
       weight_kg: pattern.weight_kg,
+      load_type: pattern.load_type,
       reps: pattern.reps,
       duration_min: pattern.duration_min,
       active_calories: pattern.active_calories,
@@ -7252,6 +7331,7 @@ async function addExerciseToSession(
       workout_exercise_id: exercise.id,
       set_order: index + 1,
       weight_kg: pattern.weight_kg,
+      load_type: pattern.load_type,
       reps: pattern.reps,
       duration_min: pattern.duration_min,
       active_calories: pattern.active_calories ?? (item.body_part === "有酸素" && pattern.duration_min ? estimateActiveCalories(item.exercise_name, pattern.duration_min, options.bodyWeightKg ?? 70) : undefined),
@@ -7269,6 +7349,7 @@ async function addExerciseToSession(
       workout_exercise_id: exercise.id,
       set_order: index + 1,
       weight_kg: options.preferItemValues ? item.weight_kg ?? previous?.weight_kg ?? 0 : previous?.weight_kg ?? item.weight_kg ?? 0,
+      load_type: options.preferItemValues ? item.load_type ?? previous?.load_type : previous?.load_type ?? item.load_type,
       reps: options.preferItemValues ? item.reps ?? previous?.reps ?? 10 : previous?.reps ?? item.reps ?? 10,
       duration_min: durationMin,
       active_calories: item.body_part === "有酸素" && durationMin ? estimateActiveCalories(item.exercise_name, durationMin, options.bodyWeightKg ?? 70) : undefined,
@@ -7462,10 +7543,10 @@ function pickBestWorkoutSet(exercise: WorkoutExercise, sets: WorkoutSet[]) {
       const weight = set.weight_kg ?? 0;
       const reps = set.reps ?? 0;
       if (!weight && !reps) return undefined;
-      const score = weight ? weight * (1 + reps / 30) : reps;
+      const score = set.load_type === "assisted" ? reps - weight / 10 : weight ? weight * (1 + reps / 30) : reps;
       return {
         score,
-        label: weight ? `${weight}kg x ${reps || "-"}回` : `${reps}回`,
+        label: `${formatWorkoutLoadLabel(weight, set.load_type)} x ${reps || "-"}回`,
       };
     })
     .filter((candidate): candidate is { score: number; label: string } => !!candidate);
@@ -7738,6 +7819,7 @@ function exercisePresetToTemplateExercise(exercise: ExercisePreset): TemplateExe
     sets: exercise.default_sets ?? 3,
     reps: exercise.default_reps,
     weight_kg: exercise.default_weight_kg,
+    load_type: exercise.default_set_scheme?.[0]?.load_type ?? (isBodyweightStrengthItem(exercise) ? "bodyweight" : undefined),
     duration_min: exercise.default_duration_min,
     set_scheme: exercise.default_set_scheme,
   };
@@ -7753,6 +7835,7 @@ function workoutExerciseToTemplateExercise(exercise: WorkoutExercise, sets: Work
     sets: sets.length || 3,
     reps: firstSet?.reps,
     weight_kg: firstSet?.weight_kg,
+    load_type: firstSet?.load_type,
     duration_min: firstSet?.duration_min,
     set_scheme: sets.length ? workoutSetsToPattern(sets) : undefined,
   };

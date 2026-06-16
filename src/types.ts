@@ -173,12 +173,16 @@ export type TemplateExercise = {
   sets: number;
   reps?: number;
   weight_kg?: number;
+  load_type?: WorkoutLoadType;
   duration_min?: number;
   set_scheme?: WorkoutSetPattern[];
 };
 
+export type WorkoutLoadType = "bodyweight" | "weighted" | "assisted";
+
 export type WorkoutSetPattern = {
   weight_kg?: number;
+  load_type?: WorkoutLoadType;
   reps?: number;
   duration_min?: number;
   active_calories?: number;
@@ -233,6 +237,7 @@ export type WorkoutSet = {
   workout_exercise_id: string;
   set_order: number;
   weight_kg?: number;
+  load_type?: WorkoutLoadType;
   reps?: number;
   duration_min?: number;
   active_calories?: number;
