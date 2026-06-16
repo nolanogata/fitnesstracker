@@ -43,6 +43,7 @@ export type Settings = {
   active_goal_id?: string;
   hidden_workout_template_ids?: string[];
   special_modes?: SpecialModeSettings[];
+  pause_modes?: SpecialModeSettings[];
   developer_test_active_until?: string;
   achievements?: AchievementUnlock[];
   achievements_viewed_at?: string;
