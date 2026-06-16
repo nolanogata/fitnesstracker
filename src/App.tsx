@@ -373,20 +373,54 @@ const achievementDefinitions: AchievementDefinition[] = [
   { id: "first_open", title: "はじめの一歩", description: "アプリを開いた", tone: "starter" },
   { id: "first_goal", title: "目標セット", description: "初めてゴールを設定した", tone: "starter" },
   { id: "first_food", title: "初めての食事記録", description: "食事を1件記録した", tone: "nutrition" },
-  { id: "first_workout", title: "初めての運動記録", description: "ワークアウトを1件記録した", tone: "training" },
   { id: "first_checkin", title: "初チェックイン", description: "体重・体脂肪を記録した", tone: "starter" },
+  { id: "first_workout", title: "初めての運動記録", description: "ワークアウトを1件記録した", tone: "training" },
   { id: "first_my_menu", title: "マイメニュー職人", description: "初めてマイメニューを登録した", tone: "nutrition" },
   { id: "first_ai_report", title: "AI相談デビュー", description: "AI相談レポートを生成した", tone: "system" },
   { id: "goal_updated", title: "作戦会議", description: "ゴール設定を更新した", tone: "system" },
-  { id: "workout_pr", title: "記録更新", description: "筋トレの自己記録を更新した", tone: "training" },
   { id: "food_10", title: "食事ログ10", description: "食事を10件記録した", tone: "nutrition" },
+  { id: "food_50", title: "食事ログ50", description: "食事を50件記録した", tone: "nutrition" },
+  { id: "food_100", title: "食事ログ100", description: "食事を100件記録した", tone: "nutrition" },
+  { id: "food_300", title: "食事ログ300", description: "食事を300件記録した", tone: "nutrition" },
+  { id: "calorie_master_1", title: "カロリーマスター", description: "カロリーを超えずに1日を終えた", tone: "nutrition" },
+  { id: "calorie_master_3", title: "カロリー管理3日", description: "カロリー内で終えた日が3日ある", tone: "nutrition" },
+  { id: "calorie_master_7", title: "カロリー管理1週間", description: "カロリー内で終えた日が7日ある", tone: "nutrition" },
+  { id: "calorie_master_14", title: "カロリー管理2週間", description: "カロリー内で終えた日が14日ある", tone: "nutrition" },
+  { id: "calorie_master_30", title: "カロリー管理30日", description: "カロリー内で終えた日が30日ある", tone: "nutrition" },
+  { id: "protein_day", title: "Pを意識", description: "たんぱく質目標の90%以上を記録した日がある", tone: "nutrition" },
+  { id: "protein_days_7", title: "P習慣7日", description: "たんぱく質目標90%以上の日が7日ある", tone: "nutrition" },
+  { id: "protein_days_30", title: "P習慣30日", description: "たんぱく質目標90%以上の日が30日ある", tone: "nutrition" },
+  { id: "macro_balance_1", title: "PFCバランス", description: "Pを満たし、F/Cを大きく超えずに1日を終えた", tone: "nutrition" },
+  { id: "macro_balance_7", title: "PFCバランス7日", description: "PFCバランス達成日が7日ある", tone: "nutrition" },
+  { id: "macro_balance_30", title: "PFCバランス30日", description: "PFCバランス達成日が30日ある", tone: "nutrition" },
   { id: "workout_10", title: "ワークアウト10", description: "ワークアウトを10回記録した", tone: "training" },
+  { id: "workout_30", title: "ワークアウト30", description: "ワークアウトを30回記録した", tone: "training" },
+  { id: "workout_50", title: "ワークアウト50", description: "ワークアウトを50回記録した", tone: "training" },
+  { id: "workout_100", title: "ワークアウト100", description: "ワークアウトを100回記録した", tone: "training" },
+  { id: "workout_sets_100", title: "100セット", description: "累計100セット記録した", tone: "training" },
+  { id: "workout_sets_500", title: "500セット", description: "累計500セット記録した", tone: "training" },
+  { id: "workout_sets_1000", title: "1000セット", description: "累計1000セット記録した", tone: "training" },
+  { id: "exercise_variety_5", title: "種目探索5", description: "5種類の種目を記録した", tone: "training" },
+  { id: "exercise_variety_15", title: "種目探索15", description: "15種類の種目を記録した", tone: "training" },
+  { id: "exercise_variety_30", title: "種目探索30", description: "30種類の種目を記録した", tone: "training" },
+  { id: "workout_pr", title: "記録更新", description: "筋トレの自己記録を更新した", tone: "training" },
+  { id: "workout_pr_5", title: "PRハンター5", description: "自己記録更新を5回達成した", tone: "training" },
+  { id: "workout_pr_10", title: "PRハンター10", description: "自己記録更新を10回達成した", tone: "training" },
+  { id: "workout_pr_25", title: "PRハンター25", description: "自己記録更新を25回達成した", tone: "training" },
+  { id: "weekly_workout_goal", title: "今週の運動達成", description: "週の筋トレ目標を達成した", tone: "training" },
+  { id: "checkin_7", title: "チェックイン7", description: "チェックインを7回記録した", tone: "starter" },
+  { id: "checkin_30", title: "チェックイン30", description: "チェックインを30回記録した", tone: "starter" },
+  { id: "checkin_100", title: "チェックイン100", description: "チェックインを100回記録した", tone: "starter" },
+  { id: "my_menu_5", title: "マイメニュー5", description: "マイメニューを5件登録した", tone: "system" },
+  { id: "my_menu_20", title: "マイメニュー20", description: "マイメニューを20件登録した", tone: "system" },
+  { id: "ai_report_5", title: "AI相談5", description: "AI相談レポートを5回生成した", tone: "system" },
+  { id: "ai_report_20", title: "AI相談20", description: "AI相談レポートを20回生成した", tone: "system" },
   { id: "streak_3", title: "3日連続ログ", description: "3日連続で何かを記録した", tone: "streak" },
   { id: "streak_7", title: "1週間継続", description: "7日連続で記録した", tone: "streak" },
   { id: "streak_14", title: "2週間の流れ", description: "14日連続で記録した", tone: "streak" },
   { id: "streak_30", title: "30日ルーティン", description: "30日連続で記録した", tone: "streak" },
-  { id: "protein_day", title: "Pを意識", description: "たんぱく質目標の90%以上を記録した日がある", tone: "nutrition" },
-  { id: "weekly_workout_goal", title: "今週の運動達成", description: "週の筋トレ目標を達成した", tone: "training" },
+  { id: "streak_60", title: "60日継続", description: "60日連続で記録した", tone: "streak" },
+  { id: "streak_100", title: "100日継続", description: "100日連続で記録した", tone: "streak" },
 ];
 const appUpdates: AppUpdate[] = [
   {
@@ -395,7 +429,7 @@ const appUpdates: AppUpdate[] = [
     date: "2026-06-16",
     items: [
       "Home右上にトロフィーボタンを追加しました。",
-      "初めての食事・運動・AI相談や、連続記録ストリークでトロフィーを獲得できます。",
+      "初めての食事・運動・AI相談に加えて、食事回数、カロリー管理、PFC、運動回数、セット数、PR、連続記録の段階実績を追加しました。",
       "トロフィー獲得時は紙吹雪つきの通知から一覧へ移動できます。",
     ],
   },
@@ -1402,9 +1436,12 @@ function App() {
       foodEntries,
       weightLogs,
       workoutSessions,
+      workoutExercises,
+      workoutSets,
       weeklyWorkoutStatus,
       aiReports,
       goal: target,
+      currentAppDate: actualAppDate,
     });
     void unlockAchievements(unlockedIds);
   }, [
@@ -1415,10 +1452,16 @@ function App() {
     foodEntries.length,
     weightLogs.length,
     workoutSessions.length,
+    workoutExercises.length,
+    workoutSets.length,
     weeklyWorkoutStatus.strengthDone,
     weeklyWorkoutStatus.strengthTarget,
     aiReports.length,
     target?.target_protein_g,
+    target?.target_fat_g,
+    target?.target_carbs_g,
+    target?.target_calories,
+    actualAppDate,
   ]);
 
   const markBackupNow = () => {
@@ -2021,35 +2064,66 @@ function getUnlockedAchievementIds(params: {
   foodEntries: FoodEntry[];
   weightLogs: WeightLog[];
   workoutSessions: WorkoutSession[];
+  workoutExercises: WorkoutExercise[];
+  workoutSets: WorkoutSet[];
   weeklyWorkoutStatus: WeeklyWorkoutStatus;
   aiReports: AiReport[];
   goal?: Goal;
+  currentAppDate: string;
 }) {
   const unlocked = new Set<string>(["first_open"]);
+  const addMilestones = (count: number, milestones: Array<[number, string]>) => {
+    milestones.forEach(([threshold, id]) => {
+      if (count >= threshold) unlocked.add(id);
+    });
+  };
   if (params.goals.length > 0) unlocked.add("first_goal");
   if (params.goals.length > 1) unlocked.add("goal_updated");
   if (params.foodEntries.length > 0) unlocked.add("first_food");
-  if (params.foodEntries.length >= 10) unlocked.add("food_10");
+  addMilestones(params.foodEntries.length, [[10, "food_10"], [50, "food_50"], [100, "food_100"], [300, "food_300"]]);
   if (params.workoutSessions.length > 0) unlocked.add("first_workout");
-  if (params.workoutSessions.length >= 10) unlocked.add("workout_10");
+  addMilestones(params.workoutSessions.length, [[10, "workout_10"], [30, "workout_30"], [50, "workout_50"], [100, "workout_100"]]);
+  addMilestones(params.workoutSets.length, [[100, "workout_sets_100"], [500, "workout_sets_500"], [1000, "workout_sets_1000"]]);
+  addMilestones(new Set(params.workoutExercises.map((exercise) => exercise.exercise_name)).size, [[5, "exercise_variety_5"], [15, "exercise_variety_15"], [30, "exercise_variety_30"]]);
   if (params.weightLogs.length > 0) unlocked.add("first_checkin");
-  if (params.menuItems.some((item) => item.is_user_created)) unlocked.add("first_my_menu");
+  addMilestones(params.weightLogs.length, [[7, "checkin_7"], [30, "checkin_30"], [100, "checkin_100"]]);
+  const userMenuCount = params.menuItems.filter((item) => item.is_user_created).length;
+  if (userMenuCount > 0) unlocked.add("first_my_menu");
+  addMilestones(userMenuCount, [[5, "my_menu_5"], [20, "my_menu_20"]]);
   if (params.aiReports.length > 0) unlocked.add("first_ai_report");
+  addMilestones(params.aiReports.length, [[5, "ai_report_5"], [20, "ai_report_20"]]);
   const streak = longestRecordStreak([
     ...params.foodEntries.map((entry) => entry.app_date),
     ...params.weightLogs.map((entry) => entry.app_date),
     ...params.workoutSessions.map((entry) => entry.app_date),
   ]);
-  if (streak >= 3) unlocked.add("streak_3");
-  if (streak >= 7) unlocked.add("streak_7");
-  if (streak >= 14) unlocked.add("streak_14");
-  if (streak >= 30) unlocked.add("streak_30");
-  if (params.goal?.target_protein_g) {
-    const proteinByDate = new Map<string, number>();
+  addMilestones(streak, [[3, "streak_3"], [7, "streak_7"], [14, "streak_14"], [30, "streak_30"], [60, "streak_60"], [100, "streak_100"]]);
+  const workoutHistory = buildWorkoutHistory(params.workoutSessions, params.workoutExercises, params.workoutSets);
+  const prCount = workoutHistory.reduce((sum, item) => sum + item.prs.length, 0);
+  addMilestones(prCount, [[1, "workout_pr"], [5, "workout_pr_5"], [10, "workout_pr_10"], [25, "workout_pr_25"]]);
+  if (params.goal) {
+    const foodEntriesByDate = new Map<string, FoodEntry[]>();
     params.foodEntries.forEach((entry) => {
-      proteinByDate.set(entry.app_date, (proteinByDate.get(entry.app_date) ?? 0) + entry.protein_g);
+      foodEntriesByDate.set(entry.app_date, [...(foodEntriesByDate.get(entry.app_date) ?? []), entry]);
     });
-    if ([...proteinByDate.values()].some((protein) => protein >= params.goal!.target_protein_g * 0.9)) unlocked.add("protein_day");
+    const completedFoodDays = [...foodEntriesByDate.entries()]
+      .filter(([date, entries]) => date < params.currentAppDate && entries.length > 0)
+      .map(([, entries]) => sumFood(entries));
+    const calorieMasterDays = params.goal.target_calories > 0
+      ? completedFoodDays.filter((total) => total.calories > 0 && total.calories <= params.goal!.target_calories).length
+      : 0;
+    addMilestones(calorieMasterDays, [[1, "calorie_master_1"], [3, "calorie_master_3"], [7, "calorie_master_7"], [14, "calorie_master_14"], [30, "calorie_master_30"]]);
+    if (params.goal.target_protein_g > 0) {
+      const proteinDays = completedFoodDays.filter((total) => total.protein >= params.goal!.target_protein_g * 0.9).length;
+      addMilestones(proteinDays, [[1, "protein_day"], [7, "protein_days_7"], [30, "protein_days_30"]]);
+      const macroBalanceDays = completedFoodDays.filter((total) => (
+        total.protein >= params.goal!.target_protein_g * 0.9 &&
+        (params.goal!.target_fat_g <= 0 || total.fat <= params.goal!.target_fat_g * 1.1) &&
+        (params.goal!.target_carbs_g <= 0 || total.carbs <= params.goal!.target_carbs_g * 1.1) &&
+        (params.goal!.target_calories <= 0 || total.calories <= params.goal!.target_calories)
+      )).length;
+      addMilestones(macroBalanceDays, [[1, "macro_balance_1"], [7, "macro_balance_7"], [30, "macro_balance_30"]]);
+    }
   }
   if (
     params.weeklyWorkoutStatus.strengthTarget > 0 &&
