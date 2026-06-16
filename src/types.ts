@@ -32,6 +32,7 @@ export type SpecialModeSettings = {
 export type AchievementUnlock = {
   id: string;
   unlocked_at: string;
+  count?: number;
 };
 
 export type Settings = {
