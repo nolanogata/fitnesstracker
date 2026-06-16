@@ -83,9 +83,11 @@ type FoodMode = "search" | "favorite" | "chain" | "category" | "quick" | "manual
 type WorkoutMode = "favorite" | "preset" | "body" | "equipment" | "previous" | "search";
 type FoodFocus = "todayLog" | "specialMode" | undefined;
 type FoodAddStep = "size" | "customSize" | "quantity" | "timing" | "confirm";
+type ManualFoodWizardStep = "basic" | "unit" | "category" | "nutrition" | "confirm";
 type WorkoutFocus = "dateLog" | undefined;
 type SettingsFocus = "ai" | "backup" | "myMenu" | "goal" | undefined;
 type SettingsSection = "ai" | "backup" | "goal" | "records" | "myMenu" | "general";
+type MyMenuSection = "list" | "new" | "edit";
 type HistoryGrouping = "day" | "week" | "month";
 type EditableRecordTab = "food" | "workout";
 type BackupInfo = {
@@ -304,20 +306,33 @@ const emptyManual: ManualFoodDraft = {
   favorite: false,
 };
 
+const manualFoodWizardSteps: Array<{ key: ManualFoodWizardStep; label: string }> = [
+  { key: "basic", label: "名前" },
+  { key: "unit", label: "単位" },
+  { key: "category", label: "カテゴリ" },
+  { key: "nutrition", label: "栄養値" },
+  { key: "confirm", label: "保存" },
+];
+
 function manualFoodDraftFromMenuItem(item: MenuItem): ManualFoodDraft {
   const subcategory = item.tags.find((tag) => (genericCategories[item.category] ?? []).includes(tag)) ?? genericCategories[item.category]?.[0] ?? "";
+  const weight = typeof item.weight_g === "number" && item.weight_g > 0 ? item.weight_g : undefined;
+  const scale = weight ? weight / 100 : 1;
+  const formatStored = (value: number) => String(round1(value / scale));
   return {
     ...emptyManual,
+    entry_kind: weight ? "ingredient" : "meal",
     name: item.name,
     brand: item.brand ?? "",
     meal_type: item.default_meal_type ?? "lunch",
     category: item.category,
     subcategory,
-    calories: String(item.calories),
-    protein_g: String(item.protein_g),
-    fat_g: String(item.fat_g),
-    carbs_g: String(item.carbs_g),
-    salt_g: typeof item.salt_g === "number" ? String(item.salt_g) : "",
+    ingredient_grams: weight ? String(weight) : emptyManual.ingredient_grams,
+    calories: weight ? String(Math.round(item.calories / scale)) : String(item.calories),
+    protein_g: formatStored(item.protein_g),
+    fat_g: formatStored(item.fat_g),
+    carbs_g: formatStored(item.carbs_g),
+    salt_g: typeof item.salt_g === "number" ? formatStored(item.salt_g) : "",
     savePreset: true,
     favorite: !!item.is_favorite,
   };
@@ -614,6 +629,16 @@ const achievementProgressSpecs: Record<string, AchievementProgressSpec> = {
   streak_100: { metric: "streak", target: 100, unit: "日" },
 };
 const appUpdates: AppUpdate[] = [
+  {
+    id: "2026-06-16-settings-my-menu-wizard",
+    title: "マイメニュー設定を整理",
+    date: "2026-06-16",
+    items: [
+      "Settingsのマイメニューを、登録済み一覧と新規登録に分けて開けるようにしました。",
+      "新規マイメニュー登録を、名前・単位・カテゴリ・栄養値・保存確認の手順に分けました。",
+      "旅行、一時停止、チートデー中はHomeの目標カロリーとPFC数値を評価外として隠すようにしました。",
+    ],
+  },
   {
     id: "2026-06-16-ios-pwa-edge-swipe",
     title: "iOSホーム画面版の戻るスワイプを修正",
@@ -2695,7 +2720,8 @@ function HomeTab(props: {
   const average7Trend = typeof average7Delta === "number" && Math.abs(average7Delta) >= 0.1 ? (average7Delta > 0 ? "up" : "down") : undefined;
   const calorieDelta = props.goal?.target_calories ? props.dayTotals.calories - props.goal.target_calories : undefined;
   const calorieDeltaText = typeof calorieDelta === "number" ? `${calorieDelta > 0 ? "+" : ""}${Math.round(calorieDelta)}` : "-";
-  const calorieDisplayText = props.isExceptionDay ? "-" : calorieDeltaText;
+  const shouldMaskGoalProgress = props.isExceptionDay;
+  const calorieDisplayText = shouldMaskGoalProgress ? "-" : calorieDeltaText;
   const calorieMoodClass = props.isCheatDay ? "cheat" : props.activeSpecialMode ? "trip" : props.activePauseMode ? "cheat" : typeof calorieDelta === "number" ? (calorieDelta > 0 ? "over" : Math.abs(calorieDelta) <= 100 ? "on-track" : "left") : "neutral";
   const calorieMoodLabel = props.isCheatDay ? "cheat day" : props.activeSpecialMode ? "travel mode" : props.activePauseMode ? "pause mode" : typeof calorieDelta === "number" ? (calorieDelta > 0 ? "over" : Math.abs(calorieDelta) <= 100 ? "on track" : "left") : calorieState.label;
   const foodSummary = `${props.todayEntries.length}件 / ${props.dayTotals.calories} kcal`;
@@ -2707,7 +2733,9 @@ function HomeTab(props: {
   ].map((macro) => {
     const percent = macro.target > 0 ? Math.round((macro.value / macro.target) * 100) : undefined;
     const remaining = macro.target > 0 ? round1(macro.target - macro.value) : undefined;
-    const tone = typeof percent !== "number"
+    const tone = shouldMaskGoalProgress
+      ? "disabled"
+      : typeof percent !== "number"
       ? "neutral"
       : macro.label === "P"
         ? percent < 80 ? "over" : "safe"
@@ -2910,23 +2938,29 @@ function HomeTab(props: {
               {props.activePauseMode.label}中です。復帰優先で、評価は参考扱いです。
             </p>
           )}
-          <p className="numeric-text mt-1 text-sm text-moss">摂取 {props.dayTotals.calories} / 目標 {props.goal?.target_calories ?? "-"} kcal</p>
-          <div className="mt-6 h-2 overflow-hidden rounded-full bg-white/55">
-            <div className={`h-full rounded-full ${props.isExceptionDay ? "home-progress-cheat" : calorieDelta && calorieDelta > 0 ? "bg-clay" : "bg-moss"}`} style={{ width: `${caloriePercent}%` }} />
-          </div>
+          {!shouldMaskGoalProgress && <p className="numeric-text mt-1 text-sm text-moss">摂取 {props.dayTotals.calories} / 目標 {props.goal?.target_calories ?? "-"} kcal</p>}
+          {!shouldMaskGoalProgress && (
+            <div className="mt-6 h-2 overflow-hidden rounded-full bg-white/55">
+              <div className={`h-full rounded-full ${calorieDelta && calorieDelta > 0 ? "bg-clay" : "bg-moss"}`} style={{ width: `${caloriePercent}%` }} />
+            </div>
+          )}
         </div>
         <div className="home-macro-row mt-5">
           {macroStats.map((macro) => (
             <button
               type="button"
-              className={`home-macro-pill home-macro-${macro.tone} ${showMacroRemaining ? "home-macro-remaining-active" : ""}`}
+              className={`home-macro-pill home-macro-${macro.tone} ${shouldMaskGoalProgress ? "home-macro-disabled" : ""} ${showMacroRemaining && !shouldMaskGoalProgress ? "home-macro-remaining-active" : ""}`}
               key={macro.label}
-              onClick={() => setShowMacroRemaining((current) => !current)}
+              onClick={() => {
+                if (!shouldMaskGoalProgress) setShowMacroRemaining((current) => !current);
+              }}
               aria-label={`PFC表示を${showMacroRemaining ? "摂取量と達成率" : "残りグラム"}に切り替え`}
             >
               <span className="home-macro-dot" />
               <span className="font-bold">{macro.label}</span>
-              {showMacroRemaining ? (
+              {shouldMaskGoalProgress ? (
+                <span className="home-macro-paused">評価外</span>
+              ) : showMacroRemaining ? (
                 <span className="home-macro-grams home-macro-remaining">
                   {typeof macro.remaining === "number" ? `${macro.remaining >= 0 ? "残り" : "超過"} ${round1(Math.abs(macro.remaining))}g` : "-"}
                 </span>
@@ -5254,6 +5288,8 @@ function SettingsTab(props: {
   const [goalDraft, setGoalDraft] = useState(() => settingsGoalDraftFrom(props.activeGoal, props.profile));
   const [presetDraft, setPresetDraft] = useState({ ...emptyManual, name: "", savePreset: true });
   const [editingUserMenuItemId, setEditingUserMenuItemId] = useState<string>();
+  const [activeMyMenuSection, setActiveMyMenuSection] = useState<MyMenuSection | undefined>(() => props.focus === "myMenu" ? "new" : undefined);
+  const [myMenuWizardStep, setMyMenuWizardStep] = useState<ManualFoodWizardStep>("basic");
   const [reportMode, setReportMode] = useState<ReportMode>("day");
   const [question, setQuestion] = useState("");
   const [report, setReport] = useState("");
@@ -5299,7 +5335,14 @@ function SettingsTab(props: {
   };
 
   useEffect(() => {
-    if (props.focus) setActiveSettingsSection(props.focus);
+    if (!props.focus) return;
+    setActiveSettingsSection(props.focus);
+    if (props.focus === "myMenu") {
+      setEditingUserMenuItemId(undefined);
+      setPresetDraft({ ...emptyManual, savePreset: true });
+      setActiveMyMenuSection("new");
+      setMyMenuWizardStep("basic");
+    }
   }, [props.focus]);
 
   useEffect(() => {
@@ -5365,6 +5408,8 @@ function SettingsTab(props: {
     if (editingUserMenuItemId === item.id) {
       setEditingUserMenuItemId(undefined);
       setPresetDraft({ ...emptyManual, savePreset: true });
+      setActiveMyMenuSection("list");
+      setMyMenuWizardStep("basic");
     }
     await props.refresh();
     props.showToast(`${name}をマイメニューから削除しました`);
@@ -5372,12 +5417,28 @@ function SettingsTab(props: {
   const editUserMenuItem = (item: MenuItem) => {
     setEditingUserMenuItemId(item.id);
     setPresetDraft(manualFoodDraftFromMenuItem(item));
+    setActiveMyMenuSection("edit");
+    setMyMenuWizardStep("basic");
+  };
+  const startNewUserMenuItem = () => {
+    setEditingUserMenuItemId(undefined);
+    setPresetDraft({ ...emptyManual, savePreset: true });
+    setActiveMyMenuSection("new");
+    setMyMenuWizardStep("basic");
+  };
+  const closeMyMenuSubsection = () => {
+    setActiveMyMenuSection(undefined);
+    setEditingUserMenuItemId(undefined);
+    setPresetDraft({ ...emptyManual, savePreset: true });
+    setMyMenuWizardStep("basic");
   };
   const saveUserMenuItem = async () => {
     if (!presetDraft.name.trim()) return;
     const timestamp = nowIso();
     const nutrition = draftNutrition(presetDraft);
-    const tags = unique([presetDraft.category, presetDraft.subcategory, presetDraft.brand, ...(nutrition.unknown.length ? ["栄養素一部不明"] : [])]);
+    const ingredientGrams = presetDraft.entry_kind === "ingredient" ? ingredientGramValue(presetDraft) : undefined;
+    const ingredientServingLabel = ingredientGrams === undefined ? undefined : `${formatControlValue(ingredientGrams)}g`;
+    const tags = unique([presetDraft.category, presetDraft.subcategory, presetDraft.brand, presetDraft.entry_kind === "ingredient" ? "材料" : "", ...(nutrition.unknown.length ? ["栄養素一部不明"] : [])]);
     const editingItem = editingUserMenuItemId ? userMenuItems.find((item) => item.id === editingUserMenuItemId) : undefined;
     await db.menu_items.put({
       id: editingItem?.id ?? makeId("menu_user"),
@@ -5390,6 +5451,8 @@ function SettingsTab(props: {
       fat_g: nutrition.fat_g,
       carbs_g: nutrition.carbs_g,
       salt_g: nutrition.salt_g,
+      serving_label: ingredientServingLabel,
+      weight_g: ingredientGrams,
       data_source: "user",
       confidence: nutrition.unknown.length ? "low" : "high",
       is_public_preset: false,
@@ -5401,6 +5464,8 @@ function SettingsTab(props: {
     const savedName = presetDraft.name.trim();
     setEditingUserMenuItemId(undefined);
     setPresetDraft({ ...emptyManual, savePreset: true });
+    setActiveMyMenuSection("list");
+    setMyMenuWizardStep("basic");
     await props.refresh();
     props.showToast(editingItem ? `${savedName}を更新しました` : `${savedName}をマイメニューに保存しました`);
   };
@@ -5662,6 +5727,13 @@ function SettingsTab(props: {
     general: { title: "一般", subtitle: "表示、ユーザー名、更新履歴、開発者モードを管理します。" },
   };
   const activeSectionTitle = activeSettingsSection ? sectionTitles[activeSettingsSection] : undefined;
+  const goBackFromSettingsSection = () => {
+    if (activeSettingsSection === "myMenu" && activeMyMenuSection) {
+      closeMyMenuSubsection();
+      return;
+    }
+    setActiveSettingsSection(undefined);
+  };
 
   return (
     <div className="space-y-4">
@@ -5682,7 +5754,7 @@ function SettingsTab(props: {
 
       {activeSectionTitle && (
         <section className="settings-detail-header">
-          <button className="icon-button h-10 w-10" aria-label="Settingsに戻る" onClick={() => setActiveSettingsSection(undefined)}><ChevronLeft size={18} /></button>
+          <button className="icon-button h-10 w-10" aria-label="Settingsに戻る" onClick={goBackFromSettingsSection}><ChevronLeft size={18} /></button>
           <div className="min-w-0">
             <h2 className="text-lg font-black">{activeSectionTitle.title}</h2>
             <p className="mt-1 text-xs font-semibold text-moss">{activeSectionTitle.subtitle}</p>
@@ -5755,31 +5827,28 @@ function SettingsTab(props: {
         <p className="mt-2 text-xs text-moss">自動計算は現在体重から消費カロリーを出し、目標体重・目標体脂肪率・目標達成日・フェーズ・運動強度・総カロリーからP/F/Cと体組成の目標差分を出します。kcal/P/F/Cを手動上書きしている場合、その値は保存時に上書きしません。</p>
       </section>}
 
-      {activeSettingsSection === "myMenu" && <section className={`compact-card scroll-mt-24 p-4 ${props.focus === "myMenu" ? "border-2 border-leaf" : ""}`}>
-        <div className="flex items-center justify-between gap-2">
-          <h2 className="font-bold">{editingUserMenuItemId ? "マイメニューを編集" : "マイメニューを登録"}</h2>
-          {props.focus === "myMenu" && <span className="rounded-md bg-leaf px-2 py-1 text-[11px] font-bold text-white">登録はこちら</span>}
-        </div>
-        <ManualFoodForm manual={presetDraft} setManual={setPresetDraft} compact mode="preset" onSave={saveUserMenuItem} />
-        {editingUserMenuItemId && (
-          <button className="secondary-button mt-2 w-full" onClick={() => {
-            setEditingUserMenuItemId(undefined);
-            setPresetDraft({ ...emptyManual, savePreset: true });
-          }}>
-            編集をキャンセル
-          </button>
-        )}
-        <div className="mt-4">
-          <div className="mb-2 flex items-center justify-between gap-2">
-            <p className="text-xs font-bold text-moss">登録済みマイメニュー</p>
-            <span className="mini-chip">{userMenuItems.length}件</span>
+      {activeSettingsSection === "myMenu" && !activeMyMenuSection && (
+        <section className={`compact-card divide-y divide-line overflow-hidden scroll-mt-24 ${props.focus === "myMenu" ? "border-2 border-leaf" : ""}`}>
+          <SettingsMenuRow title="登録済みのマイメニュー" description={`一覧の表示、編集、削除 · ${userMenuItems.length}件`} icon={<Store size={18} />} onClick={() => setActiveMyMenuSection("list")} />
+          <SettingsMenuRow title="新規マイメニューの登録" description="名前、単位、カテゴリ、栄養値を順番に登録" icon={<Plus size={18} />} onClick={startNewUserMenuItem} />
+        </section>
+      )}
+
+      {activeSettingsSection === "myMenu" && activeMyMenuSection === "list" && (
+        <section className="compact-card scroll-mt-24 p-4">
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <div>
+              <h2 className="font-bold">登録済みのマイメニュー</h2>
+              <p className="mt-1 text-xs font-semibold text-moss">一覧から編集・削除できます。</p>
+            </div>
+            <button className="primary-button shrink-0 px-3 py-2 text-xs" onClick={startNewUserMenuItem}><Plus size={15} />新規</button>
           </div>
           <div className="divide-y divide-line overflow-hidden rounded-3xl border border-line/70 bg-white/30">
             {userMenuItems.map((item) => (
               <div className="flex items-center justify-between gap-3 px-3 py-2" key={item.id}>
                 <div className="min-w-0">
                   <p className="truncate text-sm font-semibold">{formatMenuItemName(item)}</p>
-                  <p className="numeric-text truncate text-xs text-moss">{item.brand || item.category} · {item.calories}kcal · P{item.protein_g} F{item.fat_g} C{item.carbs_g}</p>
+                  <p className="numeric-text truncate text-xs text-moss">{item.brand || item.category} · {item.serving_label ? `${item.serving_label} · ` : ""}{item.calories}kcal · P{item.protein_g} F{item.fat_g} C{item.carbs_g}</p>
                 </div>
                 <div className="flex shrink-0 gap-1">
                   <button className="icon-button h-8 w-8" aria-label={`${formatMenuItemName(item)}を編集`} onClick={() => editUserMenuItem(item)}><Pencil size={14} /></button>
@@ -5789,8 +5858,41 @@ function SettingsTab(props: {
             ))}
             {userMenuItems.length === 0 && <EmptyLine text="登録済みのマイメニューはありません" />}
           </div>
-        </div>
-      </section>}
+        </section>
+      )}
+
+      {activeSettingsSection === "myMenu" && (activeMyMenuSection === "new" || activeMyMenuSection === "edit") && (
+        <section className={`compact-card scroll-mt-24 p-4 ${props.focus === "myMenu" ? "border-2 border-leaf" : ""}`}>
+          <div className="flex items-center justify-between gap-2">
+            <div>
+              <h2 className="font-bold">{activeMyMenuSection === "edit" ? "マイメニューを編集" : "新規マイメニューの登録"}</h2>
+              <p className="mt-1 text-xs font-semibold text-moss">Foodタブのマニュアル登録と同じ入力項目で保存します。</p>
+            </div>
+            {props.focus === "myMenu" && activeMyMenuSection === "new" && <span className="rounded-md bg-leaf px-2 py-1 text-[11px] font-bold text-white">登録はこちら</span>}
+          </div>
+          <ManualFoodForm
+            manual={presetDraft}
+            setManual={setPresetDraft}
+            compact
+            mode="preset"
+            variant="wizard"
+            wizardStep={myMenuWizardStep}
+            setWizardStep={setMyMenuWizardStep}
+            submitLabel={activeMyMenuSection === "edit" ? "更新" : "保存"}
+            onSave={saveUserMenuItem}
+          />
+          {activeMyMenuSection === "edit" && (
+            <button className="secondary-button mt-2 w-full" onClick={() => {
+              setEditingUserMenuItemId(undefined);
+              setPresetDraft({ ...emptyManual, savePreset: true });
+              setActiveMyMenuSection("list");
+              setMyMenuWizardStep("basic");
+            }}>
+              編集をキャンセル
+            </button>
+          )}
+        </section>
+      )}
 
       {activeSettingsSection === "ai" && aiReportSection}
 
@@ -6252,17 +6354,23 @@ function Onboarding({ refresh }: { refresh: () => Promise<void> }) {
   );
 }
 
-function ManualFoodForm({ manual, setManual, onSave, compact = false, mode = "log" }: {
+function ManualFoodForm({ manual, setManual, onSave, compact = false, mode = "log", variant = "form", wizardStep = "basic", setWizardStep, submitLabel = "保存" }: {
   manual: ManualFoodDraft;
   setManual: (manual: ManualFoodDraft) => void;
   onSave: () => void;
   compact?: boolean;
   mode?: "log" | "preset";
+  variant?: "form" | "wizard";
+  wizardStep?: ManualFoodWizardStep;
+  setWizardStep?: (step: ManualFoodWizardStep) => void;
+  submitLabel?: string;
 }) {
   const subcategories = genericCategories[manual.category] ?? [];
   const isPresetOnly = mode === "preset";
   const isIngredient = manual.entry_kind === "ingredient";
   const previewNutrition = draftNutrition(manual);
+  const wizardIndex = Math.max(0, manualFoodWizardSteps.findIndex((step) => step.key === wizardStep));
+  const canAdvanceWizard = wizardStep !== "basic" || !!manual.name.trim();
   const switchManualKind = (entryKind: ManualFoodDraft["entry_kind"]) => {
     if (entryKind === "ingredient") {
       setManual({
@@ -6276,6 +6384,110 @@ function ManualFoodForm({ manual, setManual, onSave, compact = false, mode = "lo
     }
     setManual({ ...manual, entry_kind: "meal" });
   };
+  const moveWizard = (direction: 1 | -1) => {
+    if (!setWizardStep) return;
+    const next = manualFoodWizardSteps[wizardIndex + direction]?.key;
+    if (next) setWizardStep(next);
+  };
+  if (variant === "wizard") {
+    return (
+      <section className={compact ? "" : "compact-card p-4"}>
+        <div className="manual-wizard-progress mt-4" aria-hidden="true">
+          {manualFoodWizardSteps.map((step, index) => (
+            <span className={index <= wizardIndex ? "food-add-progress-dot food-add-progress-dot-active" : "food-add-progress-dot"} key={step.key} />
+          ))}
+        </div>
+        <p className="mt-2 text-xs font-bold text-moss">{manualFoodWizardSteps[wizardIndex]?.label}</p>
+
+        {wizardStep === "basic" && (
+          <div className="mt-3 grid gap-2">
+            <label className="text-xs font-bold text-moss">
+              メニュー名
+              <input className="mt-2 w-full" value={manual.name} onChange={(event) => setManual({ ...manual, name: event.target.value })} placeholder="例: 鶏むね肉と白米" />
+            </label>
+            <label className="text-xs font-bold text-moss">
+              ブランド
+              <input className="mt-2 w-full" value={manual.brand} onChange={(event) => setManual({ ...manual, brand: event.target.value })} placeholder="空欄OK" />
+            </label>
+          </div>
+        )}
+
+        {wizardStep === "unit" && (
+          <div className="mt-3 grid gap-3">
+            <div className="grid grid-cols-2 gap-2">
+              <button className={`mode-button ${!isIngredient ? "mode-button-active" : ""}`} onClick={() => switchManualKind("meal")}>1食分</button>
+              <button className={`mode-button ${isIngredient ? "mode-button-active" : ""}`} onClick={() => switchManualKind("ingredient")}>材料(g)</button>
+            </div>
+            {isIngredient ? (
+              <>
+                <PartialNumberInput label="使用量 g" value={manual.ingredient_grams} step={1} onChange={(value) => setManual({ ...manual, ingredient_grams: value })} />
+                <p className="rounded-2xl border border-line bg-rice/60 px-3 py-2 text-xs font-semibold text-moss">栄養値は100gあたりで入力し、保存時に使用量へ換算します。</p>
+              </>
+            ) : (
+              <p className="rounded-2xl border border-line bg-rice/60 px-3 py-2 text-xs font-semibold text-moss">栄養値は1食分として保存します。</p>
+            )}
+          </div>
+        )}
+
+        {wizardStep === "category" && (
+          <div className="mt-3">
+            <p className="mb-2 text-xs font-bold text-moss">追加カテゴリ</p>
+            <div className="grid grid-cols-3 gap-2">
+              {Object.keys(genericCategories).map((category) => (
+                <button className={`chip justify-center ${manual.category === category ? "chip-active" : ""}`} key={category} onClick={() => setManual({ ...manual, category, subcategory: genericCategories[category]?.[0] ?? "" })}>{category}</button>
+              ))}
+            </div>
+            {!!subcategories.length && (
+              <div className="manual-subcategory-scroll mt-2 flex gap-2 overflow-x-auto pb-1">
+                {subcategories.map((subcategory) => (
+                  <button className={`chip manual-subcategory-chip ${manual.subcategory === subcategory ? "chip-active" : ""}`} key={subcategory} onClick={() => setManual({ ...manual, subcategory })}>{subcategory}</button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {wizardStep === "nutrition" && (
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            <PartialNumberInput label={isIngredient ? "kcal / 100g" : "kcal"} value={manual.calories} onChange={(value) => setManual({ ...manual, calories: value })} />
+            <PartialNumberInput label={isIngredient ? "P / 100g" : "P"} value={manual.protein_g} step={0.1} onChange={(value) => setManual({ ...manual, protein_g: value })} />
+            <PartialNumberInput label={isIngredient ? "F / 100g" : "F"} value={manual.fat_g} step={0.1} onChange={(value) => setManual({ ...manual, fat_g: value })} />
+            <PartialNumberInput label={isIngredient ? "C / 100g" : "C"} value={manual.carbs_g} step={0.1} onChange={(value) => setManual({ ...manual, carbs_g: value })} />
+            <input value={manual.salt_g} onChange={(event) => setManual({ ...manual, salt_g: event.target.value })} placeholder={isIngredient ? "塩分 / 100g optional" : "塩分 optional"} />
+            <input value={manual.note} onChange={(event) => setManual({ ...manual, note: event.target.value })} placeholder="メモ" />
+            {isIngredient && (
+              <div className="col-span-2 rounded-2xl border border-line bg-rice/60 px-3 py-2 text-xs text-moss">
+                <p className="font-semibold text-ink">保存される栄養</p>
+                <p className="numeric-text mt-1">使用量 {formatControlValue(ingredientGramValue(manual) ?? 0)}g · {previewNutrition.calories}kcal · P{previewNutrition.protein_g} F{previewNutrition.fat_g} C{previewNutrition.carbs_g}</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {wizardStep === "confirm" && (
+          <div className="mt-3 space-y-3">
+            <div className="rounded-3xl border border-line bg-white/30 p-3">
+              <p className="truncate text-sm font-black text-ink">{manual.name || "名称未入力"}</p>
+              <p className="mt-1 text-xs font-semibold text-moss">{manual.brand || "ブランドなし"} · {manual.category} / {manual.subcategory || "未分類"}</p>
+              <p className="numeric-text mt-2 text-xs font-bold text-moss">{isIngredient ? `${formatControlValue(ingredientGramValue(manual) ?? 0)}g · ` : ""}{previewNutrition.calories}kcal · P{previewNutrition.protein_g} F{previewNutrition.fat_g} C{previewNutrition.carbs_g}</p>
+            </div>
+            <label className="chip"><input type="checkbox" checked={manual.favorite} onChange={(event) => setManual({ ...manual, favorite: event.target.checked })} />お気に入りに追加</label>
+            <button className="primary-button w-full" disabled={!manual.name.trim()} onClick={onSave}><Save size={17} />{submitLabel}</button>
+          </div>
+        )}
+
+        {wizardStep !== "confirm" && (
+          <div className="mt-4 grid grid-cols-2 gap-2">
+            <button className="secondary-button" disabled={wizardIndex === 0} onClick={() => moveWizard(-1)}><ChevronLeft size={17} />戻る</button>
+            <button className="primary-button" disabled={!canAdvanceWizard} onClick={() => moveWizard(1)}>次へ<ChevronRight size={17} /></button>
+          </div>
+        )}
+        {wizardStep === "confirm" && (
+          <button className="secondary-button mt-2 w-full" onClick={() => moveWizard(-1)}><ChevronLeft size={17} />戻る</button>
+        )}
+      </section>
+    );
+  }
   return (
     <section className={compact ? "" : "compact-card p-4"}>
       {!compact && (
@@ -7589,14 +7801,14 @@ function TravelModeModal({ modes, step, selectedId, nameDraft, startDraft, endDr
           <>
             <div className="mt-4 rounded-3xl border border-line bg-white/25 p-3">
               <p className="font-black text-ink">{selectedMode?.label ?? "旅行"}</p>
-              <div className="mt-3 grid grid-cols-2 gap-2">
-                <label className="text-xs font-bold text-moss">
+              <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                <label className="min-w-0 text-xs font-bold text-moss">
                   開始
-                  <input className="mt-1 h-10 w-full px-3 text-sm" type="date" value={startDraft} onChange={(event) => onStartChange(event.target.value)} />
+                  <input className="mt-1 h-11 min-w-0 w-full px-3 text-sm" type="date" value={startDraft} onChange={(event) => onStartChange(event.target.value)} />
                 </label>
-                <label className="text-xs font-bold text-moss">
+                <label className="min-w-0 text-xs font-bold text-moss">
                   終了
-                  <input className="mt-1 h-10 w-full px-3 text-sm" type="date" value={endDraft} onChange={(event) => onEndChange(event.target.value)} />
+                  <input className="mt-1 h-11 min-w-0 w-full px-3 text-sm" type="date" value={endDraft} onChange={(event) => onEndChange(event.target.value)} />
                 </label>
               </div>
             </div>
@@ -7639,14 +7851,14 @@ function PauseModeModal({ labelDraft, startDraft, endDraft, isEnabled, onLabelCh
             モード名
             <input className="mt-2 w-full" value={labelDraft} onChange={(event) => onLabelChange(event.target.value)} placeholder="例: 体調調整" />
           </label>
-          <div className="mt-3 grid grid-cols-2 gap-2">
-            <label className="text-xs font-bold text-moss">
+          <div className="mt-3 grid gap-2 sm:grid-cols-2">
+            <label className="min-w-0 text-xs font-bold text-moss">
               開始
-              <input className="mt-1 h-10 w-full px-3 text-sm" type="date" value={startDraft} onChange={(event) => onStartChange(event.target.value)} />
+              <input className="mt-1 h-11 min-w-0 w-full px-3 text-sm" type="date" value={startDraft} onChange={(event) => onStartChange(event.target.value)} />
             </label>
-            <label className="text-xs font-bold text-moss">
+            <label className="min-w-0 text-xs font-bold text-moss">
               終了
-              <input className="mt-1 h-10 w-full px-3 text-sm" type="date" value={endDraft} onChange={(event) => onEndChange(event.target.value)} />
+              <input className="mt-1 h-11 min-w-0 w-full px-3 text-sm" type="date" value={endDraft} onChange={(event) => onEndChange(event.target.value)} />
             </label>
           </div>
         </div>

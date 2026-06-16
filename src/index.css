@@ -831,6 +831,12 @@ button {
   gap: 0.4rem;
 }
 
+.manual-wizard-progress {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.4rem;
+}
+
 .food-add-progress-dot {
   height: 0.28rem;
   border-radius: 999px;
@@ -1073,6 +1079,25 @@ button {
 
 .home-macro-low .home-macro-dot {
   background: #c99848;
+}
+
+.home-macro-disabled {
+  color: rgba(86, 96, 89, 0.62);
+  background: rgba(142, 151, 143, 0.18);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  cursor: default;
+}
+
+.home-macro-disabled .home-macro-dot {
+  background: rgba(86, 96, 89, 0.35);
+}
+
+.home-macro-paused {
+  margin-left: auto;
+  overflow: hidden;
+  text-overflow: clip;
+  white-space: nowrap;
+  font-weight: 800;
 }
 
 .home-checkin-edit {
@@ -2347,6 +2372,11 @@ button {
 .theme-dark .home-macro-low {
   color: #ead09a;
   background: rgba(201, 152, 72, 0.14);
+}
+
+.theme-dark .home-macro-disabled {
+  color: rgba(219, 226, 221, 0.62);
+  background: rgba(255, 255, 255, 0.07);
 }
 
 .theme-dark .home-checkin-edit {
