@@ -78,6 +78,7 @@ type Tab = "home" | "food" | "workout" | "records" | "settings";
 type FoodMode = "search" | "favorite" | "chain" | "category" | "quick" | "manual" | "personal";
 type WorkoutMode = "favorite" | "preset" | "body" | "equipment" | "previous" | "search";
 type FoodFocus = "todayLog" | "specialMode" | undefined;
+type FoodAddStep = "size" | "quantity" | "timing" | "confirm";
 type WorkoutFocus = "dateLog" | undefined;
 type SettingsFocus = "ai" | "backup" | "myMenu" | "goal" | undefined;
 type HistoryGrouping = "day" | "week" | "month";
@@ -173,6 +174,8 @@ const mealLabels: Record<MealType, string> = {
   lunch: "昼",
   dinner: "夜",
   snack: "間食",
+  gym_before: "ジム前",
+  gym_after: "ジム後",
 };
 
 const chainCategories: Record<string, string[]> = {
@@ -349,6 +352,16 @@ const weightStepOptions = [1, 2.5, 5, 10];
 const finisherPulseIntensity = "finisher_pulse";
 const finisherPulseNote = "仕上げパルス（部分可動域・素早く）";
 const appUpdates: AppUpdate[] = [
+  {
+    id: "2026-06-16-food-add-step-modal",
+    title: "食事追加の流れを整理",
+    date: "2026-06-16",
+    items: [
+      "食事メニューの追加画面を、サイズ・個数・食べたタイミング・確認のステップ式にしました。",
+      "食べたタイミングにジム前・ジム後を追加しました。",
+      "最後にkcal/P/F/Cを確認してから記録できるようにしました。",
+    ],
+  },
   {
     id: "2026-06-15-record-reminder-banner",
     title: "記録リマインダーを追加",
@@ -2443,7 +2456,9 @@ function FoodTab(props: {
   const [selected, setSelected] = useState<MenuItem>();
   const [editingEntry, setEditingEntry] = useState<{ entry: FoodEntry; draft: FoodEntryEditDraft }>();
   const [mealType, setMealType] = useState<MealType>("lunch");
-  const [multiplier, setMultiplier] = useState(1);
+  const [foodAddStep, setFoodAddStep] = useState<FoodAddStep>("size");
+  const [portionMultiplier, setPortionMultiplier] = useState(1);
+  const [portionQuantity, setPortionQuantity] = useState(1);
   const [manual, setManual] = useState(emptyManual);
   const [chainCategory, setChainCategory] = useState("牛丼・丼");
   const [brand, setBrand] = useState("松屋");
@@ -2456,6 +2471,7 @@ function FoodTab(props: {
   const [isFoodFilterOpen, setIsFoodFilterOpen] = useState(false);
   const [isFoodSearchHidden, setIsFoodSearchHidden] = useState(false);
   const [showFoodFilterIntro, setShowFoodFilterIntro] = useState(() => localStorage.getItem(foodFitFilterSeenStorageKey) !== "1");
+  const multiplier = Math.max(0, portionMultiplier * portionQuantity);
 
   const recentIds = useMemo(() => new Set(props.foodEntries.slice(0, 20).map((entry) => entry.menu_item_id).filter(Boolean)), [props.foodEntries]);
   const favoriteItems = useMemo(() => props.menuItems.filter((item) => item.is_favorite), [props.menuItems]);
@@ -2531,7 +2547,10 @@ function FoodTab(props: {
     return () => window.clearTimeout(timer);
   }, [props.focus, props.activeSpecialMode?.id]);
   const selectFoodItem = (item: MenuItem) => {
-    setMultiplier(1);
+    setPortionMultiplier(1);
+    setPortionQuantity(1);
+    setMealType(item.default_meal_type ?? mealType);
+    setFoodAddStep("size");
     setSelected(item);
   };
   const selectMode = (nextMode: FoodMode) => {
@@ -2566,6 +2585,12 @@ function FoodTab(props: {
   };
   const portionOptions = selected ? getPortionOptions(selected) : [];
   const selectedServingGrams = selected ? menuItemServingGrams(selected) : undefined;
+  const selectedPortionLabel = selected ? portionOptions.find((option) => option.value === portionMultiplier)?.label ?? "カスタム" : "";
+  const selectedCalories = selected ? Math.round(selected.calories * multiplier) : 0;
+  const selectedProtein = selected ? round1(selected.protein_g * multiplier) : 0;
+  const selectedFat = selected ? round1(selected.fat_g * multiplier) : 0;
+  const selectedCarbs = selected ? round1(selected.carbs_g * multiplier) : 0;
+  const selectedSalt = selected?.salt_g ? round1(selected.salt_g * multiplier) : undefined;
   const isGlobalSearch = query.trim().length > 0;
   const remainingNutrition = getRemainingNutrition(props.dayTotals, props.goal);
   const canUseOverGoalFilter = !!props.goal && props.goal.target_calories > 0;
@@ -2671,7 +2696,9 @@ function FoodTab(props: {
       updated_at: timestamp,
     });
     setSelected(undefined);
-    setMultiplier(1);
+    setPortionMultiplier(1);
+    setPortionQuantity(1);
+    setFoodAddStep("size");
     await props.refresh();
     props.showToast(`${loggedName}を記録しました`);
   };
@@ -3046,42 +3073,142 @@ function FoodTab(props: {
 
       {selected && (
         <div className="fixed inset-0 z-40 flex items-end bg-ink/30 px-4 pb-4" onClick={() => setSelected(undefined)}>
-          <div className="compact-card w-full p-4" onClick={(event) => event.stopPropagation()}>
-            <p className="text-lg font-bold">{formatMenuItemName(selected)}</p>
-            <p className="numeric-text text-sm text-moss">{selected.brand ?? selected.category} · {Math.round(selected.calories * multiplier)} kcal</p>
-            <div className="mt-2">
+          <div className="food-add-sheet compact-card w-full p-4" onClick={(event) => event.stopPropagation()}>
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="truncate text-lg font-bold">{formatMenuItemName(selected)}</p>
+                <p className="numeric-text mt-1 text-sm text-moss">{selected.brand ?? selected.category} · {selectedCalories} kcal</p>
+              </div>
+              <button className="icon-button h-9 w-9 shrink-0" aria-label="閉じる" onClick={() => setSelected(undefined)}>×</button>
+            </div>
+            <div className="mt-2 flex items-center justify-between gap-2">
               <SourceBadge item={selected} source={selected.data_source} confidence={selected.confidence} />
+              <span className="numeric-text rounded-md bg-rice px-2 py-1 text-xs font-bold text-moss">
+                {foodAddStep === "size" ? "1/4" : foodAddStep === "quantity" ? "2/4" : foodAddStep === "timing" ? "3/4" : "4/4"}
+              </span>
             </div>
-            <div className="mt-3 grid grid-cols-4 gap-2">
-              {Object.entries(mealLabels).map(([key, label]) => (
-                <button key={key} className={`chip justify-center ${mealType === key ? "chip-active" : ""}`} onClick={() => setMealType(key as MealType)}>{label}</button>
+            <div className="food-add-progress mt-4" aria-hidden="true">
+              {(["size", "quantity", "timing", "confirm"] as FoodAddStep[]).map((step) => (
+                <span className={foodAddStep === step ? "food-add-progress-dot food-add-progress-dot-active" : "food-add-progress-dot"} key={step} />
               ))}
             </div>
-            <div className="mt-3 grid grid-cols-3 gap-2">
-              {portionOptions.map(({ label, value }) => (
-                <button key={label} className={`chip justify-center ${multiplier === value ? "chip-active" : ""}`} onClick={() => setMultiplier(value)}>{label}</button>
-              ))}
-            </div>
-            <input className="mt-3 w-full" type="number" step="0.05" value={multiplier} onChange={(event) => setMultiplier(Number(event.target.value))} />
-            {selectedServingGrams && (
-              <label className="mt-3 block text-xs font-semibold text-moss">
-                グラム指定
-                <input
-                  className="mt-1 w-full"
-                  type="number"
-                  inputMode="decimal"
-                  min="0"
-                  step="1"
-                  value={formatControlValue(round1(selectedServingGrams * multiplier))}
-                  onChange={(event) => setMultiplier(Math.max(0, Number(event.target.value) || 0) / selectedServingGrams)}
-                />
-              </label>
+
+            {foodAddStep === "size" && (
+              <div className="mt-4">
+                <p className="text-sm font-black text-ink">サイズを選択</p>
+                <p className="mt-1 text-xs font-semibold text-moss">まず1回あたりの量を選びます。</p>
+                <div className="mt-4 grid grid-cols-3 gap-2">
+                  {portionOptions.map(({ label, value }) => (
+                    <button
+                      key={label}
+                      className={`food-add-choice ${portionMultiplier === value ? "food-add-choice-active" : ""}`}
+                      onClick={() => setPortionMultiplier(value)}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                {selectedServingGrams && (
+                  <label className="mt-4 block text-xs font-semibold text-moss">
+                    グラム指定
+                    <input
+                      className="mt-2 w-full"
+                      type="number"
+                      inputMode="decimal"
+                      min="0"
+                      step="1"
+                      value={formatControlValue(round1(selectedServingGrams * portionMultiplier))}
+                      onChange={(event) => {
+                        const grams = Math.max(0, Number(event.target.value) || 0);
+                        setPortionMultiplier(grams / selectedServingGrams);
+                      }}
+                    />
+                  </label>
+                )}
+              </div>
             )}
-            <div className="mt-4 grid grid-cols-2 gap-2">
-              <button className="secondary-button" onClick={() => setSelected(undefined)}>閉じる</button>
-              <button className="primary-button" onClick={saveSelected}><Check size={17} />記録</button>
+
+            {foodAddStep === "quantity" && (
+              <div className="mt-4">
+                <p className="text-sm font-black text-ink">個数を選択</p>
+                <p className="mt-1 text-xs font-semibold text-moss">{selectedPortionLabel}を何個・何杯分記録するか選びます。</p>
+                <div className="mt-4 grid grid-cols-3 gap-2">
+                  {[1, 2, 3].map((value) => (
+                    <button
+                      key={value}
+                      className={`food-add-choice ${portionQuantity === value ? "food-add-choice-active" : ""}`}
+                      onClick={() => setPortionQuantity(value)}
+                    >
+                      {value}
+                    </button>
+                  ))}
+                </div>
+                <div className="mt-4">
+                  <Stepper value={portionQuantity} suffix="個数" step={0.5} onChange={(value) => setPortionQuantity(Math.max(0, value))} />
+                </div>
+              </div>
+            )}
+
+            {foodAddStep === "timing" && (
+              <div className="mt-4">
+                <p className="text-sm font-black text-ink">いつ食べた？</p>
+                <p className="mt-1 text-xs font-semibold text-moss">食事タイミングを選びます。ジム前・ジム後もここで記録できます。</p>
+                <div className="mt-4 grid grid-cols-2 gap-2">
+                  {Object.entries(mealLabels).map(([key, label]) => (
+                    <button key={key} className={`food-add-choice ${mealType === key ? "food-add-choice-active" : ""}`} onClick={() => setMealType(key as MealType)}>{label}</button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {foodAddStep === "confirm" && (
+              <div className="mt-4">
+                <p className="text-sm font-black text-ink">記録内容を確認</p>
+                <div className="mt-3 rounded-3xl border border-line bg-white/25 p-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="truncate font-black text-ink">{formatMenuItemName(selected)}</p>
+                      <p className="numeric-text mt-1 text-xs font-bold text-moss">{selectedPortionLabel} × {formatFoodAmountValue(portionQuantity)} / {mealLabels[mealType]}</p>
+                    </div>
+                    <p className="numeric-text shrink-0 text-xl font-black text-ink">{selectedCalories}kcal</p>
+                  </div>
+                  <div className="mt-3 grid grid-cols-3 gap-2">
+                    <MetricPill label="P" value={`${selectedProtein}g`} />
+                    <MetricPill label="F" value={`${selectedFat}g`} />
+                    <MetricPill label="C" value={`${selectedCarbs}g`} />
+                  </div>
+                  {selectedSalt !== undefined && <p className="numeric-text mt-2 text-xs font-semibold text-moss">塩分 {selectedSalt}g</p>}
+                </div>
+              </div>
+            )}
+
+            <div className="mt-5 grid grid-cols-2 gap-2">
+              <button
+                className="secondary-button"
+                onClick={() => {
+                  if (foodAddStep === "size") {
+                    setSelected(undefined);
+                    return;
+                  }
+                  setFoodAddStep(foodAddStep === "quantity" ? "size" : foodAddStep === "timing" ? "quantity" : "timing");
+                }}
+              >
+                {foodAddStep === "size" ? "閉じる" : <><ChevronLeft size={17} />戻る</>}
+              </button>
+              {foodAddStep === "confirm" ? (
+                <button className="primary-button" onClick={saveSelected}><Check size={17} />記録</button>
+              ) : (
+                <button
+                  className="primary-button"
+                  onClick={() => setFoodAddStep(foodAddStep === "size" ? "quantity" : foodAddStep === "quantity" ? "timing" : "confirm")}
+                >
+                  次へ<ChevronRight size={17} />
+                </button>
+              )}
             </div>
-            <button className="secondary-button mt-2 w-full" onClick={cloneSelectedToManual}><Pencil size={17} />編集して個人メニュー化</button>
+            {foodAddStep === "confirm" && (
+              <button className="secondary-button mt-2 w-full" onClick={cloneSelectedToManual}><Pencil size={17} />編集して個人メニュー化</button>
+            )}
           </div>
         </div>
       )}
@@ -6485,6 +6612,7 @@ function getFoodPictogram(item: { name: string; brand?: string; category?: strin
   if (/コンビニ|セブン|ファミリーマート|ローソン|ミニストップ|弁当|おにぎり/.test(text)) return { icon: ShoppingBag, tone: "sky" as PictogramTone };
   if (/チェーン|外食|定食|丼|カレー|ごはん|ライス/.test(text)) return { icon: UtensilsCrossed, tone: "moss" as PictogramTone };
   if (item.brand) return { icon: Store, tone: "ink" as PictogramTone };
+  if (item.meal_type === "gym_before" || item.meal_type === "gym_after") return { icon: Dumbbell, tone: "leaf" as PictogramTone };
   if (item.meal_type === "breakfast") return { icon: Coffee, tone: "sky" as PictogramTone };
   return { icon: Utensils, tone: "moss" as PictogramTone };
 }
@@ -7369,6 +7497,12 @@ function sliderMax(value: number, fallbackMax: number, step: number) {
 
 function formatControlValue(value: number) {
   return Number.isInteger(value) ? String(value) : value.toFixed(1);
+}
+
+function formatFoodAmountValue(value: number) {
+  if (Number.isInteger(value)) return String(value);
+  const rounded = Math.round(value * 100) / 100;
+  return rounded.toFixed(2).replace(/0$/, "").replace(/\.0$/, "");
 }
 
 function defaultWorkoutWeightPresets(currentWeight: number, step: number) {
