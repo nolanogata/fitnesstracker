@@ -378,9 +378,43 @@ button {
   }
 }
 
+@keyframes hero-rainbow-glow {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 1px rgba(255, 255, 255, 0.56) inset,
+      -8px -6px 22px rgba(255, 107, 107, 0.2),
+      10px -6px 22px rgba(255, 209, 102, 0.18),
+      12px 12px 28px rgba(78, 205, 196, 0.18),
+      -8px 14px 28px rgba(123, 97, 255, 0.16),
+      0 14px 34px rgba(44, 56, 48, 0.08),
+      var(--glass-highlight);
+  }
+  50% {
+    box-shadow:
+      0 0 0 1px rgba(255, 255, 255, 0.78) inset,
+      -10px -8px 32px rgba(255, 107, 107, 0.3),
+      12px -8px 32px rgba(255, 209, 102, 0.28),
+      16px 16px 40px rgba(78, 205, 196, 0.28),
+      -12px 18px 40px rgba(123, 97, 255, 0.24),
+      0 18px 42px rgba(44, 56, 48, 0.1),
+      var(--glass-highlight);
+  }
+}
+
+@keyframes hero-rainbow-ring {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .home-header-trophy-unseen,
-  .home-header-trophy-unseen::before {
+  .home-header-trophy-unseen::before,
+  .home-hero-cheat,
+  .home-hero-hokkaido,
+  .home-hero-cheat::after,
+  .home-hero-hokkaido::after {
     animation: none;
   }
 }
@@ -560,6 +594,7 @@ button {
     -10px 16px 34px rgba(123, 97, 255, 0.2),
     0 14px 34px rgba(44, 56, 48, 0.08),
     var(--glass-highlight);
+  animation: hero-rainbow-glow 2.8s ease-in-out infinite;
 }
 
 .home-hero-trip {
@@ -592,6 +627,7 @@ button {
     -10px 16px 34px rgba(123, 97, 255, 0.16),
     0 18px 38px rgba(13, 25, 30, 0.2),
     var(--glass-highlight);
+  animation: hero-rainbow-glow 2.8s ease-in-out infinite;
 }
 
 .home-hero-hokkaido::before {
@@ -606,20 +642,23 @@ button {
   content: "";
 }
 
+.home-hero-cheat::after,
 .home-hero-hokkaido::after {
   position: absolute;
-  inset: 0;
+  inset: -34%;
   border-radius: inherit;
   z-index: 0;
-  background:
-    conic-gradient(from 145deg at 54% 48%, rgba(255, 107, 107, 0.34), rgba(255, 209, 102, 0.28), rgba(78, 205, 196, 0.26), rgba(123, 97, 255, 0.3), rgba(255, 107, 107, 0.34)),
-    radial-gradient(circle at 76% 20%, rgba(255, 255, 255, 0.32), transparent 28%);
+  padding: 34%;
+  background: conic-gradient(from 20deg, #ff6b6b, #ffd166, #4ecdc4, #7b61ff, #ff6b6b);
   content: "";
-  filter: blur(18px) saturate(140%);
-  mix-blend-mode: screen;
-  opacity: 0.42;
+  filter: blur(10px) saturate(142%);
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  opacity: 0.8;
   pointer-events: none;
-  transform: scale(1.24);
+  animation: hero-rainbow-ring 4.8s linear infinite;
 }
 
 .home-hero-trip > * {
@@ -2206,7 +2245,7 @@ button {
 }
 
 .theme-dark .home-hero-hokkaido::after {
-  opacity: 0.36;
+  opacity: 0.72;
 }
 
 .theme-dark .home-cheat-badge {
