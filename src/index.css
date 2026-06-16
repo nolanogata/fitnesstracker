@@ -532,17 +532,22 @@ button {
   }
 }
 
-@keyframes pr-confetti-fall {
+@keyframes pr-confetti-burst {
   0% {
     opacity: 0;
-    transform: translate3d(0, 0, 0) rotate(var(--confetti-rotate));
+    transform: translate3d(-50%, 0, 0) rotate(var(--confetti-rotate)) scale(0.55);
   }
-  8% {
+  10% {
     opacity: 1;
+    transform: translate3d(-50%, -14px, 0) rotate(var(--confetti-rotate)) scale(1);
+  }
+  64% {
+    opacity: 1;
+    transform: translate3d(calc(-50% + var(--confetti-x)), var(--confetti-y), 0) rotate(calc(var(--confetti-rotate) + 540deg)) scale(1);
   }
   100% {
     opacity: 0;
-    transform: translate3d(var(--confetti-drift), 108vh, 0) rotate(calc(var(--confetti-rotate) + 760deg));
+    transform: translate3d(calc(-50% + var(--confetti-x)), calc(var(--confetti-y) + var(--confetti-fall)), 0) rotate(calc(var(--confetti-rotate) + 760deg)) scale(0.86);
   }
 }
 
@@ -1649,16 +1654,17 @@ button {
 
 .pr-confetti-piece {
   position: absolute;
-  top: -24px;
-  left: var(--confetti-left);
+  bottom: 11vh;
+  left: 50%;
   display: block;
   border-radius: 3px;
   background: var(--confetti-color);
   opacity: 0;
   transform: translate3d(0, 0, 0) rotate(var(--confetti-rotate));
-  animation: pr-confetti-fall 1.65s cubic-bezier(0.16, 0.78, 0.38, 1) forwards;
+  animation: pr-confetti-burst 1.58s cubic-bezier(0.12, 0.82, 0.24, 1) forwards;
   animation-delay: var(--confetti-delay);
   box-shadow: 0 2px 5px rgba(35, 45, 38, 0.12);
+  transform-origin: center;
 }
 
 .trophy-sheet {

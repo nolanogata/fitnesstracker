@@ -637,6 +637,14 @@ const achievementProgressSpecs: Record<string, AchievementProgressSpec> = {
 };
 const appUpdates: AppUpdate[] = [
   {
+    id: "2026-06-17-confetti-burst",
+    title: "アンロック演出を調整",
+    date: "2026-06-17",
+    items: [
+      "トロフィー獲得や記録更新時の紙吹雪を、上から落ちる演出から下から放射状に飛ぶクラッカー風に変更しました。",
+    ],
+  },
+  {
     id: "2026-06-17-bottom-nav-motion",
     title: "下部ナビの操作感を調整",
     date: "2026-06-17",
@@ -2338,19 +2346,31 @@ function QuickToast({ text }: { text: string }) {
   );
 }
 
+function buildConfettiBurstPieces(count: number, colors: string[]) {
+  return Array.from({ length: count }, (_, index) => {
+    const spread = count <= 1 ? 0.5 : index / (count - 1);
+    const angle = (205 + spread * 130 + ((index % 5) - 2) * 5) * (Math.PI / 180);
+    const distance = 168 + (index % 9) * 16 + (index % 3) * 10;
+    const x = Math.cos(angle) * distance;
+    const y = Math.sin(angle) * distance;
+    return {
+      id: index,
+      delay: `${(index % 8) * 0.028}s`,
+      x: `${Math.round(x)}px`,
+      y: `${Math.round(y)}px`,
+      fall: `${28 + (index % 5) * 9}px`,
+      rotate: `${(index * 31) % 180}deg`,
+      color: colors[index % colors.length],
+      width: `${6 + (index % 4) * 2}px`,
+      height: `${10 + (index % 5) * 2}px`,
+    };
+  });
+}
+
 function WorkoutPrCelebrationOverlay({ celebration }: { celebration?: WorkoutPrCelebration }) {
   if (!celebration) return null;
   const colors = ["#D97A68", "#E7B85B", "#8CA798", "#8FB2D8", "#C79BD8", "#F3DDD3"];
-  const pieces = Array.from({ length: 42 }, (_, index) => ({
-    id: index,
-    left: `${(index * 17) % 100}%`,
-    delay: `${(index % 9) * 0.045}s`,
-    drift: `${((index % 7) - 3) * 18}px`,
-    rotate: `${(index * 31) % 180}deg`,
-    color: colors[index % colors.length],
-    width: `${6 + (index % 3) * 2}px`,
-    height: `${10 + (index % 4) * 2}px`,
-  }));
+  const pieces = buildConfettiBurstPieces(42, colors);
 
   return (
     <div className="pr-celebration pointer-events-none fixed inset-0 z-[70] mx-auto max-w-[430px] overflow-hidden">
@@ -2360,9 +2380,10 @@ function WorkoutPrCelebrationOverlay({ celebration }: { celebration?: WorkoutPrC
             className="pr-confetti-piece"
             key={piece.id}
             style={{
-              "--confetti-left": piece.left,
               "--confetti-delay": piece.delay,
-              "--confetti-drift": piece.drift,
+              "--confetti-x": piece.x,
+              "--confetti-y": piece.y,
+              "--confetti-fall": piece.fall,
               "--confetti-rotate": piece.rotate,
               "--confetti-color": piece.color,
               width: piece.width,
@@ -2446,16 +2467,7 @@ function AchievementCelebrationOverlay({ celebration, onClose, onOpenTrophies }:
 }) {
   if (!celebration) return null;
   const colors = ["#ff6b6b", "#ffd166", "#4ecdc4", "#7b61ff", "#f3ddd3", "#9fbea9"];
-  const pieces = Array.from({ length: 54 }, (_, index) => ({
-    id: index,
-    left: `${(index * 19) % 100}%`,
-    delay: `${(index % 10) * 0.04}s`,
-    drift: `${((index % 9) - 4) * 16}px`,
-    rotate: `${(index * 29) % 180}deg`,
-    color: colors[index % colors.length],
-    width: `${6 + (index % 4) * 2}px`,
-    height: `${10 + (index % 5) * 2}px`,
-  }));
+  const pieces = buildConfettiBurstPieces(54, colors);
   return (
     <div className="achievement-celebration fixed inset-0 z-[75] mx-auto max-w-[430px] overflow-hidden">
       <div className="pointer-events-none absolute inset-0">
@@ -2464,9 +2476,10 @@ function AchievementCelebrationOverlay({ celebration, onClose, onOpenTrophies }:
             className="pr-confetti-piece"
             key={piece.id}
             style={{
-              "--confetti-left": piece.left,
               "--confetti-delay": piece.delay,
-              "--confetti-drift": piece.drift,
+              "--confetti-x": piece.x,
+              "--confetti-y": piece.y,
+              "--confetti-fall": piece.fall,
               "--confetti-rotate": piece.rotate,
               "--confetti-color": piece.color,
               width: piece.width,
