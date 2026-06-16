@@ -29,6 +29,11 @@ export type SpecialModeSettings = {
   updated_at?: string;
 };
 
+export type AchievementUnlock = {
+  id: string;
+  unlocked_at: string;
+};
+
 export type Settings = {
   id: string;
   day_boundary_hour: number;
@@ -38,6 +43,7 @@ export type Settings = {
   hidden_workout_template_ids?: string[];
   special_modes?: SpecialModeSettings[];
   developer_test_active_until?: string;
+  achievements?: AchievementUnlock[];
   created_at: string;
   updated_at: string;
 };
