@@ -79,11 +79,11 @@ import { generateMarkdownReport } from "./lib/report";
 import { getWeeklyWorkoutStatus, type WeeklyWorkoutStatus } from "./lib/workoutStatus";
 
 type Tab = "home" | "food" | "workout" | "records" | "settings";
-type FoodMode = "search" | "favorite" | "chain" | "category" | "quick" | "manual" | "personal";
+type FoodMode = "search" | "favorite" | "chain" | "category" | "quick" | "manual" | "personal" | "recommend";
 type WorkoutMode = "favorite" | "preset" | "body" | "equipment" | "previous" | "search";
 type FoodFocus = "todayLog" | "specialMode" | undefined;
 type FoodAddStep = "size" | "customSize" | "quantity" | "timing" | "confirm";
-type ManualFoodWizardStep = "basic" | "unit" | "category" | "nutrition" | "confirm";
+type ManualFoodWizardStep = "basic" | "unit" | "purpose" | "category" | "nutrition" | "confirm";
 type WorkoutFocus = "dateLog" | undefined;
 type SettingsFocus = "ai" | "backup" | "myMenu" | "goal" | undefined;
 type SettingsSection = "ai" | "backup" | "goal" | "records" | "myMenu" | "general";
@@ -201,6 +201,8 @@ type FoodEntryEditDraft = {
   salt_g: string;
 };
 type PerfectFoodPlan = "meal" | "snack" | "protein" | "none";
+type PerfectFoodMode = "fit" | "improve";
+type RecommendedFoodFilter = "all" | string;
 type PerfectFoodSuggestionGroup = {
   label: string;
   items: MenuItem[];
@@ -309,10 +311,13 @@ const emptyManual: ManualFoodDraft = {
 const manualFoodWizardSteps: Array<{ key: ManualFoodWizardStep; label: string }> = [
   { key: "basic", label: "名前" },
   { key: "unit", label: "単位" },
+  { key: "purpose", label: "使い方" },
   { key: "category", label: "カテゴリ" },
   { key: "nutrition", label: "栄養値" },
   { key: "confirm", label: "保存" },
 ];
+
+const settingsManualFoodWizardSteps = manualFoodWizardSteps.filter((step) => step.key !== "purpose");
 
 function manualFoodDraftFromMenuItem(item: MenuItem): ManualFoodDraft {
   const subcategory = item.tags.find((tag) => (genericCategories[item.category] ?? []).includes(tag)) ?? genericCategories[item.category]?.[0] ?? "";
@@ -488,6 +493,7 @@ function dateFromMonthDay(referenceDate: string, monthDay: string, startMonthDay
 const backupStorageKey = "phase-log-last-backup-at";
 const updateSeenStorageKey = "phase-log-seen-update-id";
 const foodFitFilterSeenStorageKey = "phase-log-food-fit-filter-seen-2026-06-14";
+const foodMyMenuIntroSeenStorageKey = "phase-log-my-menu-unified-intro-seen-2026-06-17";
 const workoutWeightPresetStorageKey = "phase-log-workout-weight-presets";
 const cheatDayStorageKey = "phase-log-cheat-day-dates";
 const dismissedRecordReminderStorageKey = "phase-log-dismissed-record-reminders";
@@ -629,6 +635,16 @@ const achievementProgressSpecs: Record<string, AchievementProgressSpec> = {
   streak_100: { metric: "streak", target: 100, unit: "日" },
 };
 const appUpdates: AppUpdate[] = [
+  {
+    id: "2026-06-17-food-my-menu-recommend",
+    title: "Foodの登録導線を整理",
+    date: "2026-06-17",
+    items: [
+      "Foodのマニュアル登録をマイメニューに統合し、保存するか今回だけ記録するかを選べるようにしました。",
+      "Foodにおすすめタブを追加し、残り栄養値に合う候補をカテゴリで絞って表示できるようにしました。",
+      "ぴったりフードを目的選択から始める形に変更し、候補ごとに食べた後の余裕や不足が分かるようにしました。",
+    ],
+  },
   {
     id: "2026-06-16-settings-my-menu-wizard",
     title: "マイメニュー設定を整理",
@@ -3085,6 +3101,7 @@ function PerfectFoodModal({ dayTotals, goal, menuItems, onClose, onLog }: {
   onLog: (item: MenuItem) => void | Promise<void>;
 }) {
   const [page, setPage] = useState<0 | 1 | 2>(0);
+  const [perfectMode, setPerfectMode] = useState<PerfectFoodMode>("fit");
   const [plans, setPlans] = useState<PerfectFoodPlan[]>(["none"]);
   const [expandedGroups, setExpandedGroups] = useState<string[]>([]);
   const remaining = getRemainingNutrition(dayTotals, goal);
@@ -3095,7 +3112,7 @@ function PerfectFoodModal({ dayTotals, goal, menuItems, onClose, onLog }: {
     fat: Math.max(0, remaining.fat - planned.fat),
     carbs: Math.max(0, remaining.carbs - planned.carbs),
   };
-  const suggestionGroups = useMemo(() => buildPerfectFoodSuggestions(menuItems, adjusted, plans), [menuItems, adjusted.calories, adjusted.protein, adjusted.fat, adjusted.carbs, plans]);
+  const suggestionGroups = useMemo(() => buildPerfectFoodSuggestions(menuItems, adjusted, plans, perfectMode), [menuItems, adjusted.calories, adjusted.protein, adjusted.fat, adjusted.carbs, plans, perfectMode]);
   const togglePlan = (plan: PerfectFoodPlan) => {
     setPlans((current) => {
       if (plan === "none") return ["none"];
@@ -3113,30 +3130,39 @@ function PerfectFoodModal({ dayTotals, goal, menuItems, onClose, onLog }: {
         <div className="flex items-start justify-between gap-3">
           <div>
             <p className="text-lg font-bold">ぴったりフード</p>
-            <p className="mt-1 text-xs text-moss">{page === 0 ? "残り栄養素を確認" : page === 1 ? "このあと食べる予定を選択" : "ジャンル別の候補"}</p>
+            <p className="mt-1 text-xs text-moss">{page === 0 ? "目的を選択" : page === 1 ? "計算から引く予定" : perfectMode === "fit" ? "残り枠で食べられる候補" : "目標に近づく候補"}</p>
           </div>
           <button className="icon-button h-9 w-9" aria-label="閉じる" onClick={onClose}>×</button>
         </div>
         <div className="mt-4 grid grid-cols-3 gap-2">
-          {["残り", "予定", "候補"].map((label, index) => (
+          {["目的", "予定", "候補"].map((label, index) => (
             <button className={`mini-chip ${page === index ? "mini-chip-active" : ""}`} key={label} onClick={() => setPage(index as 0 | 1 | 2)}>{label}</button>
           ))}
         </div>
 
         {page === 0 && (
-          <div className="mt-5 space-y-4">
-            <div className="grid grid-cols-2 gap-2">
-              <PerfectFoodMetric label="kcal" value={remaining.calories} suffix="kcal" />
-              <PerfectFoodMetric label="P" value={remaining.protein} suffix="g" />
-              <PerfectFoodMetric label="F" value={remaining.fat} suffix="g" />
-              <PerfectFoodMetric label="C" value={remaining.carbs} suffix="g" />
-            </div>
-            <button className="primary-button w-full" onClick={() => setPage(1)}>予定を入れる <ChevronRight size={17} /></button>
+          <div className="mt-5 space-y-3">
+            <button className={`food-filter-option ${perfectMode === "fit" ? "food-filter-option-active" : ""}`} onClick={() => setPerfectMode("fit")}>
+              <span>
+                <span className="block text-sm font-bold">残りの栄養値で何が食べられるか知りたい</span>
+                <span className="mt-1 block text-xs text-moss">食べたあとにkcal/F/Cの余裕がどれくらい残るかを見ます。</span>
+              </span>
+              <span className="mini-chip shrink-0">{perfectMode === "fit" ? "選択中" : "選択"}</span>
+            </button>
+            <button className={`food-filter-option ${perfectMode === "improve" ? "food-filter-option-active" : ""}`} onClick={() => setPerfectMode("improve")}>
+              <span>
+                <span className="block text-sm font-bold">何を足せば目標に近づけるか</span>
+                <span className="mt-1 block text-xs text-moss">食べたあと、目標まであとどれくらい必要かを見ます。</span>
+              </span>
+              <span className="mini-chip shrink-0">{perfectMode === "improve" ? "選択中" : "選択"}</span>
+            </button>
+            <button className="primary-button w-full" onClick={() => setPage(1)}>予定を引く <ChevronRight size={17} /></button>
           </div>
         )}
 
         {page === 1 && (
           <div className="mt-5 space-y-4">
+            <p className="text-sm font-semibold text-moss">このあと食べる予定があるものを、候補計算から先に引きます。</p>
             <div className="grid gap-2">
               {perfectFoodPlans.map((plan) => (
                 <button className={`choice-button justify-between px-4 ${plans.includes(plan.id) ? "choice-button-active" : ""}`} key={plan.id} onClick={() => togglePlan(plan.id)}>
@@ -3146,7 +3172,7 @@ function PerfectFoodModal({ dayTotals, goal, menuItems, onClose, onLog }: {
               ))}
             </div>
             <div className="perfect-food-panel rounded-md bg-rice p-3">
-              <p className="text-xs font-bold text-moss">予定を引いた残り</p>
+              <p className="text-xs font-bold text-moss">計算に使う残り</p>
               <p className="numeric-text mt-2 text-sm font-bold">あと {Math.round(adjusted.calories)}kcal / P{round1(adjusted.protein)} F{round1(adjusted.fat)} C{round1(adjusted.carbs)}</p>
             </div>
             <div className="grid grid-cols-2 gap-2">
@@ -3170,7 +3196,7 @@ function PerfectFoodModal({ dayTotals, goal, menuItems, onClose, onLog }: {
                 </div>
                 <div className="space-y-2">
                   {visibleItems.map((item) => {
-                    const fit = getPerfectFoodFit(item, adjusted);
+                    const fit = getPerfectFoodFit(item, adjusted, perfectMode);
                     return (
                       <div className={`perfect-food-item perfect-food-item-${fit.tone} rounded-xl bg-surface/70 p-3`} key={item.id}>
                         <div className="flex items-start justify-between gap-3">
@@ -3214,36 +3240,39 @@ function PerfectFoodModal({ dayTotals, goal, menuItems, onClose, onLog }: {
   );
 }
 
-function getPerfectFoodFit(item: MenuItem, target: { calories: number; protein: number; fat: number; carbs: number }) {
+function getPerfectFoodFit(item: MenuItem, target: { calories: number; protein: number; fat: number; carbs: number }, mode: PerfectFoodMode = "improve") {
   const balance = getPerfectFoodBalance(item, target);
   const details: { label: string; tone: "protein" | "ok" | "warn" | "over" }[] = [];
+  const calorieLeftLabel = balance.calorieOver > 25 ? `kcal+${Math.round(balance.calorieOver)}` : `kcal余裕${Math.max(0, Math.round(balance.calorieLeft))}`;
+  details.push({ label: calorieLeftLabel, tone: balance.calorieOver > 25 ? "over" : balance.calorieLeft <= 100 ? "warn" : "ok" });
   if (target.protein > 0) {
     details.push(balance.proteinLeft > 0.5
       ? { label: `Pあと${round1(balance.proteinLeft)}g`, tone: "protein" }
       : { label: "Pクリア", tone: "ok" });
   }
-  const hasFatOrCarbsTarget = target.fat > 0 || target.carbs > 0;
   if (target.fat > 0) {
-    if (balance.fatOver > 0.5) details.push({ label: `F+${round1(balance.fatOver)}g`, tone: "over" });
+    details.push(balance.fatOver > 0.5
+      ? { label: `F+${round1(balance.fatOver)}g`, tone: "over" }
+      : { label: `F余裕${round1(Math.max(0, balance.fatLeft))}g`, tone: balance.fatLeft <= 3 ? "warn" : "ok" });
   }
   if (target.carbs > 0) {
-    if (balance.carbsOver > 0.5) details.push({ label: `C+${round1(balance.carbsOver)}g`, tone: "over" });
+    details.push(balance.carbsOver > 0.5
+      ? { label: `C+${round1(balance.carbsOver)}g`, tone: "over" }
+      : { label: `C余裕${round1(Math.max(0, balance.carbsLeft))}g`, tone: balance.carbsLeft <= 10 ? "warn" : "ok" });
   }
-  if (hasFatOrCarbsTarget && balance.fatOver <= 0.5 && balance.carbsOver <= 0.5) {
-    details.push({
-      label: "F/C内",
-      tone: balance.nonProteinLoad >= 0.88 ? "warn" : "ok",
-    });
-  }
-  if (balance.calorieOver > 25) {
-    details.push({ label: `kcal+${Math.round(balance.calorieOver)}`, tone: "over" });
+
+  if (mode === "fit") {
+    if (balance.hasOver) return { tone: "over" as const, label: "枠超過", details };
+    if (balance.nonProteinLoad >= 0.88) return { tone: "tight" as const, label: "枠ギリ", details };
+    if (balance.nonProteinLoad >= 0.45) return { tone: "good" as const, label: "食べられる", details };
+    return { tone: "easy" as const, label: "余裕あり", details };
   }
 
   if (balance.hasOver) return { tone: "over" as const, label: "超過あり", details };
-  if (balance.proteinLeft > Math.max(8, target.protein * 0.35)) return { tone: "easy" as const, label: "P不足", details };
-  if (balance.nonProteinLoad >= 0.88) return { tone: "tight" as const, label: "枠ギリ", details };
-  if (balance.proteinLeft <= 0.5 && balance.nonProteinLoad >= 0.45) return { tone: "good" as const, label: "ぴったり寄り", details };
-  return { tone: "good" as const, label: "候補OK", details };
+  if (balance.proteinLeft > Math.max(8, target.protein * 0.35)) return { tone: "easy" as const, label: "P補給", details };
+  if (balance.nonProteinLoad >= 0.88) return { tone: "tight" as const, label: "あと少し", details };
+  if (balance.proteinLeft <= 0.5 && balance.nonProteinLoad >= 0.45) return { tone: "good" as const, label: "かなり近い", details };
+  return { tone: "good" as const, label: "近づく", details };
 }
 
 function PerfectFoodMetric({ label, value, suffix }: { label: string; value: number; suffix: string }) {
@@ -3340,11 +3369,13 @@ function FoodTab(props: {
   const [foodAddStep, setFoodAddStep] = useState<FoodAddStep>("size");
   const [portionMultiplier, setPortionMultiplier] = useState(1);
   const [portionQuantity, setPortionQuantity] = useState(1);
-  const [manual, setManual] = useState(emptyManual);
+  const [manual, setManual] = useState({ ...emptyManual, savePreset: true });
+  const [manualWizardStep, setManualWizardStep] = useState<ManualFoodWizardStep>("basic");
   const [chainCategory, setChainCategory] = useState("牛丼・丼");
   const [brand, setBrand] = useState("松屋");
   const [categoryGenre, setCategoryGenre] = useState("ごはん・丼");
   const [generalCategory, setGeneralCategory] = useState("ごはん・丼");
+  const [recommendCategory, setRecommendCategory] = useState<RecommendedFoodFilter>("all");
   const [showGeneralFoodsOnly, setShowGeneralFoodsOnly] = useState(false);
   const [hideOverGoalItems, setHideOverGoalItems] = useState(false);
   const [showFoodBalance, setShowFoodBalance] = useState(false);
@@ -3352,6 +3383,7 @@ function FoodTab(props: {
   const [isFoodFilterOpen, setIsFoodFilterOpen] = useState(false);
   const [isFoodSearchHidden, setIsFoodSearchHidden] = useState(false);
   const [showFoodFilterIntro, setShowFoodFilterIntro] = useState(() => localStorage.getItem(foodFitFilterSeenStorageKey) !== "1");
+  const [showMyMenuIntro, setShowMyMenuIntro] = useState(() => localStorage.getItem(foodMyMenuIntroSeenStorageKey) !== "1");
   const multiplier = Math.max(0, portionMultiplier * portionQuantity);
 
   const recentIds = useMemo(() => new Set(props.foodEntries.slice(0, 20).map((entry) => entry.menu_item_id).filter(Boolean)), [props.foodEntries]);
@@ -3382,6 +3414,10 @@ function FoodTab(props: {
   const dismissFoodFilterIntro = () => {
     setShowFoodFilterIntro(false);
     localStorage.setItem(foodFitFilterSeenStorageKey, "1");
+  };
+  const dismissMyMenuIntro = () => {
+    setShowMyMenuIntro(false);
+    localStorage.setItem(foodMyMenuIntroSeenStorageKey, "1");
   };
   const openFoodFilterOptions = () => {
     props.unlockAchievement("used_food_filter");
@@ -3437,6 +3473,7 @@ function FoodTab(props: {
   };
   const selectMode = (nextMode: FoodMode) => {
     setMode(nextMode);
+    if (nextMode === "personal" && showMyMenuIntro) dismissMyMenuIntro();
     if (nextMode !== "search") setQuery("");
     if (nextMode === "chain") {
       scrollToChainSection();
@@ -3448,6 +3485,10 @@ function FoodTab(props: {
     }
     if (nextMode === "quick") {
       scrollToGenericSection();
+      return;
+    }
+    if (nextMode === "recommend") {
+      scrollToFoodResults();
       return;
     }
     if (nextMode === "search" && query.trim()) {
@@ -3486,9 +3527,13 @@ function FoodTab(props: {
   const isSortFoodByFitActive = sortFoodByFit && canSortFoodByFit;
   const isFoodFitFilterActive = showGeneralFoodsOnly || (hideOverGoalItems && canUseOverGoalFilter) || (showFoodBalance && canShowFoodBalance) || isSortFoodByFitActive;
   const searchPlaceholder = isChainScopedSearch ? `${brand}内を検索` : "食品・ブランド検索";
-  const shouldShowFloatingSearch = mode !== "manual" && !selected && !editingEntry && isFoodSearchHidden;
+  const shouldShowFloatingSearch = !["manual", "personal", "recommend"].includes(mode) && !selected && !editingEntry && isFoodSearchHidden;
   const floatingFoodSearchLabel = isChainScopedSearch ? "チェーン店内でメニュー検索" : "検索に戻る";
   const floatingFoodSearchAriaLabel = isChainScopedSearch ? `${brand}内のメニュー検索へ戻る` : "検索バーへ戻る";
+  const recommendCategories = useMemo(() => {
+    const categories = unique(props.menuItems.filter((item) => item.calories > 0).map((item) => item.category));
+    return ["all", ...categories.sort((a, b) => a.localeCompare(b, "ja"))];
+  }, [props.menuItems]);
   const results = useMemo(() => {
     const needle = query.trim().toLowerCase();
     if (mode === "search" && !needle) return [];
@@ -3497,6 +3542,7 @@ function FoodTab(props: {
       ? props.menuItems.filter((item) => !isChainScopedSearch || item.brand === brand)
       : props.menuItems.filter((item) => {
         if (mode === "favorite") return item.is_favorite;
+        if (mode === "recommend") return !!props.goal && item.calories > 0 && (recommendCategory === "all" || item.category === recommendCategory);
         if (mode === "quick") {
           if (generalCategory === "ざっくり") return item.data_source === "quick_estimate";
           if (item.data_source === "quick_estimate") return false;
@@ -3523,9 +3569,9 @@ function FoodTab(props: {
     const filtered = hideOverGoalItems && canUseOverGoalFilter
       ? generalFiltered.filter((item) => fitsRemainingFoodFilter(item, remainingNutrition))
       : generalFiltered;
-    const recommended = isSortFoodByFitActive
+    const recommended = isSortFoodByFitActive || mode === "recommend"
       ? [...filtered].sort((a, b) => {
-        const specialDiff = specialModeFoodRank(a, props.activeSpecialMode) - specialModeFoodRank(b, props.activeSpecialMode);
+        const specialDiff = mode === "recommend" ? 0 : specialModeFoodRank(a, props.activeSpecialMode) - specialModeFoodRank(b, props.activeSpecialMode);
         if (specialDiff !== 0) return specialDiff;
         const scoreDiff = perfectFoodScore(a, remainingNutrition) - perfectFoodScore(b, remainingNutrition);
         if (Math.abs(scoreDiff) > 0.0001) return scoreDiff;
@@ -3537,12 +3583,14 @@ function FoodTab(props: {
     return recommended.slice(0, 80);
   }, [
     props.menuItems,
+    props.goal?.id,
     query,
     mode,
     brand,
     isChainScopedSearch,
     categoryGenre,
     generalCategory,
+    recommendCategory,
     showGeneralFoodsOnly,
     hideOverGoalItems,
     canUseOverGoalFilter,
@@ -3592,7 +3640,8 @@ function FoodTab(props: {
     if (!selected) return;
     setManual(toManualDraft(selected, mealType));
     setSelected(undefined);
-    setMode("manual");
+    setManualWizardStep("basic");
+    setMode("personal");
   };
 
   const saveManual = async () => {
@@ -3656,7 +3705,8 @@ function FoodTab(props: {
       created_at: timestamp,
       updated_at: timestamp,
     });
-    setManual(emptyManual);
+    setManual({ ...emptyManual, savePreset: true });
+    setManualWizardStep("basic");
     await props.refresh();
     props.showToast(manual.savePreset ? "食事を記録し、マイメニューに保存しました" : "食事を記録しました");
   };
@@ -3826,12 +3876,28 @@ function FoodTab(props: {
         )}
         {!isGlobalSearch && (
           <div className="grid grid-cols-3 gap-2">
-            {(["favorite", "personal", "manual", "chain", "category", "quick"] as FoodMode[]).map((item) => (
-              <button key={item} className={`mode-button ${mode === item ? "mode-button-active" : ""}`} onClick={() => selectMode(item)}>
+            {(["favorite", "personal", "recommend", "chain", "category", "quick"] as FoodMode[]).map((item) => (
+              <button
+                key={item}
+                className={`mode-button ${mode === item ? "mode-button-active" : ""} ${showMyMenuIntro && item === "personal" ? "food-mode-highlight" : ""} ${showMyMenuIntro && item !== "personal" ? "food-mode-dimmed" : ""}`}
+                onClick={() => selectMode(item)}
+              >
                 {foodModeLabel(item)}
               </button>
             ))}
           </div>
+        )}
+        {showMyMenuIntro && !isGlobalSearch && (
+          <section className="food-filter-intro compact-card p-3">
+            <div className="min-w-0">
+              <p className="text-sm font-bold">マニュアルモードはマイメニューに統一されました</p>
+              <p className="mt-1 text-xs text-moss">今後はマイメニューから、保存する記録も今回だけの記録も追加できます。</p>
+            </div>
+            <div className="mt-3 flex gap-2">
+              <button className="primary-button h-9 flex-1 px-3 text-xs" onClick={() => selectMode("personal")}>マイメニューを開く</button>
+              <button className="secondary-button h-9 px-3 text-xs" onClick={dismissMyMenuIntro}>閉じる</button>
+            </div>
+          </section>
         )}
       </div>
 
@@ -3885,6 +3951,27 @@ function FoodTab(props: {
         </section>
       )}
 
+      {mode === "recommend" && (
+        <section className="compact-card scroll-mt-24 p-3">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-sm font-bold">おすすめ</p>
+              <p className="numeric-text mt-1 text-[11px] font-semibold text-moss">
+                あと {Math.max(0, Math.round(remainingNutrition.calories))}kcal / P{round1(remainingNutrition.protein)} F{round1(remainingNutrition.fat)} C{round1(remainingNutrition.carbs)}
+              </p>
+            </div>
+            <span className="mini-chip">全ジャンル</span>
+          </div>
+          <div className="manual-subcategory-scroll mt-3 flex gap-2 overflow-x-auto pb-1">
+            {recommendCategories.map((category) => (
+              <button className={`chip manual-subcategory-chip ${recommendCategory === category ? "chip-active" : ""}`} key={category} onClick={() => setRecommendCategory(category)}>
+                {category === "all" ? "すべて" : category}
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
+
       {mode !== "manual" && (
         <>
           {mode === "search" && !isGlobalSearch && (
@@ -3894,8 +3981,26 @@ function FoodTab(props: {
             <section className="compact-card p-4 text-sm text-moss">食品行のハートを押すとここから呼び出せます。</section>
           )}
           {mode === "personal" && !isGlobalSearch && (
-            <section className="compact-card p-3">
-              <button className="primary-button w-full" onClick={props.openMyMenuSettings}><Plus size={17} />マイメニューを登録</button>
+            <section className="compact-card p-4">
+              <div className="mb-3 flex items-start justify-between gap-3">
+                <div>
+                  <h2 className="font-bold">マイメニュー登録</h2>
+                  <p className="mt-1 text-xs font-semibold text-moss">保存するか、今回だけ記録するかを選べます。</p>
+                </div>
+                <button className="secondary-button shrink-0 px-3 py-2 text-xs" onClick={props.openMyMenuSettings}>管理</button>
+              </div>
+              <ManualFoodForm
+                manual={manual}
+                setManual={setManual}
+                compact
+                mode="log"
+                variant="wizard"
+                wizardStep={manualWizardStep}
+                setWizardStep={setManualWizardStep}
+                includePurposeStep
+                submitLabel={manual.savePreset ? "保存して記録" : "今回だけ記録"}
+                onSave={saveManual}
+              />
             </section>
           )}
           {shouldShowFoodResults && (
@@ -3909,11 +4014,11 @@ function FoodTab(props: {
                   <FoodItemRow
                     item={item}
                     onPick={selectFoodItem}
-                    onClone={setManualFromItem(setManual, setMode)}
+                    onClone={setManualFromItem(setManual, setMode, setManualWizardStep)}
                     onDelete={deleteUserMenuItem}
                     refresh={props.refresh}
-                    balanceTarget={(showFoodBalance && canShowFoodBalance) || isSortFoodByFitActive ? remainingNutrition : undefined}
-                    recommendationRank={isSortFoodByFitActive && index < 10 ? index + 1 : undefined}
+                    balanceTarget={(showFoodBalance && canShowFoodBalance) || isSortFoodByFitActive || mode === "recommend" ? remainingNutrition : undefined}
+                    recommendationRank={(isSortFoodByFitActive || mode === "recommend") && index < 10 ? index + 1 : undefined}
                   />
                 </Fragment>
               ))}
@@ -4140,7 +4245,7 @@ function FoodTab(props: {
               )}
             </div>
             {foodAddStep === "confirm" && (
-              <button className="secondary-button mt-2 w-full" onClick={cloneSelectedToManual}><Pencil size={17} />編集して個人メニュー化</button>
+              <button className="secondary-button mt-2 w-full" onClick={cloneSelectedToManual}><Pencil size={17} />マイメニューで編集</button>
             )}
           </div>
         </div>
@@ -5866,9 +5971,7 @@ function SettingsTab(props: {
           <div className="flex items-center justify-between gap-2">
             <div>
               <h2 className="font-bold">{activeMyMenuSection === "edit" ? "マイメニューを編集" : "新規マイメニューの登録"}</h2>
-              <p className="mt-1 text-xs font-semibold text-moss">Foodタブのマニュアル登録と同じ入力項目で保存します。</p>
             </div>
-            {props.focus === "myMenu" && activeMyMenuSection === "new" && <span className="rounded-md bg-leaf px-2 py-1 text-[11px] font-bold text-white">登録はこちら</span>}
           </div>
           <ManualFoodForm
             manual={presetDraft}
@@ -6354,7 +6457,7 @@ function Onboarding({ refresh }: { refresh: () => Promise<void> }) {
   );
 }
 
-function ManualFoodForm({ manual, setManual, onSave, compact = false, mode = "log", variant = "form", wizardStep = "basic", setWizardStep, submitLabel = "保存" }: {
+function ManualFoodForm({ manual, setManual, onSave, compact = false, mode = "log", variant = "form", wizardStep = "basic", setWizardStep, submitLabel = "保存", includePurposeStep = false }: {
   manual: ManualFoodDraft;
   setManual: (manual: ManualFoodDraft) => void;
   onSave: () => void;
@@ -6364,12 +6467,14 @@ function ManualFoodForm({ manual, setManual, onSave, compact = false, mode = "lo
   wizardStep?: ManualFoodWizardStep;
   setWizardStep?: (step: ManualFoodWizardStep) => void;
   submitLabel?: string;
+  includePurposeStep?: boolean;
 }) {
   const subcategories = genericCategories[manual.category] ?? [];
   const isPresetOnly = mode === "preset";
   const isIngredient = manual.entry_kind === "ingredient";
   const previewNutrition = draftNutrition(manual);
-  const wizardIndex = Math.max(0, manualFoodWizardSteps.findIndex((step) => step.key === wizardStep));
+  const wizardSteps = includePurposeStep ? manualFoodWizardSteps : settingsManualFoodWizardSteps;
+  const wizardIndex = Math.max(0, wizardSteps.findIndex((step) => step.key === wizardStep));
   const canAdvanceWizard = wizardStep !== "basic" || !!manual.name.trim();
   const switchManualKind = (entryKind: ManualFoodDraft["entry_kind"]) => {
     if (entryKind === "ingredient") {
@@ -6386,18 +6491,18 @@ function ManualFoodForm({ manual, setManual, onSave, compact = false, mode = "lo
   };
   const moveWizard = (direction: 1 | -1) => {
     if (!setWizardStep) return;
-    const next = manualFoodWizardSteps[wizardIndex + direction]?.key;
+    const next = wizardSteps[wizardIndex + direction]?.key;
     if (next) setWizardStep(next);
   };
   if (variant === "wizard") {
     return (
       <section className={compact ? "" : "compact-card p-4"}>
         <div className="manual-wizard-progress mt-4" aria-hidden="true">
-          {manualFoodWizardSteps.map((step, index) => (
+          {wizardSteps.map((step, index) => (
             <span className={index <= wizardIndex ? "food-add-progress-dot food-add-progress-dot-active" : "food-add-progress-dot"} key={step.key} />
           ))}
         </div>
-        <p className="mt-2 text-xs font-bold text-moss">{manualFoodWizardSteps[wizardIndex]?.label}</p>
+        <p className="mt-2 text-xs font-bold text-moss">{wizardSteps[wizardIndex]?.label}</p>
 
         {wizardStep === "basic" && (
           <div className="mt-3 grid gap-2">
@@ -6426,6 +6531,33 @@ function ManualFoodForm({ manual, setManual, onSave, compact = false, mode = "lo
             ) : (
               <p className="rounded-2xl border border-line bg-rice/60 px-3 py-2 text-xs font-semibold text-moss">栄養値は1食分として保存します。</p>
             )}
+          </div>
+        )}
+
+        {wizardStep === "purpose" && (
+          <div className="mt-3 grid gap-2">
+            {!isPresetOnly && (
+              <label className="text-xs font-bold text-moss">
+                記録タイミング
+                <select className="mt-2 w-full" value={manual.meal_type} onChange={(event) => setManual({ ...manual, meal_type: event.target.value as MealType })}>
+                  {Object.entries(mealLabels).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
+                </select>
+              </label>
+            )}
+            <button className={`food-filter-option ${manual.savePreset ? "food-filter-option-active" : ""}`} onClick={() => setManual({ ...manual, savePreset: true })}>
+              <span>
+                <span className="block text-sm font-bold">マイメニューとして登録</span>
+                <span className="mt-1 block text-xs text-moss">今日の記録にも追加し、次回からマイメニューで呼び出せます。</span>
+              </span>
+              <span className="mini-chip shrink-0">{manual.savePreset ? "選択中" : "選択"}</span>
+            </button>
+            <button className={`food-filter-option ${!manual.savePreset ? "food-filter-option-active" : ""}`} onClick={() => setManual({ ...manual, savePreset: false, favorite: false })}>
+              <span>
+                <span className="block text-sm font-bold">今回の記録だけに使う</span>
+                <span className="mt-1 block text-xs text-moss">マイメニューには保存せず、この食事ログだけ作成します。</span>
+              </span>
+              <span className="mini-chip shrink-0">{!manual.savePreset ? "選択中" : "選択"}</span>
+            </button>
           </div>
         )}
 
@@ -6471,7 +6603,7 @@ function ManualFoodForm({ manual, setManual, onSave, compact = false, mode = "lo
               <p className="mt-1 text-xs font-semibold text-moss">{manual.brand || "ブランドなし"} · {manual.category} / {manual.subcategory || "未分類"}</p>
               <p className="numeric-text mt-2 text-xs font-bold text-moss">{isIngredient ? `${formatControlValue(ingredientGramValue(manual) ?? 0)}g · ` : ""}{previewNutrition.calories}kcal · P{previewNutrition.protein_g} F{previewNutrition.fat_g} C{previewNutrition.carbs_g}</p>
             </div>
-            <label className="chip"><input type="checkbox" checked={manual.favorite} onChange={(event) => setManual({ ...manual, favorite: event.target.checked })} />お気に入りに追加</label>
+            {manual.savePreset && <label className="chip"><input type="checkbox" checked={manual.favorite} onChange={(event) => setManual({ ...manual, favorite: event.target.checked })} />お気に入りに追加</label>}
             <button className="primary-button w-full" disabled={!manual.name.trim()} onClick={onSave}><Save size={17} />{submitLabel}</button>
           </div>
         )}
@@ -6574,7 +6706,7 @@ function FoodItemRow({ item, onPick, onClone, onDelete, refresh, balanceTarget, 
           ))}
         </div>
       </button>
-      <button className="icon-button h-8 w-8" aria-label="編集して個人メニュー化" onClick={() => onClone(item)}><Pencil size={14} /></button>
+      <button className="icon-button h-8 w-8" aria-label="マイメニューで編集" onClick={() => onClone(item)}><Pencil size={14} /></button>
       <button className="icon-button h-8 w-8" aria-label="お気に入り" onClick={async () => {
         await db.menu_items.update(item.id, { is_favorite: !item.is_favorite, updated_at: nowIso() });
         await refresh();
@@ -8246,10 +8378,12 @@ function getPlannedNutrition(plans: PerfectFoodPlan[]) {
     }, { calories: 0, protein: 0, fat: 0, carbs: 0 });
 }
 
-function buildPerfectFoodSuggestions(menuItems: MenuItem[], target: { calories: number; protein: number; fat: number; carbs: number }, plans: PerfectFoodPlan[]): PerfectFoodSuggestionGroup[] {
+function buildPerfectFoodSuggestions(menuItems: MenuItem[], target: { calories: number; protein: number; fat: number; carbs: number }, plans: PerfectFoodPlan[], mode: PerfectFoodMode = "improve"): PerfectFoodSuggestionGroup[] {
   if (target.calories <= 0 && target.protein <= 0 && target.fat <= 0 && target.carbs <= 0) return [];
   const groups: { label: string; test: (item: MenuItem) => boolean }[] = [
     { label: "プロテイン・補給", test: (item) => item.category === "プロテイン" || item.tags.some((tag) => /プロテイン|サプリ|クレアチン|EAA|BCAA/.test(tag)) },
+    { label: "コンビニ・市販", test: (item) => ["コンビニ", "冷凍食品"].includes(item.category) || ["セブンイレブン", "ファミリーマート", "ローソン", "ミニストップ"].includes(item.brand ?? "") },
+    { label: "スナック・甘味", test: (item) => item.category === "スイーツ" || item.tags.some((tag) => /スナック|菓子|チョコ|グミ|アイス|ドーナツ|プリン/.test(tag)) },
     { label: "ごはん・丼", test: (item) => item.category === "ごはん・丼" || item.tags.some((tag) => /丼|おにぎり|米|カレー/.test(tag)) },
     { label: "麺・パン", test: (item) => item.category === "麺類" || item.category === "パン" || item.tags.some((tag) => /麺|うどん|そば|パスタ|パン|ピザ/.test(tag)) },
     { label: "おかず・軽食", test: (item) => ["肉・魚", "おかず・惣菜", "サラダ・野菜", "スープ"].includes(item.category) },
@@ -8265,7 +8399,7 @@ function buildPerfectFoodSuggestions(menuItems: MenuItem[], target: { calories: 
       label: group.label,
       items: pickDiversePerfectFoodItems(candidates
         .filter(group.test)
-        .sort((a, b) => perfectFoodScore(a, target) - perfectFoodScore(b, target))),
+        .sort((a, b) => perfectFoodScore(a, target, mode) - perfectFoodScore(b, target, mode))),
     }))
     .filter((group) => group.items.length > 0);
 }
@@ -8319,7 +8453,7 @@ function getPerfectFoodBalance(item: MenuItem, target: { calories: number; prote
   };
 }
 
-function perfectFoodScore(item: MenuItem, target: { calories: number; protein: number; fat: number; carbs: number }) {
+function perfectFoodScore(item: MenuItem, target: { calories: number; protein: number; fat: number; carbs: number }, mode: PerfectFoodMode = "improve") {
   const balance = getPerfectFoodBalance(item, target);
   const calorieTarget = Math.max(140, Math.min(target.calories || item.calories, 820));
   const calorieScore = Math.abs(item.calories - calorieTarget) / calorieTarget;
@@ -8330,7 +8464,7 @@ function perfectFoodScore(item: MenuItem, target: { calories: number; protein: n
   const calorieOverPenalty = balance.calorieOver / Math.max(160, target.calories * 0.18 || 240);
   const loadPenalty = balance.nonProteinLoad > 1 ? (balance.nonProteinLoad - 1) * 2.8 : Math.abs(balance.nonProteinLoad - 0.72) * 0.35;
   const sourceBonus = sourceRank(item.data_source) * 0.06;
-  return (
+  const improveScore = (
     calorieScore * 0.72 +
     proteinShortageScore * 0.56 +
     proteinCoverageBonus +
@@ -8340,6 +8474,14 @@ function perfectFoodScore(item: MenuItem, target: { calories: number; protein: n
     loadPenalty +
     sourceBonus
   );
+  if (mode === "fit") {
+    const fitOverPenalty = (balance.calorieOver / Math.max(80, target.calories * 0.12 || 160)) * 4.5
+      + (balance.fatOver / Math.max(2, target.fat * 0.14 || 4)) * 4.2
+      + (balance.carbsOver / Math.max(6, target.carbs * 0.14 || 12)) * 3.8;
+    const usefulLoadBonus = Math.abs(balance.nonProteinLoad - 0.58) * 0.42;
+    return improveScore + fitOverPenalty + usefulLoadBonus;
+  }
+  return improveScore;
 }
 
 function getCalorieState(remaining: number, target: number) {
@@ -9093,6 +9235,7 @@ function foodModeLabel(mode: FoodMode) {
     quick: "一般",
     manual: "マニュアル",
     personal: "マイメニュー",
+    recommend: "おすすめ",
   }[mode];
 }
 
@@ -9120,10 +9263,11 @@ function toManualDraft(item: MenuItem, mealType: MealType = "lunch"): ManualFood
   };
 }
 
-function setManualFromItem(setManual: (manual: ManualFoodDraft) => void, setMode: (mode: FoodMode) => void) {
+function setManualFromItem(setManual: (manual: ManualFoodDraft) => void, setMode: (mode: FoodMode) => void, setWizardStep?: (step: ManualFoodWizardStep) => void) {
   return (item: MenuItem) => {
     setManual(toManualDraft(item, item.default_meal_type ?? "lunch"));
-    setMode("manual");
+    setWizardStep?.("basic");
+    setMode("personal");
   };
 }
 

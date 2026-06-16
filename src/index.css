@@ -833,7 +833,7 @@ button {
 
 .manual-wizard-progress {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
   gap: 0.4rem;
 }
 
@@ -1791,6 +1791,16 @@ button {
 
 .food-filter-button-highlight {
   animation: food-filter-pulse 1.8s ease-in-out infinite;
+}
+
+.food-mode-highlight {
+  position: relative;
+  z-index: 1;
+  animation: food-filter-pulse 1.8s ease-in-out infinite;
+}
+
+.food-mode-dimmed {
+  opacity: 0.38;
 }
 
 .floating-food-search,
