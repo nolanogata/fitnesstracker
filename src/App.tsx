@@ -1412,6 +1412,12 @@ function App() {
   const isCheatDay = cheatDayDates.includes(appDate);
   const isSpecialModeDay = !!activeSpecialMode;
   const isExceptionDay = isCheatDay || isSpecialModeDay;
+  const unseenAchievementCount = useMemo(() => {
+    const viewedAt = settings?.achievements_viewed_at ?? "";
+    return (settings?.achievements ?? []).filter((achievement) => (
+      achievement.unlocked_at.slice(0, 10) === actualAppDate && achievement.unlocked_at > viewedAt
+    )).length;
+  }, [actualAppDate, settings?.achievements, settings?.achievements_viewed_at]);
   const targetCalories = target?.target_calories ?? 0;
   const homeTone = isCheatDay
     ? "cheat"
@@ -1523,6 +1529,13 @@ function App() {
     setPrCelebration({ id: makeId("pr"), ...celebration });
     prCelebrationTimerRef.current = window.setTimeout(() => setPrCelebration(undefined), 3200);
     void unlockAchievements(["workout_pr"]);
+  };
+  const openTrophies = async () => {
+    setIsTrophyOpen(true);
+    if (!settings || !unseenAchievementCount) return;
+    const timestamp = nowIso();
+    await db.settings.update("local", { achievements_viewed_at: timestamp, updated_at: timestamp });
+    setSettings({ ...settings, achievements_viewed_at: timestamp, updated_at: timestamp });
   };
   const reloadLatestApp = async () => {
     await refresh();
@@ -1641,9 +1654,9 @@ function App() {
                 </button>
               )}
               <button
-                className="home-header-trophy"
+                className={`home-header-trophy ${unseenAchievementCount ? "home-header-trophy-unseen" : ""} ${unseenAchievementCount >= 3 ? "home-header-trophy-strong" : ""}`}
                 aria-label="トロフィー"
-                onClick={() => setIsTrophyOpen(true)}
+                onClick={() => void openTrophies()}
                 title="トロフィー"
               >
                 <Trophy size={18} />
@@ -1857,7 +1870,7 @@ function App() {
         onClose={() => setAchievementCelebration(undefined)}
         onOpenTrophies={() => {
           setAchievementCelebration(undefined);
-          setIsTrophyOpen(true);
+          void openTrophies();
         }}
       />
 
