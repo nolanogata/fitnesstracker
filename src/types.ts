@@ -11,7 +11,7 @@ export type Sex = "male" | "female" | "unspecified";
 export type ActivityLevel = "low" | "moderate" | "high" | "very_high";
 export type DataSource = "official" | "unofficial" | "estimated" | "quick_estimate" | "user";
 export type Confidence = "high" | "medium" | "low";
-export type MealType = "breakfast" | "lunch" | "dinner" | "snack";
+export type MealType = "breakfast" | "lunch" | "dinner" | "snack" | "gym_before" | "gym_after";
 export type ThemeMode = "system" | "light" | "dark";
 export type SpecialModeId = "hokkaido_trip" | string;
 

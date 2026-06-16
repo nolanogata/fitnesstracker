@@ -640,6 +640,56 @@ button {
   opacity: 0.45;
 }
 
+.food-add-sheet {
+  max-height: min(82vh, 42rem);
+  overflow-y: auto;
+}
+
+.food-add-progress {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.4rem;
+}
+
+.food-add-progress-dot {
+  height: 0.28rem;
+  border-radius: 999px;
+  background: rgba(142, 151, 143, 0.22);
+  transition: background 0.16s ease, box-shadow 0.16s ease;
+}
+
+.food-add-progress-dot-active {
+  background: linear-gradient(135deg, #6f8f7d, #9fbda9);
+  box-shadow: 0 0 12px rgba(111, 143, 125, 0.22);
+}
+
+.food-add-choice {
+  display: inline-flex;
+  min-height: 2.7rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.48);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.42);
+  padding: 0.55rem 0.75rem;
+  color: var(--text-primary);
+  font-size: 0.86rem;
+  font-weight: 900;
+  box-shadow: 0 8px 18px rgba(44, 56, 48, 0.05), var(--glass-highlight);
+  transition: transform 0.16s ease, border-color 0.16s ease, background 0.16s ease, box-shadow 0.16s ease;
+}
+
+.food-add-choice:active {
+  transform: scale(0.98);
+}
+
+.food-add-choice-active {
+  border-color: rgba(111, 143, 125, 0.46);
+  background: linear-gradient(135deg, rgba(221, 232, 225, 0.86), rgba(255, 255, 255, 0.56));
+  color: #294234;
+  box-shadow: 0 10px 22px rgba(111, 143, 125, 0.16), var(--glass-highlight);
+}
+
 .special-mode-toggle {
   display: inline-flex;
   min-height: 2.8rem;
@@ -2314,6 +2364,29 @@ button {
   border-color: rgba(159, 190, 169, 0.22);
   background: rgba(255, 255, 255, 0.08);
   color: #dcebe0;
+}
+
+.theme-dark .food-add-progress-dot {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.theme-dark .food-add-progress-dot-active {
+  background: linear-gradient(135deg, #7fa58f, #5d816c);
+  box-shadow: 0 0 12px rgba(127, 165, 143, 0.28);
+}
+
+.theme-dark .food-add-choice {
+  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.08);
+  color: #eef8f1;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.22), var(--glass-highlight);
+}
+
+.theme-dark .food-add-choice-active {
+  border-color: rgba(159, 190, 169, 0.42);
+  background: linear-gradient(135deg, rgba(111, 143, 125, 0.38), rgba(255, 255, 255, 0.1));
+  color: #f2fff5;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.26), 0 0 16px rgba(127, 165, 143, 0.16), var(--glass-highlight);
 }
 
 .theme-dark .special-mode-toggle {

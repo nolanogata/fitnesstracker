@@ -4,6 +4,14 @@ import { phaseLabels } from "./goalCalculator";
 import { formatWeeklyWorkoutStatus, type WeeklyWorkoutStatus } from "./workoutStatus";
 
 const finisherPulseIntensity = "finisher_pulse";
+const mealTypeLabels: Record<string, string> = {
+  breakfast: "朝",
+  lunch: "昼",
+  dinner: "夜",
+  snack: "間食",
+  gym_before: "ジム前",
+  gym_after: "ジム後",
+};
 
 type WorkoutGrouping = "day" | "week" | "month";
 type PeriodReference = {
@@ -83,7 +91,8 @@ export function generateMarkdownReport(input: {
   const foodLines = input.foodEntries.map((entry) => {
     const brand = entry.brand ? `${entry.brand} / ` : "";
     const note = entry.note ? ` / ${entry.note}` : "";
-    return `- ${entry.app_date} ${entry.meal_type}: ${brand}${entry.name} ${entry.calories}kcal / P${entry.protein_g} F${entry.fat_g} C${entry.carbs_g}${formatFoodEntrySourceNote(entry)}${note}`;
+    const mealType = mealTypeLabels[entry.meal_type] ?? entry.meal_type;
+    return `- ${entry.app_date} ${mealType}: ${brand}${entry.name} ${entry.calories}kcal / P${entry.protein_g} F${entry.fat_g} C${entry.carbs_g}${formatFoodEntrySourceNote(entry)}${note}`;
   });
 
   const exerciseLines = scopedExercises.map((exercise) => {
