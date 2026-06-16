@@ -46,7 +46,9 @@ import {
 import { db } from "./db";
 import { initializeSeeds } from "./data/seedInit";
 import type {
+  AchievementUnlock,
   ActivityLevel,
+  AiReport,
   BackupPayload,
   ExercisePreset,
   FoodEntry,
@@ -112,6 +114,20 @@ type AppUpdate = {
   title: string;
   date: string;
   items: string[];
+};
+type AchievementTone = "starter" | "streak" | "training" | "nutrition" | "system";
+type AchievementDefinition = {
+  id: string;
+  title: string;
+  description: string;
+  tone: AchievementTone;
+  hidden?: boolean;
+};
+type AchievementCelebration = {
+  id: string;
+  title: string;
+  description: string;
+  count: number;
 };
 type PortionOption = {
   label: string;
@@ -353,7 +369,36 @@ const staleAppPromptDelayMs = 6 * 60 * 60 * 1000;
 const weightStepOptions = [1, 2.5, 5, 10];
 const finisherPulseIntensity = "finisher_pulse";
 const finisherPulseNote = "仕上げパルス（部分可動域・素早く）";
+const achievementDefinitions: AchievementDefinition[] = [
+  { id: "first_open", title: "はじめの一歩", description: "アプリを開いた", tone: "starter" },
+  { id: "first_goal", title: "目標セット", description: "初めてゴールを設定した", tone: "starter" },
+  { id: "first_food", title: "初めての食事記録", description: "食事を1件記録した", tone: "nutrition" },
+  { id: "first_workout", title: "初めての運動記録", description: "ワークアウトを1件記録した", tone: "training" },
+  { id: "first_checkin", title: "初チェックイン", description: "体重・体脂肪を記録した", tone: "starter" },
+  { id: "first_my_menu", title: "マイメニュー職人", description: "初めてマイメニューを登録した", tone: "nutrition" },
+  { id: "first_ai_report", title: "AI相談デビュー", description: "AI相談レポートを生成した", tone: "system" },
+  { id: "goal_updated", title: "作戦会議", description: "ゴール設定を更新した", tone: "system" },
+  { id: "workout_pr", title: "記録更新", description: "筋トレの自己記録を更新した", tone: "training" },
+  { id: "food_10", title: "食事ログ10", description: "食事を10件記録した", tone: "nutrition" },
+  { id: "workout_10", title: "ワークアウト10", description: "ワークアウトを10回記録した", tone: "training" },
+  { id: "streak_3", title: "3日連続ログ", description: "3日連続で何かを記録した", tone: "streak" },
+  { id: "streak_7", title: "1週間継続", description: "7日連続で記録した", tone: "streak" },
+  { id: "streak_14", title: "2週間の流れ", description: "14日連続で記録した", tone: "streak" },
+  { id: "streak_30", title: "30日ルーティン", description: "30日連続で記録した", tone: "streak" },
+  { id: "protein_day", title: "Pを意識", description: "たんぱく質目標の90%以上を記録した日がある", tone: "nutrition" },
+  { id: "weekly_workout_goal", title: "今週の運動達成", description: "週の筋トレ目標を達成した", tone: "training" },
+];
 const appUpdates: AppUpdate[] = [
+  {
+    id: "2026-06-16-trophy-achievements",
+    title: "トロフィーを追加",
+    date: "2026-06-16",
+    items: [
+      "Home右上にトロフィーボタンを追加しました。",
+      "初めての食事・運動・AI相談や、連続記録ストリークでトロフィーを獲得できます。",
+      "トロフィー獲得時は紙吹雪つきの通知から一覧へ移動できます。",
+    ],
+  },
   {
     id: "2026-06-16-food-add-step-modal",
     title: "食事追加の流れを整理",
@@ -1133,6 +1178,7 @@ function App() {
   const [workoutSessions, setWorkoutSessions] = useState<WorkoutSession[]>([]);
   const [workoutExercises, setWorkoutExercises] = useState<WorkoutExercise[]>([]);
   const [workoutSets, setWorkoutSets] = useState<WorkoutSet[]>([]);
+  const [aiReports, setAiReports] = useState<AiReport[]>([]);
   const [tab, setTab] = useState<Tab>(() => (localStorage.getItem("phase-log-tab") as Tab) || "home");
   const [foodFocus, setFoodFocus] = useState<FoodFocus>();
   const [workoutFocus, setWorkoutFocus] = useState<WorkoutFocus>();
@@ -1148,11 +1194,14 @@ function App() {
   const [selectedAppDate, setSelectedAppDate] = useState<string>();
   const [toast, setToast] = useState<{ id: string; text: string }>();
   const [prCelebration, setPrCelebration] = useState<WorkoutPrCelebration>();
+  const [achievementCelebration, setAchievementCelebration] = useState<AchievementCelebration>();
+  const [isTrophyOpen, setIsTrophyOpen] = useState(false);
   const [prefersDarkTheme, setPrefersDarkTheme] = useState(() => (
     typeof window !== "undefined" && typeof window.matchMedia === "function" && window.matchMedia("(prefers-color-scheme: dark)").matches
   ));
   const toastTimerRef = useRef<number | undefined>(undefined);
   const prCelebrationTimerRef = useRef<number | undefined>(undefined);
+  const achievementCelebrationTimerRef = useRef<number | undefined>(undefined);
   const appOpenedAtRef = useRef(Date.now());
   const tabHistoryRef = useRef<Tab[]>([]);
   const lastTabRef = useRef(tab);
@@ -1177,7 +1226,7 @@ function App() {
   };
 
   const refresh = async () => {
-    const [nextSettings, nextProfile, nextGoals, nextMenu, nextFood, nextWeights, nextExercises, nextTemplates, nextSessions, nextWorkoutExercises, nextSets] =
+    const [nextSettings, nextProfile, nextGoals, nextMenu, nextFood, nextWeights, nextExercises, nextTemplates, nextSessions, nextWorkoutExercises, nextSets, nextReports] =
       await Promise.all([
         db.settings.get("local"),
         db.profile.get("local"),
@@ -1190,6 +1239,7 @@ function App() {
         db.workout_sessions.orderBy("logged_at").reverse().toArray(),
         db.workout_exercises.toArray(),
         db.workout_sets.toArray(),
+        db.ai_reports.toArray(),
       ]);
     setSettings(nextSettings);
     setProfile(nextProfile);
@@ -1202,6 +1252,7 @@ function App() {
     setWorkoutSessions(nextSessions);
     setWorkoutExercises(nextWorkoutExercises);
     setWorkoutSets(nextSets);
+    setAiReports(nextReports);
   };
 
   useEffect(() => {
@@ -1342,6 +1393,34 @@ function App() {
     todayEntries,
     dismissedIds: dismissedRecordReminderIds,
   }), [actualAppDate, appDate, currentTime, dismissedRecordReminderIds, todayEntries]);
+
+  useEffect(() => {
+    if (!settings?.onboarding_completed) return;
+    const unlockedIds = getUnlockedAchievementIds({
+      goals,
+      menuItems,
+      foodEntries,
+      weightLogs,
+      workoutSessions,
+      weeklyWorkoutStatus,
+      aiReports,
+      goal: target,
+    });
+    void unlockAchievements(unlockedIds);
+  }, [
+    settings?.onboarding_completed,
+    settings?.achievements?.length,
+    goals.length,
+    menuItems.length,
+    foodEntries.length,
+    weightLogs.length,
+    workoutSessions.length,
+    weeklyWorkoutStatus.strengthDone,
+    weeklyWorkoutStatus.strengthTarget,
+    aiReports.length,
+    target?.target_protein_g,
+  ]);
+
   const markBackupNow = () => {
     const timestamp = nowIso();
     localStorage.setItem(backupStorageKey, timestamp);
@@ -1352,10 +1431,39 @@ function App() {
     setToast({ id: makeId("toast"), text });
     toastTimerRef.current = window.setTimeout(() => setToast(undefined), 2200);
   };
+  const unlockAchievements = async (ids: string[], announce = true) => {
+    if (!settings) return;
+    const knownIds = new Set(achievementDefinitions.map((achievement) => achievement.id));
+    const current = settings.achievements ?? [];
+    const currentIds = new Set(current.map((achievement) => achievement.id));
+    const freshIds = unique(ids).filter((id) => knownIds.has(id) && !currentIds.has(id));
+    if (!freshIds.length) return;
+    const timestamp = nowIso();
+    const nextAchievements: AchievementUnlock[] = [
+      ...current,
+      ...freshIds.map((id) => ({ id, unlocked_at: timestamp })),
+    ];
+    await db.settings.update("local", { achievements: nextAchievements, updated_at: timestamp });
+    setSettings({ ...settings, achievements: nextAchievements, updated_at: timestamp });
+    if (announce) {
+      const definition = achievementDefinition(freshIds[0]);
+      if (definition) {
+        if (achievementCelebrationTimerRef.current) window.clearTimeout(achievementCelebrationTimerRef.current);
+        setAchievementCelebration({
+          id: definition.id,
+          title: definition.title,
+          description: definition.description,
+          count: freshIds.length,
+        });
+        achievementCelebrationTimerRef.current = window.setTimeout(() => setAchievementCelebration(undefined), 5200);
+      }
+    }
+  };
   const showWorkoutPrCelebration = (celebration: Omit<WorkoutPrCelebration, "id">) => {
     if (prCelebrationTimerRef.current) window.clearTimeout(prCelebrationTimerRef.current);
     setPrCelebration({ id: makeId("pr"), ...celebration });
     prCelebrationTimerRef.current = window.setTimeout(() => setPrCelebration(undefined), 3200);
+    void unlockAchievements(["workout_pr"]);
   };
   const reloadLatestApp = async () => {
     await refresh();
@@ -1404,6 +1512,7 @@ function App() {
 
   useEffect(() => () => {
     if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
+    if (achievementCelebrationTimerRef.current) window.clearTimeout(achievementCelebrationTimerRef.current);
   }, []);
 
   const homeDateTitle = formatHomeDateParts(appDate);
@@ -1471,6 +1580,14 @@ function App() {
                   {activeSpecialMode.shortLabel}
                 </button>
               )}
+              <button
+                className="home-header-trophy"
+                aria-label="トロフィー"
+                onClick={() => setIsTrophyOpen(true)}
+                title="トロフィー"
+              >
+                <Trophy size={18} />
+              </button>
               <button
                 className={`home-header-cheat ${isCheatDay ? "home-header-cheat-active" : ""}`}
                 aria-pressed={isCheatDay}
@@ -1630,6 +1747,7 @@ function App() {
             workoutExercises={workoutExercises}
             workoutSets={workoutSets}
             weeklyWorkoutStatus={weeklyWorkoutStatus}
+            refresh={refresh}
             showToast={showToast}
             onEditRecordDate={editRecordDate}
           />
@@ -1662,8 +1780,22 @@ function App() {
       </section>
 
       {isUpdateNotesOpen && <UpdateNotesModal updates={appUpdates} onClose={() => setIsUpdateNotesOpen(false)} />}
+      {isTrophyOpen && (
+        <TrophyModal
+          unlocks={settings?.achievements ?? []}
+          onClose={() => setIsTrophyOpen(false)}
+        />
+      )}
       {toast && <QuickToast key={toast.id} text={toast.text} />}
       <WorkoutPrCelebrationOverlay celebration={prCelebration} />
+      <AchievementCelebrationOverlay
+        celebration={achievementCelebration}
+        onClose={() => setAchievementCelebration(undefined)}
+        onOpenTrophies={() => {
+          setAchievementCelebration(undefined);
+          setIsTrophyOpen(true);
+        }}
+      />
 
       <nav className="safe-bottom app-bottom-nav fixed inset-x-0 bottom-0 z-30 mx-auto max-w-[430px] px-3 pt-1.5">
         <div className="grid grid-cols-5 gap-1">
@@ -1737,6 +1869,96 @@ function WorkoutPrCelebrationOverlay({ celebration }: { celebration?: WorkoutPrC
   );
 }
 
+function TrophyModal({ unlocks, onClose }: { unlocks: AchievementUnlock[]; onClose: () => void }) {
+  const unlockedById = new Map(unlocks.map((unlock) => [unlock.id, unlock]));
+  const unlockedCount = achievementDefinitions.filter((achievement) => unlockedById.has(achievement.id)).length;
+  return (
+    <div className="fixed inset-0 z-[65] flex items-end bg-ink/35 px-4 pb-4" onClick={onClose}>
+      <div className="trophy-sheet compact-card w-full p-4" onClick={(event) => event.stopPropagation()}>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-xl font-black">トロフィー</p>
+            <p className="mt-1 text-sm font-bold text-moss">{unlockedCount}/{achievementDefinitions.length} 獲得</p>
+          </div>
+          <button className="icon-button h-9 w-9" aria-label="閉じる" onClick={onClose}>×</button>
+        </div>
+        <div className="mt-4 grid grid-cols-2 gap-2">
+          {achievementDefinitions.map((achievement) => {
+            const unlock = unlockedById.get(achievement.id);
+            return (
+              <div className={`trophy-card trophy-card-${achievement.tone} ${unlock ? "trophy-card-unlocked" : "trophy-card-locked"}`} key={achievement.id}>
+                <div className="trophy-card-icon">
+                  <Trophy size={20} />
+                </div>
+                <p className="mt-3 text-sm font-black">{achievement.title}</p>
+                <p className="mt-1 text-xs font-semibold text-moss">{achievement.description}</p>
+                <p className="numeric-text mt-3 text-[11px] font-bold text-muted">
+                  {unlock ? `${formatJapaneseDate(unlock.unlocked_at.slice(0, 10))} 獲得` : "未獲得"}
+                </p>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AchievementCelebrationOverlay({ celebration, onClose, onOpenTrophies }: {
+  celebration?: AchievementCelebration;
+  onClose: () => void;
+  onOpenTrophies: () => void;
+}) {
+  if (!celebration) return null;
+  const colors = ["#ff6b6b", "#ffd166", "#4ecdc4", "#7b61ff", "#f3ddd3", "#9fbea9"];
+  const pieces = Array.from({ length: 54 }, (_, index) => ({
+    id: index,
+    left: `${(index * 19) % 100}%`,
+    delay: `${(index % 10) * 0.04}s`,
+    drift: `${((index % 9) - 4) * 16}px`,
+    rotate: `${(index * 29) % 180}deg`,
+    color: colors[index % colors.length],
+    width: `${6 + (index % 4) * 2}px`,
+    height: `${10 + (index % 5) * 2}px`,
+  }));
+  return (
+    <div className="achievement-celebration fixed inset-0 z-[75] mx-auto max-w-[430px] overflow-hidden">
+      <div className="pointer-events-none absolute inset-0">
+        {pieces.map((piece) => (
+          <span
+            className="pr-confetti-piece"
+            key={piece.id}
+            style={{
+              "--confetti-left": piece.left,
+              "--confetti-delay": piece.delay,
+              "--confetti-drift": piece.drift,
+              "--confetti-rotate": piece.rotate,
+              "--confetti-color": piece.color,
+              width: piece.width,
+              height: piece.height,
+            } as React.CSSProperties}
+          />
+        ))}
+      </div>
+      <div className="absolute inset-x-4 top-[18vh]">
+        <div className="achievement-celebration-card mx-auto w-full max-w-[360px] p-5 text-center">
+          <button className="absolute right-4 top-4 icon-button h-8 w-8" aria-label="閉じる" onClick={onClose}>×</button>
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full border border-white/60 bg-white/55 text-[#6a4b08] shadow-lg">
+            <Trophy size={28} />
+          </div>
+          <p className="mt-4 text-sm font-black text-moss">トロフィー獲得</p>
+          <p className="mt-1 text-2xl font-black">{celebration.title}</p>
+          <p className="mt-2 text-sm font-bold text-moss">{celebration.description}</p>
+          {celebration.count > 1 && <p className="mt-2 text-xs font-black text-ink">ほか {celebration.count - 1}個も獲得しました</p>}
+          <button className="primary-button mt-5 w-full" onClick={onOpenTrophies}>
+            <Trophy size={17} />トロフィー一覧を見る
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function loadCheatDayDates() {
   try {
     const parsed = JSON.parse(localStorage.getItem(cheatDayStorageKey) || "[]");
@@ -1791,6 +2013,71 @@ function getRecordReminder(params: {
     title: slot.title,
     message: `${slot.label}がまだ記録されていません。次に開いた時でも、ここからすぐ追加できます。`,
   };
+}
+
+function getUnlockedAchievementIds(params: {
+  goals: Goal[];
+  menuItems: MenuItem[];
+  foodEntries: FoodEntry[];
+  weightLogs: WeightLog[];
+  workoutSessions: WorkoutSession[];
+  weeklyWorkoutStatus: WeeklyWorkoutStatus;
+  aiReports: AiReport[];
+  goal?: Goal;
+}) {
+  const unlocked = new Set<string>(["first_open"]);
+  if (params.goals.length > 0) unlocked.add("first_goal");
+  if (params.goals.length > 1) unlocked.add("goal_updated");
+  if (params.foodEntries.length > 0) unlocked.add("first_food");
+  if (params.foodEntries.length >= 10) unlocked.add("food_10");
+  if (params.workoutSessions.length > 0) unlocked.add("first_workout");
+  if (params.workoutSessions.length >= 10) unlocked.add("workout_10");
+  if (params.weightLogs.length > 0) unlocked.add("first_checkin");
+  if (params.menuItems.some((item) => item.is_user_created)) unlocked.add("first_my_menu");
+  if (params.aiReports.length > 0) unlocked.add("first_ai_report");
+  const streak = longestRecordStreak([
+    ...params.foodEntries.map((entry) => entry.app_date),
+    ...params.weightLogs.map((entry) => entry.app_date),
+    ...params.workoutSessions.map((entry) => entry.app_date),
+  ]);
+  if (streak >= 3) unlocked.add("streak_3");
+  if (streak >= 7) unlocked.add("streak_7");
+  if (streak >= 14) unlocked.add("streak_14");
+  if (streak >= 30) unlocked.add("streak_30");
+  if (params.goal?.target_protein_g) {
+    const proteinByDate = new Map<string, number>();
+    params.foodEntries.forEach((entry) => {
+      proteinByDate.set(entry.app_date, (proteinByDate.get(entry.app_date) ?? 0) + entry.protein_g);
+    });
+    if ([...proteinByDate.values()].some((protein) => protein >= params.goal!.target_protein_g * 0.9)) unlocked.add("protein_day");
+  }
+  if (
+    params.weeklyWorkoutStatus.strengthTarget > 0 &&
+    params.weeklyWorkoutStatus.strengthDone >= params.weeklyWorkoutStatus.strengthTarget
+  ) {
+    unlocked.add("weekly_workout_goal");
+  }
+  return [...unlocked];
+}
+
+function longestRecordStreak(dates: string[]) {
+  const uniqueDates = [...new Set(dates)].filter((date) => /^\d{4}-\d{2}-\d{2}$/.test(date)).sort();
+  if (!uniqueDates.length) return 0;
+  let longest = 1;
+  let current = 1;
+  for (let index = 1; index < uniqueDates.length; index += 1) {
+    if (uniqueDates[index] === addDays(uniqueDates[index - 1], 1)) {
+      current += 1;
+    } else {
+      current = 1;
+    }
+    longest = Math.max(longest, current);
+  }
+  return longest;
+}
+
+function achievementDefinition(id: string) {
+  return achievementDefinitions.find((achievement) => achievement.id === id);
 }
 
 function HomeTab(props: {
@@ -4069,6 +4356,7 @@ function RecordsTab(props: {
   workoutExercises: WorkoutExercise[];
   workoutSets: WorkoutSet[];
   weeklyWorkoutStatus: WeeklyWorkoutStatus;
+  refresh: () => Promise<void>;
   showToast: (text: string) => void;
   onEditRecordDate: (date: string, targetTab: EditableRecordTab) => void;
   specialModeSettings: SpecialModeSettings[];
@@ -4150,6 +4438,7 @@ function RecordsTab(props: {
       created_at: generatedAt,
       updated_at: generatedAt,
     });
+    await props.refresh();
     props.showToast("日別AIレポートを生成しました");
   };
 
@@ -4683,6 +4972,7 @@ function SettingsTab(props: {
         setReport(content);
         setCopiedReport(false);
         await db.ai_reports.put({ id: makeId("report"), period_start: start, period_end: end, format: "markdown", content, created_at: generatedAt, updated_at: generatedAt });
+        await props.refresh();
       }}><FileText size={17} />生成</button>
       {report && (
         <>
@@ -4871,9 +5161,11 @@ function SettingsTab(props: {
         <div className="special-mode-settings mt-3">
           <div className="min-w-0 flex-1">
             <p className="font-bold text-ink">旅行モード</p>
-            <p className="numeric-text mt-1 text-[11px] font-bold">
-              状態: {isTravelModeEnabled ? `ON（${activeTravelMode?.label ?? "旅行"} / ${travelModePeriodLabel}）` : "OFF"}
-            </p>
+            {isTravelModeEnabled && (
+              <p className="numeric-text mt-1 text-[11px] font-bold text-moss">
+                {activeTravelMode?.label ?? "旅行"} / {travelModePeriodLabel}
+              </p>
+            )}
           </div>
           <button
             className={`special-mode-toggle ${isTravelModeEnabled ? "special-mode-toggle-on" : ""}`}
@@ -4886,7 +5178,6 @@ function SettingsTab(props: {
             </span>
             <span className="special-mode-toggle-copy">
               <span className="special-mode-toggle-state">{isTravelModeEnabled ? "ON" : "OFF"}</span>
-              <span className="special-mode-toggle-action">{isTravelModeEnabled ? "タップでOFF" : "タップでON"}</span>
             </span>
           </button>
         </div>
