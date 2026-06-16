@@ -78,7 +78,7 @@ type Tab = "home" | "food" | "workout" | "records" | "settings";
 type FoodMode = "search" | "favorite" | "chain" | "category" | "quick" | "manual" | "personal";
 type WorkoutMode = "favorite" | "preset" | "body" | "equipment" | "previous" | "search";
 type FoodFocus = "todayLog" | "specialMode" | undefined;
-type FoodAddStep = "size" | "quantity" | "timing" | "confirm";
+type FoodAddStep = "size" | "customSize" | "quantity" | "timing" | "confirm";
 type WorkoutFocus = "dateLog" | undefined;
 type SettingsFocus = "ai" | "backup" | "myMenu" | "goal" | undefined;
 type HistoryGrouping = "day" | "week" | "month";
@@ -2585,6 +2585,8 @@ function FoodTab(props: {
   };
   const portionOptions = selected ? getPortionOptions(selected) : [];
   const selectedServingGrams = selected ? menuItemServingGrams(selected) : undefined;
+  const defaultPortionOption = portionOptions.find((option) => option.value === 1) ?? portionOptions[0];
+  const customPortionOptions = portionOptions.filter((option) => option.value !== defaultPortionOption?.value);
   const selectedPortionLabel = selected ? portionOptions.find((option) => option.value === portionMultiplier)?.label ?? "カスタム" : "";
   const selectedCalories = selected ? Math.round(selected.calories * multiplier) : 0;
   const selectedProtein = selected ? round1(selected.protein_g * multiplier) : 0;
@@ -3084,25 +3086,51 @@ function FoodTab(props: {
             <div className="mt-2 flex items-center justify-between gap-2">
               <SourceBadge item={selected} source={selected.data_source} confidence={selected.confidence} />
               <span className="numeric-text rounded-md bg-rice px-2 py-1 text-xs font-bold text-moss">
-                {foodAddStep === "size" ? "1/4" : foodAddStep === "quantity" ? "2/4" : foodAddStep === "timing" ? "3/4" : "4/4"}
+                {foodAddStep === "size" || foodAddStep === "customSize" ? "1/4" : foodAddStep === "quantity" ? "2/4" : foodAddStep === "timing" ? "3/4" : "4/4"}
               </span>
             </div>
             <div className="food-add-progress mt-4" aria-hidden="true">
               {(["size", "quantity", "timing", "confirm"] as FoodAddStep[]).map((step) => (
-                <span className={foodAddStep === step ? "food-add-progress-dot food-add-progress-dot-active" : "food-add-progress-dot"} key={step} />
+                <span className={(foodAddStep === step || (foodAddStep === "customSize" && step === "size")) ? "food-add-progress-dot food-add-progress-dot-active" : "food-add-progress-dot"} key={step} />
               ))}
             </div>
 
             {foodAddStep === "size" && (
               <div className="mt-4">
                 <p className="text-sm font-black text-ink">サイズを選択</p>
-                <p className="mt-1 text-xs font-semibold text-moss">まず1回あたりの量を選びます。</p>
-                <div className="mt-4 grid grid-cols-3 gap-2">
-                  {portionOptions.map(({ label, value }) => (
+                <p className="mt-1 text-xs font-semibold text-moss">通常は既定サイズのまま進めます。</p>
+                <div className="mt-4 grid gap-2">
+                  {defaultPortionOption && (
+                    <button
+                      className="food-add-choice food-add-choice-active min-h-[3.2rem]"
+                      onClick={() => {
+                        setPortionMultiplier(defaultPortionOption.value);
+                        setFoodAddStep("quantity");
+                      }}
+                    >
+                      {defaultPortionOption.label}
+                    </button>
+                  )}
+                  <button className="food-add-choice" onClick={() => setFoodAddStep("customSize")}>
+                    サイズをカスタム
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {foodAddStep === "customSize" && (
+              <div className="mt-4">
+                <p className="text-sm font-black text-ink">サイズをカスタム</p>
+                <p className="mt-1 text-xs font-semibold text-moss">既定サイズ以外で記録したい時だけ選びます。</p>
+                <div className="mt-4 grid grid-cols-2 gap-2">
+                  {customPortionOptions.map(({ label, value }) => (
                     <button
                       key={label}
                       className={`food-add-choice ${portionMultiplier === value ? "food-add-choice-active" : ""}`}
-                      onClick={() => setPortionMultiplier(value)}
+                      onClick={() => {
+                        setPortionMultiplier(value);
+                        setFoodAddStep("quantity");
+                      }}
                     >
                       {label}
                     </button>
@@ -3125,6 +3153,12 @@ function FoodTab(props: {
                     />
                   </label>
                 )}
+                <button className="secondary-button mt-3 w-full" onClick={() => setFoodAddStep("quantity")}>
+                  このサイズで進む
+                </button>
+                {customPortionOptions.length === 0 && !selectedServingGrams && (
+                  <p className="mt-3 rounded-2xl bg-rice px-3 py-2 text-xs font-bold text-moss">このメニューはカスタムできるサイズ候補がありません。</p>
+                )}
               </div>
             )}
 
@@ -3137,7 +3171,10 @@ function FoodTab(props: {
                     <button
                       key={value}
                       className={`food-add-choice ${portionQuantity === value ? "food-add-choice-active" : ""}`}
-                      onClick={() => setPortionQuantity(value)}
+                      onClick={() => {
+                        setPortionQuantity(value);
+                        setFoodAddStep("timing");
+                      }}
                     >
                       {value}
                     </button>
@@ -3146,6 +3183,9 @@ function FoodTab(props: {
                 <div className="mt-4">
                   <Stepper value={portionQuantity} suffix="個数" step={0.5} onChange={(value) => setPortionQuantity(Math.max(0, value))} />
                 </div>
+                <button className="secondary-button mt-3 w-full" onClick={() => setFoodAddStep("timing")}>
+                  この個数で進む
+                </button>
               </div>
             )}
 
@@ -3155,7 +3195,16 @@ function FoodTab(props: {
                 <p className="mt-1 text-xs font-semibold text-moss">食事タイミングを選びます。ジム前・ジム後もここで記録できます。</p>
                 <div className="mt-4 grid grid-cols-2 gap-2">
                   {Object.entries(mealLabels).map(([key, label]) => (
-                    <button key={key} className={`food-add-choice ${mealType === key ? "food-add-choice-active" : ""}`} onClick={() => setMealType(key as MealType)}>{label}</button>
+                    <button
+                      key={key}
+                      className={`food-add-choice ${mealType === key ? "food-add-choice-active" : ""}`}
+                      onClick={() => {
+                        setMealType(key as MealType);
+                        setFoodAddStep("confirm");
+                      }}
+                    >
+                      {label}
+                    </button>
                   ))}
                 </div>
               </div>
@@ -3182,7 +3231,7 @@ function FoodTab(props: {
               </div>
             )}
 
-            <div className="mt-5 grid grid-cols-2 gap-2">
+            <div className={`mt-5 grid gap-2 ${foodAddStep === "confirm" ? "grid-cols-2" : "grid-cols-1"}`}>
               <button
                 className="secondary-button"
                 onClick={() => {
@@ -3190,20 +3239,21 @@ function FoodTab(props: {
                     setSelected(undefined);
                     return;
                   }
-                  setFoodAddStep(foodAddStep === "quantity" ? "size" : foodAddStep === "timing" ? "quantity" : "timing");
+                  setFoodAddStep(
+                    foodAddStep === "customSize"
+                      ? "size"
+                      : foodAddStep === "quantity"
+                        ? portionMultiplier === defaultPortionOption?.value ? "size" : "customSize"
+                        : foodAddStep === "timing"
+                          ? "quantity"
+                          : "timing",
+                  );
                 }}
               >
                 {foodAddStep === "size" ? "閉じる" : <><ChevronLeft size={17} />戻る</>}
               </button>
-              {foodAddStep === "confirm" ? (
+              {foodAddStep === "confirm" && (
                 <button className="primary-button" onClick={saveSelected}><Check size={17} />記録</button>
-              ) : (
-                <button
-                  className="primary-button"
-                  onClick={() => setFoodAddStep(foodAddStep === "size" ? "quantity" : foodAddStep === "quantity" ? "timing" : "confirm")}
-                >
-                  次へ<ChevronRight size={17} />
-                </button>
               )}
             </div>
             {foodAddStep === "confirm" && (
