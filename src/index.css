@@ -324,7 +324,8 @@ button {
   transform: scale(0.96);
 }
 
-.home-header-trophy-unseen {
+.home-header-trophy-unseen,
+.home-header-cheat-active {
   position: relative;
   border-color: rgba(255, 255, 255, 0.72);
   color: #fff;
@@ -336,7 +337,8 @@ button {
   animation: trophy-rainbow-glow 2.35s ease-in-out infinite;
 }
 
-.home-header-trophy-unseen::before {
+.home-header-trophy-unseen::before,
+.home-header-cheat-active::before {
   content: "";
   position: absolute;
   inset: -3px;
@@ -425,6 +427,8 @@ button {
 @media (prefers-reduced-motion: reduce) {
   .home-header-trophy-unseen,
   .home-header-trophy-unseen::before,
+  .home-header-cheat-active,
+  .home-header-cheat-active::before,
   .home-hero-cheat,
   .home-hero-hokkaido {
     animation: none;
@@ -2548,7 +2552,8 @@ button {
   border-color: rgba(255, 255, 255, 0.42);
 }
 
-.theme-dark .home-header-trophy-unseen::before {
+.theme-dark .home-header-trophy-unseen::before,
+.theme-dark .home-header-cheat-active::before {
   opacity: 0.82;
 }
 
