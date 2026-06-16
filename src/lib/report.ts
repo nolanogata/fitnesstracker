@@ -156,7 +156,7 @@ export function generateMarkdownReport(input: {
   const targetBodyCompositionDetail = formatTargetBodyCompositionDetail(input.goal, currentBodyComposition);
   const targetCustomizationText = formatTargetCustomization(input.goal);
 
-  return `# ゴールトラッカー AI相談レポート
+  return `# 100% トラッカー AI相談レポート
 
 ${isDaily ? `対象日: ${input.periodStart}` : `期間: ${input.periodStart} - ${input.periodEnd}`}
 

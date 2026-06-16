@@ -1,6 +1,6 @@
 # Food Data Source Policy
 
-ゴールトラッカー keeps bundled food data with these source quality labels:
+100% トラッカー keeps bundled food data with these source quality labels:
 
 - `official/high`: copied from a brand's official nutrition page or PDF, with `source_url` and `fetched_at`.
 - `unofficial/medium`: copied from a third-party nutrition database when official P/F/C was not verified. The app must show this as `非公式値`.

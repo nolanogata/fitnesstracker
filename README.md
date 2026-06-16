@@ -1,4 +1,4 @@
-# ゴールトラッカー
+# 100% トラッカー
 
 Mobile-first local-only PWA for food, workout, body weight, goal, and AI-ready report logging.
 
