@@ -426,6 +426,15 @@ button {
   }
 }
 
+@keyframes home-progress-rainbow-flow {
+  from {
+    background-position: 0% 50%;
+  }
+  to {
+    background-position: 220% 50%;
+  }
+}
+
 @keyframes hokkaido-aurora-breathe {
   0%,
   100% {
@@ -445,7 +454,8 @@ button {
   .home-header-cheat-active::before,
   .home-hero-cheat,
   .home-hero-hokkaido,
-  .home-hero-hokkaido::after {
+  .home-hero-hokkaido::after,
+  .home-progress-rainbow {
     animation: none;
   }
 }
@@ -741,8 +751,25 @@ button {
   box-shadow: 0 8px 18px rgba(40, 48, 36, 0.08);
 }
 
-.home-progress-cheat {
-  background: linear-gradient(90deg, #ff6b6b 0%, #ffd166 24%, #5ad66f 48%, #4ecdc4 68%, #7b61ff 100%);
+.home-progress-track {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.46);
+}
+
+.home-progress-fill {
+  transition: width 220ms ease, background 160ms ease;
+}
+
+.home-progress-cheat,
+.home-progress-rainbow {
+  background: linear-gradient(90deg, #ff6b6b 0%, #ffd166 18%, #5ad66f 36%, #4ecdc4 54%, #7b61ff 72%, #ff6bcb 86%, #ff6b6b 100%);
+  background-size: 220% 100%;
+  box-shadow: 0 0 18px rgba(255, 209, 102, 0.28), 0 0 24px rgba(78, 205, 196, 0.18);
+  animation: home-progress-rainbow-flow 2.8s linear infinite;
+}
+
+.home-progress-paused {
+  background: linear-gradient(90deg, rgba(102, 112, 106, 0.58), rgba(164, 171, 166, 0.56), rgba(102, 112, 106, 0.58));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22);
 }
 
 .special-mode-food-banner,

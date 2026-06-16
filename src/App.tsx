@@ -637,6 +637,15 @@ const achievementProgressSpecs: Record<string, AchievementProgressSpec> = {
 };
 const appUpdates: AppUpdate[] = [
   {
+    id: "2026-06-17-exception-pfc-bars",
+    title: "例外日のHome表示を調整",
+    date: "2026-06-17",
+    items: [
+      "チートデー、旅行、北海道モード中もHomeヒーローのPFC上ステータスバーを表示し、常に100%の流れるレインボー表示にしました。",
+      "一時停止モード中は同じステータスバーを100%幅のグレー表示にし、停止中だと分かるようにしました。",
+    ],
+  },
+  {
     id: "2026-06-17-confetti-burst",
     title: "アンロック演出を調整",
     date: "2026-06-17",
@@ -2872,6 +2881,14 @@ function HomeTab(props: {
   const calorieDelta = props.goal?.target_calories ? props.dayTotals.calories - props.goal.target_calories : undefined;
   const calorieDeltaText = typeof calorieDelta === "number" ? `${calorieDelta > 0 ? "+" : ""}${Math.round(calorieDelta)}` : "-";
   const shouldMaskGoalProgress = props.isExceptionDay;
+  const shouldShowRainbowProgress = props.isCheatDay || !!props.activeSpecialMode;
+  const shouldShowPausedProgress = !shouldShowRainbowProgress && !!props.activePauseMode;
+  const heroProgressPercent = shouldMaskGoalProgress ? 100 : caloriePercent;
+  const heroProgressClass = shouldShowRainbowProgress
+    ? "home-progress-rainbow"
+    : shouldShowPausedProgress
+      ? "home-progress-paused"
+      : calorieDelta && calorieDelta > 0 ? "bg-clay" : "bg-moss";
   const calorieDisplayText = shouldMaskGoalProgress ? "-" : calorieDeltaText;
   const calorieMoodClass = props.isCheatDay ? "cheat" : props.activeSpecialMode ? "trip" : props.activePauseMode ? "cheat" : typeof calorieDelta === "number" ? (calorieDelta > 0 ? "over" : Math.abs(calorieDelta) <= 100 ? "on-track" : "left") : "neutral";
   const calorieMoodLabel = props.isCheatDay ? "cheat day" : props.activeSpecialMode ? "travel mode" : props.activePauseMode ? "pause mode" : typeof calorieDelta === "number" ? (calorieDelta > 0 ? "over" : Math.abs(calorieDelta) <= 100 ? "on track" : "left") : calorieState.label;
@@ -3090,11 +3107,9 @@ function HomeTab(props: {
             </p>
           )}
           {!shouldMaskGoalProgress && <p className="numeric-text mt-1 text-sm text-moss">摂取 {props.dayTotals.calories} / 目標 {props.goal?.target_calories ?? "-"} kcal</p>}
-          {!shouldMaskGoalProgress && (
-            <div className="mt-6 h-2 overflow-hidden rounded-full bg-white/55">
-              <div className={`h-full rounded-full ${calorieDelta && calorieDelta > 0 ? "bg-clay" : "bg-moss"}`} style={{ width: `${caloriePercent}%` }} />
-            </div>
-          )}
+          <div className="home-progress-track mt-6 h-2 overflow-hidden rounded-full bg-white/55">
+            <div className={`home-progress-fill h-full rounded-full ${heroProgressClass}`} style={{ width: `${heroProgressPercent}%` }} />
+          </div>
         </div>
         <div className="home-macro-row mt-5">
           {macroStats.map((macro) => (
