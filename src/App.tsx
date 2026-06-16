@@ -123,6 +123,33 @@ type AchievementDefinition = {
   tone: AchievementTone;
   hidden?: boolean;
 };
+type AchievementMetric =
+  | "foodEntries"
+  | "workouts"
+  | "workoutSets"
+  | "exerciseVariety"
+  | "checkins"
+  | "userMenus"
+  | "aiReports"
+  | "streak"
+  | "prCount"
+  | "calorieMasterDays"
+  | "proteinDays"
+  | "macroBalanceDays"
+  | "weightGoalDayMoves"
+  | "weightGoalAverageMoves";
+type AchievementProgressSpec = {
+  metric: AchievementMetric;
+  target: number;
+  unit: string;
+  repeatable?: boolean;
+};
+type AchievementProgress = {
+  current: number;
+  target: number;
+  unit: string;
+  repeatable: boolean;
+};
 type AchievementCelebration = {
   id: string;
   title: string;
@@ -393,7 +420,9 @@ const achievementDefinitions: AchievementDefinition[] = [
   { id: "used_food_filter", title: "フィルター入門", description: "フード検索フィルターを試した", tone: "system" },
   { id: "edited_past_record", title: "過去ログ修正", description: "過去の日付の記録編集に入った", tone: "system" },
   { id: "goal_updated", title: "作戦会議", description: "ゴール設定を更新した", tone: "system" },
+  { id: "food_3", title: "食事ログ3", description: "食事を3件記録した", tone: "nutrition" },
   { id: "food_10", title: "食事ログ10", description: "食事を10件記録した", tone: "nutrition" },
+  { id: "food_25", title: "食事ログ25", description: "食事を25件記録した", tone: "nutrition" },
   { id: "food_50", title: "食事ログ50", description: "食事を50件記録した", tone: "nutrition" },
   { id: "food_100", title: "食事ログ100", description: "食事を100件記録した", tone: "nutrition" },
   { id: "food_300", title: "食事ログ300", description: "食事を300件記録した", tone: "nutrition" },
@@ -403,18 +432,25 @@ const achievementDefinitions: AchievementDefinition[] = [
   { id: "calorie_master_14", title: "カロリー管理2週間", description: "カロリー内で終えた日が14日ある", tone: "nutrition" },
   { id: "calorie_master_30", title: "カロリー管理30日", description: "カロリー内で終えた日が30日ある", tone: "nutrition" },
   { id: "protein_day", title: "Pを意識", description: "たんぱく質目標の90%以上を記録した日がある", tone: "nutrition" },
+  { id: "protein_days_3", title: "P習慣3日", description: "たんぱく質目標90%以上の日が3日ある", tone: "nutrition" },
   { id: "protein_days_7", title: "P習慣7日", description: "たんぱく質目標90%以上の日が7日ある", tone: "nutrition" },
+  { id: "protein_days_14", title: "P習慣14日", description: "たんぱく質目標90%以上の日が14日ある", tone: "nutrition" },
   { id: "protein_days_30", title: "P習慣30日", description: "たんぱく質目標90%以上の日が30日ある", tone: "nutrition" },
   { id: "macro_balance_1", title: "PFCバランス", description: "Pを満たし、F/Cを大きく超えずに1日を終えた", tone: "nutrition" },
+  { id: "macro_balance_3", title: "PFCバランス3日", description: "PFCバランス達成日が3日ある", tone: "nutrition" },
   { id: "macro_balance_7", title: "PFCバランス7日", description: "PFCバランス達成日が7日ある", tone: "nutrition" },
+  { id: "macro_balance_14", title: "PFCバランス14日", description: "PFCバランス達成日が14日ある", tone: "nutrition" },
   { id: "macro_balance_30", title: "PFCバランス30日", description: "PFCバランス達成日が30日ある", tone: "nutrition" },
+  { id: "workout_3", title: "ワークアウト3", description: "ワークアウトを3回記録した", tone: "training" },
   { id: "workout_10", title: "ワークアウト10", description: "ワークアウトを10回記録した", tone: "training" },
   { id: "workout_30", title: "ワークアウト30", description: "ワークアウトを30回記録した", tone: "training" },
   { id: "workout_50", title: "ワークアウト50", description: "ワークアウトを50回記録した", tone: "training" },
   { id: "workout_100", title: "ワークアウト100", description: "ワークアウトを100回記録した", tone: "training" },
+  { id: "workout_sets_30", title: "30セット", description: "累計30セット記録した", tone: "training" },
   { id: "workout_sets_100", title: "100セット", description: "累計100セット記録した", tone: "training" },
   { id: "workout_sets_500", title: "500セット", description: "累計500セット記録した", tone: "training" },
   { id: "workout_sets_1000", title: "1000セット", description: "累計1000セット記録した", tone: "training" },
+  { id: "exercise_variety_3", title: "種目探索3", description: "3種類の種目を記録した", tone: "training" },
   { id: "exercise_variety_5", title: "種目探索5", description: "5種類の種目を記録した", tone: "training" },
   { id: "exercise_variety_15", title: "種目探索15", description: "15種類の種目を記録した", tone: "training" },
   { id: "exercise_variety_30", title: "種目探索30", description: "30種類の種目を記録した", tone: "training" },
@@ -423,9 +459,16 @@ const achievementDefinitions: AchievementDefinition[] = [
   { id: "workout_pr_10", title: "PRハンター10", description: "自己記録更新を10回達成した", tone: "training" },
   { id: "workout_pr_25", title: "PRハンター25", description: "自己記録更新を25回達成した", tone: "training" },
   { id: "weekly_workout_goal", title: "今週の運動達成", description: "週の筋トレ目標を達成した", tone: "training" },
+  { id: "checkin_3", title: "チェックイン3", description: "チェックインを3回記録した", tone: "starter" },
   { id: "checkin_7", title: "チェックイン7", description: "チェックインを7回記録した", tone: "starter" },
   { id: "checkin_30", title: "チェックイン30", description: "チェックインを30回記録した", tone: "starter" },
   { id: "checkin_100", title: "チェックイン100", description: "チェックインを100回記録した", tone: "starter" },
+  { id: "weight_goal_day_1", title: "体重ゴールの一歩", description: "前回比で目標方向に体重が動いた", tone: "starter" },
+  { id: "weight_goal_day_3", title: "体重ゴール3回", description: "前回比で目標方向に動いた日が3回ある", tone: "starter" },
+  { id: "weight_goal_day_7", title: "体重ゴール7回", description: "前回比で目標方向に動いた日が7回ある", tone: "starter" },
+  { id: "weight_goal_avg_1", title: "平均体重の一歩", description: "7日平均体重が目標方向に動いた", tone: "streak" },
+  { id: "weight_goal_avg_3", title: "平均体重3回", description: "7日平均体重が目標方向に動いた回数が3回ある", tone: "streak" },
+  { id: "weight_goal_avg_7", title: "平均体重7回", description: "7日平均体重が目標方向に動いた回数が7回ある", tone: "streak" },
   { id: "my_menu_5", title: "マイメニュー5", description: "マイメニューを5件登録した", tone: "system" },
   { id: "my_menu_20", title: "マイメニュー20", description: "マイメニューを20件登録した", tone: "system" },
   { id: "ai_report_5", title: "AI相談5", description: "AI相談レポートを5回生成した", tone: "system" },
@@ -437,7 +480,78 @@ const achievementDefinitions: AchievementDefinition[] = [
   { id: "streak_60", title: "60日継続", description: "60日連続で記録した", tone: "streak" },
   { id: "streak_100", title: "100日継続", description: "100日連続で記録した", tone: "streak" },
 ];
+const achievementProgressSpecs: Record<string, AchievementProgressSpec> = {
+  food_3: { metric: "foodEntries", target: 3, unit: "件" },
+  food_10: { metric: "foodEntries", target: 10, unit: "件" },
+  food_25: { metric: "foodEntries", target: 25, unit: "件" },
+  food_50: { metric: "foodEntries", target: 50, unit: "件" },
+  food_100: { metric: "foodEntries", target: 100, unit: "件" },
+  food_300: { metric: "foodEntries", target: 300, unit: "件" },
+  calorie_master_1: { metric: "calorieMasterDays", target: 1, unit: "日", repeatable: true },
+  calorie_master_3: { metric: "calorieMasterDays", target: 3, unit: "日" },
+  calorie_master_7: { metric: "calorieMasterDays", target: 7, unit: "日" },
+  calorie_master_14: { metric: "calorieMasterDays", target: 14, unit: "日" },
+  calorie_master_30: { metric: "calorieMasterDays", target: 30, unit: "日" },
+  protein_day: { metric: "proteinDays", target: 1, unit: "日", repeatable: true },
+  protein_days_3: { metric: "proteinDays", target: 3, unit: "日" },
+  protein_days_7: { metric: "proteinDays", target: 7, unit: "日" },
+  protein_days_14: { metric: "proteinDays", target: 14, unit: "日" },
+  protein_days_30: { metric: "proteinDays", target: 30, unit: "日" },
+  macro_balance_1: { metric: "macroBalanceDays", target: 1, unit: "日", repeatable: true },
+  macro_balance_3: { metric: "macroBalanceDays", target: 3, unit: "日" },
+  macro_balance_7: { metric: "macroBalanceDays", target: 7, unit: "日" },
+  macro_balance_14: { metric: "macroBalanceDays", target: 14, unit: "日" },
+  macro_balance_30: { metric: "macroBalanceDays", target: 30, unit: "日" },
+  workout_3: { metric: "workouts", target: 3, unit: "回" },
+  workout_10: { metric: "workouts", target: 10, unit: "回" },
+  workout_30: { metric: "workouts", target: 30, unit: "回" },
+  workout_50: { metric: "workouts", target: 50, unit: "回" },
+  workout_100: { metric: "workouts", target: 100, unit: "回" },
+  workout_sets_30: { metric: "workoutSets", target: 30, unit: "セット" },
+  workout_sets_100: { metric: "workoutSets", target: 100, unit: "セット" },
+  workout_sets_500: { metric: "workoutSets", target: 500, unit: "セット" },
+  workout_sets_1000: { metric: "workoutSets", target: 1000, unit: "セット" },
+  exercise_variety_3: { metric: "exerciseVariety", target: 3, unit: "種目" },
+  exercise_variety_5: { metric: "exerciseVariety", target: 5, unit: "種目" },
+  exercise_variety_15: { metric: "exerciseVariety", target: 15, unit: "種目" },
+  exercise_variety_30: { metric: "exerciseVariety", target: 30, unit: "種目" },
+  workout_pr: { metric: "prCount", target: 1, unit: "回", repeatable: true },
+  workout_pr_5: { metric: "prCount", target: 5, unit: "回" },
+  workout_pr_10: { metric: "prCount", target: 10, unit: "回" },
+  workout_pr_25: { metric: "prCount", target: 25, unit: "回" },
+  checkin_3: { metric: "checkins", target: 3, unit: "回" },
+  checkin_7: { metric: "checkins", target: 7, unit: "回" },
+  checkin_30: { metric: "checkins", target: 30, unit: "回" },
+  checkin_100: { metric: "checkins", target: 100, unit: "回" },
+  weight_goal_day_1: { metric: "weightGoalDayMoves", target: 1, unit: "回", repeatable: true },
+  weight_goal_day_3: { metric: "weightGoalDayMoves", target: 3, unit: "回" },
+  weight_goal_day_7: { metric: "weightGoalDayMoves", target: 7, unit: "回" },
+  weight_goal_avg_1: { metric: "weightGoalAverageMoves", target: 1, unit: "回", repeatable: true },
+  weight_goal_avg_3: { metric: "weightGoalAverageMoves", target: 3, unit: "回" },
+  weight_goal_avg_7: { metric: "weightGoalAverageMoves", target: 7, unit: "回" },
+  my_menu_5: { metric: "userMenus", target: 5, unit: "件" },
+  my_menu_20: { metric: "userMenus", target: 20, unit: "件" },
+  ai_report_5: { metric: "aiReports", target: 5, unit: "回" },
+  ai_report_20: { metric: "aiReports", target: 20, unit: "回" },
+  streak_3: { metric: "streak", target: 3, unit: "日" },
+  streak_7: { metric: "streak", target: 7, unit: "日" },
+  streak_14: { metric: "streak", target: 14, unit: "日" },
+  streak_30: { metric: "streak", target: 30, unit: "日" },
+  streak_60: { metric: "streak", target: 60, unit: "日" },
+  streak_100: { metric: "streak", target: 100, unit: "日" },
+};
 const appUpdates: AppUpdate[] = [
+  {
+    id: "2026-06-16-achievement-progress",
+    title: "トロフィー進捗を強化",
+    date: "2026-06-16",
+    items: [
+      "カロリーマスターやPFCなど、複数回達成できるトロフィーに累計回数を表示するようにしました。",
+      "未獲得トロフィーに、あと何日・何回で達成できるかを表示しました。",
+      "体重ゴールに合わせて、前回比や7日平均が目標方向に動いた時のトロフィーを追加しました。",
+      "始めたてでも達成しやすい3回・3日・25件などの中間トロフィーを追加しました。",
+    ],
+  },
   {
     id: "2026-06-16-trophy-achievements",
     title: "トロフィーを追加",
@@ -1453,26 +1567,21 @@ function App() {
     todayEntries,
     dismissedIds: dismissedRecordReminderIds,
   }), [actualAppDate, appDate, currentTime, dismissedRecordReminderIds, todayEntries]);
-
-  useEffect(() => {
-    if (!settings?.onboarding_completed) return;
-    const unlockedIds = getUnlockedAchievementIds({
-      goals,
-      menuItems,
-      foodEntries,
-      weightLogs,
-      workoutSessions,
-      workoutExercises,
-      workoutSets,
-      weeklyWorkoutStatus,
-      aiReports,
-      goal: target,
-      currentAppDate: actualAppDate,
-    });
-    void unlockAchievements(unlockedIds);
-  }, [
-    settings?.onboarding_completed,
-    settings?.achievements?.length,
+  const achievementSnapshot = useMemo(() => getAchievementSnapshot({
+    profile,
+    goals,
+    menuItems,
+    foodEntries,
+    weightLogs,
+    workoutSessions,
+    workoutExercises,
+    workoutSets,
+    weeklyWorkoutStatus,
+    aiReports,
+    goal: target,
+    currentAppDate: actualAppDate,
+  }), [
+    profile?.current_weight_kg,
     goals.length,
     menuItems.length,
     foodEntries.length,
@@ -1483,11 +1592,22 @@ function App() {
     weeklyWorkoutStatus.strengthDone,
     weeklyWorkoutStatus.strengthTarget,
     aiReports.length,
+    target?.target_weight_kg,
     target?.target_protein_g,
     target?.target_fat_g,
     target?.target_carbs_g,
     target?.target_calories,
     actualAppDate,
+  ]);
+  const achievementProgress = useMemo(() => buildAchievementProgress(achievementSnapshot.counts), [achievementSnapshot]);
+
+  useEffect(() => {
+    if (!settings?.onboarding_completed) return;
+    void unlockAchievements(achievementSnapshot.ids, true, achievementSnapshot.counts);
+  }, [
+    settings?.onboarding_completed,
+    settings?.achievements?.length,
+    achievementSnapshot,
   ]);
 
   useEffect(() => {
@@ -1531,13 +1651,25 @@ function App() {
     });
     achievementCelebrationTimerRef.current = window.setTimeout(() => setAchievementCelebration(undefined), 5200);
   };
-  const unlockAchievements = async (ids: string[], announce = true) => {
+  const unlockAchievements = async (ids: string[], announce = true, counts: Record<string, number> = {}) => {
     if (!settings) return [];
     const knownIds = new Set(achievementDefinitions.map((achievement) => achievement.id));
     const current = settings.achievements ?? [];
     const currentIds = new Set(current.map((achievement) => achievement.id));
     const freshIds = unique(ids).filter((id) => knownIds.has(id) && !currentIds.has(id));
+    const currentWithCounts = current.map((achievement) => {
+      const nextCount = counts[achievement.id];
+      if (!nextCount) return achievement;
+      const currentCount = achievement.count ?? 1;
+      return nextCount > currentCount ? { ...achievement, count: nextCount } : achievement;
+    });
+    const didUpdateCounts = currentWithCounts.some((achievement, index) => achievement !== current[index]);
     if (!freshIds.length) {
+      if (didUpdateCounts) {
+        const timestamp = nowIso();
+        await db.settings.update("local", { achievements: currentWithCounts, updated_at: timestamp });
+        setSettings({ ...settings, achievements: currentWithCounts, updated_at: timestamp });
+      }
       if (announce && isDeveloperTestMode) {
         const replayId = unique(ids).find((id) => knownIds.has(id));
         const definition = replayId ? achievementDefinition(replayId) : undefined;
@@ -1547,8 +1679,8 @@ function App() {
     }
     const timestamp = nowIso();
     const nextAchievements: AchievementUnlock[] = [
-      ...current,
-      ...freshIds.map((id) => ({ id, unlocked_at: timestamp })),
+      ...currentWithCounts,
+      ...freshIds.map((id) => ({ id, unlocked_at: timestamp, count: counts[id] || 1 })),
     ];
     await db.settings.update("local", { achievements: nextAchievements, updated_at: timestamp });
     setSettings({ ...settings, achievements: nextAchievements, updated_at: timestamp });
@@ -1908,6 +2040,7 @@ function App() {
       {isUpdateNotesOpen && <UpdateNotesModal updates={appUpdates} onClose={() => setIsUpdateNotesOpen(false)} />}
       {isTrophyOpen && (
         <TrophyModal
+          progress={achievementProgress}
           isDeveloperTestMode={isDeveloperTestMode}
           unlocks={settings?.achievements ?? []}
           onClose={() => setIsTrophyOpen(false)}
@@ -1997,8 +2130,9 @@ function WorkoutPrCelebrationOverlay({ celebration }: { celebration?: WorkoutPrC
   );
 }
 
-function TrophyModal({ unlocks, isDeveloperTestMode, onClose, onReplay }: {
+function TrophyModal({ unlocks, progress, isDeveloperTestMode, onClose, onReplay }: {
   unlocks: AchievementUnlock[];
+  progress: Record<string, AchievementProgress>;
   isDeveloperTestMode: boolean;
   onClose: () => void;
   onReplay: (achievement: AchievementDefinition) => void;
@@ -2018,6 +2152,8 @@ function TrophyModal({ unlocks, isDeveloperTestMode, onClose, onReplay }: {
         <div className="mt-4 grid grid-cols-2 gap-2">
           {achievementDefinitions.map((achievement) => {
             const unlock = unlockedById.get(achievement.id);
+            const progressItem = progress[achievement.id];
+            const statusText = achievementStatusText(unlock, progressItem);
             return (
               <div className={`trophy-card trophy-card-${achievement.tone} ${unlock ? "trophy-card-unlocked" : "trophy-card-locked"}`} key={achievement.id}>
                 <div className="trophy-card-icon">
@@ -2028,6 +2164,11 @@ function TrophyModal({ unlocks, isDeveloperTestMode, onClose, onReplay }: {
                 <p className="numeric-text mt-3 text-[11px] font-bold text-muted">
                   {unlock ? `${formatJapaneseDate(unlock.unlocked_at.slice(0, 10))} 獲得` : "未獲得"}
                 </p>
+                {statusText && (
+                  <p className={`numeric-text mt-1 text-[11px] font-black ${unlock ? "text-moss" : "text-muted"}`}>
+                    {statusText}
+                  </p>
+                )}
                 {unlock && isDeveloperTestMode && (
                   <button className="secondary-button mt-3 w-full py-2 text-xs" onClick={() => onReplay(achievement)}>
                     演出
@@ -2154,6 +2295,24 @@ function getRecordReminder(params: {
 }
 
 function getUnlockedAchievementIds(params: {
+  profile?: Profile;
+  goals: Goal[];
+  menuItems: MenuItem[];
+  foodEntries: FoodEntry[];
+  weightLogs: WeightLog[];
+  workoutSessions: WorkoutSession[];
+  workoutExercises: WorkoutExercise[];
+  workoutSets: WorkoutSet[];
+  weeklyWorkoutStatus: WeeklyWorkoutStatus;
+  aiReports: AiReport[];
+  goal?: Goal;
+  currentAppDate: string;
+}) {
+  return getAchievementSnapshot(params).ids;
+}
+
+function getAchievementSnapshot(params: {
+  profile?: Profile;
   goals: Goal[];
   menuItems: MenuItem[];
   foodEntries: FoodEntry[];
@@ -2167,21 +2326,28 @@ function getUnlockedAchievementIds(params: {
   currentAppDate: string;
 }) {
   const unlocked = new Set<string>(["first_open"]);
+  const counts: Record<string, number> = {};
   const addMilestones = (count: number, milestones: Array<[number, string]>) => {
     milestones.forEach(([threshold, id]) => {
       if (count >= threshold) unlocked.add(id);
+      counts[id] = count;
     });
   };
   if (params.goals.length > 0) unlocked.add("first_goal");
   if (params.goals.length > 1) unlocked.add("goal_updated");
   if (params.foodEntries.length > 0) unlocked.add("first_food");
-  addMilestones(params.foodEntries.length, [[10, "food_10"], [50, "food_50"], [100, "food_100"], [300, "food_300"]]);
+  addMilestones(params.foodEntries.length, [[3, "food_3"], [10, "food_10"], [25, "food_25"], [50, "food_50"], [100, "food_100"], [300, "food_300"]]);
   if (params.workoutSessions.length > 0) unlocked.add("first_workout");
-  addMilestones(params.workoutSessions.length, [[10, "workout_10"], [30, "workout_30"], [50, "workout_50"], [100, "workout_100"]]);
-  addMilestones(params.workoutSets.length, [[100, "workout_sets_100"], [500, "workout_sets_500"], [1000, "workout_sets_1000"]]);
-  addMilestones(new Set(params.workoutExercises.map((exercise) => exercise.exercise_name)).size, [[5, "exercise_variety_5"], [15, "exercise_variety_15"], [30, "exercise_variety_30"]]);
+  addMilestones(params.workoutSessions.length, [[3, "workout_3"], [10, "workout_10"], [30, "workout_30"], [50, "workout_50"], [100, "workout_100"]]);
+  addMilestones(params.workoutSets.length, [[30, "workout_sets_30"], [100, "workout_sets_100"], [500, "workout_sets_500"], [1000, "workout_sets_1000"]]);
+  addMilestones(new Set(params.workoutExercises.map((exercise) => exercise.exercise_name)).size, [[3, "exercise_variety_3"], [5, "exercise_variety_5"], [15, "exercise_variety_15"], [30, "exercise_variety_30"]]);
   if (params.weightLogs.length > 0) unlocked.add("first_checkin");
-  addMilestones(params.weightLogs.length, [[7, "checkin_7"], [30, "checkin_30"], [100, "checkin_100"]]);
+  addMilestones(params.weightLogs.length, [[3, "checkin_3"], [7, "checkin_7"], [30, "checkin_30"], [100, "checkin_100"]]);
+  const weightDirection = goalWeightDirection(params.goal, params.profile, params.weightLogs);
+  if (weightDirection) {
+    addMilestones(countGoalDirectionWeightMoves(params.weightLogs, weightDirection), [[1, "weight_goal_day_1"], [3, "weight_goal_day_3"], [7, "weight_goal_day_7"]]);
+    addMilestones(countGoalDirectionAverageMoves(params.weightLogs, weightDirection), [[1, "weight_goal_avg_1"], [3, "weight_goal_avg_3"], [7, "weight_goal_avg_7"]]);
+  }
   const userMenuCount = params.menuItems.filter((item) => item.is_user_created).length;
   if (userMenuCount > 0) unlocked.add("first_my_menu");
   addMilestones(userMenuCount, [[5, "my_menu_5"], [20, "my_menu_20"]]);
@@ -2210,14 +2376,14 @@ function getUnlockedAchievementIds(params: {
     addMilestones(calorieMasterDays, [[1, "calorie_master_1"], [3, "calorie_master_3"], [7, "calorie_master_7"], [14, "calorie_master_14"], [30, "calorie_master_30"]]);
     if (params.goal.target_protein_g > 0) {
       const proteinDays = completedFoodDays.filter((total) => total.protein >= params.goal!.target_protein_g * 0.9).length;
-      addMilestones(proteinDays, [[1, "protein_day"], [7, "protein_days_7"], [30, "protein_days_30"]]);
+      addMilestones(proteinDays, [[1, "protein_day"], [3, "protein_days_3"], [7, "protein_days_7"], [14, "protein_days_14"], [30, "protein_days_30"]]);
       const macroBalanceDays = completedFoodDays.filter((total) => (
         total.protein >= params.goal!.target_protein_g * 0.9 &&
         (params.goal!.target_fat_g <= 0 || total.fat <= params.goal!.target_fat_g * 1.1) &&
         (params.goal!.target_carbs_g <= 0 || total.carbs <= params.goal!.target_carbs_g * 1.1) &&
         (params.goal!.target_calories <= 0 || total.calories <= params.goal!.target_calories)
       )).length;
-      addMilestones(macroBalanceDays, [[1, "macro_balance_1"], [7, "macro_balance_7"], [30, "macro_balance_30"]]);
+      addMilestones(macroBalanceDays, [[1, "macro_balance_1"], [3, "macro_balance_3"], [7, "macro_balance_7"], [14, "macro_balance_14"], [30, "macro_balance_30"]]);
     }
   }
   if (
@@ -2226,7 +2392,7 @@ function getUnlockedAchievementIds(params: {
   ) {
     unlocked.add("weekly_workout_goal");
   }
-  return [...unlocked];
+  return { ids: [...unlocked], counts };
 }
 
 function longestRecordStreak(dates: string[]) {
@@ -2245,8 +2411,67 @@ function longestRecordStreak(dates: string[]) {
   return longest;
 }
 
+function goalWeightDirection(goal?: Goal, profile?: Profile, weightLogs: WeightLog[] = []) {
+  if (!goal?.target_weight_kg) return undefined;
+  const sortedLogs = [...weightLogs].sort((a, b) => `${a.app_date}-${a.logged_at}`.localeCompare(`${b.app_date}-${b.logged_at}`));
+  const baseline = sortedLogs[0]?.weight_kg ?? profile?.current_weight_kg;
+  if (typeof baseline !== "number") return undefined;
+  const delta = goal.target_weight_kg - baseline;
+  if (delta <= -0.1) return "down" as const;
+  if (delta >= 0.1) return "up" as const;
+  return undefined;
+}
+
+function countGoalDirectionWeightMoves(weightLogs: WeightLog[], direction: "up" | "down") {
+  const sortedLogs = [...weightLogs].sort((a, b) => `${a.app_date}-${a.logged_at}`.localeCompare(`${b.app_date}-${b.logged_at}`));
+  let count = 0;
+  for (let index = 1; index < sortedLogs.length; index += 1) {
+    const delta = round1(sortedLogs[index].weight_kg - sortedLogs[index - 1].weight_kg);
+    if (direction === "down" && delta <= -0.1) count += 1;
+    if (direction === "up" && delta >= 0.1) count += 1;
+  }
+  return count;
+}
+
+function countGoalDirectionAverageMoves(weightLogs: WeightLog[], direction: "up" | "down") {
+  const sortedLogs = [...weightLogs].sort((a, b) => `${a.app_date}-${a.logged_at}`.localeCompare(`${b.app_date}-${b.logged_at}`));
+  let count = 0;
+  for (let index = 7; index < sortedLogs.length; index += 1) {
+    const previousAverage = movingAverage(sortedLogs.slice(0, index), 7);
+    const currentAverage = movingAverage(sortedLogs.slice(0, index + 1), 7);
+    if (typeof previousAverage !== "number" || typeof currentAverage !== "number") continue;
+    const delta = round1(currentAverage - previousAverage);
+    if (direction === "down" && delta <= -0.1) count += 1;
+    if (direction === "up" && delta >= 0.1) count += 1;
+  }
+  return count;
+}
+
 function achievementDefinition(id: string) {
   return achievementDefinitions.find((achievement) => achievement.id === id);
+}
+
+function buildAchievementProgress(counts: Record<string, number>) {
+  return Object.fromEntries(Object.entries(achievementProgressSpecs).map(([id, spec]) => [
+    id,
+    {
+      current: counts[id] ?? 0,
+      target: spec.target,
+      unit: spec.unit,
+      repeatable: !!spec.repeatable,
+    },
+  ])) as Record<string, AchievementProgress>;
+}
+
+function achievementStatusText(unlock?: AchievementUnlock, progress?: AchievementProgress) {
+  if (!progress) return undefined;
+  const current = unlock ? Math.max(unlock.count ?? 1, progress.current) : progress.current;
+  if (unlock) {
+    if (progress.repeatable || current > progress.target) return `累計 ${current}${progress.unit}`;
+    return `${current}/${progress.target}${progress.unit}`;
+  }
+  const remaining = Math.max(0, progress.target - current);
+  return `あと ${remaining}${progress.unit}`;
 }
 
 function HomeTab(props: {
