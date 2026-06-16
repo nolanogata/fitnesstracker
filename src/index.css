@@ -382,29 +382,43 @@ button {
   0%,
   100% {
     box-shadow:
-      0 0 0 1px rgba(255, 255, 255, 0.56) inset,
-      -8px -6px 22px rgba(255, 107, 107, 0.2),
-      10px -6px 22px rgba(255, 209, 102, 0.18),
-      12px 12px 28px rgba(78, 205, 196, 0.18),
-      -8px 14px 28px rgba(123, 97, 255, 0.16),
+      0 0 0 1px rgba(255, 255, 255, 0.58) inset,
+      -8px -6px 18px rgba(255, 107, 107, 0.34),
+      7px -3px 14px rgba(255, 209, 102, 0.16),
+      5px 8px 16px rgba(78, 205, 196, 0.14),
+      -4px 7px 14px rgba(123, 97, 255, 0.14),
       0 14px 34px rgba(44, 56, 48, 0.08),
+      var(--glass-highlight);
+  }
+  25% {
+    box-shadow:
+      0 0 0 1px rgba(255, 255, 255, 0.72) inset,
+      -5px -5px 14px rgba(255, 107, 107, 0.14),
+      8px -6px 20px rgba(255, 209, 102, 0.36),
+      7px 6px 15px rgba(78, 205, 196, 0.16),
+      -6px 6px 14px rgba(123, 97, 255, 0.12),
+      0 15px 36px rgba(44, 56, 48, 0.08),
       var(--glass-highlight);
   }
   50% {
     box-shadow:
-      0 0 0 1px rgba(255, 255, 255, 0.78) inset,
-      -10px -8px 32px rgba(255, 107, 107, 0.3),
-      12px -8px 32px rgba(255, 209, 102, 0.28),
-      16px 16px 40px rgba(78, 205, 196, 0.28),
-      -12px 18px 40px rgba(123, 97, 255, 0.24),
-      0 18px 42px rgba(44, 56, 48, 0.1),
+      0 0 0 1px rgba(255, 255, 255, 0.64) inset,
+      -5px -5px 14px rgba(255, 107, 107, 0.12),
+      6px -5px 14px rgba(255, 209, 102, 0.14),
+      9px 8px 22px rgba(78, 205, 196, 0.36),
+      -5px 7px 15px rgba(123, 97, 255, 0.16),
+      0 15px 36px rgba(44, 56, 48, 0.08),
       var(--glass-highlight);
   }
-}
-
-@keyframes hero-rainbow-ring {
-  to {
-    transform: rotate(360deg);
+  75% {
+    box-shadow:
+      0 0 0 1px rgba(255, 255, 255, 0.72) inset,
+      -6px -5px 14px rgba(255, 107, 107, 0.16),
+      6px -5px 14px rgba(255, 209, 102, 0.12),
+      7px 6px 15px rgba(78, 205, 196, 0.14),
+      -9px 8px 22px rgba(123, 97, 255, 0.36),
+      0 15px 36px rgba(44, 56, 48, 0.08),
+      var(--glass-highlight);
   }
 }
 
@@ -412,9 +426,7 @@ button {
   .home-header-trophy-unseen,
   .home-header-trophy-unseen::before,
   .home-hero-cheat,
-  .home-hero-hokkaido,
-  .home-hero-cheat::after,
-  .home-hero-hokkaido::after {
+  .home-hero-hokkaido {
     animation: none;
   }
 }
@@ -640,25 +652,6 @@ button {
     linear-gradient(180deg, rgba(255, 255, 255, 0.1), transparent 34%, rgba(0, 0, 0, 0.16)),
     url("/hokkaido-hero.jpg") center / cover no-repeat;
   content: "";
-}
-
-.home-hero-cheat::after,
-.home-hero-hokkaido::after {
-  position: absolute;
-  inset: -34%;
-  border-radius: inherit;
-  z-index: 0;
-  padding: 34%;
-  background: conic-gradient(from 20deg, #ff6b6b, #ffd166, #4ecdc4, #7b61ff, #ff6b6b);
-  content: "";
-  filter: blur(10px) saturate(142%);
-  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  mask-composite: exclude;
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  opacity: 0.8;
-  pointer-events: none;
-  animation: hero-rainbow-ring 4.8s linear infinite;
 }
 
 .home-hero-trip > * {
@@ -2242,10 +2235,6 @@ button {
     linear-gradient(90deg, rgba(5, 8, 11, 0.84), rgba(10, 22, 28, 0.32) 52%, rgba(5, 9, 14, 0.68)),
     linear-gradient(180deg, rgba(255, 255, 255, 0.06), transparent 34%, rgba(0, 0, 0, 0.2)),
     url("/hokkaido-hero.jpg") center / cover no-repeat;
-}
-
-.theme-dark .home-hero-hokkaido::after {
-  opacity: 0.72;
 }
 
 .theme-dark .home-cheat-badge {
