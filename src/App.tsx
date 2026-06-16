@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useRef, useState, type ChangeEvent, type ReactNode, type RefObject, type TouchEvent } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState, type CSSProperties, type ChangeEvent, type ReactNode, type RefObject, type TouchEvent } from "react";
 import {
   Activity,
   ArrowDown,
@@ -635,6 +635,15 @@ const achievementProgressSpecs: Record<string, AchievementProgressSpec> = {
   streak_100: { metric: "streak", target: 100, unit: "日" },
 };
 const appUpdates: AppUpdate[] = [
+  {
+    id: "2026-06-17-bottom-nav-motion",
+    title: "下部ナビの操作感を調整",
+    date: "2026-06-17",
+    items: [
+      "下部ナビでタブを切り替えた時、選択中のガラスハイライトが横に移動するようにしました。",
+      "ナビアイコンをタップした時に軽く反応するアニメーションを追加しました。",
+    ],
+  },
   {
     id: "2026-06-17-food-history-mode",
     title: "Foodの履歴入力を追加",
@@ -1967,6 +1976,8 @@ function App() {
     records: "History",
     settings: "Settings",
   }[tab];
+  const bottomTabIndex = { home: 0, food: 1, workout: 2, records: 3, settings: 4 }[tab];
+  const bottomTabGlowX = `${12.5 + bottomTabIndex * 18.75}%`;
   const headerSubtext = tab === "home" ? "今日の記録" : formatJapaneseDate(appDate);
   const statusWeight = latestWeight?.weight_kg ?? profile?.current_weight_kg;
   const scrollCurrentTabToTop = () => {
@@ -2249,8 +2260,12 @@ function App() {
         }}
       />
 
-      <nav className="safe-bottom app-bottom-nav fixed inset-x-0 bottom-0 z-30 mx-auto max-w-[430px] px-3 pt-1.5">
-        <div className="grid grid-cols-5 gap-1">
+      <nav
+        className={`safe-bottom app-bottom-nav tab-index-${bottomTabIndex} fixed inset-x-0 bottom-0 z-30 mx-auto max-w-[430px] px-3 pt-1.5`}
+        style={{ "--active-tab-glow-x": bottomTabGlowX } as CSSProperties & Record<"--active-tab-glow-x", string>}
+      >
+        <span className="tab-glass-indicator" aria-hidden="true" />
+        <div className="app-bottom-nav-grid grid grid-cols-5 gap-1">
           <TabButton active={tab === "home"} icon={<Home size={19} />} label="Home" onClick={() => selectBottomTab("home")} />
           <TabButton active={tab === "food"} icon={<Utensils size={19} />} label="Food" onClick={() => selectBottomTab("food")} />
           <TabButton active={tab === "workout"} icon={<Dumbbell size={19} />} label="Workout" onClick={() => selectBottomTab("workout")} />
@@ -8628,8 +8643,8 @@ function EmptyLine({ text }: { text: string }) {
 
 function TabButton({ active, icon, label, onClick }: { active: boolean; icon: ReactNode; label: string; onClick: () => void }) {
   return (
-    <button className={`tab-button ${active ? "tab-button-active" : ""}`} onClick={onClick}>
-      {icon}
+    <button className={`tab-button ${active ? "tab-button-active" : ""}`} aria-current={active ? "page" : undefined} onClick={onClick}>
+      <span className="tab-button-icon">{icon}</span>
       <span>{label}</span>
     </button>
   );
