@@ -179,6 +179,7 @@ type SpecialModeDefinition = {
   label: string;
   shortLabel: string;
   foodQuery?: string;
+  defaultEnabled: boolean;
   defaultStartDate: string;
   defaultEndDate: string;
 };
@@ -243,6 +244,7 @@ const specialModeDefinitions: SpecialModeDefinition[] = [
     label: "北海道旅行",
     shortLabel: "HKD",
     foodQuery: "北海道旅行",
+    defaultEnabled: false,
     defaultStartDate: "2026-06-24",
     defaultEndDate: "2026-06-28",
   },
@@ -292,7 +294,7 @@ function getSpecialModeSettings(settings?: AppSettings): SpecialModeSettings[] {
     if (saved?.deleted) return [];
     return {
       id: definition.id,
-      enabled: saved?.enabled ?? false,
+      enabled: saved?.enabled ?? definition.defaultEnabled,
       label: saved?.label ?? definition.label,
       short_label: saved?.short_label ?? definition.shortLabel,
       food_query: saved?.food_query ?? definition.foodQuery,
@@ -324,6 +326,7 @@ function getActiveSpecialMode(appDate: string, settings: SpecialModeSettings[]):
         label: modeSettings.label ?? definition?.label ?? "旅行",
         shortLabel: modeSettings.short_label ?? definition?.shortLabel ?? "TRIP",
         foodQuery: modeSettings.food_query ?? definition?.foodQuery,
+        defaultEnabled: definition?.defaultEnabled ?? false,
         defaultStartDate: definition?.defaultStartDate ?? startDate,
         defaultEndDate: definition?.defaultEndDate ?? endDate,
         startDate,
