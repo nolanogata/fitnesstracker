@@ -25,4 +25,4 @@
 - Missing food days are displayed as missing, never counted as zero.
 - Goal changes update targets going forward without mutating old entries.
 - Manual entry exists, but quick logging is the default path.
-- Exception days such as cheat day, travel/Hokkaido modes, and pause mode keep streaks intact and visually mark Home goal evaluation as special handling.
+- Exception days such as cheat day, travel modes, and pause mode keep streaks intact and visually mark Home goal evaluation as special handling.
