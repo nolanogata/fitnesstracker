@@ -3338,6 +3338,7 @@ function WorkoutTab(props: {
   const [templateTargetItem, setTemplateTargetItem] = useState<{ label: string; item: TemplateExercise }>();
   const [exerciseDraft, setExerciseDraft] = useState<WorkoutExerciseDraft>();
   const [templateSaveMessage, setTemplateSaveMessage] = useState("");
+  const [isTemplateReorderMode, setIsTemplateReorderMode] = useState(false);
   const [draggingTemplateId, setDraggingTemplateId] = useState<string>();
   const draggingTemplateIdRef = useRef<string | undefined>(undefined);
   const dragReorderLockRef = useRef(false);
@@ -3445,6 +3446,11 @@ function WorkoutTab(props: {
       document.removeEventListener("pointercancel", stopDragging);
     };
   }, [draggingTemplateId, props.workoutTemplates]);
+
+  useEffect(() => {
+    if (isTemplateReorderMode) return;
+    endTemplateDrag();
+  }, [isTemplateReorderMode]);
 
   const openExerciseDraft = (exercise: ExercisePreset) => {
     const isCardio = isCardioWorkoutItem(exercise);
@@ -3854,9 +3860,23 @@ function WorkoutTab(props: {
       {mode === "preset" && (
         <div className="space-y-3">
           <section className="compact-card divide-y divide-line">
-            <ListHeader title="ワークアウトプリセット" value={`${props.workoutTemplates.length}件`} />
+            <div className="flex items-center justify-between gap-3 px-4 py-3">
+              <div className="min-w-0">
+                <h2 className="text-sm font-bold">ワークアウトプリセット</h2>
+                <p className="mt-1 text-xs font-semibold text-moss">{props.workoutTemplates.length}件</p>
+              </div>
+              {props.workoutTemplates.length > 1 && (
+                <button
+                  className={`secondary-button h-9 shrink-0 px-3 py-2 text-xs ${isTemplateReorderMode ? "border-moss/50 text-moss" : ""}`}
+                  onClick={() => setIsTemplateReorderMode((value) => !value)}
+                >
+                  <GripVertical size={14} />{isTemplateReorderMode ? "完了" : "並び替え"}
+                </button>
+              )}
+            </div>
             {props.workoutTemplates.map((template) => (
               <WorkoutTemplateRow
+                canReorder={isTemplateReorderMode}
                 isDragging={draggingTemplateId === template.id}
                 isEditing={editingTemplateId === template.id}
                 key={template.id}
@@ -3865,7 +3885,7 @@ function WorkoutTab(props: {
                 onDelete={() => deleteWorkoutTemplate(template)}
                 onDragEnd={endTemplateDrag}
                 onDragEnter={(targetTemplate) => {
-                  if (draggingTemplateId) reorderWorkoutTemplate(draggingTemplateId, targetTemplate.id);
+                  if (isTemplateReorderMode && draggingTemplateId) reorderWorkoutTemplate(draggingTemplateId, targetTemplate.id);
                 }}
                 onDragStart={beginTemplateDrag}
                 template={template}
@@ -5325,8 +5345,9 @@ function FoodItemRow({ item, onPick, onClone, onDelete, refresh, balanceTarget, 
   );
 }
 
-function WorkoutTemplateRow({ template, isEditing, isDragging, onStart, onEdit, onDelete, onDragStart, onDragEnter, onDragEnd }: {
+function WorkoutTemplateRow({ template, canReorder, isEditing, isDragging, onStart, onEdit, onDelete, onDragStart, onDragEnter, onDragEnd }: {
   template: WorkoutTemplate;
+  canReorder: boolean;
   isEditing: boolean;
   isDragging: boolean;
   onStart: (template: WorkoutTemplate) => void | Promise<void>;
@@ -5338,29 +5359,34 @@ function WorkoutTemplateRow({ template, isEditing, isDragging, onStart, onEdit, 
 }) {
   return (
     <div
-      className={`workout-template-row px-4 py-4 transition-colors hover:bg-rice/70 ${isEditing ? "bg-leaf/20" : ""} ${isDragging ? "opacity-60" : ""}`}
+      className={`workout-template-row ${canReorder ? "workout-template-row-reorder" : ""} px-4 py-4 transition-colors hover:bg-rice/70 ${isEditing ? "bg-leaf/20" : ""} ${isDragging ? "opacity-60" : ""}`}
       data-workout-template-id={template.id}
       onDragEnter={(event) => {
+        if (!canReorder) return;
         event.preventDefault();
         onDragEnter(template);
       }}
-      onDragOver={(event) => event.preventDefault()}
+      onDragOver={(event) => {
+        if (canReorder) event.preventDefault();
+      }}
     >
-      <button
-        className="workout-template-drag icon-button h-8 w-8 cursor-grab active:cursor-grabbing"
-        draggable
-        aria-label={`${template.name}を並べ替え`}
-        onDragStart={(event) => {
-          event.dataTransfer.effectAllowed = "move";
-          onDragStart(template);
-        }}
-        onDragEnd={onDragEnd}
-        onPointerDown={() => onDragStart(template)}
-        onPointerUp={onDragEnd}
-        onPointerCancel={onDragEnd}
-      >
-        <GripVertical size={14} />
-      </button>
+      {canReorder && (
+        <button
+          className="workout-template-drag icon-button h-8 w-8 cursor-grab active:cursor-grabbing"
+          draggable
+          aria-label={`${template.name}を並べ替え`}
+          onDragStart={(event) => {
+            event.dataTransfer.effectAllowed = "move";
+            onDragStart(template);
+          }}
+          onDragEnd={onDragEnd}
+          onPointerDown={() => onDragStart(template)}
+          onPointerUp={onDragEnd}
+          onPointerCancel={onDragEnd}
+        >
+          <GripVertical size={14} />
+        </button>
+      )}
       <span className="workout-template-icon">
         <Pictogram {...getWorkoutTemplatePictogram(template)} />
       </span>
@@ -5439,7 +5465,7 @@ function WorkoutTemplateEditor({ template, exercisePresets, bodyWeightKg, query,
             })}
           </div>
         </div>
-        <button className="secondary-button mt-3 w-full" onClick={() => onUpdateDetails({ name: nameDraft, icon_key: iconDraft })}><Save size={16} />今の内容で保存</button>
+        <button className="secondary-button mt-3 w-full" onClick={() => onUpdateDetails({ name: nameDraft, icon_key: iconDraft })}><Save size={16} />名前を保存</button>
       </div>
 
       <div>
@@ -5496,6 +5522,10 @@ function TemplateExerciseRow({ exercise, index, bodyWeightKg, onRemove, onUpdate
   const weightValue = exercise.weight_kg ?? firstPattern?.weight_kg ?? 0;
   const repsValue = exercise.reps ?? firstPattern?.reps ?? 10;
   const durationValue = exercise.duration_min ?? firstPattern?.duration_min ?? 20;
+  const weightPresetValues = useMemo(
+    () => exercise.exercise_id ? loadWorkoutWeightPresets(exercise.exercise_id, weightValue, weightStep) : [],
+    [exercise.exercise_id, weightValue, weightStep],
+  );
 
   useEffect(() => {
     setWeightStep(inferWeightStep(exercise));
@@ -5589,6 +5619,22 @@ function TemplateExerciseRow({ exercise, index, bodyWeightKg, onRemove, onUpdate
               max={sliderMax(weightValue, 200, weightStep)}
               onChange={(weight_kg) => updateStrengthDefaults({ weight_kg })}
             />
+            {weightPresetValues.length > 0 && (
+              <div className="mt-3">
+                <p className="mb-2 text-xs font-bold text-moss">重量プリセット</p>
+                <div className="grid grid-cols-5 gap-1.5">
+                  {weightPresetValues.map((value, presetIndex) => (
+                    <button
+                      className={`mini-chip ${roundToStep(weightValue, weightStep) === roundToStep(value, weightStep) ? "mini-chip-active" : ""}`}
+                      key={`${exercise.exercise_id}-${presetIndex}-${value}`}
+                      onClick={() => updateStrengthDefaults({ weight_kg: value })}
+                    >
+                      {formatControlValue(value)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
           <TapSliderControl
             label="回数"

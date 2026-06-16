@@ -1601,6 +1601,11 @@ button {
 }
 
 .workout-template-row {
+  grid-template-columns: 2.5rem minmax(0, 1fr) auto;
+  grid-template-areas: "icon main actions";
+}
+
+.workout-template-row-reorder {
   grid-template-columns: 2rem 2.5rem minmax(0, 1fr) auto;
   grid-template-areas: "drag icon main actions";
 }
@@ -2593,6 +2598,13 @@ button {
 
 @media (max-width: 390px) {
   .workout-template-row {
+    grid-template-columns: 2.5rem minmax(0, 1fr);
+    grid-template-areas:
+      "icon main"
+      "actions actions";
+  }
+
+  .workout-template-row-reorder {
     grid-template-columns: 2rem 2.5rem minmax(0, 1fr);
     grid-template-areas:
       "drag icon main"
