@@ -5531,9 +5531,10 @@ function TemplateExerciseRow({ exercise, index, bodyWeightKg, onRemove, onUpdate
   const weightValue = exercise.weight_kg ?? firstPattern?.weight_kg ?? 0;
   const repsValue = exercise.reps ?? firstPattern?.reps ?? 10;
   const durationValue = exercise.duration_min ?? firstPattern?.duration_min ?? 20;
+  const weightPresetKeys = useMemo(() => workoutWeightPresetKeys(exercise), [exercise.exercise_id, exercise.exercise_name, exercise.body_part, exercise.equipment_type]);
   const weightPresetValues = useMemo(
-    () => exercise.exercise_id ? loadWorkoutWeightPresets(exercise.exercise_id, weightValue, weightStep) : [],
-    [exercise.exercise_id, weightValue, weightStep],
+    () => loadWorkoutWeightPresets(weightPresetKeys, weightValue, weightStep),
+    [weightPresetKeys, weightValue, weightStep],
   );
 
   useEffect(() => {
@@ -5717,7 +5718,8 @@ function ExerciseAddModal({ draft, setDraft, onClose, onAddAnother, onSave }: {
   const pictogram = getWorkoutPictogram(draft.exercise.body_part, draft.exercise.equipment_type);
   const [weightStep, setWeightStep] = useState(() => inferWeightStep(draft.exercise));
   const [step, setStep] = useState<"duration" | "load" | "weight" | "reps" | "sets" | "confirm" | "done">(isCardio ? "duration" : isBodyweight ? "load" : "weight");
-  const [weightPresets, setWeightPresets] = useState(() => loadWorkoutWeightPresets(draft.exercise.id, draft.weight_kg, weightStep));
+  const weightPresetKeys = useMemo(() => workoutWeightPresetKeys(draft.exercise), [draft.exercise.id, draft.exercise.name, draft.exercise.body_part, draft.exercise.equipment_type]);
+  const [weightPresets, setWeightPresets] = useState(() => loadWorkoutWeightPresets(weightPresetKeys, draft.weight_kg, weightStep));
   const [hasUnsavedWeightPreset, setHasUnsavedWeightPreset] = useState(false);
   const [isWeightPresetPickerOpen, setIsWeightPresetPickerOpen] = useState(false);
   const [weightPresetMessage, setWeightPresetMessage] = useState("");
@@ -5737,7 +5739,7 @@ function ExerciseAddModal({ draft, setDraft, onClose, onAddAnother, onSave }: {
     const normalized = roundToStep(Math.max(0, draft.weight_kg), weightStep);
     const nextPresets = weightPresets.map((value, valueIndex) => valueIndex === index ? normalized : value);
     setWeightPresets(nextPresets);
-    saveWorkoutWeightPresets(draft.exercise.id, nextPresets);
+    saveWorkoutWeightPresets(weightPresetKeys, nextPresets);
     setHasUnsavedWeightPreset(false);
     setIsWeightPresetPickerOpen(false);
     setWeightPresetMessage(`プリセット${index + 1}に保存しました`);
@@ -7721,13 +7723,22 @@ function defaultWorkoutWeightPresets(currentWeight: number, step: number) {
   return presets;
 }
 
-function loadWorkoutWeightPresets(exerciseId: string, currentWeight: number, step: number) {
+function workoutWeightPresetKeys(item: { id?: string; exercise_id?: string; name?: string; exercise_name?: string; body_part: string; equipment_type: string }) {
+  const name = item.name ?? item.exercise_name ?? "";
+  const stableKey = ["exercise", name, item.body_part, item.equipment_type]
+    .map((value) => value.trim().toLowerCase())
+    .join("|");
+  return unique([item.id ?? "", item.exercise_id ?? "", stableKey]);
+}
+
+function loadWorkoutWeightPresets(exerciseKeys: string | string[], currentWeight: number, step: number) {
   const fallback = defaultWorkoutWeightPresets(currentWeight, step);
   try {
     const raw = localStorage.getItem(workoutWeightPresetStorageKey);
     if (!raw) return fallback;
     const parsed = JSON.parse(raw) as Record<string, unknown>;
-    const values = Array.isArray(parsed[exerciseId]) ? parsed[exerciseId] : undefined;
+    const keys = Array.isArray(exerciseKeys) ? exerciseKeys : [exerciseKeys];
+    const values = keys.map((key) => parsed[key]).find(Array.isArray);
     if (!values) return fallback;
     const normalized = values
       .map((value) => typeof value === "number" ? roundToStep(Math.max(0, value), step) : undefined)
@@ -7739,11 +7750,15 @@ function loadWorkoutWeightPresets(exerciseId: string, currentWeight: number, ste
   }
 }
 
-function saveWorkoutWeightPresets(exerciseId: string, presets: number[]) {
+function saveWorkoutWeightPresets(exerciseKeys: string | string[], presets: number[]) {
   try {
     const raw = localStorage.getItem(workoutWeightPresetStorageKey);
     const parsed = raw ? JSON.parse(raw) as Record<string, number[]> : {};
-    parsed[exerciseId] = presets.slice(0, 5);
+    const keys = Array.isArray(exerciseKeys) ? exerciseKeys : [exerciseKeys];
+    const normalized = presets.slice(0, 5);
+    keys.filter(Boolean).forEach((key) => {
+      parsed[key] = normalized;
+    });
     localStorage.setItem(workoutWeightPresetStorageKey, JSON.stringify(parsed));
   } catch {
     // 操作補助の保存なので、失敗しても記録自体は止めない。
