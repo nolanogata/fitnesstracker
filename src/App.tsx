@@ -79,7 +79,7 @@ import { generateMarkdownReport } from "./lib/report";
 import { getWeeklyWorkoutStatus, type WeeklyWorkoutStatus } from "./lib/workoutStatus";
 
 type Tab = "home" | "food" | "workout" | "records" | "settings";
-type FoodMode = "search" | "favorite" | "chain" | "category" | "quick" | "manual" | "personal" | "recommend";
+type FoodMode = "search" | "favorite" | "chain" | "history" | "quick" | "manual" | "personal" | "recommend";
 type WorkoutMode = "favorite" | "preset" | "body" | "equipment" | "previous" | "search";
 type FoodFocus = "todayLog" | "specialMode" | undefined;
 type FoodAddStep = "size" | "customSize" | "quantity" | "timing" | "confirm";
@@ -635,6 +635,15 @@ const achievementProgressSpecs: Record<string, AchievementProgressSpec> = {
   streak_100: { metric: "streak", target: 100, unit: "日" },
 };
 const appUpdates: AppUpdate[] = [
+  {
+    id: "2026-06-17-food-history-mode",
+    title: "Foodの履歴入力を追加",
+    date: "2026-06-17",
+    items: [
+      "Foodのカテゴリボタンを履歴に置き換え、過去30件の食事ログで使ったメニューを最近順に呼び出せるようにしました。",
+      "HomeからFoodを開いた時にRecent候補を自動表示しないようにしました。",
+    ],
+  },
   {
     id: "2026-06-17-exception-day-streak-bridge",
     title: "例外日のストリーク判定を調整",
@@ -3405,7 +3414,6 @@ function FoodTab(props: {
   const foodSearchInputRef = useRef<HTMLInputElement | null>(null);
   const chainSectionRef = useRef<HTMLElement | null>(null);
   const chainListRef = useRef<HTMLDivElement | null>(null);
-  const categorySectionRef = useRef<HTMLElement | null>(null);
   const genericSectionRef = useRef<HTMLElement | null>(null);
   const foodResultsRef = useRef<HTMLElement | null>(null);
   const todayLogRef = useRef<HTMLElement | null>(null);
@@ -3422,7 +3430,6 @@ function FoodTab(props: {
   const [isMyMenuRegistrationOpen, setIsMyMenuRegistrationOpen] = useState(false);
   const [chainCategory, setChainCategory] = useState("牛丼・丼");
   const [brand, setBrand] = useState("松屋");
-  const [categoryGenre, setCategoryGenre] = useState("ごはん・丼");
   const [generalCategory, setGeneralCategory] = useState("ごはん・丼");
   const [recommendCategory, setRecommendCategory] = useState<RecommendedFoodFilter>("all");
   const [showGeneralFoodsOnly, setShowGeneralFoodsOnly] = useState(false);
@@ -3435,9 +3442,21 @@ function FoodTab(props: {
   const [showMyMenuIntro, setShowMyMenuIntro] = useState(() => localStorage.getItem(foodMyMenuIntroSeenStorageKey) !== "1");
   const multiplier = Math.max(0, portionMultiplier * portionQuantity);
 
-  const recentIds = useMemo(() => new Set(props.foodEntries.slice(0, 20).map((entry) => entry.menu_item_id).filter(Boolean)), [props.foodEntries]);
   const favoriteItems = useMemo(() => props.menuItems.filter((item) => item.is_favorite), [props.menuItems]);
-  const recentItems = useMemo(() => props.menuItems.filter((item) => recentIds.has(item.id)), [props.menuItems, recentIds]);
+  const menuItemsById = useMemo(() => new Map(props.menuItems.map((item) => [item.id, item])), [props.menuItems]);
+  const historyItems = useMemo(() => {
+    const seen = new Set<string>();
+    const items: MenuItem[] = [];
+    const recentEntries = [...props.foodEntries].sort((a, b) => b.logged_at.localeCompare(a.logged_at)).slice(0, 30);
+    for (const entry of recentEntries) {
+      if (!entry.menu_item_id || seen.has(entry.menu_item_id)) continue;
+      const item = menuItemsById.get(entry.menu_item_id);
+      if (!item) continue;
+      seen.add(entry.menu_item_id);
+      items.push(item);
+    }
+    return items;
+  }, [props.foodEntries, menuItemsById]);
   const scrollToFoodTop = () => {
     window.requestAnimationFrame(() => foodTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
   };
@@ -3453,9 +3472,6 @@ function FoodTab(props: {
   };
   const scrollToChainList = () => {
     window.setTimeout(() => chainListRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
-  };
-  const scrollToCategorySection = () => {
-    window.setTimeout(() => categorySectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
   };
   const scrollToGenericSection = () => {
     window.setTimeout(() => genericSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
@@ -3529,8 +3545,8 @@ function FoodTab(props: {
       scrollToChainSection();
       return;
     }
-    if (nextMode === "category") {
-      scrollToCategorySection();
+    if (nextMode === "history") {
+      scrollToFoodResults();
       return;
     }
     if (nextMode === "quick") {
@@ -3572,7 +3588,7 @@ function FoodTab(props: {
   const canUseOverGoalFilter = !!props.goal && props.goal.target_calories > 0;
   const canShowFoodBalance = canUseOverGoalFilter;
   const isChainScopedSearch = mode === "chain" && !!brand;
-  const isChainOrConvenienceMenuView = mode === "chain" || (mode === "category" && ["チェーン店", "コンビニ", "冷凍食品"].includes(categoryGenre));
+  const isChainOrConvenienceMenuView = mode === "chain";
   const canSortFoodByFit = canUseOverGoalFilter && isChainOrConvenienceMenuView;
   const isSortFoodByFitActive = sortFoodByFit && canSortFoodByFit;
   const isFoodFitFilterActive = showGeneralFoodsOnly || (hideOverGoalItems && canUseOverGoalFilter) || (showFoodBalance && canShowFoodBalance) || isSortFoodByFitActive;
@@ -3587,6 +3603,7 @@ function FoodTab(props: {
   const results = useMemo(() => {
     const needle = query.trim().toLowerCase();
     if (mode === "search" && !needle) return [];
+    if (mode === "history" && !needle) return historyItems;
     const tokens = needle.split(/\s+/).filter(Boolean);
     const base = needle
       ? props.menuItems.filter((item) => !isChainScopedSearch || item.brand === brand)
@@ -3601,11 +3618,6 @@ function FoodTab(props: {
         }
         if (mode === "personal") return item.is_user_created;
         if (mode === "chain") return item.brand === brand;
-        if (mode === "category") {
-          if (commercialGeneralCategories.has(categoryGenre)) return item.category === categoryGenre;
-          if (categoryGenre === "自炊") return isGeneralFoodMenuItem(item) && (item.category === "自炊" || item.tags.includes("自炊"));
-          return item.category === categoryGenre || item.tags.some((tag) => genericCategories[categoryGenre]?.includes(tag));
-        }
         return true;
       });
     const sorted = sortSpecialModeFoodItems(dedupeMenuItemsBySource(base), props.activeSpecialMode);
@@ -3638,8 +3650,8 @@ function FoodTab(props: {
     mode,
     brand,
     isChainScopedSearch,
-    categoryGenre,
     generalCategory,
+    historyItems,
     recommendCategory,
     showGeneralFoodsOnly,
     hideOverGoalItems,
@@ -3938,7 +3950,7 @@ function FoodTab(props: {
         )}
         {!isGlobalSearch && (
           <div className="grid grid-cols-3 gap-2">
-            {(["favorite", "personal", "recommend", "chain", "category", "quick"] as FoodMode[]).map((item) => (
+            {(["favorite", "personal", "recommend", "chain", "history", "quick"] as FoodMode[]).map((item) => (
               <button
                 key={item}
                 className={`mode-button ${mode === item ? "mode-button-active" : ""} ${showMyMenuIntro && item === "personal" ? "food-mode-highlight" : ""} ${showMyMenuIntro && item !== "personal" ? "food-mode-dimmed" : ""}`}
@@ -3991,17 +4003,6 @@ function FoodTab(props: {
         </section>
       )}
 
-      {mode === "category" && (
-        <section className="compact-card scroll-mt-24 p-3" ref={categorySectionRef}>
-          <p className="mb-2 text-xs font-semibold text-moss">ジャンル</p>
-          <div className="grid grid-cols-2 gap-2">
-            {Object.keys(genericCategories).map((item) => (
-              <button className={`tap-tile ${categoryGenre === item ? "tap-tile-active" : ""}`} key={item} onClick={() => { setCategoryGenre(item); scrollToFoodResults(); }}>{item}</button>
-            ))}
-          </div>
-        </section>
-      )}
-
       {mode === "quick" && (
         <section className="compact-card scroll-mt-24 p-3" ref={genericSectionRef}>
           <p className="mb-2 text-xs font-semibold text-moss">ジャンル</p>
@@ -4036,9 +4037,6 @@ function FoodTab(props: {
 
       {mode !== "manual" && (
         <>
-          {mode === "search" && !isGlobalSearch && (
-            <QuickStrip title="Recent" items={recentItems} onPick={selectFoodItem} fallback={favoriteItems} />
-          )}
           {mode === "favorite" && !isGlobalSearch && favoriteItems.length === 0 && (
             <section className="compact-card p-4 text-sm text-moss">食品行のハートを押すとここから呼び出せます。</section>
           )}
@@ -4074,7 +4072,7 @@ function FoodTab(props: {
           )}
           {shouldShowFoodResults && (
             <section className="compact-card divide-y divide-line overflow-hidden scroll-mt-24" ref={foodResultsRef}>
-              <ListHeader title={isGlobalSearch ? (isChainScopedSearch ? `${brand}の検索結果` : "検索結果") : mode === "category" ? categoryGenre : mode === "quick" ? generalCategory : foodModeLabel(mode)} value={`${results.length}件`} />
+              <ListHeader title={isGlobalSearch ? (isChainScopedSearch ? `${brand}の検索結果` : "検索結果") : mode === "quick" ? generalCategory : foodModeLabel(mode)} value={`${results.length}件`} />
               {results.map((item, index) => (
                 <Fragment key={item.id}>
                   {isSortFoodByFitActive && index === 10 && (
@@ -8637,28 +8635,6 @@ function TabButton({ active, icon, label, onClick }: { active: boolean; icon: Re
   );
 }
 
-function QuickStrip({ title, items, fallback, onPick }: { title: string; items: MenuItem[]; fallback: MenuItem[]; onPick: (item: MenuItem) => void }) {
-  const visible = items.length ? items : fallback;
-  if (!visible.length) return null;
-  return (
-    <section className="compact-card overflow-hidden">
-      <ListHeader title={title} value={`${visible.length}件`} />
-      <div className="divide-y divide-line">
-        {visible.slice(0, 5).map((item) => (
-          <button className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-rice/70" key={item.id} onClick={() => onPick(item)}>
-            <Pictogram {...getFoodPictogram(item)} />
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-bold">{formatMenuItemName(item)}</p>
-              <p className="numeric-text truncate text-xs text-moss">{item.brand ?? item.category} · {item.calories}kcal · P{item.protein_g} F{item.fat_g} C{item.carbs_g}</p>
-            </div>
-            <ChevronRight className="shrink-0 text-muted" size={16} />
-          </button>
-        ))}
-      </div>
-    </section>
-  );
-}
-
 function isCardioWorkoutItem(item: { body_part: string; equipment_type: string }) {
   return item.body_part === "有酸素" || item.equipment_type === "有酸素";
 }
@@ -9300,7 +9276,7 @@ function foodModeLabel(mode: FoodMode) {
     search: "検索",
     favorite: "お気に入り",
     chain: "チェーン",
-    category: "カテゴリ",
+    history: "履歴",
     quick: "一般",
     manual: "マニュアル",
     personal: "マイメニュー",
