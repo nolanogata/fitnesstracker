@@ -32,6 +32,8 @@ export const exerciseSeeds: ExercisePreset[] = [
   exercise("チェストプレス(B)", "胸", "マシン", "push"),
   exercise("インクラインチェストプレス", "胸", "マシン", "push"),
   exercise("ペックフライ", "胸", "マシン", "fly"),
+  exercise("ペックフライ（上部狙い）", "胸", "マシン", "fly"),
+  exercise("ペックフライ（中央狙い）", "胸", "マシン", "fly"),
   exercise("スミスマシンベンチプレス", "胸", "スミスマシン", "push"),
   exercise("ケーブルフライ", "胸", "ケーブル", "fly"),
   exercise("バーベルベンチプレス", "胸", "フリーウェイト", "push"),
