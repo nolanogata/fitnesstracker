@@ -660,8 +660,11 @@ button {
 }
 
 .home-hero-hokkaido {
+  overflow: hidden;
   border-color: rgba(255, 255, 255, 0.54);
   background: #101b21;
+  background-clip: padding-box;
+  clip-path: inset(0 round 24px);
   contain: paint;
   color: #f2f8f4;
   isolation: isolate;
@@ -680,6 +683,7 @@ button {
   position: absolute;
   inset: 0;
   border-radius: inherit;
+  clip-path: inset(0 round 24px);
   z-index: 0;
   background:
     linear-gradient(90deg, rgba(9, 14, 19, 0.78), rgba(12, 24, 29, 0.3) 52%, rgba(9, 16, 23, 0.66)),
@@ -693,6 +697,7 @@ button {
   inset: 0;
   z-index: 0;
   border-radius: inherit;
+  clip-path: inset(0 round 24px);
   background:
     radial-gradient(circle at 16% 16%, rgba(255, 107, 107, 0.34), transparent 30%),
     radial-gradient(circle at 84% 20%, rgba(255, 209, 102, 0.28), transparent 31%),
@@ -1681,7 +1686,7 @@ button {
 
 .pr-confetti-piece {
   position: absolute;
-  bottom: 11vh;
+  top: min(46vh, 24rem);
   left: 50%;
   display: block;
   border-radius: 3px;

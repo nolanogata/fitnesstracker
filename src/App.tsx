@@ -637,6 +637,15 @@ const achievementProgressSpecs: Record<string, AchievementProgressSpec> = {
 };
 const appUpdates: AppUpdate[] = [
   {
+    id: "2026-06-17-hokkaido-card-confetti-layout",
+    title: "Home演出の表示を調整",
+    date: "2026-06-17",
+    items: [
+      "北海道モードの背景画像がヒーローカードの角丸からはみ出さないようにしました。",
+      "トロフィー獲得や記録更新時の紙吹雪を、実績カードの近くから飛ぶ位置に調整しました。",
+    ],
+  },
+  {
     id: "2026-06-17-100-percent-tracker-brand",
     title: "アプリ名とアイコンを変更",
     date: "2026-06-17",
