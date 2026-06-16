@@ -637,6 +637,15 @@ const achievementProgressSpecs: Record<string, AchievementProgressSpec> = {
 };
 const appUpdates: AppUpdate[] = [
   {
+    id: "2026-06-17-100-percent-tracker-brand",
+    title: "アプリ名とアイコンを変更",
+    date: "2026-06-17",
+    items: [
+      "アプリ名を「100% トラッカー」に変更しました。",
+      "ファビコンとホーム画面用アイコンを、100%モチーフのスポーティーなデザインに変更しました。",
+    ],
+  },
+  {
     id: "2026-06-17-exception-pfc-bars",
     title: "例外日のHome表示を調整",
     date: "2026-06-17",
@@ -1493,7 +1502,7 @@ const appUpdates: AppUpdate[] = [
     items: [
       "ワークアウトプリセット本体を削除できるようにしました。標準プリセットも削除後に自動復活しません。",
       "ホームに未読更新バナーを追加し、タップで更新内容を確認できるようにしました。",
-      "設定のゴールトラッカー情報に、更新内容だけを開くリンクを追加しました。",
+      "設定の100% トラッカー情報に、更新内容だけを開くリンクを追加しました。",
       "クロストレーナーなど有酸素種目の分数を、記録中とプリセット編集時に指定しやすくしました。",
     ],
   },
@@ -6247,7 +6256,7 @@ function SettingsTab(props: {
       </section>}
 
       {activeSettingsSection === "general" && <section className="compact-card p-4 text-sm text-moss">
-        <p className="font-semibold text-ink">ゴールトラッカー</p>
+        <p className="font-semibold text-ink">100% トラッカー</p>
         <p>IndexedDB local-only · no login · no backend</p>
         <p className="mt-2">同じURLを友達が開いても、ログは各iPhone内に別々に保存されます。</p>
         <p className="mt-2 text-xs">レポート名: <span className="font-bold text-ink">{props.profile?.name || "未設定"}</span></p>
@@ -6587,7 +6596,7 @@ function Onboarding({ refresh }: { refresh: () => Promise<void> }) {
       <div className="onboarding-card compact-card p-5">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="text-xs font-black uppercase tracking-[0.16em] text-moss">Goal Tracker</p>
+            <p className="text-xs font-black uppercase tracking-[0.16em] text-moss">100% Tracker</p>
             <h1 className="mt-2 text-2xl font-black tracking-normal">初回設定</h1>
           </div>
           <span className="numeric-text mini-chip">{step + 1}/{steps.length}</span>
