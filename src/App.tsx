@@ -3992,8 +3992,8 @@ function WorkoutTab(props: {
       </section>
 
       {templateTargetItem && (
-        <div className="fixed inset-0 z-40 flex items-end bg-ink/30 px-4 pb-4">
-          <div className="compact-card w-full p-4">
+        <div className="fixed inset-0 z-40 flex items-end bg-ink/30 px-4 pb-4" onClick={() => setTemplateTargetItem(undefined)}>
+          <div className="compact-card w-full p-4" onClick={(event) => event.stopPropagation()}>
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-lg font-bold">プリセットへ追加</p>
@@ -5702,8 +5702,8 @@ function ExerciseAddModal({ draft, setDraft, onClose, onAddAnother, onSave }: {
     setStep(isCardio ? "duration" : "weight");
   };
   return (
-    <div className="fixed inset-0 z-40 flex items-end bg-ink/30 px-4 pb-4">
-      <div className="compact-card w-full p-4">
+    <div className="fixed inset-0 z-40 flex items-end bg-ink/30 px-4 pb-4" onClick={onClose}>
+      <div className="compact-card w-full p-4" onClick={(event) => event.stopPropagation()}>
         <div className="flex items-start gap-3">
           <Pictogram {...pictogram} />
           <div className="min-w-0 flex-1">
@@ -5775,6 +5775,7 @@ function ExerciseAddModal({ draft, setDraft, onClose, onAddAnother, onSave }: {
                         setDraft({ ...draft, weight_kg: value });
                         setHasUnsavedWeightPreset(false);
                         setWeightPresetMessage("");
+                        setStep("reps");
                       }}
                     >
                       {formatControlValue(value)}
@@ -5817,7 +5818,10 @@ function ExerciseAddModal({ draft, setDraft, onClose, onAddAnother, onSave }: {
                 <button
                   key={sets}
                   className={`choice-button ${setCount === sets ? "choice-button-active" : ""}`}
-                  onClick={() => setDraft({ ...draft, sets })}
+                  onClick={() => {
+                    setDraft({ ...draft, sets });
+                    setStep("confirm");
+                  }}
                 >
                   {sets}
                 </button>
@@ -5843,8 +5847,14 @@ function ExerciseAddModal({ draft, setDraft, onClose, onAddAnother, onSave }: {
         )}
       </div>
       {isWeightPresetPickerOpen && (
-        <div className="fixed inset-0 z-50 flex items-end bg-ink/35 px-4 pb-4">
-          <div className="compact-card w-full p-4">
+        <div
+          className="fixed inset-0 z-50 flex items-end bg-ink/35 px-4 pb-4"
+          onClick={(event) => {
+            event.stopPropagation();
+            setIsWeightPresetPickerOpen(false);
+          }}
+        >
+          <div className="compact-card w-full p-4" onClick={(event) => event.stopPropagation()}>
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-base font-bold">保存先を選択</p>
