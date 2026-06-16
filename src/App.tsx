@@ -3120,7 +3120,7 @@ function HomeTab(props: {
           {props.isCheatDay && <p className="mt-1 text-sm font-bold text-ink">今日はチートデーです。</p>}
           {!props.isCheatDay && props.activeSpecialMode && (
             <p className="mt-1 text-sm font-bold text-ink">
-              {props.activeSpecialMode.label}中です。記録優先で、評価は参考扱いです。
+              {props.activeSpecialMode.label}中です。{props.activeSpecialMode.id === "hokkaido_trip" ? "北海道グルメを満喫！" : "記録優先で、評価は参考扱いです。"}
             </p>
           )}
           {!props.isCheatDay && !props.activeSpecialMode && props.activePauseMode && (
