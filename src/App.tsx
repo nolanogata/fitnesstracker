@@ -9,6 +9,7 @@ import {
   Bike,
   BicepsFlexed,
   CakeSlice,
+  CalendarDays,
   Carrot,
   Check,
   ChevronLeft,
@@ -84,6 +85,7 @@ type FoodFocus = "todayLog" | "specialMode" | undefined;
 type FoodAddStep = "size" | "customSize" | "quantity" | "timing" | "confirm";
 type WorkoutFocus = "dateLog" | undefined;
 type SettingsFocus = "ai" | "backup" | "myMenu" | "goal" | undefined;
+type SettingsSection = "ai" | "backup" | "goal" | "records" | "myMenu" | "general";
 type HistoryGrouping = "day" | "week" | "month";
 type EditableRecordTab = "food" | "workout";
 type BackupInfo = {
@@ -214,6 +216,13 @@ type ActiveSpecialMode = SpecialModeDefinition & {
   startDate: string;
   endDate: string;
 };
+type ActivePauseMode = {
+  id: string;
+  label: string;
+  shortLabel: string;
+  startDate: string;
+  endDate: string;
+};
 
 const mealLabels: Record<MealType, string> = {
   breakfast: "朝",
@@ -295,6 +304,25 @@ const emptyManual: ManualFoodDraft = {
   favorite: false,
 };
 
+function manualFoodDraftFromMenuItem(item: MenuItem): ManualFoodDraft {
+  const subcategory = item.tags.find((tag) => (genericCategories[item.category] ?? []).includes(tag)) ?? genericCategories[item.category]?.[0] ?? "";
+  return {
+    ...emptyManual,
+    name: item.name,
+    brand: item.brand ?? "",
+    meal_type: item.default_meal_type ?? "lunch",
+    category: item.category,
+    subcategory,
+    calories: String(item.calories),
+    protein_g: String(item.protein_g),
+    fat_g: String(item.fat_g),
+    carbs_g: String(item.carbs_g),
+    salt_g: typeof item.salt_g === "number" ? String(item.salt_g) : "",
+    savePreset: true,
+    favorite: !!item.is_favorite,
+  };
+}
+
 function settingsGoalDraftFrom(activeGoal?: Goal, profile?: Profile) {
   const isLegacyCustomGoal = activeGoal?.phase === "custom";
   const fallbackTargetDate = addDays(todayAppDate(), 90);
@@ -375,9 +403,47 @@ function getSpecialModeDaysInRange(start: string, end: string, settings: Special
       });
       if (!mode) return undefined;
       const definition = specialModeDefinitions.find((item) => item.id === mode.id);
-      return { date, label: mode.label ?? definition?.label ?? "旅行" };
+      return { date, label: mode.label ?? definition?.label ?? "旅行", kind: "travel" as const };
     })
-    .filter((item): item is { date: string; label: string } => !!item);
+    .filter((item): item is { date: string; label: string; kind: "travel" } => !!item);
+}
+
+function getPauseModeSettings(settings?: AppSettings): SpecialModeSettings[] {
+  return (settings?.pause_modes ?? [])
+    .filter((mode) => !mode.deleted)
+    .map((mode) => ({
+      ...mode,
+      label: mode.label ?? "一時停止",
+      short_label: mode.short_label ?? "PAUSE",
+    }));
+}
+
+function getPauseModeDaysInRange(start: string, end: string, settings: SpecialModeSettings[]) {
+  return dateRange(start, end)
+    .map((date) => {
+      const mode = settings.find((modeSettings) => {
+        if (!modeSettings.enabled) return false;
+        return !!modeSettings.start_date && !!modeSettings.end_date && date >= modeSettings.start_date && date <= modeSettings.end_date;
+      });
+      return mode ? { date, label: mode.label ?? "一時停止モード", kind: "pause" as const } : undefined;
+    })
+    .filter((item): item is { date: string; label: string; kind: "pause" } => !!item);
+}
+
+function getActivePauseMode(appDate: string, settings: SpecialModeSettings[]): ActivePauseMode | undefined {
+  return settings
+    .map((mode) => {
+      if (!mode.enabled || !mode.start_date || !mode.end_date) return undefined;
+      if (appDate < mode.start_date || appDate > mode.end_date) return undefined;
+      return {
+        id: mode.id,
+        label: mode.label ?? "一時停止",
+        shortLabel: mode.short_label ?? "PAUSE",
+        startDate: mode.start_date,
+        endDate: mode.end_date,
+      };
+    })
+    .find(Boolean);
 }
 
 function isDeveloperTestModeActive(settings?: AppSettings, now = new Date()) {
@@ -388,7 +454,7 @@ function isDeveloperTestModeActive(settings?: AppSettings, now = new Date()) {
 function getDeveloperTestModeDaysInRange(start: string, end: string, settings?: AppSettings, now = new Date()) {
   if (!isDeveloperTestModeActive(settings, now)) return [];
   const currentDate = todayAppDate(settings?.day_boundary_hour ?? 3, now);
-  return currentDate >= start && currentDate <= end ? [{ date: currentDate, label: "テストモード", isTest: true }] : [];
+  return currentDate >= start && currentDate <= end ? [{ date: currentDate, label: "テストモード", isTest: true, kind: "test" as const }] : [];
 }
 
 function dateFromMonthDay(referenceDate: string, monthDay: string, startMonthDay?: string) {
@@ -541,6 +607,18 @@ const achievementProgressSpecs: Record<string, AchievementProgressSpec> = {
   streak_100: { metric: "streak", target: 100, unit: "日" },
 };
 const appUpdates: AppUpdate[] = [
+  {
+    id: "2026-06-16-settings-hierarchy-pause",
+    title: "Settingsを階層化",
+    date: "2026-06-16",
+    items: [
+      "SettingsをAI相談、バックアップ、ゴール設定、記録設定、マイメニュー、一般に分けました。",
+      "HomeからAI相談やバックアップ、ゴール設定へ移動する導線は、そのまま該当画面を直接開くようにしました。",
+      "一時停止モードを記録設定に追加し、AIレポートに休養期間として含めるようにしました。",
+      "一時停止期間は、連続記録トロフィーのストリークを途切れさせないようにしました。",
+      "登録済みマイメニューを一覧から編集できるようにしました。",
+    ],
+  },
   {
     id: "2026-06-16-achievement-progress",
     title: "トロフィー進捗を強化",
@@ -1383,7 +1461,9 @@ function App() {
   const themeMode = settings?.theme_mode ?? "system";
   const resolvedTheme: "light" | "dark" = themeMode === "system" ? (prefersDarkTheme ? "dark" : "light") : themeMode;
   const specialModeSettings = useMemo(() => getSpecialModeSettings(settings), [settings]);
+  const pauseModeSettings = useMemo(() => getPauseModeSettings(settings), [settings]);
   const activeSpecialMode = useMemo(() => getActiveSpecialMode(appDate, specialModeSettings), [appDate, specialModeSettings]);
+  const activePauseMode = useMemo(() => getActivePauseMode(appDate, pauseModeSettings), [appDate, pauseModeSettings]);
   const isDeveloperTestMode = useMemo(() => isDeveloperTestModeActive(settings, currentTime), [settings?.developer_test_active_until, currentTime]);
   const openSpecialFoodMode = () => {
     if (!activeSpecialMode?.foodQuery) return;
@@ -1539,7 +1619,8 @@ function App() {
   const needsGoalTargetPeriod = !!activeGoal && (!activeGoal.target_date || typeof activeGoal.target_body_fat_percentage !== "number");
   const isCheatDay = cheatDayDates.includes(appDate);
   const isSpecialModeDay = !!activeSpecialMode;
-  const isExceptionDay = isCheatDay || isSpecialModeDay;
+  const isPauseModeDay = !!activePauseMode;
+  const isExceptionDay = isCheatDay || isSpecialModeDay || isPauseModeDay;
   const unseenAchievementCount = useMemo(() => {
     const viewedAt = settings?.achievements_viewed_at ?? "";
     return (settings?.achievements ?? []).filter((achievement) => (
@@ -1579,6 +1660,7 @@ function App() {
     weeklyWorkoutStatus,
     aiReports,
     goal: target,
+    pauseModeSettings,
     currentAppDate: actualAppDate,
   }), [
     profile?.current_weight_kg,
@@ -1597,6 +1679,7 @@ function App() {
     target?.target_fat_g,
     target?.target_carbs_g,
     target?.target_calories,
+    pauseModeSettings,
     actualAppDate,
   ]);
   const achievementProgress = useMemo(() => buildAchievementProgress(achievementSnapshot.counts), [achievementSnapshot]);
@@ -1899,6 +1982,7 @@ function App() {
             weeklyWorkoutStatus={weeklyWorkoutStatus}
             isCheatDay={isCheatDay}
             activeSpecialMode={activeSpecialMode}
+            activePauseMode={activePauseMode}
             isExceptionDay={isExceptionDay}
             isEditingPastDate={isEditingPastDate}
             latestWeight={latestWeight}
@@ -1998,6 +2082,7 @@ function App() {
             appDate={appDate}
             cheatDayDates={cheatDayDates}
             specialModeSettings={specialModeSettings}
+            pauseModeSettings={pauseModeSettings}
             settings={settings}
             foodEntries={foodEntries}
             weightLogs={weightLogs}
@@ -2021,6 +2106,7 @@ function App() {
             menuItems={menuItems}
             workoutTemplates={workoutTemplates}
             specialModeSettings={specialModeSettings}
+            pauseModeSettings={pauseModeSettings}
             activeSpecialMode={activeSpecialMode}
             isDeveloperTestMode={isDeveloperTestMode}
             focus={settingsFocus}
@@ -2306,6 +2392,7 @@ function getUnlockedAchievementIds(params: {
   weeklyWorkoutStatus: WeeklyWorkoutStatus;
   aiReports: AiReport[];
   goal?: Goal;
+  pauseModeSettings?: SpecialModeSettings[];
   currentAppDate: string;
 }) {
   return getAchievementSnapshot(params).ids;
@@ -2323,6 +2410,7 @@ function getAchievementSnapshot(params: {
   weeklyWorkoutStatus: WeeklyWorkoutStatus;
   aiReports: AiReport[];
   goal?: Goal;
+  pauseModeSettings?: SpecialModeSettings[];
   currentAppDate: string;
 }) {
   const unlocked = new Set<string>(["first_open"]);
@@ -2357,7 +2445,7 @@ function getAchievementSnapshot(params: {
     ...params.foodEntries.map((entry) => entry.app_date),
     ...params.weightLogs.map((entry) => entry.app_date),
     ...params.workoutSessions.map((entry) => entry.app_date),
-  ]);
+  ], pauseDatesUpTo(params.currentAppDate, params.pauseModeSettings ?? []));
   addMilestones(streak, [[3, "streak_3"], [7, "streak_7"], [14, "streak_14"], [30, "streak_30"], [60, "streak_60"], [100, "streak_100"]]);
   const workoutHistory = buildWorkoutHistory(params.workoutSessions, params.workoutExercises, params.workoutSets);
   const prCount = workoutHistory.reduce((sum, item) => sum + item.prs.length, 0);
@@ -2395,13 +2483,23 @@ function getAchievementSnapshot(params: {
   return { ids: [...unlocked], counts };
 }
 
-function longestRecordStreak(dates: string[]) {
+function pauseDatesUpTo(endDate: string, settings: SpecialModeSettings[]) {
+  return settings.flatMap((mode) => {
+    if (!mode.enabled || !mode.start_date || !mode.end_date) return [];
+    const start = mode.start_date <= mode.end_date ? mode.start_date : mode.end_date;
+    const end = mode.start_date <= mode.end_date ? mode.end_date : mode.start_date;
+    return dateRange(start, end > endDate ? endDate : end);
+  });
+}
+
+function longestRecordStreak(dates: string[], ignoredDates: string[] = []) {
   const uniqueDates = [...new Set(dates)].filter((date) => /^\d{4}-\d{2}-\d{2}$/.test(date)).sort();
   if (!uniqueDates.length) return 0;
+  const ignored = new Set(ignoredDates);
   let longest = 1;
   let current = 1;
   for (let index = 1; index < uniqueDates.length; index += 1) {
-    if (uniqueDates[index] === addDays(uniqueDates[index - 1], 1)) {
+    if (uniqueDates[index] === addDays(uniqueDates[index - 1], 1) || isStreakBridge(uniqueDates[index - 1], uniqueDates[index], ignored)) {
       current += 1;
     } else {
       current = 1;
@@ -2409,6 +2507,17 @@ function longestRecordStreak(dates: string[]) {
     longest = Math.max(longest, current);
   }
   return longest;
+}
+
+function isStreakBridge(previousDate: string, nextDate: string, ignoredDates: Set<string>) {
+  let cursor = addDays(previousDate, 1);
+  let hasIgnoredDay = false;
+  while (cursor < nextDate) {
+    if (!ignoredDates.has(cursor)) return false;
+    hasIgnoredDay = true;
+    cursor = addDays(cursor, 1);
+  }
+  return hasIgnoredDay;
 }
 
 function goalWeightDirection(goal?: Goal, profile?: Profile, weightLogs: WeightLog[] = []) {
@@ -2487,6 +2596,7 @@ function HomeTab(props: {
   weeklyWorkoutStatus: WeeklyWorkoutStatus;
   isCheatDay: boolean;
   activeSpecialMode?: ActiveSpecialMode;
+  activePauseMode?: ActivePauseMode;
   isExceptionDay: boolean;
   isEditingPastDate: boolean;
   latestWeight?: WeightLog;
@@ -2543,8 +2653,8 @@ function HomeTab(props: {
   const calorieDelta = props.goal?.target_calories ? props.dayTotals.calories - props.goal.target_calories : undefined;
   const calorieDeltaText = typeof calorieDelta === "number" ? `${calorieDelta > 0 ? "+" : ""}${Math.round(calorieDelta)}` : "-";
   const calorieDisplayText = props.isExceptionDay ? "-" : calorieDeltaText;
-  const calorieMoodClass = props.isCheatDay ? "cheat" : props.activeSpecialMode ? "trip" : typeof calorieDelta === "number" ? (calorieDelta > 0 ? "over" : Math.abs(calorieDelta) <= 100 ? "on-track" : "left") : "neutral";
-  const calorieMoodLabel = props.isCheatDay ? "cheat day" : props.activeSpecialMode ? "travel mode" : typeof calorieDelta === "number" ? (calorieDelta > 0 ? "over" : Math.abs(calorieDelta) <= 100 ? "on track" : "left") : calorieState.label;
+  const calorieMoodClass = props.isCheatDay ? "cheat" : props.activeSpecialMode ? "trip" : props.activePauseMode ? "cheat" : typeof calorieDelta === "number" ? (calorieDelta > 0 ? "over" : Math.abs(calorieDelta) <= 100 ? "on-track" : "left") : "neutral";
+  const calorieMoodLabel = props.isCheatDay ? "cheat day" : props.activeSpecialMode ? "travel mode" : props.activePauseMode ? "pause mode" : typeof calorieDelta === "number" ? (calorieDelta > 0 ? "over" : Math.abs(calorieDelta) <= 100 ? "on track" : "left") : calorieState.label;
   const foodSummary = `${props.todayEntries.length}件 / ${props.dayTotals.calories} kcal`;
   const workoutSummary = todayWorkoutCalories > 0 ? `${props.todayWorkouts.length}回 / ${todayWorkoutCalories} kcal` : `${props.todayWorkouts.length}回`;
   const macroStats = [
@@ -2739,6 +2849,7 @@ function HomeTab(props: {
           <p className="text-sm font-semibold text-ink/80">今日のカロリー</p>
           {props.isCheatDay && <span className="home-cheat-badge">チートデー</span>}
           {!props.isCheatDay && props.activeSpecialMode && <span className="home-cheat-badge home-trip-badge">{props.activeSpecialMode.label}</span>}
+          {!props.isCheatDay && !props.activeSpecialMode && props.activePauseMode && <span className="home-cheat-badge">{props.activePauseMode.label}</span>}
         </div>
         <div className="mt-6">
           <p className={`numeric-text text-[4.25rem] font-semibold leading-none tracking-normal ${calorieDelta && calorieDelta > 0 ? "text-clay" : "text-ink"}`}>
@@ -2749,6 +2860,11 @@ function HomeTab(props: {
           {!props.isCheatDay && props.activeSpecialMode && (
             <p className="mt-1 text-sm font-bold text-ink">
               {props.activeSpecialMode.label}中です。記録優先で、評価は参考扱いです。
+            </p>
+          )}
+          {!props.isCheatDay && !props.activeSpecialMode && props.activePauseMode && (
+            <p className="mt-1 text-sm font-bold text-ink">
+              {props.activePauseMode.label}中です。復帰優先で、評価は参考扱いです。
             </p>
           )}
           <p className="numeric-text mt-1 text-sm text-moss">摂取 {props.dayTotals.calories} / 目標 {props.goal?.target_calories ?? "-"} kcal</p>
@@ -4761,6 +4877,7 @@ function RecordsTab(props: {
   showToast: (text: string) => void;
   onEditRecordDate: (date: string, targetTab: EditableRecordTab) => void;
   specialModeSettings: SpecialModeSettings[];
+  pauseModeSettings: SpecialModeSettings[];
   settings?: AppSettings;
 }) {
   const [historyGrouping, setHistoryGrouping] = useState<HistoryGrouping>("day");
@@ -4823,6 +4940,7 @@ function RecordsTab(props: {
       cheatDayDates: props.cheatDayDates.filter((date) => date === selectedReportDate),
       specialModeDays: [
         ...getSpecialModeDaysInRange(selectedReportDate, selectedReportDate, props.specialModeSettings),
+        ...getPauseModeDaysInRange(selectedReportDate, selectedReportDate, props.pauseModeSettings),
         ...getDeveloperTestModeDaysInRange(selectedReportDate, selectedReportDate, props.settings),
       ],
       workoutGrouping: "day",
@@ -4963,6 +5081,7 @@ function RecordsTab(props: {
                 <MetricPill label="PFC" value={`P${selectedFoodTotal.protein} F${selectedFoodTotal.fat} C${selectedFoodTotal.carbs}`} />
                 <MetricPill label="体重" value={selectedWeight ? `${selectedWeight.weight_kg}kg` : "-"} />
                 <MetricPill label="チートデー" value={props.cheatDayDates.includes(selectedReportDate) ? "対象" : "-"} />
+                <MetricPill label="一時停止" value={getPauseModeDaysInRange(selectedReportDate, selectedReportDate, props.pauseModeSettings).length ? "対象" : "-"} />
               </div>
               <button className="primary-button mt-3 w-full" onClick={generateHistoryDayReport}>
                 <FileText size={17} />この日の日別レポートを生成
@@ -5068,6 +5187,7 @@ function SettingsTab(props: {
   menuItems: MenuItem[];
   workoutTemplates: WorkoutTemplate[];
   specialModeSettings: SpecialModeSettings[];
+  pauseModeSettings: SpecialModeSettings[];
   activeSpecialMode?: ActiveSpecialMode;
   isDeveloperTestMode: boolean;
   focus?: SettingsFocus;
@@ -5087,8 +5207,10 @@ function SettingsTab(props: {
     workoutSets: WorkoutSet[];
   };
 }) {
+  const [activeSettingsSection, setActiveSettingsSection] = useState<SettingsSection | undefined>(() => props.focus);
   const [goalDraft, setGoalDraft] = useState(() => settingsGoalDraftFrom(props.activeGoal, props.profile));
   const [presetDraft, setPresetDraft] = useState({ ...emptyManual, name: "", savePreset: true });
+  const [editingUserMenuItemId, setEditingUserMenuItemId] = useState<string>();
   const [reportMode, setReportMode] = useState<ReportMode>("day");
   const [question, setQuestion] = useState("");
   const [report, setReport] = useState("");
@@ -5104,10 +5226,11 @@ function SettingsTab(props: {
   const [travelNameDraft, setTravelNameDraft] = useState("");
   const [travelStartDraft, setTravelStartDraft] = useState(props.appDate);
   const [travelEndDraft, setTravelEndDraft] = useState(addDays(props.appDate, 4));
+  const [isPauseModeOpen, setIsPauseModeOpen] = useState(false);
+  const [pauseLabelDraft, setPauseLabelDraft] = useState("一時停止");
+  const [pauseStartDraft, setPauseStartDraft] = useState(props.appDate);
+  const [pauseEndDraft, setPauseEndDraft] = useState(addDays(props.appDate, 6));
   const [developerTapCount, setDeveloperTapCount] = useState(0);
-  const goalSectionRef = useRef<HTMLElement | null>(null);
-  const backupSectionRef = useRef<HTMLElement | null>(null);
-  const myMenuSectionRef = useRef<HTMLElement | null>(null);
   const themeOptions: Array<{ value: ThemeMode; label: string }> = [
     { value: "system", label: "端末に合わせる" },
     { value: "light", label: "ライト" },
@@ -5133,12 +5256,7 @@ function SettingsTab(props: {
   };
 
   useEffect(() => {
-    if (props.focus !== "backup" && props.focus !== "myMenu" && props.focus !== "goal") return;
-    const timer = window.setTimeout(() => {
-      const target = props.focus === "backup" ? backupSectionRef.current : props.focus === "myMenu" ? myMenuSectionRef.current : goalSectionRef.current;
-      target?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 50);
-    return () => window.clearTimeout(timer);
+    if (props.focus) setActiveSettingsSection(props.focus);
   }, [props.focus]);
 
   useEffect(() => {
@@ -5182,13 +5300,66 @@ function SettingsTab(props: {
   const travelModePeriodLabel = activeTravelMode?.start_date && activeTravelMode.end_date
     ? `${formatJapaneseDate(activeTravelMode.start_date)}〜${formatJapaneseDate(activeTravelMode.end_date)}`
     : "未設定";
+  const activePauseMode = props.pauseModeSettings.find((mode) => mode.enabled);
+  const isPauseModeEnabled = !!activePauseMode;
+  const pauseModePeriodLabel = activePauseMode?.start_date && activePauseMode.end_date
+    ? `${formatJapaneseDate(activePauseMode.start_date)}〜${formatJapaneseDate(activePauseMode.end_date)}`
+    : "未設定";
+
+  useEffect(() => {
+    const mode = activePauseMode ?? props.pauseModeSettings[0];
+    if (!mode) return;
+    setPauseLabelDraft(mode.label ?? "一時停止");
+    setPauseStartDraft(mode.start_date ?? props.appDate);
+    setPauseEndDraft(mode.end_date ?? addDays(props.appDate, 6));
+  }, [activePauseMode?.id, activePauseMode?.start_date, activePauseMode?.end_date, props.pauseModeSettings.length, props.appDate]);
+
   const deleteUserMenuItem = async (item: MenuItem) => {
     const name = formatMenuItemName(item);
     const confirmed = window.confirm(`${name}をマイメニューから削除しますか？\n記録済みの食事ログは残ります。`);
     if (!confirmed) return;
     await db.menu_items.delete(item.id);
+    if (editingUserMenuItemId === item.id) {
+      setEditingUserMenuItemId(undefined);
+      setPresetDraft({ ...emptyManual, savePreset: true });
+    }
     await props.refresh();
     props.showToast(`${name}をマイメニューから削除しました`);
+  };
+  const editUserMenuItem = (item: MenuItem) => {
+    setEditingUserMenuItemId(item.id);
+    setPresetDraft(manualFoodDraftFromMenuItem(item));
+  };
+  const saveUserMenuItem = async () => {
+    if (!presetDraft.name.trim()) return;
+    const timestamp = nowIso();
+    const nutrition = draftNutrition(presetDraft);
+    const tags = unique([presetDraft.category, presetDraft.subcategory, presetDraft.brand, ...(nutrition.unknown.length ? ["栄養素一部不明"] : [])]);
+    const editingItem = editingUserMenuItemId ? userMenuItems.find((item) => item.id === editingUserMenuItemId) : undefined;
+    await db.menu_items.put({
+      id: editingItem?.id ?? makeId("menu_user"),
+      name: presetDraft.name.trim(),
+      brand: presetDraft.brand || undefined,
+      category: presetDraft.category,
+      tags,
+      calories: nutrition.calories,
+      protein_g: nutrition.protein_g,
+      fat_g: nutrition.fat_g,
+      carbs_g: nutrition.carbs_g,
+      salt_g: nutrition.salt_g,
+      data_source: "user",
+      confidence: nutrition.unknown.length ? "low" : "high",
+      is_public_preset: false,
+      is_user_created: true,
+      is_favorite: presetDraft.favorite,
+      created_at: editingItem?.created_at ?? timestamp,
+      updated_at: timestamp,
+    });
+    const savedName = presetDraft.name.trim();
+    setEditingUserMenuItemId(undefined);
+    setPresetDraft({ ...emptyManual, savePreset: true });
+    await props.refresh();
+    props.showToast(editingItem ? `${savedName}を更新しました` : `${savedName}をマイメニューに保存しました`);
   };
   const saveSpecialModeSettings = async (nextModes: SpecialModeSettings[]) => {
     const timestamp = nowIso();
@@ -5201,6 +5372,23 @@ function SettingsTab(props: {
         day_boundary_hour: 3,
         onboarding_completed: true,
         special_modes,
+        created_at: timestamp,
+        updated_at: timestamp,
+      });
+    }
+    await props.refresh();
+  };
+  const savePauseModeSettings = async (nextModes: SpecialModeSettings[]) => {
+    const timestamp = nowIso();
+    const pause_modes = nextModes.map((mode) => ({ ...mode, updated_at: timestamp }));
+    if (props.settings) {
+      await db.settings.update("local", { pause_modes, updated_at: timestamp });
+    } else {
+      await db.settings.put({
+        id: "local",
+        day_boundary_hour: 3,
+        onboarding_completed: true,
+        pause_modes,
         created_at: timestamp,
         updated_at: timestamp,
       });
@@ -5272,6 +5460,38 @@ function SettingsTab(props: {
     )));
     setIsTravelModeOpen(false);
     props.showToast("旅行モードをONにしました");
+  };
+  const disablePauseMode = async () => {
+    await savePauseModeSettings(props.pauseModeSettings.map((mode) => ({ ...mode, enabled: false })));
+    props.showToast("一時停止モードをOFFにしました");
+  };
+  const savePauseMode = async () => {
+    if (!pauseStartDraft || !pauseEndDraft) {
+      props.showToast("一時停止期間を入力してください");
+      return;
+    }
+    const label = pauseLabelDraft.trim() || "一時停止";
+    const startDate = pauseStartDraft <= pauseEndDraft ? pauseStartDraft : pauseEndDraft;
+    const endDate = pauseStartDraft <= pauseEndDraft ? pauseEndDraft : pauseStartDraft;
+    const current = props.pauseModeSettings[0];
+    const nextMode: SpecialModeSettings = {
+      id: current?.id ?? "pause_default",
+      enabled: true,
+      label,
+      short_label: current?.short_label ?? "PAUSE",
+      start_date: startDate,
+      end_date: endDate,
+    };
+    const rest = props.pauseModeSettings.slice(1).map((mode) => ({ ...mode, enabled: false }));
+    await savePauseModeSettings([nextMode, ...rest]);
+    props.showToast("一時停止モードをONにしました");
+  };
+  const togglePauseMode = async () => {
+    if (isPauseModeEnabled) {
+      await disablePauseMode();
+      return;
+    }
+    await savePauseMode();
   };
   const saveDeveloperTestMode = async (enabled: boolean) => {
     const timestamp = nowIso();
@@ -5350,6 +5570,7 @@ function SettingsTab(props: {
         const scopedCheatDayDates = props.cheatDayDates.filter((date) => range.includes(date));
         const scopedSpecialModeDays = [
           ...getSpecialModeDaysInRange(start, end, props.specialModeSettings),
+          ...getPauseModeDaysInRange(start, end, props.pauseModeSettings),
           ...getDeveloperTestModeDaysInRange(start, end, props.settings),
         ];
         const content = generateMarkdownReport({
@@ -5389,12 +5610,44 @@ function SettingsTab(props: {
       )}
     </section>
   );
+  const sectionTitles: Record<SettingsSection, { title: string; subtitle: string }> = {
+    ai: { title: "AI相談レポート", subtitle: "AIに渡す相談材料を生成します。" },
+    backup: { title: "バックアップ", subtitle: "この端末のローカルデータを保存・復元します。" },
+    goal: { title: "ゴール設定", subtitle: "目標体重、PFC、運動目標を調整します。" },
+    records: { title: "記録設定", subtitle: "旅行や休養など、通常評価と分けたい期間を管理します。" },
+    myMenu: { title: "マイメニュー", subtitle: "自分用の食事メニューを登録・編集します。" },
+    general: { title: "一般", subtitle: "表示、ユーザー名、更新履歴、開発者モードを管理します。" },
+  };
+  const activeSectionTitle = activeSettingsSection ? sectionTitles[activeSettingsSection] : undefined;
 
   return (
     <div className="space-y-4">
-      {props.focus === "ai" && aiReportSection}
+      {!activeSettingsSection && (
+        <>
+          <section className="compact-card divide-y divide-line overflow-hidden">
+            <SettingsMenuRow title="AI相談レポート" description="AIにコピーする日別・週別・月別レポート" icon={<FileText size={18} />} onClick={() => setActiveSettingsSection("ai")} />
+            <SettingsMenuRow title="バックアップ" description={backupMessage(props.backupInfo)} icon={<Archive size={18} />} onClick={() => setActiveSettingsSection("backup")} />
+            <SettingsMenuRow title="ゴール設定" description={`${phaseLabels[goalDraft.phase]} / ${calculated?.target_calories ?? "-"}kcal`} icon={<SlidersHorizontal size={18} />} onClick={() => setActiveSettingsSection("goal")} />
+          </section>
+          <section className="compact-card divide-y divide-line overflow-hidden">
+            <SettingsMenuRow title="記録設定" description={`旅行 ${isTravelModeEnabled ? "ON" : "OFF"} / 一時停止 ${isPauseModeEnabled ? "ON" : "OFF"}`} icon={<CalendarDays size={18} />} onClick={() => setActiveSettingsSection("records")} />
+            <SettingsMenuRow title="マイメニュー" description={`登録済み ${userMenuItems.length}件`} icon={<Store size={18} />} onClick={() => setActiveSettingsSection("myMenu")} />
+            <SettingsMenuRow title="一般" description={`表示 ${props.resolvedTheme === "dark" ? "ダーク" : "ライト"} / ${props.profile?.name || "未設定"}`} icon={<Settings size={18} />} onClick={() => setActiveSettingsSection("general")} />
+          </section>
+        </>
+      )}
 
-      <section className="compact-card p-4">
+      {activeSectionTitle && (
+        <section className="settings-detail-header">
+          <button className="icon-button h-10 w-10" aria-label="Settingsに戻る" onClick={() => setActiveSettingsSection(undefined)}><ChevronLeft size={18} /></button>
+          <div className="min-w-0">
+            <h2 className="text-lg font-black">{activeSectionTitle.title}</h2>
+            <p className="mt-1 text-xs font-semibold text-moss">{activeSectionTitle.subtitle}</p>
+          </div>
+        </section>
+      )}
+
+      {activeSettingsSection === "general" && <section className="compact-card p-4">
         <div className="flex items-start justify-between gap-3">
           <div>
             <h2 className="font-bold">表示設定</h2>
@@ -5411,9 +5664,9 @@ function SettingsTab(props: {
             ))}
           </select>
         </div>
-      </section>
+      </section>}
 
-      <section ref={goalSectionRef} className={`compact-card scroll-mt-24 p-4 ${props.focus === "goal" ? "border-2 border-leaf" : ""}`}>
+      {activeSettingsSection === "goal" && <section className={`compact-card scroll-mt-24 p-4 ${props.focus === "goal" ? "border-2 border-leaf" : ""}`}>
         <div className="flex items-center justify-between gap-3">
           <h2 className="font-bold">ゴール設定</h2>
           <button className="primary-button shrink-0 px-3 py-2 text-xs" onClick={saveGoalSettings}><Save size={15} />保存</button>
@@ -5457,41 +5710,22 @@ function SettingsTab(props: {
           )}
         </p>
         <p className="mt-2 text-xs text-moss">自動計算は現在体重から消費カロリーを出し、目標体重・目標体脂肪率・目標達成日・フェーズ・運動強度・総カロリーからP/F/Cと体組成の目標差分を出します。kcal/P/F/Cを手動上書きしている場合、その値は保存時に上書きしません。</p>
-      </section>
+      </section>}
 
-      <section ref={myMenuSectionRef} className={`compact-card scroll-mt-24 p-4 ${props.focus === "myMenu" ? "border-2 border-leaf" : ""}`}>
+      {activeSettingsSection === "myMenu" && <section className={`compact-card scroll-mt-24 p-4 ${props.focus === "myMenu" ? "border-2 border-leaf" : ""}`}>
         <div className="flex items-center justify-between gap-2">
-          <h2 className="font-bold">マイメニューを追加</h2>
+          <h2 className="font-bold">{editingUserMenuItemId ? "マイメニューを編集" : "マイメニューを登録"}</h2>
           {props.focus === "myMenu" && <span className="rounded-md bg-leaf px-2 py-1 text-[11px] font-bold text-white">登録はこちら</span>}
         </div>
-        <ManualFoodForm manual={presetDraft} setManual={setPresetDraft} compact mode="preset" onSave={async () => {
-          if (!presetDraft.name.trim()) return;
-          const timestamp = nowIso();
-          const nutrition = draftNutrition(presetDraft);
-          const tags = unique([presetDraft.category, presetDraft.subcategory, presetDraft.brand, ...(nutrition.unknown.length ? ["栄養素一部不明"] : [])]);
-          await db.menu_items.put({
-            id: makeId("menu_user"),
-            name: presetDraft.name,
-            brand: presetDraft.brand || undefined,
-            category: presetDraft.category,
-            tags,
-            calories: nutrition.calories,
-            protein_g: nutrition.protein_g,
-            fat_g: nutrition.fat_g,
-            carbs_g: nutrition.carbs_g,
-            salt_g: nutrition.salt_g,
-            data_source: "user",
-            confidence: nutrition.unknown.length ? "low" : "high",
-            is_public_preset: false,
-            is_user_created: true,
-            is_favorite: presetDraft.favorite,
-            created_at: timestamp,
-            updated_at: timestamp,
-          });
-          setPresetDraft({ ...emptyManual, savePreset: true });
-          await props.refresh();
-          props.showToast(`${presetDraft.name.trim()}をマイメニューに保存しました`);
-        }} />
+        <ManualFoodForm manual={presetDraft} setManual={setPresetDraft} compact mode="preset" onSave={saveUserMenuItem} />
+        {editingUserMenuItemId && (
+          <button className="secondary-button mt-2 w-full" onClick={() => {
+            setEditingUserMenuItemId(undefined);
+            setPresetDraft({ ...emptyManual, savePreset: true });
+          }}>
+            編集をキャンセル
+          </button>
+        )}
         <div className="mt-4">
           <div className="mb-2 flex items-center justify-between gap-2">
             <p className="text-xs font-bold text-moss">登録済みマイメニュー</p>
@@ -5504,17 +5738,20 @@ function SettingsTab(props: {
                   <p className="truncate text-sm font-semibold">{formatMenuItemName(item)}</p>
                   <p className="numeric-text truncate text-xs text-moss">{item.brand || item.category} · {item.calories}kcal · P{item.protein_g} F{item.fat_g} C{item.carbs_g}</p>
                 </div>
-                <button className="icon-button h-8 w-8 shrink-0 text-clay" aria-label={`${formatMenuItemName(item)}を削除`} onClick={() => deleteUserMenuItem(item)}><Trash2 size={14} /></button>
+                <div className="flex shrink-0 gap-1">
+                  <button className="icon-button h-8 w-8" aria-label={`${formatMenuItemName(item)}を編集`} onClick={() => editUserMenuItem(item)}><Pencil size={14} /></button>
+                  <button className="icon-button h-8 w-8 text-clay" aria-label={`${formatMenuItemName(item)}を削除`} onClick={() => deleteUserMenuItem(item)}><Trash2 size={14} /></button>
+                </div>
               </div>
             ))}
             {userMenuItems.length === 0 && <EmptyLine text="登録済みのマイメニューはありません" />}
           </div>
         </div>
-      </section>
+      </section>}
 
-      {props.focus !== "ai" && aiReportSection}
+      {activeSettingsSection === "ai" && aiReportSection}
 
-      <section ref={backupSectionRef} className={`compact-card scroll-mt-24 p-4 ${props.focus === "backup" ? "border-2 border-leaf" : ""}`}>
+      {activeSettingsSection === "backup" && <section className={`compact-card scroll-mt-24 p-4 ${props.focus === "backup" ? "border-2 border-leaf" : ""}`}>
         <div className="flex items-center justify-between gap-2">
           <h2 className="font-bold">バックアップ</h2>
           {props.focus === "backup" && <span className="rounded-md bg-leaf px-2 py-1 text-[11px] font-bold text-moss">保存はこちら</span>}
@@ -5552,22 +5789,17 @@ function SettingsTab(props: {
             if (confirm("ローカルデータをすべて削除しますか？")) resetLocalData();
           }}><Trash2 size={17} />リセット</button>
         </div>
-      </section>
+      </section>}
 
-      <section className="compact-card p-4 text-sm text-moss">
-        <p className="font-semibold text-ink">ゴールトラッカー</p>
-        <p>IndexedDB local-only · no login · no backend</p>
-        <p className="mt-2">同じURLを友達が開いても、ログは各iPhone内に別々に保存されます。</p>
-        <p className="mt-2 text-xs">レポート名: <span className="font-bold text-ink">{props.profile?.name || "未設定"}</span></p>
+      {activeSettingsSection === "records" && <section className="compact-card p-4 text-sm text-moss">
         <div className="special-mode-settings mt-3">
           <div className="min-w-0 flex-1">
             <p className="font-bold text-ink">旅行モード</p>
-            {isTravelModeEnabled && (
-              <p className="numeric-text mt-1 text-[11px] font-bold text-moss">
-                {activeTravelMode?.label ?? "旅行"} / {travelModePeriodLabel}
-              </p>
-            )}
+            <p className="numeric-text mt-1 text-[11px] font-bold text-moss">
+              {isTravelModeEnabled ? `${activeTravelMode?.label ?? "旅行"} / ${travelModePeriodLabel}` : "旅行先一覧から追加・編集"}
+            </p>
           </div>
+          <button className="secondary-button shrink-0 px-3 py-2 text-xs" onClick={openTravelModeModal}>編集</button>
           <button
             className={`special-mode-toggle ${isTravelModeEnabled ? "special-mode-toggle-on" : ""}`}
             type="button"
@@ -5582,6 +5814,35 @@ function SettingsTab(props: {
             </span>
           </button>
         </div>
+        <div className="special-mode-settings mt-3">
+          <div className="min-w-0 flex-1">
+            <p className="font-bold text-ink">一時停止モード</p>
+            <p className="numeric-text mt-1 text-[11px] font-bold text-moss">
+              {isPauseModeEnabled ? `${activePauseMode?.label ?? "一時停止"} / ${pauseModePeriodLabel}` : "休養・中断期間をAIレポートで例外扱い"}
+            </p>
+          </div>
+          <button className="secondary-button shrink-0 px-3 py-2 text-xs" onClick={() => setIsPauseModeOpen(true)}>設定</button>
+          <button
+            className={`special-mode-toggle ${isPauseModeEnabled ? "special-mode-toggle-on" : ""}`}
+            type="button"
+            aria-pressed={isPauseModeEnabled}
+            onClick={togglePauseMode}
+          >
+            <span className="special-mode-toggle-track">
+              <span className="special-mode-toggle-knob" />
+            </span>
+            <span className="special-mode-toggle-copy">
+              <span className="special-mode-toggle-state">{isPauseModeEnabled ? "ON" : "OFF"}</span>
+            </span>
+          </button>
+        </div>
+      </section>}
+
+      {activeSettingsSection === "general" && <section className="compact-card p-4 text-sm text-moss">
+        <p className="font-semibold text-ink">ゴールトラッカー</p>
+        <p>IndexedDB local-only · no login · no backend</p>
+        <p className="mt-2">同じURLを友達が開いても、ログは各iPhone内に別々に保存されます。</p>
+        <p className="mt-2 text-xs">レポート名: <span className="font-bold text-ink">{props.profile?.name || "未設定"}</span></p>
         <div className="mt-3 grid gap-2">
           <button className="secondary-button w-full" onClick={() => {
             setProfileNameDraft(props.profile?.name ?? "");
@@ -5593,7 +5854,7 @@ function SettingsTab(props: {
             {props.isDeveloperTestMode && <span className="mini-chip ml-auto">テスト中</span>}
           </button>
         </div>
-      </section>
+      </section>}
       {isMacroOverrideOpen && (
         <MacroOverrideModal
           draft={goalDraft}
@@ -5638,6 +5899,30 @@ function SettingsTab(props: {
           onEndChange={setTravelEndDraft}
           onSave={saveTravelModePeriod}
           onClose={() => setIsTravelModeOpen(false)}
+        />
+      )}
+      {isPauseModeOpen && (
+        <PauseModeModal
+          labelDraft={pauseLabelDraft}
+          startDraft={pauseStartDraft}
+          endDraft={pauseEndDraft}
+          isEnabled={isPauseModeEnabled}
+          onLabelChange={setPauseLabelDraft}
+          onStartChange={setPauseStartDraft}
+          onEndChange={setPauseEndDraft}
+          onDisable={async () => {
+            await disablePauseMode();
+            setIsPauseModeOpen(false);
+          }}
+          onSave={async () => {
+            if (!pauseStartDraft || !pauseEndDraft) {
+              props.showToast("一時停止期間を入力してください");
+              return;
+            }
+            await savePauseMode();
+            setIsPauseModeOpen(false);
+          }}
+          onClose={() => setIsPauseModeOpen(false)}
         />
       )}
       {goalHelpTopic && <GoalHelpModal topic={goalHelpTopic} onClose={() => setGoalHelpTopic(undefined)} />}
@@ -7283,6 +7568,58 @@ function TravelModeModal({ modes, step, selectedId, nameDraft, startDraft, endDr
   );
 }
 
+function PauseModeModal({ labelDraft, startDraft, endDraft, isEnabled, onLabelChange, onStartChange, onEndChange, onSave, onDisable, onClose }: {
+  labelDraft: string;
+  startDraft: string;
+  endDraft: string;
+  isEnabled: boolean;
+  onLabelChange: (value: string) => void;
+  onStartChange: (value: string) => void;
+  onEndChange: (value: string) => void;
+  onSave: () => void | Promise<void>;
+  onDisable: () => void | Promise<void>;
+  onClose: () => void;
+}) {
+  const canSave = !!startDraft && !!endDraft;
+  return (
+    <div className="fixed inset-0 z-50 flex items-end bg-ink/30 px-4 pb-4" onClick={onClose}>
+      <div className="compact-card max-h-[84vh] w-full overflow-y-auto p-4" onClick={(event) => event.stopPropagation()}>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-lg font-bold">一時停止モード</p>
+            <p className="mt-1 text-xs text-moss">休養や体調調整の期間を、AIレポートとストリーク判定で通常日と分けます。</p>
+          </div>
+          <button className="icon-button h-9 w-9" aria-label="閉じる" onClick={onClose}>×</button>
+        </div>
+        <div className="mt-4 rounded-3xl border border-line bg-white/25 p-3">
+          <label className="block text-xs font-bold text-moss">
+            モード名
+            <input className="mt-2 w-full" value={labelDraft} onChange={(event) => onLabelChange(event.target.value)} placeholder="例: 体調調整" />
+          </label>
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            <label className="text-xs font-bold text-moss">
+              開始
+              <input className="mt-1 h-10 w-full px-3 text-sm" type="date" value={startDraft} onChange={(event) => onStartChange(event.target.value)} />
+            </label>
+            <label className="text-xs font-bold text-moss">
+              終了
+              <input className="mt-1 h-10 w-full px-3 text-sm" type="date" value={endDraft} onChange={(event) => onEndChange(event.target.value)} />
+            </label>
+          </div>
+        </div>
+        <div className="mt-4 grid grid-cols-2 gap-2">
+          {isEnabled ? (
+            <button className="secondary-button border-clay text-clay" onClick={onDisable}>OFFにする</button>
+          ) : (
+            <button className="secondary-button" onClick={onClose}>閉じる</button>
+          )}
+          <button className="primary-button" disabled={!canSave} onClick={onSave}><Save size={17} />ONにする</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ProfileNameModal({ value, setValue, onClose, onSave }: {
   value: string;
   setValue: (value: string) => void;
@@ -7426,6 +7763,24 @@ function MetricPill({ label, value }: { label: string; value: string }) {
       <p className="text-[11px] font-semibold text-moss">{label}</p>
       <p className="numeric-text mt-0.5 text-sm font-black">{value}</p>
     </div>
+  );
+}
+
+function SettingsMenuRow({ title, description, icon, onClick }: {
+  title: string;
+  description: string;
+  icon: ReactNode;
+  onClick: () => void;
+}) {
+  return (
+    <button className="settings-menu-row w-full px-4 py-3 text-left" onClick={onClick}>
+      <span className="settings-menu-icon">{icon}</span>
+      <span className="min-w-0 flex-1">
+        <span className="block text-sm font-black text-ink">{title}</span>
+        <span className="mt-0.5 block truncate text-xs font-semibold text-moss">{description}</span>
+      </span>
+      <ChevronRight className="shrink-0 text-muted" size={17} />
+    </button>
   );
 }
 
