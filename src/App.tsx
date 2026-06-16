@@ -318,6 +318,10 @@ const manualFoodWizardSteps: Array<{ key: ManualFoodWizardStep; label: string }>
   { key: "confirm", label: "保存" },
 ];
 
+const oneTimeManualFoodWizardSteps = manualFoodWizardSteps
+  .filter((step) => step.key !== "category")
+  .map((step) => step.key === "confirm" ? { ...step, label: "記録" } : step);
+
 const settingsManualFoodWizardSteps = manualFoodWizardSteps.filter((step) => step.key !== "purpose");
 
 function manualFoodDraftFromMenuItem(item: MenuItem): ManualFoodDraft {
@@ -6651,9 +6655,14 @@ function ManualFoodForm({ manual, setManual, onSave, compact = false, mode = "lo
   const isPresetOnly = mode === "preset";
   const isIngredient = manual.entry_kind === "ingredient";
   const previewNutrition = draftNutrition(manual);
-  const wizardSteps = includePurposeStep ? manualFoodWizardSteps : settingsManualFoodWizardSteps;
-  const wizardIndex = Math.max(0, wizardSteps.findIndex((step) => step.key === wizardStep));
-  const canAdvanceWizard = wizardStep !== "basic" || !!manual.name.trim();
+  const wizardSteps = includePurposeStep ? (manual.savePreset ? manualFoodWizardSteps : oneTimeManualFoodWizardSteps) : settingsManualFoodWizardSteps;
+  const activeWizardStep = wizardSteps.some((step) => step.key === wizardStep)
+    ? wizardStep
+    : wizardSteps.some((step) => step.key === "nutrition")
+      ? "nutrition"
+      : wizardSteps[0]?.key ?? "basic";
+  const wizardIndex = Math.max(0, wizardSteps.findIndex((step) => step.key === activeWizardStep));
+  const canAdvanceWizard = activeWizardStep !== "basic" || !!manual.name.trim();
   const switchManualKind = (entryKind: ManualFoodDraft["entry_kind"]) => {
     if (entryKind === "ingredient") {
       setManual({
@@ -6682,7 +6691,7 @@ function ManualFoodForm({ manual, setManual, onSave, compact = false, mode = "lo
         </div>
         <p className="mt-2 text-xs font-bold text-moss">{wizardSteps[wizardIndex]?.label}</p>
 
-        {wizardStep === "basic" && (
+        {activeWizardStep === "basic" && (
           <div className="mt-3 grid gap-2">
             <label className="text-xs font-bold text-moss">
               メニュー名
@@ -6695,7 +6704,7 @@ function ManualFoodForm({ manual, setManual, onSave, compact = false, mode = "lo
           </div>
         )}
 
-        {wizardStep === "unit" && (
+        {activeWizardStep === "unit" && (
           <div className="mt-3 grid gap-3">
             <div className="grid grid-cols-2 gap-2">
               <button className={`mode-button ${!isIngredient ? "mode-button-active" : ""}`} onClick={() => switchManualKind("meal")}>1食分</button>
@@ -6712,7 +6721,7 @@ function ManualFoodForm({ manual, setManual, onSave, compact = false, mode = "lo
           </div>
         )}
 
-        {wizardStep === "purpose" && (
+        {activeWizardStep === "purpose" && (
           <div className="mt-3 grid gap-2">
             {!isPresetOnly && (
               <label className="text-xs font-bold text-moss">
@@ -6739,7 +6748,7 @@ function ManualFoodForm({ manual, setManual, onSave, compact = false, mode = "lo
           </div>
         )}
 
-        {wizardStep === "category" && (
+        {activeWizardStep === "category" && (
           <div className="mt-3">
             <p className="mb-2 text-xs font-bold text-moss">追加カテゴリ</p>
             <div className="grid grid-cols-3 gap-2">
@@ -6757,7 +6766,7 @@ function ManualFoodForm({ manual, setManual, onSave, compact = false, mode = "lo
           </div>
         )}
 
-        {wizardStep === "nutrition" && (
+        {activeWizardStep === "nutrition" && (
           <div className="mt-3 grid grid-cols-2 gap-2">
             <PartialNumberInput label={isIngredient ? "kcal / 100g" : "kcal"} value={manual.calories} onChange={(value) => setManual({ ...manual, calories: value })} />
             <PartialNumberInput label={isIngredient ? "P / 100g" : "P"} value={manual.protein_g} step={0.1} onChange={(value) => setManual({ ...manual, protein_g: value })} />
@@ -6774,11 +6783,11 @@ function ManualFoodForm({ manual, setManual, onSave, compact = false, mode = "lo
           </div>
         )}
 
-        {wizardStep === "confirm" && (
+        {activeWizardStep === "confirm" && (
           <div className="mt-3 space-y-3">
             <div className="rounded-3xl border border-line bg-white/30 p-3">
               <p className="truncate text-sm font-black text-ink">{manual.name || "名称未入力"}</p>
-              <p className="mt-1 text-xs font-semibold text-moss">{manual.brand || "ブランドなし"} · {manual.category} / {manual.subcategory || "未分類"}</p>
+              <p className="mt-1 text-xs font-semibold text-moss">{manual.savePreset ? `${manual.brand || "ブランドなし"} · ${manual.category} / ${manual.subcategory || "未分類"}` : manual.brand || "今回の記録だけ"}</p>
               <p className="numeric-text mt-2 text-xs font-bold text-moss">{isIngredient ? `${formatControlValue(ingredientGramValue(manual) ?? 0)}g · ` : ""}{previewNutrition.calories}kcal · P{previewNutrition.protein_g} F{previewNutrition.fat_g} C{previewNutrition.carbs_g}</p>
             </div>
             {manual.savePreset && <label className="chip"><input type="checkbox" checked={manual.favorite} onChange={(event) => setManual({ ...manual, favorite: event.target.checked })} />お気に入りに追加</label>}
@@ -6786,13 +6795,13 @@ function ManualFoodForm({ manual, setManual, onSave, compact = false, mode = "lo
           </div>
         )}
 
-        {wizardStep !== "confirm" && (
+        {activeWizardStep !== "confirm" && (
           <div className="mt-4 grid grid-cols-2 gap-2">
             <button className="secondary-button" disabled={wizardIndex === 0} onClick={() => moveWizard(-1)}><ChevronLeft size={17} />戻る</button>
             <button className="primary-button" disabled={!canAdvanceWizard} onClick={() => moveWizard(1)}>次へ<ChevronRight size={17} /></button>
           </div>
         )}
-        {wizardStep === "confirm" && (
+        {activeWizardStep === "confirm" && (
           <button className="secondary-button mt-2 w-full" onClick={() => moveWizard(-1)}><ChevronLeft size={17} />戻る</button>
         )}
       </section>
