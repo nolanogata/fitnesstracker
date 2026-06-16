@@ -59,11 +59,13 @@ body,
 
 html {
   background: var(--page-bg);
+  overscroll-behavior-x: none;
 }
 
 body {
   margin: 0;
   background: var(--page-bg);
+  overscroll-behavior-x: none;
   overscroll-behavior-y: none;
 }
 
