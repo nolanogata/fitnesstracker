@@ -636,6 +636,14 @@ const achievementProgressSpecs: Record<string, AchievementProgressSpec> = {
 };
 const appUpdates: AppUpdate[] = [
   {
+    id: "2026-06-17-exception-day-streak-bridge",
+    title: "例外日のストリーク判定を調整",
+    date: "2026-06-17",
+    items: [
+      "チートデー、北海道モード、旅行モードの日は、記録がなくても連続記録トロフィーのストリークが途切れないようにしました。",
+    ],
+  },
+  {
     id: "2026-06-17-food-my-menu-recommend",
     title: "Foodの登録導線を整理",
     date: "2026-06-17",
@@ -1744,6 +1752,8 @@ function App() {
     weeklyWorkoutStatus,
     aiReports,
     goal: target,
+    cheatDayDates,
+    specialModeSettings,
     pauseModeSettings,
     currentAppDate: actualAppDate,
   }), [
@@ -1763,6 +1773,8 @@ function App() {
     target?.target_fat_g,
     target?.target_carbs_g,
     target?.target_calories,
+    cheatDayDates,
+    specialModeSettings,
     pauseModeSettings,
     actualAppDate,
   ]);
@@ -2476,6 +2488,8 @@ function getUnlockedAchievementIds(params: {
   weeklyWorkoutStatus: WeeklyWorkoutStatus;
   aiReports: AiReport[];
   goal?: Goal;
+  cheatDayDates?: string[];
+  specialModeSettings?: SpecialModeSettings[];
   pauseModeSettings?: SpecialModeSettings[];
   currentAppDate: string;
 }) {
@@ -2494,6 +2508,8 @@ function getAchievementSnapshot(params: {
   weeklyWorkoutStatus: WeeklyWorkoutStatus;
   aiReports: AiReport[];
   goal?: Goal;
+  cheatDayDates?: string[];
+  specialModeSettings?: SpecialModeSettings[];
   pauseModeSettings?: SpecialModeSettings[];
   currentAppDate: string;
 }) {
@@ -2529,7 +2545,12 @@ function getAchievementSnapshot(params: {
     ...params.foodEntries.map((entry) => entry.app_date),
     ...params.weightLogs.map((entry) => entry.app_date),
     ...params.workoutSessions.map((entry) => entry.app_date),
-  ], pauseDatesUpTo(params.currentAppDate, params.pauseModeSettings ?? []));
+  ], streakBridgeDatesUpTo({
+    endDate: params.currentAppDate,
+    cheatDayDates: params.cheatDayDates ?? [],
+    specialModeSettings: params.specialModeSettings ?? [],
+    pauseModeSettings: params.pauseModeSettings ?? [],
+  }));
   addMilestones(streak, [[3, "streak_3"], [7, "streak_7"], [14, "streak_14"], [30, "streak_30"], [60, "streak_60"], [100, "streak_100"]]);
   const workoutHistory = buildWorkoutHistory(params.workoutSessions, params.workoutExercises, params.workoutSets);
   const prCount = workoutHistory.reduce((sum, item) => sum + item.prs.length, 0);
@@ -2572,6 +2593,33 @@ function pauseDatesUpTo(endDate: string, settings: SpecialModeSettings[]) {
     if (!mode.enabled || !mode.start_date || !mode.end_date) return [];
     const start = mode.start_date <= mode.end_date ? mode.start_date : mode.end_date;
     const end = mode.start_date <= mode.end_date ? mode.end_date : mode.start_date;
+    return dateRange(start, end > endDate ? endDate : end);
+  });
+}
+
+function streakBridgeDatesUpTo(params: {
+  endDate: string;
+  cheatDayDates: string[];
+  specialModeSettings: SpecialModeSettings[];
+  pauseModeSettings: SpecialModeSettings[];
+}) {
+  const cheatDates = params.cheatDayDates
+    .filter((date) => /^\d{4}-\d{2}-\d{2}$/.test(date) && date <= params.endDate);
+  const travelDates = specialModeDatesUpTo(params.endDate, params.specialModeSettings);
+  const pauseDates = pauseDatesUpTo(params.endDate, params.pauseModeSettings);
+  return unique([...cheatDates, ...travelDates, ...pauseDates]);
+}
+
+function specialModeDatesUpTo(endDate: string, settings: SpecialModeSettings[]) {
+  return settings.flatMap((mode) => {
+    if (!mode.enabled) return [];
+    const definition = specialModeDefinitions.find((item) => item.id === mode.id);
+    const rawStart = mode.start_date ?? definition?.defaultStartDate;
+    const rawEnd = mode.end_date ?? definition?.defaultEndDate;
+    if (!rawStart || !rawEnd) return [];
+    const start = rawStart <= rawEnd ? rawStart : rawEnd;
+    const end = rawStart <= rawEnd ? rawEnd : rawStart;
+    if (start > endDate) return [];
     return dateRange(start, end > endDate ? endDate : end);
   });
 }
