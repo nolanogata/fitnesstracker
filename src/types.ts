@@ -44,6 +44,7 @@ export type Settings = {
   special_modes?: SpecialModeSettings[];
   developer_test_active_until?: string;
   achievements?: AchievementUnlock[];
+  achievements_viewed_at?: string;
   created_at: string;
   updated_at: string;
 };
