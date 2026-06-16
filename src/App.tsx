@@ -457,6 +457,13 @@ function getDeveloperTestModeDaysInRange(start: string, end: string, settings?: 
   return currentDate >= start && currentDate <= end ? [{ date: currentDate, label: "テストモード", isTest: true, kind: "test" as const }] : [];
 }
 
+function isStandalonePwa() {
+  return (
+    (typeof window !== "undefined" && typeof window.matchMedia === "function" && window.matchMedia("(display-mode: standalone)").matches) ||
+    (typeof navigator !== "undefined" && !!(navigator as Navigator & { standalone?: boolean }).standalone)
+  );
+}
+
 function dateFromMonthDay(referenceDate: string, monthDay: string, startMonthDay?: string) {
   const year = Number(referenceDate.slice(0, 4));
   const nextYear = startMonthDay && monthDay < startMonthDay;
@@ -607,6 +614,14 @@ const achievementProgressSpecs: Record<string, AchievementProgressSpec> = {
   streak_100: { metric: "streak", target: 100, unit: "日" },
 };
 const appUpdates: AppUpdate[] = [
+  {
+    id: "2026-06-16-ios-pwa-edge-swipe",
+    title: "iOSホーム画面版の戻るスワイプを修正",
+    date: "2026-06-16",
+    items: [
+      "iPhoneのホーム画面に追加したWebアプリで、Home画面を右スワイプした時にSafariのエラー画面へ戻ることがある問題を抑止しました。",
+    ],
+  },
   {
     id: "2026-06-16-settings-hierarchy-pause",
     title: "Settingsを階層化",
@@ -1512,6 +1527,18 @@ function App() {
   }, [tab]);
 
   useEffect(() => {
+    if (!isStandalonePwa() || !window.history?.pushState) return;
+    const guardState = { phaseLogPwaHistoryGuard: true };
+    window.history.replaceState({ ...(window.history.state ?? {}), phaseLogPwaRoot: true }, "", window.location.href);
+    window.history.pushState(guardState, "", window.location.href);
+    const handlePopState = () => {
+      window.history.pushState(guardState, "", window.location.href);
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+
+  useEffect(() => {
     const previous = lastTabRef.current;
     if (previous === tab) return;
     if (suppressTabHistoryRef.current) {
@@ -1536,6 +1563,20 @@ function App() {
       }
       edgeSwipeStartRef.current = { x: touch.clientX, y: touch.clientY, startedAt: Date.now() };
     };
+    const handleTouchMove = (event: globalThis.TouchEvent) => {
+      const start = edgeSwipeStartRef.current;
+      const touch = event.touches[0];
+      if (!start || !touch) return;
+      const dx = touch.clientX - start.x;
+      const dy = Math.abs(touch.clientY - start.y);
+      if (dy > 18 && dy > Math.abs(dx)) {
+        edgeSwipeStartRef.current = undefined;
+        return;
+      }
+      if (dx > 8 && dy < 32 && event.cancelable) {
+        event.preventDefault();
+      }
+    };
     const handleTouchEnd = (event: globalThis.TouchEvent) => {
       const start = edgeSwipeStartRef.current;
       edgeSwipeStartRef.current = undefined;
@@ -1553,9 +1594,11 @@ function App() {
       setTab(previousTab);
     };
     window.addEventListener("touchstart", handleTouchStart, { passive: true });
+    window.addEventListener("touchmove", handleTouchMove, { passive: false });
     window.addEventListener("touchend", handleTouchEnd, { passive: true });
     return () => {
       window.removeEventListener("touchstart", handleTouchStart);
+      window.removeEventListener("touchmove", handleTouchMove);
       window.removeEventListener("touchend", handleTouchEnd);
     };
   }, []);
