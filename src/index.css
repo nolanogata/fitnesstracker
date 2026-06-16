@@ -1174,6 +1174,7 @@ button {
   bottom: max(0.8rem, calc(env(safe-area-inset-bottom) + 0.25rem)) !important;
   width: min(calc(100% - 2rem), 400px);
   transform: translateX(-50%) translateZ(0);
+  overflow: hidden;
   border: 1px solid rgba(218, 226, 220, 0.72);
   border-radius: 30px;
   background: rgba(255, 255, 255, 0.56);
@@ -1182,6 +1183,65 @@ button {
   backdrop-filter: blur(30px) saturate(160%);
   -webkit-backdrop-filter: blur(30px) saturate(160%);
   will-change: transform;
+}
+
+.app-bottom-nav::before {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background:
+    radial-gradient(circle at var(--active-tab-glow-x, 12.5%) 18%, rgba(255, 255, 255, 0.52), transparent 18%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.16), transparent 42%);
+  opacity: 0.72;
+  transition: background-position 320ms cubic-bezier(0.22, 1, 0.36, 1), opacity 180ms ease;
+}
+
+.app-bottom-nav-grid {
+  position: relative;
+  z-index: 2;
+}
+
+.tab-glass-indicator {
+  pointer-events: none;
+  position: absolute;
+  left: 0.75rem;
+  top: 0.375rem;
+  z-index: 1;
+  width: calc((100% - 2.5rem) / 5);
+  height: 3rem;
+  transform: translateX(0) translateZ(0);
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: 22px;
+  background:
+    radial-gradient(circle at 24% 18%, rgba(255, 255, 255, 0.76), transparent 28%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.46), rgba(159, 190, 169, 0.24)),
+    rgba(255, 255, 255, 0.26);
+  box-shadow:
+    0 12px 28px rgba(35, 45, 38, 0.13),
+    inset 0 1px 0 rgba(255, 255, 255, 0.72),
+    inset 0 -1px 0 rgba(111, 143, 125, 0.13);
+  backdrop-filter: blur(24px) saturate(155%);
+  -webkit-backdrop-filter: blur(24px) saturate(155%);
+  transition: transform 360ms cubic-bezier(0.22, 1, 0.36, 1), width 180ms ease, opacity 180ms ease;
+  will-change: transform;
+}
+
+.app-bottom-nav.tab-index-1 .tab-glass-indicator {
+  transform: translateX(calc(100% + 0.25rem)) translateZ(0);
+}
+
+.app-bottom-nav.tab-index-2 .tab-glass-indicator {
+  transform: translateX(calc(200% + 0.5rem)) translateZ(0);
+}
+
+.app-bottom-nav.tab-index-3 .tab-glass-indicator {
+  transform: translateX(calc(300% + 0.75rem)) translateZ(0);
+}
+
+.app-bottom-nav.tab-index-4 .tab-glass-indicator {
+  transform: translateX(calc(400% + 1rem)) translateZ(0);
 }
 
 .app-bottom-nav svg {
@@ -1220,7 +1280,8 @@ button {
   .tap-tile,
   .floating-food-search,
   .floating-workout-search,
-  .app-bottom-nav {
+  .app-bottom-nav,
+  .tab-glass-indicator {
     background: rgba(255, 255, 255, 0.9);
   }
 }
@@ -1978,6 +2039,8 @@ button {
 }
 
 .tab-button {
+  position: relative;
+  z-index: 3;
   display: flex;
   min-height: 3rem;
   flex-direction: column;
@@ -1989,11 +2052,12 @@ button {
   color: rgba(94, 105, 97, 0.82);
   font-size: 10px;
   font-weight: 700;
-  transition: transform 180ms ease, color 180ms ease, background-color 180ms ease, box-shadow 180ms ease;
+  isolation: isolate;
+  transition: transform 180ms ease, color 180ms ease;
 }
 
 .tab-button:active {
-  transform: scale(0.97);
+  transform: translateY(1px) scale(0.97);
 }
 
 .tab-button:focus {
@@ -2006,15 +2070,47 @@ button {
 }
 
 .tab-button-active {
-  border: 1px solid rgba(255, 255, 255, 0.72);
-  background: rgba(255, 255, 255, 0.38);
   color: #4f6a5b;
-  box-shadow:
-    0 10px 24px rgba(35, 45, 38, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.72),
-    inset 0 -1px 0 rgba(111, 143, 125, 0.12);
-  backdrop-filter: blur(22px) saturate(150%);
-  -webkit-backdrop-filter: blur(22px) saturate(150%);
+}
+
+.tab-button-icon {
+  display: grid;
+  place-items: center;
+  transform-origin: 50% 80%;
+  transition: transform 180ms ease, filter 180ms ease;
+}
+
+.tab-button:active .tab-button-icon {
+  transform: translateY(-1px) scale(0.92);
+}
+
+.tab-button-active .tab-button-icon {
+  animation: tab-icon-pop 360ms cubic-bezier(0.2, 1.35, 0.32, 1);
+  filter: drop-shadow(0 4px 8px rgba(79, 106, 91, 0.18));
+}
+
+@keyframes tab-icon-pop {
+  0% {
+    transform: translateY(2px) scale(0.88);
+  }
+  55% {
+    transform: translateY(-3px) scale(1.12);
+  }
+  100% {
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tab-glass-indicator,
+  .tab-button,
+  .tab-button-icon {
+    transition: none;
+  }
+
+  .tab-button-active .tab-button-icon {
+    animation: none;
+  }
 }
 
 .pictogram {
@@ -2810,8 +2906,7 @@ button {
 .theme-dark .choice-button-active,
 .theme-dark .chip-active,
 .theme-dark .mini-chip-active,
-.theme-dark .tap-tile-active,
-.theme-dark .tab-button-active {
+.theme-dark .tap-tile-active {
   border-color: rgba(166, 199, 176, 0.34);
   background: rgba(159, 190, 169, 0.18);
   color: #edf4ee;
@@ -2822,23 +2917,31 @@ button {
 }
 
 .theme-dark .tab-button-active {
-  border-color: rgba(255, 255, 255, 0.22);
-  background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.18), rgba(159, 190, 169, 0.16)),
-    rgba(255, 255, 255, 0.08);
   color: #dff0e5;
-  box-shadow:
-    0 12px 28px rgba(0, 0, 0, 0.28),
-    inset 0 1px 0 rgba(255, 255, 255, 0.18),
-    inset 0 -1px 0 rgba(159, 190, 169, 0.1);
-  backdrop-filter: blur(22px) saturate(150%);
-  -webkit-backdrop-filter: blur(22px) saturate(150%);
 }
 
 .theme-dark .app-bottom-nav {
   border-color: rgba(255, 255, 255, 0.14);
   background: rgba(12, 16, 13, 0.46);
   box-shadow: 0 18px 42px rgba(0, 0, 0, 0.32), var(--glass-highlight);
+}
+
+.theme-dark .app-bottom-nav::before {
+  background:
+    radial-gradient(circle at var(--active-tab-glow-x, 12.5%) 18%, rgba(219, 241, 226, 0.2), transparent 18%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.06), transparent 44%);
+}
+
+.theme-dark .tab-glass-indicator {
+  border-color: rgba(255, 255, 255, 0.22);
+  background:
+    radial-gradient(circle at 24% 18%, rgba(255, 255, 255, 0.2), transparent 28%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.17), rgba(159, 190, 169, 0.16)),
+    rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 12px 28px rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    inset 0 -1px 0 rgba(159, 190, 169, 0.1);
 }
 
 .theme-dark .sticky-panel form.compact-card {
