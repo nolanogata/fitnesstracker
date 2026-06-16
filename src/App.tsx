@@ -3419,6 +3419,7 @@ function FoodTab(props: {
   const [portionQuantity, setPortionQuantity] = useState(1);
   const [manual, setManual] = useState({ ...emptyManual, savePreset: true });
   const [manualWizardStep, setManualWizardStep] = useState<ManualFoodWizardStep>("basic");
+  const [isMyMenuRegistrationOpen, setIsMyMenuRegistrationOpen] = useState(false);
   const [chainCategory, setChainCategory] = useState("牛丼・丼");
   const [brand, setBrand] = useState("松屋");
   const [categoryGenre, setCategoryGenre] = useState("ごはん・丼");
@@ -3522,6 +3523,7 @@ function FoodTab(props: {
   const selectMode = (nextMode: FoodMode) => {
     setMode(nextMode);
     if (nextMode === "personal" && showMyMenuIntro) dismissMyMenuIntro();
+    setIsMyMenuRegistrationOpen(false);
     if (nextMode !== "search") setQuery("");
     if (nextMode === "chain") {
       scrollToChainSection();
@@ -3689,7 +3691,18 @@ function FoodTab(props: {
     setManual(toManualDraft(selected, mealType));
     setSelected(undefined);
     setManualWizardStep("basic");
+    setIsMyMenuRegistrationOpen(true);
     setMode("personal");
+  };
+  const startMyMenuRegistration = () => {
+    setManual({ ...emptyManual, savePreset: true });
+    setManualWizardStep("basic");
+    setIsMyMenuRegistrationOpen(true);
+  };
+  const closeMyMenuRegistration = () => {
+    setIsMyMenuRegistrationOpen(false);
+    setManual({ ...emptyManual, savePreset: true });
+    setManualWizardStep("basic");
   };
 
   const saveManual = async () => {
@@ -3755,6 +3768,7 @@ function FoodTab(props: {
     });
     setManual({ ...emptyManual, savePreset: true });
     setManualWizardStep("basic");
+    setIsMyMenuRegistrationOpen(false);
     await props.refresh();
     props.showToast(manual.savePreset ? "食事を記録し、マイメニューに保存しました" : "食事を記録しました");
   };
@@ -4032,23 +4046,35 @@ function FoodTab(props: {
             <section className="compact-card p-4">
               <div className="mb-3 flex items-start justify-between gap-3">
                 <div>
-                  <h2 className="font-bold">マイメニュー登録</h2>
-                  <p className="mt-1 text-xs font-semibold text-moss">保存するか、今回だけ記録するかを選べます。</p>
+                  <h2 className="font-bold">マイメニュー</h2>
+                  <p className="mt-1 text-xs font-semibold text-moss">登録済みのメニューを選ぶか、新しく追加できます。</p>
                 </div>
                 <button className="secondary-button shrink-0 px-3 py-2 text-xs" onClick={props.openMyMenuSettings}>管理</button>
               </div>
-              <ManualFoodForm
-                manual={manual}
-                setManual={setManual}
-                compact
-                mode="log"
-                variant="wizard"
-                wizardStep={manualWizardStep}
-                setWizardStep={setManualWizardStep}
-                includePurposeStep
-                submitLabel={manual.savePreset ? "保存して記録" : "今回だけ記録"}
-                onSave={saveManual}
-              />
+              {!isMyMenuRegistrationOpen ? (
+                <button className="primary-button w-full" onClick={startMyMenuRegistration}>
+                  <Plus size={17} />マイメニューを登録
+                </button>
+              ) : (
+                <>
+                  <div className="mb-3 flex items-center justify-between gap-3 rounded-lg border border-line bg-base/65 px-3 py-2">
+                    <p className="text-xs font-bold text-moss">マイメニュー登録</p>
+                    <button className="secondary-button h-8 px-3 text-xs" onClick={closeMyMenuRegistration}>閉じる</button>
+                  </div>
+                  <ManualFoodForm
+                    manual={manual}
+                    setManual={setManual}
+                    compact
+                    mode="log"
+                    variant="wizard"
+                    wizardStep={manualWizardStep}
+                    setWizardStep={setManualWizardStep}
+                    includePurposeStep
+                    submitLabel={manual.savePreset ? "保存して記録" : "今回だけ記録"}
+                    onSave={saveManual}
+                  />
+                </>
+              )}
             </section>
           )}
           {shouldShowFoodResults && (
@@ -4062,7 +4088,7 @@ function FoodTab(props: {
                   <FoodItemRow
                     item={item}
                     onPick={selectFoodItem}
-                    onClone={setManualFromItem(setManual, setMode, setManualWizardStep)}
+                    onClone={setManualFromItem(setManual, setMode, setManualWizardStep, setIsMyMenuRegistrationOpen)}
                     onDelete={deleteUserMenuItem}
                     refresh={props.refresh}
                     balanceTarget={(showFoodBalance && canShowFoodBalance) || isSortFoodByFitActive || mode === "recommend" ? remainingNutrition : undefined}
@@ -9311,10 +9337,16 @@ function toManualDraft(item: MenuItem, mealType: MealType = "lunch"): ManualFood
   };
 }
 
-function setManualFromItem(setManual: (manual: ManualFoodDraft) => void, setMode: (mode: FoodMode) => void, setWizardStep?: (step: ManualFoodWizardStep) => void) {
+function setManualFromItem(
+  setManual: (manual: ManualFoodDraft) => void,
+  setMode: (mode: FoodMode) => void,
+  setWizardStep?: (step: ManualFoodWizardStep) => void,
+  setRegistrationOpen?: (open: boolean) => void,
+) {
   return (item: MenuItem) => {
     setManual(toManualDraft(item, item.default_meal_type ?? "lunch"));
     setWizardStep?.("basic");
+    setRegistrationOpen?.(true);
     setMode("personal");
   };
 }
