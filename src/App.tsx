@@ -336,8 +336,16 @@ function getActiveSpecialMode(appDate: string, settings: SpecialModeSettings[]):
 function getSpecialModeDaysInRange(start: string, end: string, settings: SpecialModeSettings[]) {
   return dateRange(start, end)
     .map((date) => {
-      const mode = getActiveSpecialMode(date, settings);
-      return mode ? { date, label: mode.label } : undefined;
+      const mode = settings.find((modeSettings) => {
+        if (!modeSettings.enabled) return false;
+        const definition = specialModeDefinitions.find((item) => item.id === modeSettings.id);
+        const startDate = modeSettings.start_date ?? definition?.defaultStartDate;
+        const endDate = modeSettings.end_date ?? definition?.defaultEndDate;
+        return !!startDate && !!endDate && date >= startDate && date <= endDate;
+      });
+      if (!mode) return undefined;
+      const definition = specialModeDefinitions.find((item) => item.id === mode.id);
+      return { date, label: mode.label ?? definition?.label ?? "旅行" };
     })
     .filter((item): item is { date: string; label: string } => !!item);
 }
@@ -1235,6 +1243,7 @@ function App() {
   const [toast, setToast] = useState<{ id: string; text: string }>();
   const [prCelebration, setPrCelebration] = useState<WorkoutPrCelebration>();
   const [achievementCelebration, setAchievementCelebration] = useState<AchievementCelebration>();
+  const [pendingAchievementIds, setPendingAchievementIds] = useState<string[]>([]);
   const [isTrophyOpen, setIsTrophyOpen] = useState(false);
   const [prefersDarkTheme, setPrefersDarkTheme] = useState(() => (
     typeof window !== "undefined" && typeof window.matchMedia === "function" && window.matchMedia("(prefers-color-scheme: dark)").matches
@@ -1245,8 +1254,10 @@ function App() {
   const appOpenedAtRef = useRef(Date.now());
   const tabHistoryRef = useRef<Tab[]>([]);
   const lastTabRef = useRef(tab);
+  const achievementFlushTabRef = useRef(tab);
   const suppressTabHistoryRef = useRef(false);
   const edgeSwipeStartRef = useRef<{ x: number; y: number; startedAt: number } | undefined>(undefined);
+  const recordCountsRef = useRef({ food: 0, weight: 0, workout: 0, report: 0 });
   const actualAppDate = todayAppDate(settings?.day_boundary_hour ?? 3, currentTime);
   const appDate = selectedAppDate ?? actualAppDate;
   const isEditingPastDate = appDate !== actualAppDate;
@@ -1476,6 +1487,27 @@ function App() {
     actualAppDate,
   ]);
 
+  useEffect(() => {
+    const previousTab = achievementFlushTabRef.current;
+    const nextCounts = {
+      food: foodEntries.length,
+      weight: weightLogs.length,
+      workout: workoutSessions.length,
+      report: aiReports.length,
+    };
+    const previous = recordCountsRef.current;
+    const didRecordIncrease = (
+      nextCounts.food > previous.food ||
+      nextCounts.weight > previous.weight ||
+      nextCounts.workout > previous.workout ||
+      nextCounts.report > previous.report
+    );
+    recordCountsRef.current = nextCounts;
+    achievementFlushTabRef.current = tab;
+    if (!pendingAchievementIds.length || achievementCelebration) return;
+    if ((previousTab !== "home" && tab === "home") || didRecordIncrease) flushPendingAchievement();
+  }, [tab, pendingAchievementIds.length, achievementCelebration, foodEntries.length, weightLogs.length, workoutSessions.length, aiReports.length]);
+
   const markBackupNow = () => {
     const timestamp = nowIso();
     localStorage.setItem(backupStorageKey, timestamp);
@@ -1497,7 +1529,7 @@ function App() {
     achievementCelebrationTimerRef.current = window.setTimeout(() => setAchievementCelebration(undefined), 5200);
   };
   const unlockAchievements = async (ids: string[], announce = true) => {
-    if (!settings) return;
+    if (!settings) return [];
     const knownIds = new Set(achievementDefinitions.map((achievement) => achievement.id));
     const current = settings.achievements ?? [];
     const currentIds = new Set(current.map((achievement) => achievement.id));
@@ -1508,7 +1540,7 @@ function App() {
         const definition = replayId ? achievementDefinition(replayId) : undefined;
         if (definition) showAchievementCelebration(definition);
       }
-      return;
+      return [];
     }
     const timestamp = nowIso();
     const nextAchievements: AchievementUnlock[] = [
@@ -1523,6 +1555,22 @@ function App() {
         showAchievementCelebration(definition, freshIds.length);
       }
     }
+    return freshIds;
+  };
+  const unlockAchievementLater = (id: string) => {
+    void unlockAchievements([id], false).then((freshIds) => {
+      if (!freshIds.length && !isDeveloperTestMode) return;
+      setPendingAchievementIds((current) => unique([...current, id]));
+    });
+  };
+  const flushPendingAchievement = () => {
+    setPendingAchievementIds((current) => {
+      const [nextId, ...rest] = current;
+      if (!nextId || achievementCelebration) return current;
+      const definition = achievementDefinition(nextId);
+      if (definition) showAchievementCelebration(definition);
+      return rest;
+    });
   };
   const showWorkoutPrCelebration = (celebration: Omit<WorkoutPrCelebration, "id">) => {
     if (prCelebrationTimerRef.current) window.clearTimeout(prCelebrationTimerRef.current);
@@ -1579,7 +1627,7 @@ function App() {
     setFoodFocus(targetTab === "food" ? "todayLog" : undefined);
     setWorkoutFocus(targetTab === "workout" ? "dateLog" : undefined);
     setTab(targetTab);
-    if (date !== actualAppDate) void unlockAchievements(["edited_past_record"]);
+    if (date !== actualAppDate) unlockAchievementLater("edited_past_record");
     showToast(`${formatJapaneseDate(date)}を編集します`);
   };
 
@@ -1767,7 +1815,7 @@ function App() {
             reloadLatestApp={reloadLatestApp}
             refresh={refresh}
             showToast={showToast}
-            unlockAchievement={(id) => void unlockAchievements([id])}
+            unlockAchievement={unlockAchievementLater}
           />
         )}
         {tab === "food" && (
@@ -1788,7 +1836,7 @@ function App() {
             onFocusHandled={() => setFoodFocus(undefined)}
             refresh={refresh}
             showToast={showToast}
-            unlockAchievement={(id) => void unlockAchievements([id])}
+            unlockAchievement={unlockAchievementLater}
           />
         )}
         {tab === "workout" && (
