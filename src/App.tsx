@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useRef, useState, type CSSProperties, type ChangeEvent, type ReactNode, type RefObject, type TouchEvent } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState, type CSSProperties, type ChangeEvent, type PointerEvent as ReactPointerEvent, type ReactNode, type RefObject, type TouchEvent } from "react";
 import {
   Activity,
   ArrowDown,
@@ -90,6 +90,7 @@ type SettingsSection = "ai" | "backup" | "goal" | "records" | "myMenu" | "genera
 type MyMenuSection = "list" | "new" | "edit";
 type HistoryGrouping = "day" | "week" | "month";
 type EditableRecordTab = "food" | "workout";
+const bottomTabs: Tab[] = ["home", "food", "workout", "records", "settings"];
 type BackupInfo = {
   lastBackupAt?: string;
   daysSinceBackup?: number;
@@ -642,6 +643,7 @@ const appUpdates: AppUpdate[] = [
     items: [
       "下部ナビでタブを切り替えた時、選択中のガラスハイライトが横に移動するようにしました。",
       "ナビアイコンをタップした時に軽く反応するアニメーションを追加しました。",
+      "ナビバーの透明度を上げ、押したままスライドしてタブを切り替えられるようにしました。",
     ],
   },
   {
@@ -1522,12 +1524,14 @@ function App() {
   const [achievementCelebration, setAchievementCelebration] = useState<AchievementCelebration>();
   const [pendingAchievementIds, setPendingAchievementIds] = useState<string[]>([]);
   const [isTrophyOpen, setIsTrophyOpen] = useState(false);
+  const [bottomNavDrag, setBottomNavDrag] = useState<{ index: number; startX: number; didMove: boolean }>();
   const [prefersDarkTheme, setPrefersDarkTheme] = useState(() => (
     typeof window !== "undefined" && typeof window.matchMedia === "function" && window.matchMedia("(prefers-color-scheme: dark)").matches
   ));
   const toastTimerRef = useRef<number | undefined>(undefined);
   const prCelebrationTimerRef = useRef<number | undefined>(undefined);
   const achievementCelebrationTimerRef = useRef<number | undefined>(undefined);
+  const suppressBottomTabClickRef = useRef(false);
   const appOpenedAtRef = useRef(Date.now());
   const tabHistoryRef = useRef<Tab[]>([]);
   const lastTabRef = useRef(tab);
@@ -1976,8 +1980,9 @@ function App() {
     records: "History",
     settings: "Settings",
   }[tab];
-  const bottomTabIndex = { home: 0, food: 1, workout: 2, records: 3, settings: 4 }[tab];
-  const bottomTabGlowX = `${12.5 + bottomTabIndex * 18.75}%`;
+  const bottomTabIndex = bottomTabs.indexOf(tab);
+  const visibleBottomTabIndex = bottomNavDrag?.index ?? bottomTabIndex;
+  const bottomTabGlowX = `${12.5 + visibleBottomTabIndex * 18.75}%`;
   const headerSubtext = tab === "home" ? "今日の記録" : formatJapaneseDate(appDate);
   const statusWeight = latestWeight?.weight_kg ?? profile?.current_weight_kg;
   const scrollCurrentTabToTop = () => {
@@ -1997,6 +2002,47 @@ function App() {
       return;
     }
     setTab(nextTab);
+  };
+  const bottomTabIndexFromPointer = (event: ReactPointerEvent<HTMLElement>) => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    const ratio = (event.clientX - rect.left) / Math.max(1, rect.width);
+    return Math.min(bottomTabs.length - 1, Math.max(0, Math.floor(ratio * bottomTabs.length)));
+  };
+  const handleBottomTabClick = (nextTab: Tab) => {
+    if (suppressBottomTabClickRef.current) {
+      suppressBottomTabClickRef.current = false;
+      return;
+    }
+    selectBottomTab(nextTab);
+  };
+  const handleBottomNavPointerDown = (event: ReactPointerEvent<HTMLElement>) => {
+    if (event.pointerType === "mouse" && event.button !== 0) return;
+    const index = bottomTabIndexFromPointer(event);
+    setBottomNavDrag({ index, startX: event.clientX, didMove: false });
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+  };
+  const handleBottomNavPointerMove = (event: ReactPointerEvent<HTMLElement>) => {
+    if (!bottomNavDrag) return;
+    const index = bottomTabIndexFromPointer(event);
+    const didMove = bottomNavDrag.didMove || Math.abs(event.clientX - bottomNavDrag.startX) > 10 || index !== bottomNavDrag.index;
+    if (index !== bottomNavDrag.index || didMove !== bottomNavDrag.didMove) {
+      setBottomNavDrag({ ...bottomNavDrag, index, didMove });
+    }
+  };
+  const finishBottomNavDrag = (event: ReactPointerEvent<HTMLElement>) => {
+    if (!bottomNavDrag) return;
+    event.currentTarget.releasePointerCapture?.(event.pointerId);
+    if (bottomNavDrag.didMove) {
+      suppressBottomTabClickRef.current = true;
+      selectBottomTab(bottomTabs[bottomNavDrag.index]);
+      window.setTimeout(() => {
+        suppressBottomTabClickRef.current = false;
+      }, 80);
+    }
+    setBottomNavDrag(undefined);
+  };
+  const cancelBottomNavDrag = () => {
+    setBottomNavDrag(undefined);
   };
 
   if (settings && !settings.onboarding_completed) {
@@ -2261,16 +2307,20 @@ function App() {
       />
 
       <nav
-        className={`safe-bottom app-bottom-nav tab-index-${bottomTabIndex} fixed inset-x-0 bottom-0 z-30 mx-auto max-w-[430px] px-3 pt-1.5`}
+        className={`safe-bottom app-bottom-nav tab-index-${visibleBottomTabIndex} ${bottomNavDrag?.didMove ? "tab-dragging" : ""} fixed inset-x-0 bottom-0 z-30 mx-auto max-w-[430px] px-3 pt-1.5`}
         style={{ "--active-tab-glow-x": bottomTabGlowX } as CSSProperties & Record<"--active-tab-glow-x", string>}
+        onPointerDown={handleBottomNavPointerDown}
+        onPointerMove={handleBottomNavPointerMove}
+        onPointerUp={finishBottomNavDrag}
+        onPointerCancel={cancelBottomNavDrag}
       >
         <span className="tab-glass-indicator" aria-hidden="true" />
         <div className="app-bottom-nav-grid grid grid-cols-5 gap-1">
-          <TabButton active={tab === "home"} icon={<Home size={19} />} label="Home" onClick={() => selectBottomTab("home")} />
-          <TabButton active={tab === "food"} icon={<Utensils size={19} />} label="Food" onClick={() => selectBottomTab("food")} />
-          <TabButton active={tab === "workout"} icon={<Dumbbell size={19} />} label="Workout" onClick={() => selectBottomTab("workout")} />
-          <TabButton active={tab === "records"} icon={<BarChart3 size={19} />} label="History" onClick={() => selectBottomTab("records")} />
-          <TabButton active={tab === "settings"} icon={<Settings size={19} />} label="Settings" onClick={() => selectBottomTab("settings")} />
+          <TabButton active={tab === "home"} icon={<Home size={19} />} label="Home" onClick={() => handleBottomTabClick("home")} />
+          <TabButton active={tab === "food"} icon={<Utensils size={19} />} label="Food" onClick={() => handleBottomTabClick("food")} />
+          <TabButton active={tab === "workout"} icon={<Dumbbell size={19} />} label="Workout" onClick={() => handleBottomTabClick("workout")} />
+          <TabButton active={tab === "records"} icon={<BarChart3 size={19} />} label="History" onClick={() => handleBottomTabClick("records")} />
+          <TabButton active={tab === "settings"} icon={<Settings size={19} />} label="Settings" onClick={() => handleBottomTabClick("settings")} />
         </div>
       </nav>
     </main>
