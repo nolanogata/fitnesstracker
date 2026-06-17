@@ -92,6 +92,7 @@ type HistoryGrouping = "day" | "week" | "month";
 type ExportSection = "backup" | "logs";
 type LogExportStep = "type" | "grouping" | "period" | "output";
 type LogExportType = "food" | "workout" | "food_workout";
+type LogExportDateTarget = "start" | "end";
 type EditableRecordTab = "food" | "workout";
 const bottomTabs: Tab[] = ["home", "food", "workout", "records", "settings"];
 type BackupInfo = {
@@ -661,7 +662,7 @@ const appUpdates: AppUpdate[] = [
     date: "2026-06-17",
     items: [
       "Settingsのバックアップ項目をエクスポートに名称変更し、バックアップJSONとログ出力を階層化しました。",
-      "食事ログ、ワークアウトログ、両方のログを日別・週別・月別で期間指定し、テキストコピー、CSV保存、MD保存できるようにしました。",
+      "食事ログ、ワークアウトログ、両方のログを日別・週別・月別でカレンダー指定し、テキストコピー、CSV保存、MD保存できるようにしました。",
     ],
   },
   {
@@ -5654,6 +5655,8 @@ function SettingsTab(props: {
   const [logExportGrouping, setLogExportGrouping] = useState<HistoryGrouping>("day");
   const [logExportStartDate, setLogExportStartDate] = useState(addDays(props.appDate, -6));
   const [logExportEndDate, setLogExportEndDate] = useState(props.appDate);
+  const [logExportCalendarMonth, setLogExportCalendarMonth] = useState(() => monthKey(props.appDate));
+  const [logExportDateTarget, setLogExportDateTarget] = useState<LogExportDateTarget>("start");
   const [logExportResult, setLogExportResult] = useState<LogExportResult>();
   const [copiedLogExport, setCopiedLogExport] = useState(false);
   const [goalHelpTopic, setGoalHelpTopic] = useState<GoalHelpTopic>();
@@ -5755,6 +5758,8 @@ function SettingsTab(props: {
   const pauseModePeriodLabel = activePauseMode?.start_date && activePauseMode.end_date
     ? `${formatJapaneseDate(activePauseMode.start_date)}〜${formatJapaneseDate(activePauseMode.end_date)}`
     : "未設定";
+  const logExportCalendarCells = useMemo(() => buildMonthCalendar(logExportCalendarMonth), [logExportCalendarMonth]);
+  const normalizedLogExportPeriod = normalizeDatePeriod(logExportStartDate, logExportEndDate);
 
   useEffect(() => {
     const mode = activePauseMode ?? props.pauseModeSettings[0];
@@ -5798,6 +5803,8 @@ function SettingsTab(props: {
   };
   const resetLogExportWizard = () => {
     setLogExportStep("type");
+    setLogExportCalendarMonth(monthKey(props.appDate));
+    setLogExportDateTarget("start");
     setLogExportResult(undefined);
     setCopiedLogExport(false);
   };
@@ -6395,14 +6402,104 @@ function SettingsTab(props: {
           {logExportStep === "period" && (
             <div className="mt-4 grid gap-3">
               <div className="grid grid-cols-2 gap-2">
-                <SelectField label="開始日" hint={`${historyGroupingLabel(logExportGrouping)}の開始`}>
-                  <input type="date" value={logExportStartDate} onChange={(event) => setLogExportStartDate(event.target.value)} />
-                </SelectField>
-                <SelectField label="終了日" hint={`${historyGroupingLabel(logExportGrouping)}の終了`}>
-                  <input type="date" value={logExportEndDate} onChange={(event) => setLogExportEndDate(event.target.value)} />
-                </SelectField>
+                <button
+                  className={`food-filter-option items-start text-left ${logExportDateTarget === "start" ? "food-filter-option-active" : ""}`}
+                  type="button"
+                  onClick={() => setLogExportDateTarget("start")}
+                >
+                  <span>
+                    <span className="block text-xs font-bold text-moss">{historyGroupingLabel(logExportGrouping)}の開始</span>
+                    <span className="mt-1 block text-sm font-black text-ink">{formatJapaneseDate(logExportStartDate)}</span>
+                  </span>
+                  <span className="mini-chip shrink-0">{logExportDateTarget === "start" ? "選択中" : "開始"}</span>
+                </button>
+                <button
+                  className={`food-filter-option items-start text-left ${logExportDateTarget === "end" ? "food-filter-option-active" : ""}`}
+                  type="button"
+                  onClick={() => setLogExportDateTarget("end")}
+                >
+                  <span>
+                    <span className="block text-xs font-bold text-moss">{historyGroupingLabel(logExportGrouping)}の終了</span>
+                    <span className="mt-1 block text-sm font-black text-ink">{formatJapaneseDate(logExportEndDate)}</span>
+                  </span>
+                  <span className="mini-chip shrink-0">{logExportDateTarget === "end" ? "選択中" : "終了"}</span>
+                </button>
               </div>
-              <p className="rounded-2xl border border-line bg-rice/60 px-3 py-2 text-xs font-semibold text-moss">開始日と終了日が逆でも、出力時に自動で並べ替えます。</p>
+              <div className="rounded-[1.5rem] border border-line bg-rice/50 p-3">
+                <div className="flex items-center justify-between gap-2">
+                  <button
+                    className="icon-button"
+                    type="button"
+                    aria-label="前の月"
+                    onClick={() => setLogExportCalendarMonth((month) => shiftMonthKey(month, -1))}
+                  >
+                    <ChevronLeft size={18} />
+                  </button>
+                  <div className="flex min-w-0 items-center gap-2 text-sm font-black text-ink">
+                    <CalendarDays size={17} />
+                    <span>{formatMonthLabel(logExportCalendarMonth)}</span>
+                  </div>
+                  <button
+                    className="icon-button"
+                    type="button"
+                    aria-label="次の月"
+                    onClick={() => setLogExportCalendarMonth((month) => shiftMonthKey(month, 1))}
+                  >
+                    <ChevronRight size={18} />
+                  </button>
+                </div>
+                <button
+                  className="mx-auto mt-2 block text-xs font-bold text-leaf underline decoration-leaf/40 underline-offset-4"
+                  type="button"
+                  onClick={() => setLogExportCalendarMonth(monthKey(props.appDate))}
+                >
+                  今月へ
+                </button>
+                <div className="mt-3 grid grid-cols-7 gap-1 text-center text-[10px] font-bold text-moss">
+                  {["日", "月", "火", "水", "木", "金", "土"].map((day) => <span key={day}>{day}</span>)}
+                </div>
+                <div className="mt-1 grid grid-cols-7 gap-1">
+                  {logExportCalendarCells.map((cell, index) => {
+                    if (!cell.date) return <span key={`empty-${index}`} className="aspect-square" />;
+                    const pickedDate = cell.date;
+                    const isStart = pickedDate === logExportStartDate;
+                    const isEnd = pickedDate === logExportEndDate;
+                    const isInRange = pickedDate >= normalizedLogExportPeriod.start && pickedDate <= normalizedLogExportPeriod.end;
+                    const isToday = pickedDate === props.appDate;
+                    return (
+                      <button
+                        key={pickedDate}
+                        className={[
+                          "relative flex aspect-square items-center justify-center rounded-2xl border text-sm font-black transition",
+                          isStart || isEnd
+                            ? "border-leaf bg-leaf text-white shadow-soft"
+                            : isInRange
+                              ? "border-leaf/30 bg-leaf/10 text-ink"
+                              : "border-transparent bg-transparent text-ink hover:border-line hover:bg-white/70",
+                        ].join(" ")}
+                        type="button"
+                        onClick={() => {
+                          if (logExportDateTarget === "start") {
+                            setLogExportStartDate(pickedDate);
+                            setLogExportDateTarget("end");
+                          } else {
+                            setLogExportEndDate(pickedDate);
+                            setLogExportDateTarget("start");
+                          }
+                          setLogExportResult(undefined);
+                          setCopiedLogExport(false);
+                        }}
+                      >
+                        {cell.day}
+                        {isToday && !(isStart || isEnd) && <span className="absolute bottom-1 h-1 w-1 rounded-full bg-leaf" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              <p className="rounded-2xl border border-line bg-rice/60 px-3 py-2 text-xs font-semibold text-moss">
+                出力期間: {formatJapaneseDate(normalizedLogExportPeriod.start)}〜{formatJapaneseDate(normalizedLogExportPeriod.end)}
+              </p>
               <div className="grid grid-cols-2 gap-2">
                 <button className="secondary-button" onClick={() => setLogExportStep("grouping")}><ChevronLeft size={17} />戻る</button>
                 <button className="primary-button" disabled={!logExportStartDate || !logExportEndDate} onClick={generateLogExport}><FileText size={17} />出力</button>
