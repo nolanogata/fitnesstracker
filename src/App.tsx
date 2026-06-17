@@ -189,6 +189,10 @@ type MenuSizeVariant = {
   rank: number;
   groupKey: string;
 };
+type MenuSizeVariantIndex = {
+  variantsByItemId: Map<string, MenuSizeVariant>;
+  variantsByGroupKey: Map<string, MenuSizeVariant[]>;
+};
 type StaplePortionConfig = {
   kind: "rice" | "noodle";
   label: string;
@@ -3815,6 +3819,8 @@ function FoodTab(props: {
 
   const favoriteItems = useMemo(() => props.menuItems.filter((item) => item.is_favorite), [props.menuItems]);
   const menuItemsById = useMemo(() => new Map(props.menuItems.map((item) => [item.id, item])), [props.menuItems]);
+  const menuSearchTextById = useMemo(() => buildMenuSearchTextIndex(props.menuItems), [props.menuItems]);
+  const menuSizeVariantIndex = useMemo(() => buildMenuSizeVariantIndex(props.menuItems), [props.menuItems]);
   const recentFoodEntries = useMemo(
     () => [...props.foodEntries].sort((a, b) => b.logged_at.localeCompare(a.logged_at)).slice(0, 10),
     [props.foodEntries],
@@ -4006,11 +4012,10 @@ function FoodTab(props: {
     if (isSearching && !wasSearching) {
       props.unlockAchievement("used_food_search");
       if (mode !== "chain") setMode("search");
-      scrollToFoodResults();
     }
   };
   const portionOptions = selected ? getPortionOptions(selected) : [];
-  const selectedSizeVariants = useMemo(() => selected ? getMenuSizeVariants(selected, props.menuItems) : [], [selected?.id, props.menuItems]);
+  const selectedSizeVariants = useMemo(() => selected ? getMenuSizeVariants(selected, menuSizeVariantIndex) : [], [selected?.id, menuSizeVariantIndex]);
   const hasSelectedSizeVariants = selectedSizeVariants.length > 1;
   const selectedSizeVariantLabel = selectedSizeVariants.find((variant) => variant.item.id === selected?.id)?.label;
   const selectedDisplayName = selected
@@ -4070,16 +4075,16 @@ function FoodTab(props: {
         if (mode === "chain") return item.brand === brand;
         return true;
       });
-    const sorted = sortSpecialModeFoodItems(dedupeMenuItemsBySource(base), props.activeSpecialMode);
-    const matched = needle
-      ? sorted.filter((item) => {
-        const haystack = `${item.name} ${item.brand ?? ""} ${item.category} ${item.tags.join(" ")} ${item.serving_label ?? ""}`.toLowerCase();
+    const matchedBase = needle
+      ? base.filter((item) => {
+        const haystack = menuSearchTextById.get(item.id) ?? "";
         return tokens.every((token) => haystack.includes(token));
       })
-      : sorted;
+      : base;
+    const matched = sortSpecialModeFoodItems(dedupeMenuItemsBySource(matchedBase), props.activeSpecialMode);
     const generalFiltered = showGeneralFoodsOnly ? matched.filter(isGeneralFoodMenuItem) : mergeGenericDuplicateMenuItems(matched);
-    const sizeMerged = (isGlobalSearch || mode === "search" || mode === "chain" || mode === "recommend")
-      ? mergeMenuSizeVariantItems(generalFiltered)
+    const sizeMerged = (needle || mode === "search" || mode === "chain" || mode === "recommend")
+      ? mergeMenuSizeVariantItems(generalFiltered, menuSizeVariantIndex)
       : generalFiltered;
     const filtered = hideOverGoalItems && canUseOverGoalFilter
       ? sizeMerged.filter((item) => fitsRemainingFoodFilter(item, remainingNutrition))
@@ -4098,6 +4103,8 @@ function FoodTab(props: {
     return recommended.slice(0, 80);
   }, [
     props.menuItems,
+    menuSearchTextById,
+    menuSizeVariantIndex,
     props.goal?.id,
     query,
     mode,
@@ -4803,7 +4810,7 @@ function FoodTab(props: {
                   )}
                   <FoodItemRow
                     item={item}
-                    displayName={getMenuDisplayName(item, props.menuItems)}
+                    displayName={getMenuDisplayName(item, menuSizeVariantIndex)}
                     onPick={selectFoodItem}
                     onClone={openMenuEdit}
                     onDelete={deleteUserMenuItem}
@@ -12040,10 +12047,32 @@ const menuSizeVariantLabels = [
 ];
 const menuSizeVariantRanks = new Map(menuSizeVariantLabels.map((label, index) => [normalizeExactMenuKeyPart(label), index]));
 
-function mergeMenuSizeVariantItems(items: MenuItem[]) {
-  const groups = new Map<string, MenuSizeVariant[]>();
+function buildMenuSearchTextIndex(items: MenuItem[]) {
+  return new Map(items.map((item) => [
+    item.id,
+    `${item.name} ${item.brand ?? ""} ${item.category} ${item.tags.join(" ")} ${item.serving_label ?? ""}`.toLowerCase(),
+  ]));
+}
+
+function buildMenuSizeVariantIndex(items: MenuItem[]): MenuSizeVariantIndex {
+  const variantsByItemId = new Map<string, MenuSizeVariant>();
+  const variantsByGroupKey = new Map<string, MenuSizeVariant[]>();
   items.forEach((item) => {
     const variant = getMenuSizeVariant(item);
+    if (!variant) return;
+    variantsByItemId.set(item.id, variant);
+    variantsByGroupKey.set(variant.groupKey, [...(variantsByGroupKey.get(variant.groupKey) ?? []), variant]);
+  });
+  variantsByGroupKey.forEach((variants, groupKey) => {
+    variantsByGroupKey.set(groupKey, sortMenuSizeVariants(variants));
+  });
+  return { variantsByItemId, variantsByGroupKey };
+}
+
+function mergeMenuSizeVariantItems(items: MenuItem[], variantIndex: MenuSizeVariantIndex) {
+  const groups = new Map<string, MenuSizeVariant[]>();
+  items.forEach((item) => {
+    const variant = variantIndex.variantsByItemId.get(item.id);
     if (!variant) return;
     groups.set(variant.groupKey, [...(groups.get(variant.groupKey) ?? []), variant]);
   });
@@ -12060,23 +12089,23 @@ function mergeMenuSizeVariantItems(items: MenuItem[]) {
   });
   return items.filter((item) => {
     if (!groupedItemIds.has(item.id)) return true;
-    const variant = getMenuSizeVariant(item);
+    const variant = variantIndex.variantsByItemId.get(item.id);
     return !!variant && representativeByGroup.get(variant.groupKey) === item.id;
   });
 }
 
-function getMenuSizeVariants(selected: MenuItem, menuItems: MenuItem[]) {
-  const selectedVariant = getMenuSizeVariant(selected);
+function getMenuSizeVariants(selected: MenuItem, variantIndex: MenuSizeVariantIndex) {
+  const selectedVariant = variantIndex.variantsByItemId.get(selected.id);
   if (!selectedVariant) return [];
-  const variants = menuItems
-    .map(getMenuSizeVariant)
-    .filter((variant): variant is MenuSizeVariant => !!variant && variant.groupKey === selectedVariant.groupKey);
-  return variants.length > 1 ? sortMenuSizeVariants(variants) : [];
+  const variants = variantIndex.variantsByGroupKey.get(selectedVariant.groupKey) ?? [];
+  return variants.length > 1 ? variants : [];
 }
 
-function getMenuDisplayName(item: MenuItem, menuItems: MenuItem[]) {
-  if (getMenuSizeVariants(item, menuItems).length <= 1) return formatMenuItemName(item);
-  const variant = getMenuSizeVariant(item);
+function getMenuDisplayName(item: MenuItem, variantIndex: MenuSizeVariantIndex) {
+  const variant = variantIndex.variantsByItemId.get(item.id);
+  if (!variant) return formatMenuItemName(item);
+  const variants = variantIndex.variantsByGroupKey.get(variant.groupKey) ?? [];
+  if (variants.length <= 1) return formatMenuItemName(item);
   return variant?.baseName ?? formatMenuItemName(item);
 }
 
