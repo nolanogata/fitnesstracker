@@ -5646,6 +5646,10 @@ function WorkoutTab(props: {
     }, 80);
   };
 
+  const dismissWorkoutKeyboard = () => {
+    if (document.activeElement === workoutSearchInputRef.current) workoutSearchInputRef.current?.blur();
+  };
+
   const startFromTemplate = async (template: WorkoutTemplate) => {
     const timestamp = nowIso();
     const newSession: WorkoutSession = {
@@ -5820,7 +5824,16 @@ function WorkoutTab(props: {
         <section className="compact-card p-3" ref={workoutSearchSectionRef}>
           <div ref={workoutSearchControlsRef}>
             {mode === "search" ? (
-              <input ref={workoutSearchInputRef} className="h-12 w-full text-base" value={filter} onChange={(event) => setFilter(event.target.value)} placeholder="種目検索" />
+              <input
+                ref={workoutSearchInputRef}
+                className="h-12 w-full text-base"
+                value={filter}
+                onChange={(event) => setFilter(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") dismissWorkoutKeyboard();
+                }}
+                placeholder="種目検索"
+              />
             ) : (
               <div className="grid grid-cols-2 gap-2">
               {workoutFilterOptions.map((item) => (
@@ -5829,7 +5842,7 @@ function WorkoutTab(props: {
               </div>
             )}
           </div>
-          <div className="mt-3 divide-y divide-line">
+          <div className="mt-3 divide-y divide-line" onPointerDown={dismissWorkoutKeyboard} onTouchStart={dismissWorkoutKeyboard} onWheel={dismissWorkoutKeyboard}>
             {exerciseResults.map((exercise) => (
               <ExercisePresetRow
                 exercise={exercise}
