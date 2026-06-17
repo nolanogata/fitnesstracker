@@ -30,3 +30,4 @@
 - Exception days such as cheat day, travel modes, and pause mode keep streaks intact and visually mark Home goal evaluation as special handling.
 - Settings is hierarchical like iOS Settings. Current top-level groups are AI report, Export, Goal, Record settings, My Menu, My Training, and General.
 - Registered My Menu and My Training entries support overwrite editing so small variations do not create accidental duplicates.
+- Trophies reward first-use moments and long-term consistency. New feature adoption includes AI Photo logging and My Training registration; streak milestones currently include 3, 7, 14, 30, 45, 60, 75, 100, 150, and 365 days.

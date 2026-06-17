@@ -151,6 +151,7 @@ type AchievementMetric =
   | "exerciseVariety"
   | "checkins"
   | "userMenus"
+  | "myTrainingExercises"
   | "aiReports"
   | "streak"
   | "prCount"
@@ -716,7 +717,9 @@ const achievementDefinitions: AchievementDefinition[] = [
   { id: "first_checkin", title: "朝の測定士", description: "体重・体脂肪を記録した", tone: "starter" },
   { id: "first_workout", title: "鉄の門を叩く者", description: "ワークアウトを1件記録した", tone: "training" },
   { id: "first_my_menu", title: "マイメニュー職人", description: "初めてマイメニューを登録した", tone: "nutrition" },
+  { id: "first_my_training", title: "マイトレ職人", description: "初めてマイトレを登録した", tone: "training" },
   { id: "first_ai_report", title: "AI相談デビュー", description: "AI相談レポートを生成した", tone: "system" },
+  { id: "used_ai_photo", title: "AI写真デビュー", description: "AI写真登録を使った", tone: "system" },
   { id: "used_food_search", title: "検索デビュー", description: "フード検索を使った", tone: "system" },
   { id: "used_perfect_food", title: "ぴったり探し", description: "ぴったりフードを使った", tone: "system" },
   { id: "used_food_filter", title: "フィルター入門", description: "フード検索フィルターを試した", tone: "system" },
@@ -773,14 +776,19 @@ const achievementDefinitions: AchievementDefinition[] = [
   { id: "weight_goal_avg_7", title: "流れを掴む者", description: "7日平均体重が目標方向に動いた回数が7回ある", tone: "streak" },
   { id: "my_menu_5", title: "私設食堂", description: "マイメニューを5件登録した", tone: "system" },
   { id: "my_menu_20", title: "マイメニュー工房", description: "マイメニューを20件登録した", tone: "system" },
+  { id: "my_training_5", title: "種目アレンジャー", description: "マイトレを5件登録した", tone: "training" },
   { id: "ai_report_5", title: "相談室の常連", description: "AI相談レポートを5回生成した", tone: "system" },
   { id: "ai_report_20", title: "参謀会議", description: "AI相談レポートを20回生成した", tone: "system" },
   { id: "streak_3", title: "三日の灯火", description: "3日連続で何かを記録した", tone: "streak" },
   { id: "streak_7", title: "七日間の旅路", description: "7日連続で記録した", tone: "streak" },
   { id: "streak_14", title: "2週間の流れ", description: "14日連続で記録した", tone: "streak" },
   { id: "streak_30", title: "月の巡礼者", description: "30日連続で記録した", tone: "streak" },
+  { id: "streak_45", title: "45日のリズム", description: "45日連続で記録した", tone: "streak" },
   { id: "streak_60", title: "習慣の守護者", description: "60日連続で記録した", tone: "streak" },
+  { id: "streak_75", title: "75日の巡航", description: "75日連続で記録した", tone: "streak" },
   { id: "streak_100", title: "百日のレジェンド", description: "100日連続で記録した", tone: "streak" },
+  { id: "streak_150", title: "百五十日の軌跡", description: "150日連続で記録した", tone: "streak" },
+  { id: "streak_365", title: "一年の王冠", description: "365日連続で記録した", tone: "streak" },
 ];
 const achievementProgressSpecs: Record<string, AchievementProgressSpec> = {
   food_3: { metric: "foodEntries", target: 3, unit: "件" },
@@ -833,16 +841,31 @@ const achievementProgressSpecs: Record<string, AchievementProgressSpec> = {
   weight_goal_avg_7: { metric: "weightGoalAverageMoves", target: 7, unit: "回" },
   my_menu_5: { metric: "userMenus", target: 5, unit: "件" },
   my_menu_20: { metric: "userMenus", target: 20, unit: "件" },
+  my_training_5: { metric: "myTrainingExercises", target: 5, unit: "件" },
   ai_report_5: { metric: "aiReports", target: 5, unit: "回" },
   ai_report_20: { metric: "aiReports", target: 20, unit: "回" },
   streak_3: { metric: "streak", target: 3, unit: "日" },
   streak_7: { metric: "streak", target: 7, unit: "日" },
   streak_14: { metric: "streak", target: 14, unit: "日" },
   streak_30: { metric: "streak", target: 30, unit: "日" },
+  streak_45: { metric: "streak", target: 45, unit: "日" },
   streak_60: { metric: "streak", target: 60, unit: "日" },
+  streak_75: { metric: "streak", target: 75, unit: "日" },
   streak_100: { metric: "streak", target: 100, unit: "日" },
+  streak_150: { metric: "streak", target: 150, unit: "日" },
+  streak_365: { metric: "streak", target: 365, unit: "日" },
 };
 const appUpdates: AppUpdate[] = [
+  {
+    id: "2026-06-18-my-training-achievements",
+    title: "マイトレ登録とトロフィーを追加",
+    date: "2026-06-18",
+    items: [
+      "WorkoutとSettingsにマイトレ管理を追加し、狙い方やジム差分を別名の種目として登録・編集できるようにしました。",
+      "AI写真登録やマイトレ登録など、新機能を試した時のトロフィーを追加しました。",
+      "連続記録トロフィーに45日・75日・150日・365日の節目を追加しました。",
+    ],
+  },
   {
     id: "2026-06-17-ai-photo-food-import",
     title: "FoodにAI写真登録を追加",
@@ -2051,6 +2074,7 @@ function App() {
     profile,
     goals,
     menuItems,
+    exercisePresets,
     foodEntries,
     weightLogs,
     workoutSessions,
@@ -2067,6 +2091,7 @@ function App() {
     profile?.current_weight_kg,
     goals.length,
     menuItems.length,
+    exercisePresets.length,
     foodEntries.length,
     weightLogs.length,
     workoutSessions.length,
@@ -2803,6 +2828,7 @@ function getUnlockedAchievementIds(params: {
   profile?: Profile;
   goals: Goal[];
   menuItems: MenuItem[];
+  exercisePresets: ExercisePreset[];
   foodEntries: FoodEntry[];
   weightLogs: WeightLog[];
   workoutSessions: WorkoutSession[];
@@ -2823,6 +2849,7 @@ function getAchievementSnapshot(params: {
   profile?: Profile;
   goals: Goal[];
   menuItems: MenuItem[];
+  exercisePresets: ExercisePreset[];
   foodEntries: FoodEntry[];
   weightLogs: WeightLog[];
   workoutSessions: WorkoutSession[];
@@ -2862,6 +2889,12 @@ function getAchievementSnapshot(params: {
   const userMenuCount = params.menuItems.filter((item) => item.is_user_created).length;
   if (userMenuCount > 0) unlocked.add("first_my_menu");
   addMilestones(userMenuCount, [[5, "my_menu_5"], [20, "my_menu_20"]]);
+  const myTrainingCount = params.exercisePresets.filter((item) => item.is_user_created).length;
+  if (myTrainingCount > 0) unlocked.add("first_my_training");
+  addMilestones(myTrainingCount, [[5, "my_training_5"]]);
+  const aiPhotoUseCount = params.foodEntries.filter((entry) => entry.note?.includes("AI写真登録") || entry.entry_source === "estimated").length
+    + params.menuItems.filter((item) => item.tags.includes("AI写真登録")).length;
+  if (aiPhotoUseCount > 0) unlocked.add("used_ai_photo");
   if (params.aiReports.length > 0) unlocked.add("first_ai_report");
   addMilestones(params.aiReports.length, [[5, "ai_report_5"], [20, "ai_report_20"]]);
   const streak = longestRecordStreak([
@@ -2874,7 +2907,7 @@ function getAchievementSnapshot(params: {
     specialModeSettings: params.specialModeSettings ?? [],
     pauseModeSettings: params.pauseModeSettings ?? [],
   }));
-  addMilestones(streak, [[3, "streak_3"], [7, "streak_7"], [14, "streak_14"], [30, "streak_30"], [60, "streak_60"], [100, "streak_100"]]);
+  addMilestones(streak, [[3, "streak_3"], [7, "streak_7"], [14, "streak_14"], [30, "streak_30"], [45, "streak_45"], [60, "streak_60"], [75, "streak_75"], [100, "streak_100"], [150, "streak_150"], [365, "streak_365"]]);
   const workoutHistory = buildWorkoutHistory(params.workoutSessions, params.workoutExercises, params.workoutSets);
   const prCount = workoutHistory.reduce((sum, item) => sum + item.prs.length, 0);
   addMilestones(prCount, [[1, "workout_pr"], [5, "workout_pr_5"], [10, "workout_pr_10"], [25, "workout_pr_25"]]);
@@ -8846,19 +8879,17 @@ function MyTrainingModal({ initialDraft, exercisePresets, weightPresetStore, onC
 
         {step === "method" && (
           <div className="mt-5 grid gap-2">
-            <button className="choice-button h-auto min-h-[4.75rem] flex-col items-start justify-center px-4 py-3 text-left" onClick={() => setStep("source")}>
+            <button className="choice-button h-16 items-center justify-start px-4 text-left" onClick={() => setStep("source")}>
               <span className="font-black">既存の種目をカスタマイズ</span>
-              <span className="mt-1 text-xs font-semibold text-moss">ペックフライ上部狙い、別ジムのマシンなどを元種目から作ります。</span>
             </button>
             <button
-              className="choice-button h-auto min-h-[4.75rem] flex-col items-start justify-center px-4 py-3 text-left"
+              className="choice-button h-16 items-center justify-start px-4 text-left"
               onClick={() => {
                 setDraft(myTrainingDraftFromExercise(undefined, { name: "" }));
                 setStep("basic");
               }}
             >
               <span className="font-black">新規登録</span>
-              <span className="mt-1 text-xs font-semibold text-moss">部位、器具、重量プリセットを最初から設定します。</span>
             </button>
           </div>
         )}
