@@ -86,7 +86,7 @@ type WorkoutMode = "favorite" | "preset" | "body" | "equipment" | "previous" | "
 type FoodFocus = "todayLog" | "specialMode" | undefined;
 type FoodAddStep = "size" | "customSize" | "quantity" | "timing" | "confirm";
 type ManualFoodWizardStep = "basic" | "unit" | "purpose" | "category" | "nutrition" | "confirm";
-type AiFoodImportStep = "prompt" | "paste" | "match" | "confirm";
+type AiFoodImportStep = "prompt" | "paste" | "match" | "timing" | "confirm";
 type WorkoutFocus = "dateLog" | undefined;
 type SettingsFocus = "ai" | "backup" | "myMenu" | "goal" | undefined;
 type SettingsSection = "ai" | "backup" | "goal" | "records" | "myMenu" | "general";
@@ -7570,7 +7570,8 @@ function AiFoodImportModal({ step, setStep, text, setText, items, candidates, se
   onReset: () => void;
   onClose: () => void;
 }) {
-  const stepIndex = (["prompt", "paste", "match", "confirm"] as AiFoodImportStep[]).indexOf(step);
+  const aiFoodSteps: AiFoodImportStep[] = ["prompt", "paste", "match", "timing", "confirm"];
+  const stepIndex = aiFoodSteps.indexOf(step);
   const setSelection = (index: number, selection: AiFoodImportSelection) => {
     setSelections({ ...selections, [index]: selection });
   };
@@ -7595,22 +7596,22 @@ function AiFoodImportModal({ step, setStep, text, setText, items, candidates, se
           <button className="icon-button h-9 w-9 shrink-0" aria-label="閉じる" onClick={onClose}>×</button>
         </div>
         <div className="manual-wizard-progress mt-4" aria-hidden="true">
-          {(["prompt", "paste", "match", "confirm"] as AiFoodImportStep[]).map((item, index) => (
+          {aiFoodSteps.map((item, index) => (
             <span className={index <= stepIndex ? "food-add-progress-dot food-add-progress-dot-active" : "food-add-progress-dot"} key={item} />
           ))}
         </div>
         <p className="mt-2 text-xs font-bold text-moss">
-          {step === "prompt" ? "1. プロンプトをコピー" : step === "paste" ? "2. AI出力を貼り付け" : step === "match" ? "3. 既存メニューと照合" : "4. 記録内容を確認"}
+          {step === "prompt" ? "1. プロンプトをコピー" : step === "paste" ? "2. AI出力を貼り付け" : step === "match" ? "3. 既存メニューと照合" : step === "timing" ? "4. 記録タイミングを選択" : "5. 記録内容を確認"}
         </p>
 
         {step === "prompt" && (
           <div className="mt-4 space-y-3">
-            <div className="rounded-3xl border border-line bg-rice/60 p-3 text-xs font-semibold leading-relaxed text-moss">
+            <div className="ai-food-helper-card">
               <p>1. 下のプロンプトをコピーしてAIに貼り付けます。</p>
               <p className="mt-1">2. 写真・バーコード・栄養成分表示も一緒に添付して送信します。</p>
               <p className="mt-1">3. AIのコードブロックをコピーして、この画面の次ステップに貼り付けます。</p>
             </div>
-            <div className="rounded-3xl border border-line bg-white/25 p-3">
+            <div className="ai-food-panel">
               <p className="text-sm font-bold">AIへ渡すプロンプト</p>
               <textarea className="mt-3 min-h-48 w-full text-xs leading-relaxed" readOnly value={aiFoodImportPrompt} />
             </div>
@@ -7636,7 +7637,7 @@ function AiFoodImportModal({ step, setStep, text, setText, items, candidates, se
         {step === "match" && (
           <div className="mt-4 space-y-3">
             {items.map((item, index) => (
-              <div className="rounded-3xl border border-line bg-white/25 p-3" key={`${item.observed_name}-${index}`}>
+              <div className="ai-food-panel" key={`${item.observed_name}-${index}`}>
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="truncate text-sm font-black">{item.possible_menu_name || item.observed_name}</p>
@@ -7645,7 +7646,7 @@ function AiFoodImportModal({ step, setStep, text, setText, items, candidates, se
                   <span className="mini-chip shrink-0">{confidenceLabel(item.confidence)}</span>
                 </div>
                 {item.needs_confirmation.length > 0 && (
-                  <p className="mt-2 rounded-2xl bg-rice/60 px-3 py-2 text-xs font-semibold text-moss">確認: {item.needs_confirmation.join(" / ")}</p>
+                  <p className="ai-food-note mt-2">確認: {item.needs_confirmation.join(" / ")}</p>
                 )}
                 <div className="mt-3 space-y-2">
                   {candidates[index]?.slice(0, 4).map((candidate) => (
@@ -7687,20 +7688,38 @@ function AiFoodImportModal({ step, setStep, text, setText, items, candidates, se
           </div>
         )}
 
+        {step === "timing" && (
+          <div className="mt-4 space-y-3">
+            <div className="ai-food-helper-card">
+              <p className="text-sm font-black text-ink">いつの記録にする？</p>
+              <p className="mt-1 text-xs font-semibold text-moss">取り込むメニューすべてに同じタイミングを設定します。あとから食事ログで個別編集できます。</p>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              {Object.entries(mealLabels).map(([key, label]) => (
+                <button
+                  className={`food-add-choice ${mealType === key ? "food-add-choice-active" : ""}`}
+                  key={key}
+                  onClick={() => setMealType(key as MealType)}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {step === "confirm" && (
           <div className="mt-4 space-y-3">
-            <label className="block text-xs font-bold text-moss">
-              記録タイミング
-              <select className="mt-2 w-full" value={mealType} onChange={(event) => setMealType(event.target.value as MealType)}>
-                {Object.entries(mealLabels).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
-              </select>
-            </label>
+            <div className="ai-food-timing-summary">
+              <span>記録タイミング</span>
+              <strong>{mealLabels[mealType]}</strong>
+            </div>
             <div className="space-y-2">
               {selectedSummary.map(({ item, selection, matched }, index) => {
                 const name = matched ? formatMenuItemName(matched) : item.possible_menu_name || item.observed_name;
                 const nutrition = matched ?? item.nutrition_estimate;
                 return (
-                  <div className="rounded-3xl border border-line bg-white/25 p-3" key={`${name}-${index}`}>
+                  <div className="ai-food-summary-card" key={`${name}-${index}`}>
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
                         <p className="truncate text-sm font-black">{name}</p>
@@ -7730,14 +7749,15 @@ function AiFoodImportModal({ step, setStep, text, setText, items, candidates, se
                 onClose();
                 return;
               }
-              setStep(step === "paste" ? "prompt" : step === "match" ? "paste" : "match");
+              setStep(step === "paste" ? "prompt" : step === "match" ? "paste" : step === "timing" ? "match" : "timing");
             }}
           >
             {step === "prompt" ? "閉じる" : <><ChevronLeft size={17} />戻る</>}
           </button>
           {step === "prompt" && <button className="primary-button" onClick={() => setStep("paste")}>貼り付けへ<ChevronRight size={17} /></button>}
           {step === "paste" && <button className="primary-button" onClick={onParse}>照合へ<ChevronRight size={17} /></button>}
-          {step === "match" && <button className="primary-button" disabled={!items.length} onClick={() => setStep("confirm")}>確認へ<ChevronRight size={17} /></button>}
+          {step === "match" && <button className="primary-button" disabled={!items.length} onClick={() => setStep("timing")}>タイミングへ<ChevronRight size={17} /></button>}
+          {step === "timing" && <button className="primary-button" disabled={!items.length} onClick={() => setStep("confirm")}>確認へ<ChevronRight size={17} /></button>}
           {step === "confirm" && <button className="primary-button" disabled={!items.length} onClick={onSave}><Check size={17} />記録</button>}
         </div>
         {step !== "prompt" && (
