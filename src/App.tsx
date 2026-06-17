@@ -3760,9 +3760,9 @@ function FoodTab(props: {
     }
     const nextCandidates = result.items.map((item) => buildAiFoodImportCandidates(item, props.menuItems));
     setAiFoodImportItems(result.items);
-    setAiFoodImportSelections(Object.fromEntries(result.items.map((_, index) => {
-      const top = nextCandidates[index]?.[0];
-      return [index, top && top.score >= 36 ? { source: "menu", menuItemId: top.item.id } : { source: "ai_once" }];
+    setAiFoodImportSelections(Object.fromEntries(nextCandidates.flatMap((candidateGroup, index) => {
+      const top = candidateGroup[0];
+      return top && top.score >= 36 ? [[index, { source: "menu", menuItemId: top.item.id } satisfies AiFoodImportSelection]] : [];
     })));
     setAiFoodMealType(inferAiFoodMealType(result.items));
     setAiFoodImportError("");
@@ -4803,6 +4803,7 @@ function FoodTab(props: {
           text={aiFoodImportText}
           setText={setAiFoodImportText}
           items={aiFoodImportItems}
+          menuItems={props.menuItems}
           candidates={aiFoodMatchCandidates}
           selections={aiFoodImportSelections}
           setSelections={setAiFoodImportSelections}
@@ -7552,12 +7553,13 @@ function RecentFoodEntryRow({ entry, displayName, onLog }: { entry: FoodEntry; d
   );
 }
 
-function AiFoodImportModal({ step, setStep, text, setText, items, candidates, selections, setSelections, mealType, setMealType, error, copiedPrompt, onCopyPrompt, onParse, onSave, onReset, onClose }: {
+function AiFoodImportModal({ step, setStep, text, setText, items, menuItems, candidates, selections, setSelections, mealType, setMealType, error, copiedPrompt, onCopyPrompt, onParse, onSave, onReset, onClose }: {
   step: AiFoodImportStep;
   setStep: (step: AiFoodImportStep) => void;
   text: string;
   setText: (text: string) => void;
   items: AiFoodBridgeItem[];
+  menuItems: MenuItem[];
   candidates: AiFoodMatchCandidate[][];
   selections: Record<number, AiFoodImportSelection>;
   setSelections: (selections: Record<number, AiFoodImportSelection>) => void;
@@ -7573,18 +7575,69 @@ function AiFoodImportModal({ step, setStep, text, setText, items, candidates, se
 }) {
   const aiFoodSteps: AiFoodImportStep[] = ["prompt", "paste", "match", "timing", "confirm"];
   const stepIndex = aiFoodSteps.indexOf(step);
+  const [matchIndex, setMatchIndex] = useState(0);
+  const [isManualSearchOpen, setIsManualSearchOpen] = useState(false);
+  const [manualSearchQuery, setManualSearchQuery] = useState("");
+  const menuItemsById = useMemo(() => new Map(menuItems.map((item) => [item.id, item])), [menuItems]);
   const setSelection = (index: number, selection: AiFoodImportSelection) => {
     setSelections({ ...selections, [index]: selection });
   };
+  const goToNextMatchItem = (index: number) => {
+    setIsManualSearchOpen(false);
+    setManualSearchQuery("");
+    if (index < items.length - 1) {
+      setMatchIndex(index + 1);
+      return;
+    }
+    setStep("timing");
+  };
+  const chooseCurrentSelection = (selection: AiFoodImportSelection) => {
+    const index = Math.min(matchIndex, Math.max(0, items.length - 1));
+    setSelection(index, selection);
+    goToNextMatchItem(index);
+  };
+  useEffect(() => {
+    if (matchIndex < items.length) return;
+    setMatchIndex(Math.max(0, items.length - 1));
+  }, [items.length, matchIndex]);
+  useEffect(() => {
+    if (step === "match") return;
+    setIsManualSearchOpen(false);
+    setManualSearchQuery("");
+  }, [step]);
   const selectedSummary = items.map((item, index) => {
     const selection = selections[index] ?? { source: "ai_once" };
-    const matched = selection.source === "menu" && selection.menuItemId
-      ? candidates[index]?.find((candidate) => candidate.item.id === selection.menuItemId)?.item
-      : undefined;
+    const matched = selection.source === "menu" && selection.menuItemId ? menuItemsById.get(selection.menuItemId) : undefined;
     return { item, selection, matched };
   });
   const activeSummary = selectedSummary.filter(({ selection }) => selection.source !== "skip");
   const skippedCount = selectedSummary.length - activeSummary.length;
+  const currentMatchIndex = Math.min(matchIndex, Math.max(0, items.length - 1));
+  const currentItem = items[currentMatchIndex];
+  const currentCandidates = candidates[currentMatchIndex] ?? [];
+  const currentSelection = selections[currentMatchIndex];
+  const manualSearchResults = useMemo(() => {
+    const query = manualSearchQuery.trim();
+    if (!query) return [];
+    const normalizedQuery = normalizeExactMenuKeyPart(query);
+    const tokens = query.toLowerCase().split(/\s+/).map(normalizeExactMenuKeyPart).filter(Boolean);
+    return menuItems
+      .map((item) => {
+        const name = normalizeExactMenuKeyPart(item.name);
+        const brand = normalizeExactMenuKeyPart(item.brand ?? "");
+        const text = normalizeExactMenuKeyPart([item.name, item.brand, item.category, item.serving_label, ...item.tags].filter(Boolean).join(" "));
+        let score = 0;
+        if (name.includes(normalizedQuery)) score += 40;
+        if (brand && normalizedQuery && (brand.includes(normalizedQuery) || normalizedQuery.includes(brand))) score += 24;
+        const tokenHits = tokens.filter((token) => token.length >= 2 && text.includes(token)).length;
+        score += tokenHits * 8;
+        score += Math.max(0, 5 - sourceRank(item.data_source));
+        return { item, score };
+      })
+      .filter((result) => result.score > 0)
+      .sort((a, b) => b.score - a.score || sourceRank(a.item.data_source) - sourceRank(b.item.data_source) || a.item.name.localeCompare(b.item.name, "ja"))
+      .slice(0, 8);
+  }, [manualSearchQuery, menuItems]);
   return (
     <div className="fixed inset-0 z-40 flex items-end bg-ink/30 px-4 pb-4" onClick={onClose}>
       <div className="ai-food-import-sheet compact-card max-h-[86vh] w-full overflow-y-auto p-4" onClick={(event) => event.stopPropagation()}>
@@ -7639,27 +7692,41 @@ function AiFoodImportModal({ step, setStep, text, setText, items, candidates, se
 
         {step === "match" && (
           <div className="mt-4 space-y-3">
-            {items.map((item, index) => (
-              <div className="ai-food-panel" key={`${item.observed_name}-${index}`}>
+            {currentItem && (
+              <>
+                <div className="ai-food-match-pager">
+                  <button className="secondary-button h-9 px-3 text-xs" disabled={currentMatchIndex === 0} onClick={() => setMatchIndex((index) => Math.max(0, index - 1))}>
+                    <ChevronLeft size={15} />前の品目
+                  </button>
+                  <span className="numeric-text">{currentMatchIndex + 1}/{items.length}</span>
+                  <button className="secondary-button h-9 px-3 text-xs" disabled={currentMatchIndex >= items.length - 1} onClick={() => setMatchIndex((index) => Math.min(items.length - 1, index + 1))}>
+                    次の品目<ChevronRight size={15} />
+                  </button>
+                </div>
+                <p className="ai-food-section-label text-right">選ぶと次の品目へ進みます</p>
+              </>
+            )}
+            {currentItem && (
+              <div className="ai-food-panel" key={`${currentItem.observed_name}-${currentMatchIndex}`}>
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-black">{item.possible_menu_name || item.observed_name}</p>
-                    <p className="numeric-text mt-1 text-xs font-bold text-moss">{item.possible_brand || "ブランド不明"} · {item.nutrition_estimate.calories}kcal · P{item.nutrition_estimate.protein_g} F{item.nutrition_estimate.fat_g} C{item.nutrition_estimate.carbs_g}</p>
+                    <p className="truncate text-sm font-black">{currentItem.possible_menu_name || currentItem.observed_name}</p>
+                    <p className="numeric-text mt-1 text-xs font-bold text-moss">{currentItem.possible_brand || "ブランド不明"} · {currentItem.nutrition_estimate.calories}kcal · P{currentItem.nutrition_estimate.protein_g} F{currentItem.nutrition_estimate.fat_g} C{currentItem.nutrition_estimate.carbs_g}</p>
                   </div>
-                  <span className="mini-chip shrink-0">{confidenceLabel(item.confidence)}</span>
+                  <span className="mini-chip shrink-0">{confidenceLabel(currentItem.confidence)}</span>
                 </div>
-                {item.needs_confirmation.length > 0 && (
-                  <p className="ai-food-note mt-2">確認: {item.needs_confirmation.join(" / ")}</p>
+                {currentItem.needs_confirmation.length > 0 && (
+                  <p className="ai-food-note mt-2">確認: {currentItem.needs_confirmation.join(" / ")}</p>
                 )}
                 <div className="mt-3 space-y-2">
-                  {candidates[index]?.length > 0 && (
+                  {currentCandidates.length > 0 && (
                     <p className="ai-food-section-label">照合候補</p>
                   )}
-                  {candidates[index]?.slice(0, 4).map((candidate) => (
+                  {currentCandidates.slice(0, 4).map((candidate) => (
                     <button
-                      className={`food-filter-option ai-food-candidate-option ${selections[index]?.source === "menu" && selections[index]?.menuItemId === candidate.item.id ? "food-filter-option-active" : ""}`}
+                      className={`food-filter-option ai-food-candidate-option ${currentSelection?.source === "menu" && currentSelection.menuItemId === candidate.item.id ? "food-filter-option-active" : ""}`}
                       key={candidate.item.id}
-                      onClick={() => setSelection(index, { source: "menu", menuItemId: candidate.item.id })}
+                      onClick={() => chooseCurrentSelection({ source: "menu", menuItemId: candidate.item.id })}
                     >
                       <span className="min-w-0">
                         <span className="block truncate text-sm font-bold">{formatMenuItemName(candidate.item)}</span>
@@ -7670,9 +7737,53 @@ function AiFoodImportModal({ step, setStep, text, setText, items, candidates, se
                   ))}
                   <div className="ai-food-action-group">
                     <p className="ai-food-section-label">このメニューの扱い</p>
+                    <button
+                      className={`food-filter-option ai-food-action-option ai-food-action-search ${isManualSearchOpen ? "ai-food-action-active" : ""}`}
+                      onClick={() => {
+                        setManualSearchQuery(currentItem.possible_menu_name || currentItem.observed_name);
+                        setIsManualSearchOpen((open) => !open);
+                      }}
+                    >
+                      <span>
+                        <span className="block text-sm font-bold">自分でメニューから探す</span>
+                        <span className="mt-1 block text-xs text-moss">候補にない時、登録済みメニューから選びます。</span>
+                      </span>
+                      <span className="mini-chip shrink-0">検索</span>
+                    </button>
+                    {isManualSearchOpen && (
+                      <div className="ai-food-manual-search">
+                        <label className="block text-xs font-bold text-moss">
+                          メニュー検索
+                          <input
+                            className="mt-2 w-full"
+                            value={manualSearchQuery}
+                            onChange={(event) => setManualSearchQuery(event.target.value)}
+                            placeholder="メニュー名・ブランド名"
+                          />
+                        </label>
+                        <div className="mt-2 space-y-2">
+                          {manualSearchResults.map(({ item }) => (
+                            <button
+                              className={`food-filter-option ai-food-candidate-option ${currentSelection?.source === "menu" && currentSelection.menuItemId === item.id ? "food-filter-option-active" : ""}`}
+                              key={item.id}
+                              onClick={() => chooseCurrentSelection({ source: "menu", menuItemId: item.id })}
+                            >
+                              <span className="min-w-0">
+                                <span className="block truncate text-sm font-bold">{formatMenuItemName(item)}</span>
+                                <span className="numeric-text mt-1 block truncate text-xs text-moss">{item.brand ?? item.category} · {item.calories}kcal · P{item.protein_g} F{item.fat_g} C{item.carbs_g}</span>
+                              </span>
+                              <span className="mini-chip shrink-0">選択</span>
+                            </button>
+                          ))}
+                          {manualSearchQuery.trim() && manualSearchResults.length === 0 && (
+                            <p className="ai-food-note">該当する登録済みメニューが見つかりません。</p>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   <button
-                    className={`food-filter-option ai-food-action-option ai-food-action-once ${selections[index]?.source === "ai_once" ? "ai-food-action-active" : ""}`}
-                    onClick={() => setSelection(index, { source: "ai_once" })}
+                    className={`food-filter-option ai-food-action-option ai-food-action-once ${currentSelection?.source === "ai_once" ? "ai-food-action-active" : ""}`}
+                    onClick={() => chooseCurrentSelection({ source: "ai_once" })}
                   >
                     <span>
                       <span className="block text-sm font-bold">AI推定値で今回だけ記録</span>
@@ -7681,8 +7792,8 @@ function AiFoodImportModal({ step, setStep, text, setText, items, candidates, se
                     <span className="mini-chip shrink-0">今回</span>
                   </button>
                   <button
-                    className={`food-filter-option ai-food-action-option ai-food-action-save ${selections[index]?.source === "ai_menu" ? "ai-food-action-active" : ""}`}
-                    onClick={() => setSelection(index, { source: "ai_menu" })}
+                    className={`food-filter-option ai-food-action-option ai-food-action-save ${currentSelection?.source === "ai_menu" ? "ai-food-action-active" : ""}`}
+                    onClick={() => chooseCurrentSelection({ source: "ai_menu" })}
                   >
                     <span>
                       <span className="block text-sm font-bold">AI推定値をマイメニュー保存</span>
@@ -7691,8 +7802,8 @@ function AiFoodImportModal({ step, setStep, text, setText, items, candidates, se
                     <span className="mini-chip shrink-0">保存</span>
                   </button>
                   <button
-                    className={`food-filter-option ai-food-action-option ai-food-action-skip ${selections[index]?.source === "skip" ? "ai-food-action-active" : ""}`}
-                    onClick={() => setSelection(index, { source: "skip" })}
+                    className={`food-filter-option ai-food-action-option ai-food-action-skip ${currentSelection?.source === "skip" ? "ai-food-action-active" : ""}`}
+                    onClick={() => chooseCurrentSelection({ source: "skip" })}
                   >
                     <span>
                       <span className="block text-sm font-bold">この項目はスキップ</span>
@@ -7703,7 +7814,7 @@ function AiFoodImportModal({ step, setStep, text, setText, items, candidates, se
                   </div>
                 </div>
               </div>
-            ))}
+            )}
           </div>
         )}
 

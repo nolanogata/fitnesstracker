@@ -1695,6 +1695,19 @@ button {
   font-weight: 750;
 }
 
+.ai-food-match-pager {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.ai-food-match-pager > span {
+  color: #526d5d;
+  font-size: 0.76rem;
+  font-weight: 950;
+}
+
 .ai-food-section-label {
   margin: 0.2rem 0 0.35rem;
   color: #526d5d;
@@ -1718,6 +1731,17 @@ button {
   background:
     linear-gradient(135deg, rgba(221, 232, 225, 0.52), rgba(255, 255, 255, 0.42)),
     rgba(255, 255, 255, 0.42);
+}
+
+.ai-food-action-option:not(.ai-food-action-active) {
+  opacity: 0.82;
+}
+
+.ai-food-action-search {
+  border-color: rgba(159, 190, 169, 0.34);
+  background:
+    linear-gradient(135deg, rgba(159, 190, 169, 0.16), rgba(117, 169, 218, 0.14), rgba(255, 255, 255, 0.42)),
+    rgba(255, 255, 255, 0.44);
 }
 
 .ai-food-action-save {
@@ -1758,6 +1782,13 @@ button {
 
 .ai-food-summary-skipped {
   opacity: 0.74;
+}
+
+.ai-food-manual-search {
+  border: 1px solid rgba(111, 143, 125, 0.18);
+  border-radius: 1.25rem;
+  background: rgba(255, 255, 255, 0.42);
+  padding: 0.75rem;
 }
 
 .ai-food-timing-summary {
@@ -2925,6 +2956,11 @@ button {
   color: #d8e4db;
 }
 
+.theme-dark .ai-food-match-pager > span,
+:root[data-theme="dark"] .ai-food-match-pager > span {
+  color: #d8e4db;
+}
+
 .theme-dark .ai-food-candidate-option,
 :root[data-theme="dark"] .ai-food-candidate-option {
   border-color: rgba(255, 255, 255, 0.12);
@@ -2949,6 +2985,14 @@ button {
   border-color: rgba(117, 169, 218, 0.22);
   background:
     linear-gradient(135deg, rgba(117, 169, 218, 0.13), rgba(255, 255, 255, 0.06)),
+    rgba(255, 255, 255, 0.07);
+}
+
+.theme-dark .ai-food-action-search,
+:root[data-theme="dark"] .ai-food-action-search {
+  border-color: rgba(159, 190, 169, 0.24);
+  background:
+    linear-gradient(135deg, rgba(159, 190, 169, 0.12), rgba(117, 169, 218, 0.1), rgba(255, 255, 255, 0.06)),
     rgba(255, 255, 255, 0.07);
 }
 
@@ -2983,6 +3027,12 @@ button {
   background:
     linear-gradient(135deg, rgba(240, 154, 134, 0.22), rgba(255, 255, 255, 0.07)),
     rgba(255, 255, 255, 0.1);
+}
+
+.theme-dark .ai-food-manual-search,
+:root[data-theme="dark"] .ai-food-manual-search {
+  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .theme-dark .ai-food-timing-summary,
