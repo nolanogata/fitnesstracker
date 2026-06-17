@@ -9,6 +9,7 @@ import { quickEstimateFoods } from "./quickEstimates";
 import { snackDrinkFoods } from "./snacksDrinks";
 import { userMenuImportFoods } from "./userMenuImports";
 import { bamiyanMenuFoods } from "./chains/bamiyanMenu";
+import { bikkuriDonkeyMenuFoods } from "./chains/bikkuriDonkeyMenu";
 import { burgerKingMenuFoods } from "./chains/burgerkingMenu";
 import { gyudonFoods } from "./chains/gyudon";
 import { hanamaruOfficialFoods } from "./chains/hanamaruOfficial";
@@ -90,6 +91,7 @@ export const foodSeeds = [
   ...sushiChainFoods,
   ...fastFoodFoods,
   ...bamiyanMenuFoods,
+  ...bikkuriDonkeyMenuFoods,
   ...italianRestaurantMenuFoods,
   ...panchoMenuFoods,
   ...tondenMenuFoods,
