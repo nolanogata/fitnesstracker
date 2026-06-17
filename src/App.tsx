@@ -191,6 +191,11 @@ type ManualFoodDraft = {
   savePreset: boolean;
   favorite: boolean;
 };
+type MenuOverwriteTarget = {
+  item: MenuItem;
+  logAfterSave?: boolean;
+  logMultiplier?: number;
+};
 type FoodEntryEditDraft = {
   name: string;
   brand: string;
@@ -3498,6 +3503,7 @@ function FoodTab(props: {
   const [manual, setManual] = useState({ ...emptyManual, savePreset: true });
   const [manualWizardStep, setManualWizardStep] = useState<ManualFoodWizardStep>("basic");
   const [isMyMenuRegistrationOpen, setIsMyMenuRegistrationOpen] = useState(false);
+  const [menuOverwriteTarget, setMenuOverwriteTarget] = useState<MenuOverwriteTarget>();
   const [chainCategory, setChainCategory] = useState("牛丼・丼");
   const [brand, setBrand] = useState("松屋");
   const [generalCategory, setGeneralCategory] = useState("ごはん・丼");
@@ -3610,6 +3616,7 @@ function FoodTab(props: {
     setMode(nextMode);
     if (nextMode === "personal" && showMyMenuIntro) dismissMyMenuIntro();
     setIsMyMenuRegistrationOpen(false);
+    setMenuOverwriteTarget(undefined);
     if (nextMode !== "search") setQuery("");
     if (nextMode === "chain") {
       scrollToChainSection();
@@ -3770,20 +3777,45 @@ function FoodTab(props: {
 
   const cloneSelectedToManual = () => {
     if (!selected) return;
-    setManual(toManualDraft(selected, mealType));
+    if (canOverwriteMenuItem(selected)) {
+      startMenuOverwrite(selected, { logAfterSave: true, logMultiplier: multiplier, mealType });
+      return;
+    }
+    cloneMenuItemToManual(selected, mealType);
+  };
+  const cloneMenuItemToManual = (item: MenuItem, nextMealType: MealType = item.default_meal_type ?? "lunch") => {
+    setManual(toManualDraft(item, nextMealType));
+    setMenuOverwriteTarget(undefined);
     setSelected(undefined);
     setManualWizardStep("basic");
     setIsMyMenuRegistrationOpen(true);
     setMode("personal");
   };
+  const startMenuOverwrite = (item: MenuItem, options?: Pick<MenuOverwriteTarget, "logAfterSave" | "logMultiplier"> & { mealType?: MealType }) => {
+    setManual(toManualDraft(item, options?.mealType ?? item.default_meal_type ?? mealType));
+    setMenuOverwriteTarget({ item, logAfterSave: options?.logAfterSave, logMultiplier: options?.logMultiplier });
+    setSelected(undefined);
+    setManualWizardStep("basic");
+    setIsMyMenuRegistrationOpen(true);
+    setMode("personal");
+  };
+  const openMenuEdit = (item: MenuItem) => {
+    if (canOverwriteMenuItem(item)) {
+      startMenuOverwrite(item);
+      return;
+    }
+    cloneMenuItemToManual(item, item.default_meal_type ?? "lunch");
+  };
   const startMyMenuRegistration = () => {
     setManual({ ...emptyManual, savePreset: true });
+    setMenuOverwriteTarget(undefined);
     setManualWizardStep("basic");
     setIsMyMenuRegistrationOpen(true);
   };
   const closeMyMenuRegistration = () => {
     setIsMyMenuRegistrationOpen(false);
     setManual({ ...emptyManual, savePreset: true });
+    setMenuOverwriteTarget(undefined);
     setManualWizardStep("basic");
   };
 
@@ -3803,6 +3835,63 @@ function FoodTab(props: {
       nutrition.unknown.length ? `未入力: ${nutrition.unknown.join("/")}` : "",
     ]).join(" / ") || undefined;
     const confidence = nutrition.unknown.length ? "low" : "high";
+    if (menuOverwriteTarget) {
+      const sourceItem = menuOverwriteTarget.item;
+      const logMultiplier = Math.max(0, menuOverwriteTarget.logMultiplier ?? 1);
+      await db.menu_items.put({
+        ...sourceItem,
+        name: baseName,
+        brand: brand || undefined,
+        category: manual.category,
+        tags: unique([...tags, "ユーザー補正"]),
+        calories: nutrition.calories,
+        protein_g: nutrition.protein_g,
+        fat_g: nutrition.fat_g,
+        carbs_g: nutrition.carbs_g,
+        salt_g: nutrition.salt_g,
+        serving_label: ingredientServingLabel,
+        weight_g: ingredientGrams,
+        default_meal_type: manual.meal_type,
+        data_source: "user",
+        confidence,
+        is_favorite: manual.favorite,
+        updated_at: timestamp,
+      });
+      if (menuOverwriteTarget.logAfterSave) {
+        const servingGrams = menuItemServingGrams(sourceItem);
+        const loggedName = servingGrams && logMultiplier !== 1 ? `${baseName}（${formatControlValue(round1(servingGrams * logMultiplier))}g）` : displayName;
+        await db.food_entries.put({
+          id: makeId("food"),
+          app_date: props.appDate,
+          logged_at: timestamp,
+          meal_type: manual.meal_type,
+          name: loggedName,
+          brand: brand || undefined,
+          calories: Math.round(nutrition.calories * logMultiplier),
+          protein_g: round1(nutrition.protein_g * logMultiplier),
+          fat_g: round1(nutrition.fat_g * logMultiplier),
+          carbs_g: round1(nutrition.carbs_g * logMultiplier),
+          salt_g: nutrition.salt_g === undefined ? undefined : round1(nutrition.salt_g * logMultiplier),
+          portion_multiplier: logMultiplier,
+          entry_source: "user",
+          confidence,
+          menu_item_id: sourceItem.id,
+          note,
+          created_at: timestamp,
+          updated_at: timestamp,
+        });
+      }
+      setManual({ ...emptyManual, savePreset: true });
+      setMenuOverwriteTarget(undefined);
+      setManualWizardStep("basic");
+      setIsMyMenuRegistrationOpen(false);
+      setPortionMultiplier(1);
+      setPortionQuantity(1);
+      setFoodAddStep("size");
+      await props.refresh();
+      props.showToast(menuOverwriteTarget.logAfterSave ? "メニューを上書きして記録しました" : "メニューを上書きしました");
+      return;
+    }
     if (manual.savePreset) {
       menuItemId = makeId("menu_user");
       await db.menu_items.put({
@@ -4121,7 +4210,8 @@ function FoodTab(props: {
               <section className="compact-card p-4">
                 <div className="mb-3 flex items-start justify-between gap-3">
                   <div>
-                    <h2 className="font-bold">マイメニュー登録</h2>
+                    <h2 className="font-bold">{menuOverwriteTarget ? "メニューを上書き編集" : "マイメニュー登録"}</h2>
+                    {menuOverwriteTarget && <p className="mt-1 text-xs font-semibold text-moss">公式値ではないメニューの栄養値を、このメニュー自体に反映します。</p>}
                   </div>
                   <button className="secondary-button shrink-0 px-3 py-2 text-xs" onClick={closeMyMenuRegistration}>閉じる</button>
                 </div>
@@ -4129,12 +4219,12 @@ function FoodTab(props: {
                   manual={manual}
                   setManual={setManual}
                   compact
-                  mode="log"
+                  mode={menuOverwriteTarget ? "preset" : "log"}
                   variant="wizard"
                   wizardStep={manualWizardStep}
                   setWizardStep={setManualWizardStep}
-                  includePurposeStep
-                  submitLabel={manual.savePreset ? "保存して記録" : "今回だけ記録"}
+                  includePurposeStep={!menuOverwriteTarget}
+                  submitLabel={menuOverwriteTarget ? (menuOverwriteTarget.logAfterSave ? "上書きして記録" : "上書き保存") : manual.savePreset ? "保存して記録" : "今回だけ記録"}
                   onSave={saveManual}
                 />
               </section>
@@ -4151,7 +4241,7 @@ function FoodTab(props: {
                   <FoodItemRow
                     item={item}
                     onPick={selectFoodItem}
-                    onClone={setManualFromItem(setManual, setMode, setManualWizardStep, setIsMyMenuRegistrationOpen)}
+                    onClone={openMenuEdit}
                     onDelete={deleteUserMenuItem}
                     refresh={props.refresh}
                     balanceTarget={(showFoodBalance && canShowFoodBalance) || isSortFoodByFitActive || mode === "recommend" ? remainingNutrition : undefined}
@@ -4382,7 +4472,9 @@ function FoodTab(props: {
               )}
             </div>
             {foodAddStep === "confirm" && (
-              <button className="secondary-button mt-2 w-full" onClick={cloneSelectedToManual}><Pencil size={17} />マイメニューで編集</button>
+              <button className="secondary-button mt-2 w-full" onClick={cloneSelectedToManual}>
+                <Pencil size={17} />{canOverwriteMenuItem(selected) ? "値を上書きして記録" : "マイメニューで編集"}
+              </button>
             )}
           </div>
         </div>
@@ -6833,6 +6925,7 @@ function FoodItemRow({ item, onPick, onClone, onDelete, refresh, balanceTarget, 
 }) {
   const pictogram = getFoodPictogram(item);
   const fit = balanceTarget ? getPerfectFoodFit(item, balanceTarget) : undefined;
+  const editLabel = canOverwriteMenuItem(item) ? "値を上書き編集" : "マイメニューで編集";
   return (
     <div className="flex items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-rice/70">
       <Pictogram {...pictogram} />
@@ -6848,7 +6941,7 @@ function FoodItemRow({ item, onPick, onClone, onDelete, refresh, balanceTarget, 
           ))}
         </div>
       </button>
-      <button className="icon-button h-8 w-8" aria-label="マイメニューで編集" onClick={() => onClone(item)}><Pencil size={14} /></button>
+      <button className="icon-button h-8 w-8" aria-label={`${formatMenuItemName(item)}を${editLabel}`} title={editLabel} onClick={() => onClone(item)}><Pencil size={14} /></button>
       <button className="icon-button h-8 w-8" aria-label="お気に入り" onClick={async () => {
         await db.menu_items.update(item.id, { is_favorite: !item.is_favorite, updated_at: nowIso() });
         await refresh();
@@ -9383,18 +9476,8 @@ function toManualDraft(item: MenuItem, mealType: MealType = "lunch"): ManualFood
   };
 }
 
-function setManualFromItem(
-  setManual: (manual: ManualFoodDraft) => void,
-  setMode: (mode: FoodMode) => void,
-  setWizardStep?: (step: ManualFoodWizardStep) => void,
-  setRegistrationOpen?: (open: boolean) => void,
-) {
-  return (item: MenuItem) => {
-    setManual(toManualDraft(item, item.default_meal_type ?? "lunch"));
-    setWizardStep?.("basic");
-    setRegistrationOpen?.(true);
-    setMode("personal");
-  };
+function canOverwriteMenuItem(item: MenuItem) {
+  return item.data_source !== "official";
 }
 
 function exercisePresetToTemplateExercise(exercise: ExercisePreset): TemplateExercise {
