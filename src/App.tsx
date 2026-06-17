@@ -90,8 +90,9 @@ type AiFoodImportStep = "prompt" | "paste" | "match" | "timing" | "confirm";
 type WorkoutFocus = "dateLog" | undefined;
 type MyTrainingWizardStep = "method" | "source" | "basic" | "defaults" | "presets" | "confirm";
 type SettingsFocus = "ai" | "backup" | "myMenu" | "goal" | undefined;
-type SettingsSection = "ai" | "backup" | "goal" | "records" | "myMenu" | "general";
+type SettingsSection = "ai" | "backup" | "goal" | "records" | "myMenu" | "myTraining" | "general";
 type MyMenuSection = "list" | "method" | "new" | "edit";
+type MyTrainingSection = "list";
 type HistoryGrouping = "day" | "week" | "month";
 type ExportSection = "backup" | "logs";
 type LogExportStep = "type" | "grouping" | "period" | "output";
@@ -199,6 +200,7 @@ type WorkoutExerciseDraft = {
   setSchemeText: string;
 };
 type MyTrainingDraft = {
+  editingExerciseId?: string;
   sourceExerciseId?: string;
   name: string;
   body_part: string;
@@ -273,6 +275,12 @@ type AiFoodImportSelection = {
   menuItemId?: string;
 };
 type AiFoodImportIntent = "log" | "menu";
+const aiFoodImportMaxTextLength = 60_000;
+const aiFoodImportMaxJsonCandidates = 8;
+const aiFoodImportMaxItems = 12;
+const aiFoodImportMaxKeywords = 12;
+const aiFoodImportMaxStringLength = 120;
+const aiFoodImportMaxNoteLength = 260;
 function menuItemFromAiFoodImportItem(aiItem: AiFoodBridgeItem, timestamp: string, defaultMealType?: MealType): MenuItem {
   const name = aiItem.possible_menu_name?.trim() || aiItem.observed_name.trim() || "AI推定メニュー";
   const brand = aiItem.possible_brand?.trim() || undefined;
@@ -495,7 +503,20 @@ function myTrainingDraftFromWorkoutDraft(draft: WorkoutExerciseDraft, presets: n
   });
 }
 
-function exercisePresetFromMyTrainingDraft(draft: MyTrainingDraft, timestamp: string): ExercisePreset {
+function editableMyTrainingDraftFromExercise(exercise: ExercisePreset, weightPresetStore: Record<string, number[]>): MyTrainingDraft {
+  const firstSet = exercise.default_set_scheme?.[0];
+  const weight = round1(Math.max(0, exercise.default_weight_kg ?? firstSet?.weight_kg ?? 0));
+  const step = inferWeightStep(exercise);
+  return myTrainingDraftFromExercise(exercise, {
+    editingExerciseId: exercise.id,
+    sourceExerciseId: exercise.id,
+    name: exercise.name,
+    weight_presets: loadWorkoutWeightPresets(workoutWeightPresetKeys(exercise), weight, step, weightPresetStore),
+    favorite: !!exercise.is_favorite,
+  });
+}
+
+function exercisePresetFromMyTrainingDraft(draft: MyTrainingDraft, timestamp: string, existing?: ExercisePreset): ExercisePreset {
   const name = draft.name.trim();
   const bodyPart = draft.body_part.trim() || "その他";
   const equipmentType = draft.equipment_type.trim() || "その他";
@@ -508,7 +529,7 @@ function exercisePresetFromMyTrainingDraft(draft: MyTrainingDraft, timestamp: st
   const weightKg = isCardio || loadType === "bodyweight" ? undefined : round1(Math.max(0, draft.weight_kg));
   const durationMin = Math.max(0, Math.round(draft.duration_min));
   return {
-    id: makeId("exercise_user"),
+    id: existing?.id ?? makeId("exercise_user"),
     name: name || "マイトレ",
     body_part: bodyPart,
     equipment_type: equipmentType,
@@ -524,8 +545,8 @@ function exercisePresetFromMyTrainingDraft(draft: MyTrainingDraft, timestamp: st
     is_public_preset: false,
     is_user_created: true,
     is_favorite: draft.favorite,
-    preset_pack: draft.sourceExerciseId ? "my_training_customized" : "my_training",
-    created_at: timestamp,
+    preset_pack: existing?.preset_pack ?? (draft.sourceExerciseId ? "my_training_customized" : "my_training"),
+    created_at: existing?.created_at ?? timestamp,
     updated_at: timestamp,
   };
 }
@@ -2492,6 +2513,7 @@ function App() {
             weeklyWorkoutStatus={weeklyWorkoutStatus}
             cheatDayDates={cheatDayDates}
             menuItems={menuItems}
+            exercisePresets={exercisePresets}
             workoutTemplates={workoutTemplates}
             specialModeSettings={specialModeSettings}
             pauseModeSettings={pauseModeSettings}
@@ -5344,7 +5366,10 @@ function WorkoutTab(props: {
 
   const saveMyTrainingDraft = async (draft: MyTrainingDraft) => {
     const timestamp = nowIso();
-    const exercise = exercisePresetFromMyTrainingDraft(draft, timestamp);
+    const editingExercise = draft.editingExerciseId
+      ? props.exercisePresets.find((item) => item.id === draft.editingExerciseId && item.is_user_created)
+      : undefined;
+    const exercise = exercisePresetFromMyTrainingDraft(draft, timestamp, editingExercise);
     const presetKeys = workoutWeightPresetKeys(exercise);
     await db.exercise_presets.put(exercise);
     if (draft.weight_presets.length) {
@@ -5354,7 +5379,7 @@ function WorkoutTab(props: {
     setMode("my");
     setIsMyTrainingModalOpen(false);
     setMyTrainingInitialDraft(undefined);
-    props.showToast(`${exercise.name}をマイトレに保存しました`);
+    props.showToast(editingExercise ? `${exercise.name}を更新しました` : `${exercise.name}をマイトレに保存しました`);
   };
 
   const deleteMyTrainingExercise = async (exercise: ExercisePreset) => {
@@ -5697,6 +5722,7 @@ function WorkoutTab(props: {
                   <p className="truncate text-xs text-moss">{exercise.body_part} · {exercise.equipment_type}</p>
                 </button>
                 <button className="icon-button h-9 w-9" aria-label={`${exercise.name}を追加`} onClick={() => openExerciseDraft(exercise)}><Plus size={17} /></button>
+                <button className="icon-button h-9 w-9" aria-label={`${exercise.name}を編集`} onClick={() => openMyTrainingModal(editableMyTrainingDraftFromExercise(exercise, workoutWeightPresetStore))}><Pencil size={16} /></button>
                 <button className="icon-button h-9 w-9 text-clay" aria-label={`${exercise.name}を削除`} onClick={() => deleteMyTrainingExercise(exercise)}><Trash2 size={16} /></button>
               </div>
             );
@@ -6176,6 +6202,7 @@ function SettingsTab(props: {
   weeklyWorkoutStatus: WeeklyWorkoutStatus;
   cheatDayDates: string[];
   menuItems: MenuItem[];
+  exercisePresets: ExercisePreset[];
   workoutTemplates: WorkoutTemplate[];
   specialModeSettings: SpecialModeSettings[];
   pauseModeSettings: SpecialModeSettings[];
@@ -6204,6 +6231,9 @@ function SettingsTab(props: {
   const [editingUserMenuItemId, setEditingUserMenuItemId] = useState<string>();
   const [activeMyMenuSection, setActiveMyMenuSection] = useState<MyMenuSection | undefined>(() => props.focus === "myMenu" ? "method" : undefined);
   const [myMenuWizardStep, setMyMenuWizardStep] = useState<ManualFoodWizardStep>("basic");
+  const [activeMyTrainingSection, setActiveMyTrainingSection] = useState<MyTrainingSection | undefined>();
+  const [settingsMyTrainingModalOpen, setSettingsMyTrainingModalOpen] = useState(false);
+  const [settingsMyTrainingInitialDraft, setSettingsMyTrainingInitialDraft] = useState<MyTrainingDraft>();
   const [settingsAiFoodImportOpen, setSettingsAiFoodImportOpen] = useState(false);
   const [settingsAiFoodImportStep, setSettingsAiFoodImportStep] = useState<AiFoodImportStep>("prompt");
   const [settingsAiFoodImportText, setSettingsAiFoodImportText] = useState("");
@@ -6316,6 +6346,16 @@ function SettingsTab(props: {
       .sort((a, b) => (b.updated_at || b.created_at).localeCompare(a.updated_at || a.created_at)),
     [props.menuItems],
   );
+  const myTrainingExercises = useMemo(
+    () => props.exercisePresets
+      .filter((item) => item.is_user_created)
+      .sort((a, b) => (b.updated_at || b.created_at).localeCompare(a.updated_at || a.created_at)),
+    [props.exercisePresets],
+  );
+  const settingsWorkoutWeightPresetStore = useMemo(
+    () => mergeWorkoutWeightPresetStores(readLocalWorkoutWeightPresetStore(), props.settings?.workout_weight_presets),
+    [props.settings?.workout_weight_presets],
+  );
   const activeTravelMode = props.specialModeSettings.find((mode) => mode.enabled);
   const isTravelModeEnabled = !!activeTravelMode;
   const travelModePeriodLabel = activeTravelMode?.start_date && activeTravelMode.end_date
@@ -6419,6 +6459,40 @@ function SettingsTab(props: {
     setEditingUserMenuItemId(undefined);
     setPresetDraft({ ...emptyManual, savePreset: true });
     setMyMenuWizardStep("basic");
+  };
+  const startNewSettingsMyTraining = () => {
+    setSettingsMyTrainingInitialDraft(undefined);
+    setSettingsMyTrainingModalOpen(true);
+  };
+  const editSettingsMyTraining = (exercise: ExercisePreset) => {
+    setSettingsMyTrainingInitialDraft(editableMyTrainingDraftFromExercise(exercise, settingsWorkoutWeightPresetStore));
+    setSettingsMyTrainingModalOpen(true);
+  };
+  const closeSettingsMyTrainingModal = () => {
+    setSettingsMyTrainingModalOpen(false);
+    setSettingsMyTrainingInitialDraft(undefined);
+  };
+  const saveSettingsMyTrainingDraft = async (draft: MyTrainingDraft) => {
+    const timestamp = nowIso();
+    const editingExercise = draft.editingExerciseId
+      ? props.exercisePresets.find((item) => item.id === draft.editingExerciseId && item.is_user_created)
+      : undefined;
+    const exercise = exercisePresetFromMyTrainingDraft(draft, timestamp, editingExercise);
+    await db.exercise_presets.put(exercise);
+    if (draft.weight_presets.length) {
+      const nextStore = saveWorkoutWeightPresets(workoutWeightPresetKeys(exercise), draft.weight_presets, settingsWorkoutWeightPresetStore);
+      await persistWorkoutWeightPresetStore(nextStore, props.settings);
+    }
+    closeSettingsMyTrainingModal();
+    setActiveMyTrainingSection("list");
+    await props.refresh();
+    props.showToast(editingExercise ? `${exercise.name}を更新しました` : `${exercise.name}をマイトレに保存しました`);
+  };
+  const deleteSettingsMyTraining = async (exercise: ExercisePreset) => {
+    if (!confirm(`マイトレ「${exercise.name}」を削除しますか？過去の記録は残ります。`)) return;
+    await db.exercise_presets.delete(exercise.id);
+    await props.refresh();
+    props.showToast(`${exercise.name}を削除しました`);
   };
   const resetLogExportWizard = () => {
     setLogExportStep("type");
@@ -6736,12 +6810,17 @@ function SettingsTab(props: {
     goal: { title: "ゴール設定", subtitle: "目標体重、PFC、運動目標を調整します。" },
     records: { title: "記録設定", subtitle: "旅行や休養など、通常評価と分けたい期間を管理します。" },
     myMenu: { title: "マイメニュー", subtitle: "自分用の食事メニューを登録・編集します。" },
+    myTraining: { title: "マイトレ", subtitle: "自分用のワークアウト種目を登録・編集します。" },
     general: { title: "一般", subtitle: "表示、ユーザー名、更新履歴、開発者モードを管理します。" },
   };
   const activeSectionTitle = activeSettingsSection ? sectionTitles[activeSettingsSection] : undefined;
   const goBackFromSettingsSection = () => {
     if (activeSettingsSection === "myMenu" && activeMyMenuSection) {
       closeMyMenuSubsection();
+      return;
+    }
+    if (activeSettingsSection === "myTraining" && activeMyTrainingSection) {
+      setActiveMyTrainingSection(undefined);
       return;
     }
     if (activeSettingsSection === "backup" && activeExportSection) {
@@ -6763,6 +6842,7 @@ function SettingsTab(props: {
           <section className="compact-card divide-y divide-line overflow-hidden">
             <SettingsMenuRow title="記録設定" description={`旅行 ${isTravelModeEnabled ? "ON" : "OFF"} / 一時停止 ${isPauseModeEnabled ? "ON" : "OFF"}`} icon={<CalendarDays size={18} />} onClick={() => setActiveSettingsSection("records")} />
             <SettingsMenuRow title="マイメニュー" description={`登録済み ${userMenuItems.length}件`} icon={<Store size={18} />} onClick={() => setActiveSettingsSection("myMenu")} />
+            <SettingsMenuRow title="マイトレ" description={`登録済み ${myTrainingExercises.length}件`} icon={<Dumbbell size={18} />} onClick={() => setActiveSettingsSection("myTraining")} />
             <SettingsMenuRow title="一般" description={`表示 ${props.resolvedTheme === "dark" ? "ダーク" : "ライト"} / ${props.profile?.name || "未設定"}`} icon={<Settings size={18} />} onClick={() => setActiveSettingsSection("general")} />
           </section>
         </>
@@ -6929,6 +7009,44 @@ function SettingsTab(props: {
               編集をキャンセル
             </button>
           )}
+        </section>
+      )}
+
+      {activeSettingsSection === "myTraining" && !activeMyTrainingSection && (
+        <section className="compact-card divide-y divide-line overflow-hidden scroll-mt-24">
+          <SettingsMenuRow title="登録済みのマイトレ" description={`一覧の表示、編集、削除 · ${myTrainingExercises.length}件`} icon={<Dumbbell size={18} />} onClick={() => setActiveMyTrainingSection("list")} />
+          <SettingsMenuRow title="新規マイトレの登録" description="既存種目のカスタマイズまたは新規登録" icon={<Plus size={18} />} onClick={startNewSettingsMyTraining} />
+        </section>
+      )}
+
+      {activeSettingsSection === "myTraining" && activeMyTrainingSection === "list" && (
+        <section className="compact-card scroll-mt-24 p-4">
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <div>
+              <h2 className="font-bold">登録済みのマイトレ</h2>
+              <p className="mt-1 text-xs font-semibold text-moss">一覧から上書き編集・削除できます。</p>
+            </div>
+            <button className="primary-button shrink-0 px-3 py-2 text-xs" onClick={startNewSettingsMyTraining}><Plus size={15} />新規</button>
+          </div>
+          <div className="divide-y divide-line overflow-hidden rounded-3xl border border-line/70 bg-white/30">
+            {myTrainingExercises.map((exercise) => {
+              const pictogram = getWorkoutPictogram(exercise.body_part, exercise.equipment_type);
+              return (
+                <div className="flex items-center justify-between gap-3 px-3 py-2" key={exercise.id}>
+                  <Pictogram {...pictogram} />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold">{exercise.name}</p>
+                    <p className="numeric-text truncate text-xs text-moss">{exercise.body_part} · {exercise.equipment_type}</p>
+                  </div>
+                  <div className="flex shrink-0 gap-1">
+                    <button className="icon-button h-8 w-8" aria-label={`${exercise.name}を編集`} onClick={() => editSettingsMyTraining(exercise)}><Pencil size={14} /></button>
+                    <button className="icon-button h-8 w-8 text-clay" aria-label={`${exercise.name}を削除`} onClick={() => deleteSettingsMyTraining(exercise)}><Trash2 size={14} /></button>
+                  </div>
+                </div>
+              );
+            })}
+            {myTrainingExercises.length === 0 && <EmptyLine text="登録済みのマイトレはありません" />}
+          </div>
         </section>
       )}
 
@@ -7326,6 +7444,15 @@ function SettingsTab(props: {
           onSave={saveSettingsAiFoodImport}
           onReset={resetSettingsAiFoodImport}
           onClose={closeSettingsAiFoodImport}
+        />
+      )}
+      {settingsMyTrainingModalOpen && (
+        <MyTrainingModal
+          exercisePresets={props.exercisePresets}
+          initialDraft={settingsMyTrainingInitialDraft}
+          weightPresetStore={settingsWorkoutWeightPresetStore}
+          onClose={closeSettingsMyTrainingModal}
+          onSave={saveSettingsMyTrainingDraft}
         />
       )}
       {goalHelpTopic && <GoalHelpModal topic={goalHelpTopic} onClose={() => setGoalHelpTopic(undefined)} />}
@@ -11375,6 +11502,9 @@ function confidenceLabel(confidence: Confidence) {
 }
 
 function parseAiFoodBridgeText(text: string): { items: AiFoodBridgeItem[]; error?: string } {
+  if (text.length > aiFoodImportMaxTextLength) {
+    return { items: [], error: "貼り付け内容が長すぎます。AIのコードブロック部分だけをコピーしてください。" };
+  }
   const candidates = extractJsonCandidates(text);
   if (!candidates.length) {
     return { items: [], error: "JSONが見つかりません。AIのコードブロックをコピーして貼り付けてください。" };
@@ -11402,7 +11532,7 @@ function extractJsonCandidates(text: string) {
   }
   candidates.push(...extractBalancedJsonSlices(trimmed));
   if (/^\s*[\[{]/.test(trimmed)) candidates.push(trimmed);
-  return unique(candidates.map((candidate) => candidate.trim()).filter(Boolean));
+  return unique(candidates.map((candidate) => candidate.trim()).filter(Boolean)).slice(0, aiFoodImportMaxJsonCandidates);
 }
 
 function extractBalancedJsonSlices(text: string) {
@@ -11459,20 +11589,20 @@ function repairAiJsonText(text: string) {
 }
 
 function getAiFoodRawItems(payload: unknown) {
-  if (Array.isArray(payload)) return payload;
+  if (Array.isArray(payload)) return payload.slice(0, aiFoodImportMaxItems);
   if (typeof payload !== "object" || payload === null) return [];
   const object = payload as Record<string, unknown>;
   const itemKeys = ["items", "foods", "food_items", "menu_items", "entries", "results", "食事", "食品", "メニュー"];
   for (const key of itemKeys) {
     if (Array.isArray(object[key])) {
       const rootNeedsConfirmation = stringArrayValue(object.needs_confirmation ?? object.questions ?? object["確認事項"] ?? object["確認"]);
-      if (!rootNeedsConfirmation.length) return object[key] as unknown[];
+      if (!rootNeedsConfirmation.length) return (object[key] as unknown[]).slice(0, aiFoodImportMaxItems);
       return (object[key] as unknown[]).map((item) => {
         if (typeof item !== "object" || item === null) return item;
         const itemObject = item as Record<string, unknown>;
         const itemNeedsConfirmation = stringArrayValue(itemObject.needs_confirmation ?? itemObject.questions ?? itemObject["確認事項"] ?? itemObject["確認"]);
         return { ...itemObject, needs_confirmation: unique([...itemNeedsConfirmation, ...rootNeedsConfirmation]) };
-      });
+      }).slice(0, aiFoodImportMaxItems);
     }
   }
   if (object.nutrition_estimate || object.estimated_nutrition || object.nutrition || object.nutrients || object["栄養値"] || object["栄養成分"]) return [object];
@@ -11497,9 +11627,9 @@ function normalizeAiFoodBridgeItem(raw: unknown): AiFoodBridgeItem | undefined {
     quantity: stringValue(object.quantity) || stringValue(object.portion) || stringValue(object.amount) || stringValue(object.serving) || stringValue(object["量"]) || stringValue(object["分量"]),
     nutrition_estimate: nutrition,
     confidence: confidenceValue(object.confidence),
-    match_keywords: unique([...keywords, possibleBrand, possibleMenuName, observedName, category].filter(Boolean)),
-    needs_confirmation: stringArrayValue(object.needs_confirmation ?? object.questions ?? object["確認事項"] ?? object["確認"]),
-    note: stringValue(object.note) || stringValue(object["メモ"]) || stringValue(object["推定根拠"]),
+    match_keywords: unique([...keywords, possibleBrand, possibleMenuName, observedName, category].filter(Boolean)).slice(0, aiFoodImportMaxKeywords),
+    needs_confirmation: stringArrayValue(object.needs_confirmation ?? object.questions ?? object["確認事項"] ?? object["確認"]).slice(0, aiFoodImportMaxKeywords),
+    note: longStringValue(object.note) || longStringValue(object["メモ"]) || longStringValue(object["推定根拠"]),
   };
 }
 
@@ -11513,22 +11643,34 @@ function normalizeAiFoodNutrition(raw: unknown): AiFoodBridgeItem["nutrition_est
   if ([calories, protein, fat, carbs].some((value) => value === undefined)) return undefined;
   const salt = numericValue(object.salt_g ?? object.salt ?? object.sodium_chloride_g ?? object["食塩相当量"] ?? object["塩分"]);
   return {
-    calories: Math.max(0, Math.round(calories!)),
-    protein_g: round1(Math.max(0, protein!)),
-    fat_g: round1(Math.max(0, fat!)),
-    carbs_g: round1(Math.max(0, carbs!)),
-    salt_g: salt === undefined ? undefined : round1(Math.max(0, salt)),
+    calories: Math.min(10_000, Math.max(0, Math.round(calories!))),
+    protein_g: round1(Math.min(1_000, Math.max(0, protein!))),
+    fat_g: round1(Math.min(1_000, Math.max(0, fat!))),
+    carbs_g: round1(Math.min(1_500, Math.max(0, carbs!))),
+    salt_g: salt === undefined ? undefined : round1(Math.min(100, Math.max(0, salt))),
   };
 }
 
 function stringValue(value: unknown) {
-  return typeof value === "string" ? value.trim() : "";
+  return typeof value === "string" ? sanitizeAiFoodText(value, aiFoodImportMaxStringLength) : "";
+}
+
+function longStringValue(value: unknown) {
+  return typeof value === "string" ? sanitizeAiFoodText(value, aiFoodImportMaxNoteLength) : "";
+}
+
+function sanitizeAiFoodText(value: string, maxLength: number) {
+  return value
+    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, maxLength);
 }
 
 function stringArrayValue(value: unknown) {
-  if (typeof value === "string") return value.split(/[,、/\n]/).map((item) => item.trim()).filter(Boolean);
+  if (typeof value === "string") return value.split(/[,、/\n]/).map((item) => sanitizeAiFoodText(item, aiFoodImportMaxStringLength)).filter(Boolean).slice(0, aiFoodImportMaxKeywords);
   if (!Array.isArray(value)) return [];
-  return value.map(stringValue).filter(Boolean);
+  return value.map(stringValue).filter(Boolean).slice(0, aiFoodImportMaxKeywords);
 }
 
 function numericValue(value: unknown) {
