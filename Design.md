@@ -8,7 +8,9 @@
 - No account, no cloud, no user switching.
 - IndexedDB owns all user data. LocalStorage only stores small UI preferences.
 - Food logging favors search, favorites, personal menus, recommendations, chain search, recent-history reuse, and quick general estimates before manual entry.
-- Workout logging favors templates, previous copies, body-part drilldown, equipment drilldown, and stepper controls.
+- Food AI photo logging is a bridge workflow: the app copies a prompt for the user's AI tool, accepts only JSON-like code output, normalizes and bounds the data, matches against existing menus, then lets the user choose whether each item is logged, saved to My Menu, or skipped.
+- Workout logging favors templates, favorites, My Training, body-part drilldown, equipment drilldown, and stepper controls.
+- My Training is the workout equivalent of My Menu: user-created exercises can be registered from an existing exercise or from scratch, saved with defaults and weight presets, edited in place, deleted without touching past logs, and reused from Workout or Settings.
 - Settings always exposes JSON backup/import and reminds the user to back up local data.
 
 ## Visual Direction
@@ -26,3 +28,5 @@
 - Goal changes update targets going forward without mutating old entries.
 - Manual entry exists, but quick logging is the default path.
 - Exception days such as cheat day, travel modes, and pause mode keep streaks intact and visually mark Home goal evaluation as special handling.
+- Settings is hierarchical like iOS Settings. Current top-level groups are AI report, Export, Goal, Record settings, My Menu, My Training, and General.
+- Registered My Menu and My Training entries support overwrite editing so small variations do not create accidental duplicates.
