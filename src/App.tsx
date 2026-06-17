@@ -179,6 +179,15 @@ type PortionOption = {
   label: string;
   value: number;
 };
+type StaplePortionConfig = {
+  kind: "rice" | "noodle";
+  label: string;
+  defaultGrams: number;
+  caloriesPer100g: number;
+  proteinPer100g: number;
+  fatPer100g: number;
+  carbsPer100g: number;
+};
 type WorkoutExerciseDraft = {
   exercise: ExercisePreset;
   sets: number;
@@ -3792,15 +3801,20 @@ function FoodTab(props: {
     }
   };
   const portionOptions = selected ? getPortionOptions(selected) : [];
-  const selectedServingGrams = selected ? menuItemServingGrams(selected) : undefined;
+  const selectedStapleConfig = selected ? getStaplePortionConfig(selected) : undefined;
+  const selectedServingGrams = selected ? selectedStapleConfig?.defaultGrams ?? menuItemServingGrams(selected) : undefined;
   const defaultPortionOption = portionOptions.find((option) => option.value === 1) ?? portionOptions[0];
   const customPortionOptions = portionOptions.filter((option) => option.value !== defaultPortionOption?.value);
-  const selectedPortionLabel = selected ? portionOptions.find((option) => option.value === portionMultiplier)?.label ?? "カスタム" : "";
-  const selectedCalories = selected ? Math.round(selected.calories * multiplier) : 0;
-  const selectedProtein = selected ? round1(selected.protein_g * multiplier) : 0;
-  const selectedFat = selected ? round1(selected.fat_g * multiplier) : 0;
-  const selectedCarbs = selected ? round1(selected.carbs_g * multiplier) : 0;
-  const selectedSalt = selected?.salt_g ? round1(selected.salt_g * multiplier) : undefined;
+  const selectedPortionOptionLabel = portionOptions.find((option) => option.value === portionMultiplier)?.label;
+  const selectedPortionLabel = selected
+    ? selectedPortionOptionLabel ?? (selectedStapleConfig && selectedServingGrams ? `${selectedStapleConfig.label}${formatControlValue(round1(selectedServingGrams * portionMultiplier))}g` : "カスタム")
+    : "";
+  const selectedNutrition = selected ? getAdjustedMenuNutrition(selected, portionMultiplier, portionQuantity) : undefined;
+  const selectedCalories = selectedNutrition?.calories ?? 0;
+  const selectedProtein = selectedNutrition?.protein_g ?? 0;
+  const selectedFat = selectedNutrition?.fat_g ?? 0;
+  const selectedCarbs = selectedNutrition?.carbs_g ?? 0;
+  const selectedSalt = selectedNutrition?.salt_g;
   const isGlobalSearch = query.trim().length > 0;
   const remainingNutrition = getRemainingNutrition(props.dayTotals, props.goal);
   const canUseOverGoalFilter = !!props.goal && props.goal.target_calories > 0;
@@ -3886,7 +3900,12 @@ function FoodTab(props: {
   const saveSelected = async () => {
     if (!selected) return;
     const timestamp = nowIso();
-    const loggedName = selectedServingGrams && multiplier !== 1 ? `${selected.name}（${formatControlValue(round1(selectedServingGrams * multiplier))}g）` : selected.name;
+    const nutrition = getAdjustedMenuNutrition(selected, portionMultiplier, portionQuantity);
+    const loggedName = selectedStapleConfig && portionMultiplier !== 1
+      ? `${selected.name}（${selectedStapleConfig.label} ${formatControlValue(round1(selectedStapleConfig.defaultGrams * portionMultiplier))}g）`
+      : selectedServingGrams && multiplier !== 1
+        ? `${selected.name}（${formatControlValue(round1(selectedServingGrams * multiplier))}g）`
+        : selected.name;
     await db.food_entries.put({
       id: makeId("food"),
       app_date: props.appDate,
@@ -3894,11 +3913,11 @@ function FoodTab(props: {
       meal_type: mealType,
       name: loggedName,
       brand: selected.brand,
-      calories: Math.round(selected.calories * multiplier),
-      protein_g: round1(selected.protein_g * multiplier),
-      fat_g: round1(selected.fat_g * multiplier),
-      carbs_g: round1(selected.carbs_g * multiplier),
-      salt_g: selected.salt_g ? round1(selected.salt_g * multiplier) : undefined,
+      calories: nutrition.calories,
+      protein_g: nutrition.protein_g,
+      fat_g: nutrition.fat_g,
+      carbs_g: nutrition.carbs_g,
+      salt_g: nutrition.salt_g,
       portion_multiplier: multiplier,
       entry_source: selected.data_source,
       confidence: selected.confidence,
@@ -4628,8 +4647,8 @@ function FoodTab(props: {
 
             {foodAddStep === "size" && (
               <div className="mt-4">
-                <p className="text-sm font-black text-ink">サイズを選択</p>
-                <p className="mt-1 text-xs font-semibold text-moss">通常は既定サイズのまま進めます。</p>
+                <p className="text-sm font-black text-ink">{selectedStapleConfig ? `${selectedStapleConfig.label}の量を選択` : "サイズを選択"}</p>
+                <p className="mt-1 text-xs font-semibold text-moss">{selectedStapleConfig ? `定食やセット全体ではなく、${selectedStapleConfig.label}量だけを調整します。` : "通常は既定サイズのまま進めます。"}</p>
                 <div className="mt-4 grid gap-2">
                   {defaultPortionOption && (
                     <button
@@ -4643,7 +4662,7 @@ function FoodTab(props: {
                     </button>
                   )}
                   <button className="food-add-choice" onClick={() => setFoodAddStep("customSize")}>
-                    サイズをカスタム
+                    {selectedStapleConfig ? `${selectedStapleConfig.label}量をカスタム` : "サイズをカスタム"}
                   </button>
                 </div>
               </div>
@@ -4651,8 +4670,8 @@ function FoodTab(props: {
 
             {foodAddStep === "customSize" && (
               <div className="mt-4">
-                <p className="text-sm font-black text-ink">サイズをカスタム</p>
-                <p className="mt-1 text-xs font-semibold text-moss">既定サイズ以外で記録したい時だけ選びます。</p>
+                <p className="text-sm font-black text-ink">{selectedStapleConfig ? `${selectedStapleConfig.label}量をカスタム` : "サイズをカスタム"}</p>
+                <p className="mt-1 text-xs font-semibold text-moss">{selectedStapleConfig ? `主菜や副菜はそのまま、${selectedStapleConfig.label}の量だけで栄養値を補正します。` : "既定サイズ以外で記録したい時だけ選びます。"}</p>
                 <div className="mt-4 grid grid-cols-2 gap-2">
                   {customPortionOptions.map(({ label, value }) => (
                     <button
@@ -4669,7 +4688,7 @@ function FoodTab(props: {
                 </div>
                 {selectedServingGrams && (
                   <label className="mt-4 block text-xs font-semibold text-moss">
-                    グラム指定
+                    {selectedStapleConfig ? `${selectedStapleConfig.label}量をグラム指定` : "グラム指定"}
                     <input
                       className="mt-2 w-full"
                       type="number"
@@ -4685,7 +4704,7 @@ function FoodTab(props: {
                   </label>
                 )}
                 <button className="secondary-button mt-3 w-full" onClick={() => setFoodAddStep("quantity")}>
-                  このサイズで進む
+                  {selectedStapleConfig ? `この${selectedStapleConfig.label}量で進む` : "このサイズで進む"}
                 </button>
                 {customPortionOptions.length === 0 && !selectedServingGrams && (
                   <p className="mt-3 rounded-2xl bg-rice px-3 py-2 text-xs font-bold text-moss">このメニューはカスタムできるサイズ候補がありません。</p>
@@ -4696,7 +4715,7 @@ function FoodTab(props: {
             {foodAddStep === "quantity" && (
               <div className="mt-4">
                 <p className="text-sm font-black text-ink">個数を選択</p>
-                <p className="mt-1 text-xs font-semibold text-moss">{selectedPortionLabel}を何個・何杯分記録するか選びます。</p>
+                <p className="mt-1 text-xs font-semibold text-moss">{selectedPortionLabel}のメニューを何人前記録するか選びます。</p>
                 <div className="mt-4 grid grid-cols-3 gap-2">
                   {[1, 2, 3].map((value) => (
                     <button
@@ -10740,27 +10759,40 @@ function getAiFoodRawItems(payload: unknown) {
   const object = payload as Record<string, unknown>;
   const itemKeys = ["items", "foods", "food_items", "menu_items", "entries", "results", "食事", "食品", "メニュー"];
   for (const key of itemKeys) {
-    if (Array.isArray(object[key])) return object[key] as unknown[];
+    if (Array.isArray(object[key])) {
+      const rootNeedsConfirmation = stringArrayValue(object.needs_confirmation ?? object.questions ?? object["確認事項"] ?? object["確認"]);
+      if (!rootNeedsConfirmation.length) return object[key] as unknown[];
+      return (object[key] as unknown[]).map((item) => {
+        if (typeof item !== "object" || item === null) return item;
+        const itemObject = item as Record<string, unknown>;
+        const itemNeedsConfirmation = stringArrayValue(itemObject.needs_confirmation ?? itemObject.questions ?? itemObject["確認事項"] ?? itemObject["確認"]);
+        return { ...itemObject, needs_confirmation: unique([...itemNeedsConfirmation, ...rootNeedsConfirmation]) };
+      });
+    }
   }
-  if (object.nutrition_estimate || object.nutrition || object.nutrients || object["栄養値"] || object["栄養成分"]) return [object];
+  if (object.nutrition_estimate || object.estimated_nutrition || object.nutrition || object.nutrients || object["栄養値"] || object["栄養成分"]) return [object];
   return [];
 }
 
 function normalizeAiFoodBridgeItem(raw: unknown): AiFoodBridgeItem | undefined {
   if (typeof raw !== "object" || raw === null) return undefined;
   const object = raw as Record<string, unknown>;
-  const nutrition = normalizeAiFoodNutrition(object.nutrition_estimate ?? object.nutrition ?? object.nutrients ?? object["栄養値"] ?? object["栄養成分"]);
+  const nutrition = normalizeAiFoodNutrition(object.nutrition_estimate ?? object.estimated_nutrition ?? object.nutrition ?? object.nutrients ?? object["栄養値"] ?? object["栄養成分"]);
   if (!nutrition) return undefined;
-  const observedName = stringValue(object.observed_name) || stringValue(object.name) || stringValue(object.food_name) || stringValue(object["料理名"]) || stringValue(object["食品名"]) || stringValue(object["名前"]) || stringValue(object.possible_menu_name) || stringValue(object["メニュー名"]) || "AI推定メニュー";
+  const observedName = stringValue(object.observed_name) || stringValue(object.estimated_food_name) || stringValue(object.name) || stringValue(object.food_name) || stringValue(object["料理名"]) || stringValue(object["食品名"]) || stringValue(object["名前"]) || stringValue(object.possible_menu_name) || stringValue(object["メニュー名"]) || "AI推定メニュー";
+  const possibleBrand = stringValue(object.possible_brand) || stringValue(object.brand) || stringValue(object["店名"]) || stringValue(object["ブランド"]) || stringValue(object["ブランド名"]);
+  const possibleMenuName = stringValue(object.possible_menu_name) || stringValue(object.menu_name) || stringValue(object.product_name) || stringValue(object.estimated_menu_name) || stringValue(object["メニュー名"]) || stringValue(object["商品名"]);
+  const category = stringValue(object.category) || stringValue(object["カテゴリ"]);
+  const keywords = stringArrayValue(object.match_keywords ?? object.keywords ?? object["キーワード"] ?? object["照合キーワード"]);
   return {
     observed_name: observedName,
-    possible_brand: stringValue(object.possible_brand) || stringValue(object.brand) || stringValue(object["店名"]) || stringValue(object["ブランド"]) || stringValue(object["ブランド名"]),
-    possible_menu_name: stringValue(object.possible_menu_name) || stringValue(object.menu_name) || stringValue(object.product_name) || stringValue(object["メニュー名"]) || stringValue(object["商品名"]),
-    food_type: stringValue(object.food_type) || stringValue(object.type) || stringValue(object["種類"]),
-    quantity: stringValue(object.quantity) || stringValue(object.amount) || stringValue(object.serving) || stringValue(object["量"]) || stringValue(object["分量"]),
+    possible_brand: possibleBrand,
+    possible_menu_name: possibleMenuName,
+    food_type: stringValue(object.food_type) || stringValue(object.type) || category || stringValue(object["種類"]),
+    quantity: stringValue(object.quantity) || stringValue(object.portion) || stringValue(object.amount) || stringValue(object.serving) || stringValue(object["量"]) || stringValue(object["分量"]),
     nutrition_estimate: nutrition,
     confidence: confidenceValue(object.confidence),
-    match_keywords: stringArrayValue(object.match_keywords ?? object.keywords ?? object["キーワード"] ?? object["照合キーワード"]),
+    match_keywords: unique([...keywords, possibleBrand, possibleMenuName, observedName, category].filter(Boolean)),
     needs_confirmation: stringArrayValue(object.needs_confirmation ?? object.questions ?? object["確認事項"] ?? object["確認"]),
     note: stringValue(object.note) || stringValue(object["メモ"]) || stringValue(object["推定根拠"]),
   };
@@ -10769,10 +10801,10 @@ function normalizeAiFoodBridgeItem(raw: unknown): AiFoodBridgeItem | undefined {
 function normalizeAiFoodNutrition(raw: unknown): AiFoodBridgeItem["nutrition_estimate"] | undefined {
   if (typeof raw !== "object" || raw === null) return undefined;
   const object = raw as Record<string, unknown>;
-  const calories = numericValue(object.calories ?? object.kcal ?? object["カロリー"] ?? object["熱量"] ?? object["エネルギー"]);
+  const calories = numericValue(object.calories ?? object.calories_kcal ?? object.kcal ?? object["カロリー"] ?? object["熱量"] ?? object["エネルギー"]);
   const protein = numericValue(object.protein_g ?? object.protein ?? object["protein"] ?? object["たんぱく質"] ?? object["タンパク質"] ?? object["P"]);
   const fat = numericValue(object.fat_g ?? object.fat ?? object["fat"] ?? object["脂質"] ?? object["F"]);
-  const carbs = numericValue(object.carbs_g ?? object.carbs ?? object.carbohydrate_g ?? object.carbohydrates ?? object["炭水化物"] ?? object["糖質"] ?? object["C"]);
+  const carbs = numericValue(object.carbs_g ?? object.carbs ?? object.carbohydrate_g ?? object.carbohydrates ?? object.carbohydrate ?? object["炭水化物"] ?? object["糖質"] ?? object["C"]);
   if ([calories, protein, fat, carbs].some((value) => value === undefined)) return undefined;
   const salt = numericValue(object.salt_g ?? object.salt ?? object.sodium_chloride_g ?? object["食塩相当量"] ?? object["塩分"]);
   return {
@@ -11120,10 +11152,90 @@ function menuItemServingGrams(item: Pick<MenuItem, "serving_label" | "weight_g">
   return match ? Number(match[1]) : undefined;
 }
 
+function getStaplePortionConfig(item: MenuItem): StaplePortionConfig | undefined {
+  const text = [item.name, item.category, item.serving_label, ...item.tags].filter(Boolean).join(" ");
+  const hasNoodle = hasFoodToken(text, ["麺", "ラーメン", "油そば", "うどん", "そば", "パスタ", "焼きそば", "フォー", "春雨"]);
+  const hasRice = hasFoodToken(text, ["ごはん", "ご飯", "白米", "ライス", "丼", "カレー", "定食", "弁当", "プレート", "ディッシュ", "ガパオ", "チャーハン", "オムライス"]);
+  const isRiceComposite = hasFoodToken(text, ["定食", "弁当", "プレート", "ディッシュ", "丼", "カレー", "ガパオ", "チャーハン", "オムライス"]) || (hasFoodToken(text, ["セット"]) && hasRice);
+  const isComposite = isRiceComposite || hasNoodle;
+  if (!isComposite && !hasRice) return undefined;
+  if (hasNoodle) {
+    return {
+      kind: "noodle",
+      label: "麺",
+      defaultGrams: 230,
+      caloriesPer100g: 150,
+      proteinPer100g: 5,
+      fatPer100g: 0.8,
+      carbsPer100g: 30,
+    };
+  }
+  if (!hasRice && !isComposite) return undefined;
+  return {
+    kind: "rice",
+    label: "ご飯",
+    defaultGrams: 200,
+    caloriesPer100g: 156,
+    proteinPer100g: 2.5,
+    fatPer100g: 0.3,
+    carbsPer100g: 37.1,
+  };
+}
+
+function getAdjustedMenuNutrition(item: MenuItem, portionMultiplier: number, portionQuantity: number) {
+  const staple = getStaplePortionConfig(item);
+  if (!staple) {
+    const multiplier = Math.max(0, portionMultiplier * portionQuantity);
+    return {
+      calories: Math.round(item.calories * multiplier),
+      protein_g: round1(item.protein_g * multiplier),
+      fat_g: round1(item.fat_g * multiplier),
+      carbs_g: round1(item.carbs_g * multiplier),
+      salt_g: item.salt_g ? round1(item.salt_g * multiplier) : undefined,
+    };
+  }
+  const stapleDeltaMultiplier = Math.max(0, portionMultiplier) - 1;
+  const stapleDeltaGrams = staple.defaultGrams * stapleDeltaMultiplier;
+  const base = {
+    calories: item.calories + (staple.caloriesPer100g * stapleDeltaGrams) / 100,
+    protein_g: item.protein_g + (staple.proteinPer100g * stapleDeltaGrams) / 100,
+    fat_g: item.fat_g + (staple.fatPer100g * stapleDeltaGrams) / 100,
+    carbs_g: item.carbs_g + (staple.carbsPer100g * stapleDeltaGrams) / 100,
+    salt_g: item.salt_g,
+  };
+  const quantity = Math.max(0, portionQuantity);
+  return {
+    calories: Math.max(0, Math.round(base.calories * quantity)),
+    protein_g: round1(Math.max(0, base.protein_g * quantity)),
+    fat_g: round1(Math.max(0, base.fat_g * quantity)),
+    carbs_g: round1(Math.max(0, base.carbs_g * quantity)),
+    salt_g: base.salt_g ? round1(Math.max(0, base.salt_g * quantity)) : undefined,
+  };
+}
+
 function getPortionOptions(item: MenuItem): PortionOption[] {
   const text = [item.name, item.category, item.serving_label, ...item.tags].filter(Boolean).join(" ");
   const servingLabel = item.serving_label?.trim();
   const standardLabel = servingLabel && !unhelpfulServingLabels.has(servingLabel) ? servingLabel : "普通";
+  const staple = getStaplePortionConfig(item);
+
+  if (staple?.kind === "rice") {
+    return [
+      { label: "ご飯なし", value: 0 },
+      { label: "ご飯少なめ", value: 0.75 },
+      { label: "ご飯普通", value: 1 },
+      { label: "ご飯大盛り", value: 1.5 },
+    ];
+  }
+
+  if (staple?.kind === "noodle") {
+    return [
+      { label: "麺少なめ", value: 0.75 },
+      { label: "麺普通", value: 1 },
+      { label: "麺大盛り", value: 1.35 },
+      { label: "麺特盛", value: 1.7 },
+    ];
+  }
 
   if (hasFoodToken(text, ["ドリンク", "コーヒー", "カフェラテ", "牛乳", "豆乳", "ジュース", "炭酸", "アルコール"])) {
     return [
