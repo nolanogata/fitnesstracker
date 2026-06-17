@@ -182,6 +182,12 @@ type PortionOption = {
   label: string;
   value: number;
 };
+type MenuSizeVariant = {
+  item: MenuItem;
+  label: string;
+  rank: number;
+  groupKey: string;
+};
 type StaplePortionConfig = {
   kind: "rice" | "noodle";
   label: string;
@@ -4003,13 +4009,18 @@ function FoodTab(props: {
     }
   };
   const portionOptions = selected ? getPortionOptions(selected) : [];
+  const selectedSizeVariants = useMemo(() => selected ? getMenuSizeVariants(selected, props.menuItems) : [], [selected?.id, props.menuItems]);
+  const hasSelectedSizeVariants = selectedSizeVariants.length > 1;
+  const selectedSizeVariantLabel = selectedSizeVariants.find((variant) => variant.item.id === selected?.id)?.label;
   const selectedStapleConfig = selected ? getStaplePortionConfig(selected) : undefined;
   const selectedServingGrams = selected ? selectedStapleConfig?.defaultGrams ?? menuItemServingGrams(selected) : undefined;
   const defaultPortionOption = portionOptions.find((option) => option.value === 1) ?? portionOptions[0];
   const customPortionOptions = portionOptions.filter((option) => option.value !== defaultPortionOption?.value);
   const selectedPortionOptionLabel = portionOptions.find((option) => option.value === portionMultiplier)?.label;
   const selectedPortionLabel = selected
-    ? selectedPortionOptionLabel ?? (selectedStapleConfig && selectedServingGrams ? `${selectedStapleConfig.label}${formatControlValue(round1(selectedServingGrams * portionMultiplier))}g` : "カスタム")
+    ? (hasSelectedSizeVariants && portionMultiplier === 1 ? selectedSizeVariantLabel : undefined)
+      ?? selectedPortionOptionLabel
+      ?? (selectedStapleConfig && selectedServingGrams ? `${selectedStapleConfig.label}${formatControlValue(round1(selectedServingGrams * portionMultiplier))}g` : "カスタム")
     : "";
   const selectedNutrition = selected ? getAdjustedMenuNutrition(selected, portionMultiplier, portionQuantity) : undefined;
   const selectedCalories = selectedNutrition?.calories ?? 0;
@@ -4061,9 +4072,12 @@ function FoodTab(props: {
       })
       : sorted;
     const generalFiltered = showGeneralFoodsOnly ? matched.filter(isGeneralFoodMenuItem) : mergeGenericDuplicateMenuItems(matched);
-    const filtered = hideOverGoalItems && canUseOverGoalFilter
-      ? generalFiltered.filter((item) => fitsRemainingFoodFilter(item, remainingNutrition))
+    const sizeMerged = (isGlobalSearch || mode === "search" || mode === "chain" || mode === "recommend")
+      ? mergeMenuSizeVariantItems(generalFiltered)
       : generalFiltered;
+    const filtered = hideOverGoalItems && canUseOverGoalFilter
+      ? sizeMerged.filter((item) => fitsRemainingFoodFilter(item, remainingNutrition))
+      : sizeMerged;
     const recommended = isSortFoodByFitActive || mode === "recommend"
       ? [...filtered].sort((a, b) => {
         const specialDiff = mode === "recommend" ? 0 : specialModeFoodRank(a, props.activeSpecialMode) - specialModeFoodRank(b, props.activeSpecialMode);
@@ -4869,20 +4883,41 @@ function FoodTab(props: {
 
             {foodAddStep === "size" && (
               <div className="mt-4">
-                <p className="text-sm font-black text-ink">{selectedStapleConfig ? `${selectedStapleConfig.label}の量を選択` : "サイズを選択"}</p>
-                <p className="mt-1 text-xs font-semibold text-moss">{selectedStapleConfig ? `定食やセット全体ではなく、${selectedStapleConfig.label}量だけを調整します。` : "通常は既定サイズのまま進めます。"}</p>
+                <p className="text-sm font-black text-ink">{hasSelectedSizeVariants ? "サイズを選択" : selectedStapleConfig ? `${selectedStapleConfig.label}の量を選択` : "サイズを選択"}</p>
+                <p className="mt-1 text-xs font-semibold text-moss">
+                  {hasSelectedSizeVariants
+                    ? "登録済みのサイズ違いから選びます。公式値や推定値がある場合はその値を使います。"
+                    : selectedStapleConfig
+                      ? `定食やセット全体ではなく、${selectedStapleConfig.label}量だけを調整します。`
+                      : "通常は既定サイズのまま進めます。"}
+                </p>
                 <div className="mt-4 grid gap-2">
-                  {defaultPortionOption && (
-                    <button
-                      className="food-add-choice food-add-choice-active min-h-[3.2rem]"
-                      onClick={() => {
-                        setPortionMultiplier(defaultPortionOption.value);
-                        setFoodAddStep("quantity");
-                      }}
-                    >
-                      {defaultPortionOption.label}
-                    </button>
-                  )}
+                  {hasSelectedSizeVariants
+                    ? selectedSizeVariants.map((variant) => (
+                      <button
+                        className={`food-add-choice food-add-choice-size min-h-[3.2rem] ${selected.id === variant.item.id ? "food-add-choice-active" : ""}`}
+                        key={variant.item.id}
+                        onClick={() => {
+                          setSelected(variant.item);
+                          setPortionMultiplier(1);
+                          setFoodAddStep("quantity");
+                        }}
+                      >
+                        <span>{variant.label}</span>
+                        <span className="numeric-text text-xs font-bold text-moss">{variant.item.calories}kcal</span>
+                      </button>
+                    ))
+                    : defaultPortionOption && (
+                      <button
+                        className="food-add-choice food-add-choice-active min-h-[3.2rem]"
+                        onClick={() => {
+                          setPortionMultiplier(defaultPortionOption.value);
+                          setFoodAddStep("quantity");
+                        }}
+                      >
+                        {defaultPortionOption.label}
+                      </button>
+                    )}
                   <button className="food-add-choice" onClick={() => setFoodAddStep("customSize")}>
                     {selectedStapleConfig ? `${selectedStapleConfig.label}量をカスタム` : "サイズをカスタム"}
                   </button>
@@ -11958,6 +11993,141 @@ function dedupeMenuItemsBySource(items: MenuItem[]) {
       seen.add(key);
       return true;
     });
+}
+
+const menuSizeVariantLabels = [
+  "ミニ",
+  "小盛",
+  "小盛り",
+  "少なめ",
+  "並盛",
+  "並盛り",
+  "普通",
+  "普通量",
+  "中盛",
+  "中盛り",
+  "アタマの大盛",
+  "肉並盛",
+  "肉大盛",
+  "大盛",
+  "大盛り",
+  "特盛",
+  "特盛り",
+  "超特盛",
+  "メガ",
+  "メガ盛",
+  "メガ盛り",
+];
+const menuSizeVariantRanks = new Map(menuSizeVariantLabels.map((label, index) => [normalizeExactMenuKeyPart(label), index]));
+
+function mergeMenuSizeVariantItems(items: MenuItem[]) {
+  const groups = new Map<string, MenuSizeVariant[]>();
+  items.forEach((item) => {
+    const variant = getMenuSizeVariant(item);
+    if (!variant) return;
+    groups.set(variant.groupKey, [...(groups.get(variant.groupKey) ?? []), variant]);
+  });
+  const groupedItemIds = new Set(
+    [...groups.values()]
+      .filter((variants) => variants.length > 1)
+      .flatMap((variants) => variants.map((variant) => variant.item.id)),
+  );
+  const representativeByGroup = new Map<string, string>();
+  [...groups.entries()].forEach(([groupKey, variants]) => {
+    if (variants.length <= 1) return;
+    const representative = pickMenuSizeVariantRepresentative(variants);
+    representativeByGroup.set(groupKey, representative.item.id);
+  });
+  return items.filter((item) => {
+    if (!groupedItemIds.has(item.id)) return true;
+    const variant = getMenuSizeVariant(item);
+    return !!variant && representativeByGroup.get(variant.groupKey) === item.id;
+  });
+}
+
+function getMenuSizeVariants(selected: MenuItem, menuItems: MenuItem[]) {
+  const selectedVariant = getMenuSizeVariant(selected);
+  if (!selectedVariant) return [];
+  const variants = menuItems
+    .map(getMenuSizeVariant)
+    .filter((variant): variant is MenuSizeVariant => !!variant && variant.groupKey === selectedVariant.groupKey);
+  return variants.length > 1 ? sortMenuSizeVariants(variants) : [];
+}
+
+function sortMenuSizeVariants(variants: MenuSizeVariant[]) {
+  return [...variants].sort((a, b) => {
+    if (a.rank !== b.rank) return a.rank - b.rank;
+    const sourceDiff = sourceRank(a.item.data_source) - sourceRank(b.item.data_source);
+    if (sourceDiff !== 0) return sourceDiff;
+    return a.item.calories - b.item.calories;
+  });
+}
+
+function pickMenuSizeVariantRepresentative(variants: MenuSizeVariant[]) {
+  return sortMenuSizeVariants(variants).sort((a, b) => menuSizeRepresentativeRank(a.label) - menuSizeRepresentativeRank(b.label))[0];
+}
+
+function menuSizeRepresentativeRank(label: string) {
+  if (/並盛|普通/.test(label)) return 0;
+  if (/中盛/.test(label)) return 1;
+  if (/小盛|ミニ|少なめ/.test(label)) return 2;
+  return 3;
+}
+
+function getMenuSizeVariant(item: MenuItem): MenuSizeVariant | undefined {
+  if (!item.brand || item.is_user_created) return undefined;
+  const servingLabel = item.serving_label?.trim();
+  const fromServing = servingLabel ? extractMenuSizeLabel(servingLabel) : undefined;
+  const fromName = extractMenuSizeLabel(item.name);
+  const fromTags = item.tags.map(extractMenuSizeLabel).find(Boolean);
+  const label = fromServing ?? fromName ?? fromTags;
+  if (!label) return undefined;
+  const baseName = stripMenuSizeLabel(item.name, label).trim();
+  if (!baseName || baseName === item.name && !fromServing) return undefined;
+  const groupKey = [
+    item.brand,
+    item.category,
+    baseName,
+  ].map(normalizeExactMenuKeyPart).join("|");
+  return {
+    item,
+    label,
+    rank: menuSizeVariantRank(label),
+    groupKey,
+  };
+}
+
+function extractMenuSizeLabel(value: string) {
+  const normalized = value.trim();
+  if (!normalized || /\d+\s*(?:g|kg|ml|kcal|個|貫|皿|本|杯|枚)/i.test(normalized)) return undefined;
+  const parenthetical = normalized.match(/[（(]([^（）()]+)[）)]/);
+  const parentheticalLabel = parenthetical ? matchMenuSizeLabel(parenthetical[1]) : undefined;
+  if (parentheticalLabel) return parentheticalLabel;
+  return matchMenuSizeLabel(normalized);
+}
+
+function matchMenuSizeLabel(value: string) {
+  const normalized = value.trim();
+  return menuSizeVariantLabels
+    .filter((label) => normalized.includes(label))
+    .sort((a, b) => b.length - a.length)[0];
+}
+
+function stripMenuSizeLabel(name: string, label: string) {
+  const escaped = escapeRegExp(label);
+  return name
+    .replace(new RegExp(`[（(]\\s*${escaped}\\s*[）)]`, "g"), "")
+    .replace(new RegExp(`\\s*${escaped}\\s*$`, "g"), "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function menuSizeVariantRank(label: string) {
+  return menuSizeVariantRanks.get(normalizeExactMenuKeyPart(label)) ?? 999;
+}
+
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 function normalizeExactMenuKeyPart(value: string) {
