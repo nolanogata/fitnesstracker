@@ -7682,13 +7682,9 @@ function AiFoodImportModal({ step, setStep, text, setText, items, menuItems, can
         {step === "prompt" && (
           <div className="mt-4 space-y-3">
             <div className="ai-food-helper-card">
-              <p>1. 下のプロンプトをコピーしてAIに貼り付けます。</p>
+              <p>1. プロンプトをコピーしてAIに貼り付けます。</p>
               <p className="mt-1">2. 写真・バーコード・栄養成分表示も一緒に添付して送信します。</p>
               <p className="mt-1">3. AIのコードブロックをコピーして、この画面の次ステップに貼り付けます。</p>
-            </div>
-            <div className="ai-food-panel">
-              <p className="text-sm font-bold">AIへ渡すプロンプト</p>
-              <textarea className="mt-3 min-h-48 w-full text-xs leading-relaxed" readOnly value={aiFoodImportPrompt} />
             </div>
             <button className="primary-button w-full" onClick={onCopyPrompt}><Copy size={17} />{copiedPrompt ? "コピー済み" : "プロンプトをコピー"}</button>
           </div>
