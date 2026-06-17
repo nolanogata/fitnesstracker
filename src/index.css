@@ -1662,6 +1662,55 @@ button {
   border-color: rgba(159, 190, 169, 0.24);
 }
 
+.ai-food-helper-card,
+.ai-food-panel,
+.ai-food-summary-card,
+.ai-food-timing-summary {
+  border: 1px solid rgba(111, 143, 125, 0.2);
+  border-radius: 1.5rem;
+  background: rgba(255, 255, 255, 0.64);
+  color: #1f2722;
+  box-shadow: var(--glass-highlight), 0 8px 18px rgba(44, 56, 48, 0.05);
+}
+
+.ai-food-helper-card {
+  padding: 0.78rem;
+  color: #3f5147;
+  font-size: 0.78rem;
+  font-weight: 750;
+  line-height: 1.65;
+}
+
+.ai-food-panel,
+.ai-food-summary-card {
+  padding: 0.78rem;
+}
+
+.ai-food-note {
+  border-radius: 1rem;
+  background: rgba(221, 232, 225, 0.64);
+  padding: 0.55rem 0.72rem;
+  color: #526d5d;
+  font-size: 0.75rem;
+  font-weight: 750;
+}
+
+.ai-food-timing-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem 0.85rem;
+  color: #526d5d;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.ai-food-timing-summary strong {
+  color: #1f2722;
+  font-size: 0.98rem;
+}
+
 .ai-food-import-icon {
   display: inline-flex;
   height: 2rem;
@@ -2779,6 +2828,52 @@ button {
     linear-gradient(135deg, rgba(159, 190, 169, 0.22), rgba(117, 169, 218, 0.16), rgba(232, 181, 111, 0.12)),
     rgba(255, 255, 255, 0.08);
   color: #edf8ef;
+}
+
+.theme-dark .ai-food-helper-card,
+.theme-dark .ai-food-panel,
+.theme-dark .ai-food-summary-card,
+.theme-dark .ai-food-timing-summary,
+:root[data-theme="dark"] .ai-food-helper-card,
+:root[data-theme="dark"] .ai-food-panel,
+:root[data-theme="dark"] .ai-food-summary-card,
+:root[data-theme="dark"] .ai-food-timing-summary {
+  border-color: rgba(255, 255, 255, 0.13);
+  background: rgba(255, 255, 255, 0.075);
+  color: #edf4ee;
+  box-shadow: var(--glass-highlight), 0 10px 22px rgba(0, 0, 0, 0.2);
+}
+
+.theme-dark .ai-food-helper-card,
+:root[data-theme="dark"] .ai-food-helper-card {
+  color: #d8e4db;
+}
+
+.theme-dark .ai-food-note,
+:root[data-theme="dark"] .ai-food-note {
+  background: rgba(159, 190, 169, 0.12);
+  color: #d8e4db;
+}
+
+.theme-dark .ai-food-timing-summary,
+:root[data-theme="dark"] .ai-food-timing-summary {
+  color: #d8e4db;
+}
+
+.theme-dark .ai-food-timing-summary strong,
+:root[data-theme="dark"] .ai-food-timing-summary strong {
+  color: #ffffff;
+}
+
+.theme-dark .ai-food-import-sheet .text-moss,
+:root[data-theme="dark"] .ai-food-import-sheet .text-moss {
+  color: #d8e4db !important;
+}
+
+.theme-dark .ai-food-summary-card .rounded-md,
+:root[data-theme="dark"] .ai-food-summary-card .rounded-md {
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  background-color: rgba(255, 255, 255, 0.08) !important;
 }
 
 .theme-dark .recommendation-rank-badge,
