@@ -185,6 +185,7 @@ type PortionOption = {
 type MenuSizeVariant = {
   item: MenuItem;
   label: string;
+  baseName: string;
   rank: number;
   groupKey: string;
 };
@@ -4012,6 +4013,11 @@ function FoodTab(props: {
   const selectedSizeVariants = useMemo(() => selected ? getMenuSizeVariants(selected, props.menuItems) : [], [selected?.id, props.menuItems]);
   const hasSelectedSizeVariants = selectedSizeVariants.length > 1;
   const selectedSizeVariantLabel = selectedSizeVariants.find((variant) => variant.item.id === selected?.id)?.label;
+  const selectedDisplayName = selected
+    ? hasSelectedSizeVariants
+      ? selectedSizeVariants.find((variant) => variant.item.id === selected.id)?.baseName ?? formatMenuItemName(selected)
+      : formatMenuItemName(selected)
+    : "";
   const selectedStapleConfig = selected ? getStaplePortionConfig(selected) : undefined;
   const selectedServingGrams = selected ? selectedStapleConfig?.defaultGrams ?? menuItemServingGrams(selected) : undefined;
   const defaultPortionOption = portionOptions.find((option) => option.value === 1) ?? portionOptions[0];
@@ -4797,6 +4803,7 @@ function FoodTab(props: {
                   )}
                   <FoodItemRow
                     item={item}
+                    displayName={getMenuDisplayName(item, props.menuItems)}
                     onPick={selectFoodItem}
                     onClone={openMenuEdit}
                     onDelete={deleteUserMenuItem}
@@ -4864,7 +4871,7 @@ function FoodTab(props: {
           <div className="food-add-sheet compact-card w-full p-4" onClick={(event) => event.stopPropagation()}>
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
-                <p className="truncate text-lg font-bold">{formatMenuItemName(selected)}</p>
+                <p className="truncate text-lg font-bold">{selectedDisplayName}</p>
                 <p className="numeric-text mt-1 text-sm text-moss">{selected.brand ?? selected.category} · {selectedCalories} kcal</p>
               </div>
               <button className="icon-button h-9 w-9 shrink-0" aria-label="閉じる" onClick={() => setSelected(undefined)}>×</button>
@@ -8042,8 +8049,9 @@ function ManualFoodForm({ manual, setManual, onSave, compact = false, mode = "lo
   );
 }
 
-function FoodItemRow({ item, onPick, onClone, onDelete, refresh, balanceTarget, recommendationRank }: {
+function FoodItemRow({ item, displayName, onPick, onClone, onDelete, refresh, balanceTarget, recommendationRank }: {
   item: MenuItem;
+  displayName?: string;
   onPick: (item: MenuItem) => void;
   onClone: (item: MenuItem) => void;
   onDelete?: (item: MenuItem) => void | Promise<void>;
@@ -8054,11 +8062,12 @@ function FoodItemRow({ item, onPick, onClone, onDelete, refresh, balanceTarget, 
   const pictogram = getFoodPictogram(item);
   const fit = balanceTarget ? getPerfectFoodFit(item, balanceTarget) : undefined;
   const editLabel = canOverwriteMenuItem(item) ? "値を上書き編集" : "マイメニューで編集";
+  const rowDisplayName = displayName ?? formatMenuItemName(item);
   return (
     <div className="flex items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-rice/70">
       <Pictogram {...pictogram} />
       <button className="min-w-0 flex-1 text-left" onClick={() => onPick(item)}>
-        <p className="truncate text-sm font-semibold">{formatMenuItemName(item)}</p>
+        <p className="truncate text-sm font-semibold">{rowDisplayName}</p>
         <p className="numeric-text truncate text-xs text-moss">{item.brand ?? item.category} · {item.calories}kcal · P{item.protein_g} F{item.fat_g} C{item.carbs_g}</p>
         <div className="mt-1 flex flex-wrap items-center gap-1.5">
           {recommendationRank && <span className="recommendation-rank-badge">おすすめ{recommendationRank}位</span>}
@@ -8069,13 +8078,13 @@ function FoodItemRow({ item, onPick, onClone, onDelete, refresh, balanceTarget, 
           ))}
         </div>
       </button>
-      <button className="icon-button h-8 w-8" aria-label={`${formatMenuItemName(item)}を${editLabel}`} title={editLabel} onClick={() => onClone(item)}><Pencil size={14} /></button>
+      <button className="icon-button h-8 w-8" aria-label={`${rowDisplayName}を${editLabel}`} title={editLabel} onClick={() => onClone(item)}><Pencil size={14} /></button>
       <button className="icon-button h-8 w-8" aria-label="お気に入り" onClick={async () => {
         await db.menu_items.update(item.id, { is_favorite: !item.is_favorite, updated_at: nowIso() });
         await refresh();
       }}><Heart size={14} fill={item.is_favorite ? "currentColor" : "none"} /></button>
       {item.is_user_created && onDelete && (
-        <button className="icon-button h-8 w-8 text-clay" aria-label={`${formatMenuItemName(item)}をマイメニューから削除`} onClick={() => onDelete(item)}><Trash2 size={14} /></button>
+        <button className="icon-button h-8 w-8 text-clay" aria-label={`${rowDisplayName}をマイメニューから削除`} onClick={() => onDelete(item)}><Trash2 size={14} /></button>
       )}
     </div>
   );
@@ -11996,19 +12005,30 @@ function dedupeMenuItemsBySource(items: MenuItem[]) {
 }
 
 const menuSizeVariantLabels = [
+  "ご飯増量",
+  "ごはん増量",
+  "ライス増量",
+  "おかず増量",
+  "普通盛り",
+  "普通盛",
   "ミニ",
+  "小サイズ",
+  "小盛サイズ",
   "小盛",
   "小盛り",
   "少なめ",
+  "並サイズ",
   "並盛",
   "並盛り",
   "普通",
   "普通量",
+  "中サイズ",
   "中盛",
   "中盛り",
   "アタマの大盛",
   "肉並盛",
   "肉大盛",
+  "大サイズ",
   "大盛",
   "大盛り",
   "特盛",
@@ -12054,6 +12074,12 @@ function getMenuSizeVariants(selected: MenuItem, menuItems: MenuItem[]) {
   return variants.length > 1 ? sortMenuSizeVariants(variants) : [];
 }
 
+function getMenuDisplayName(item: MenuItem, menuItems: MenuItem[]) {
+  if (getMenuSizeVariants(item, menuItems).length <= 1) return formatMenuItemName(item);
+  const variant = getMenuSizeVariant(item);
+  return variant?.baseName ?? formatMenuItemName(item);
+}
+
 function sortMenuSizeVariants(variants: MenuSizeVariant[]) {
   return [...variants].sort((a, b) => {
     if (a.rank !== b.rank) return a.rank - b.rank;
@@ -12068,7 +12094,7 @@ function pickMenuSizeVariantRepresentative(variants: MenuSizeVariant[]) {
 }
 
 function menuSizeRepresentativeRank(label: string) {
-  if (/並盛|普通/.test(label)) return 0;
+  if (/並盛|普通|肉並盛/.test(label)) return 0;
   if (/中盛/.test(label)) return 1;
   if (/小盛|ミニ|少なめ/.test(label)) return 2;
   return 3;
@@ -12082,7 +12108,7 @@ function getMenuSizeVariant(item: MenuItem): MenuSizeVariant | undefined {
   const fromTags = item.tags.map(extractMenuSizeLabel).find(Boolean);
   const label = fromServing ?? fromName ?? fromTags;
   if (!label) return undefined;
-  const baseName = stripMenuSizeLabel(item.name, label).trim();
+  const baseName = stripMenuSizeLabel(item.name, label, fromServing ? servingLabel : undefined).trim();
   if (!baseName || baseName === item.name && !fromServing) return undefined;
   const groupKey = [
     item.brand,
@@ -12092,6 +12118,7 @@ function getMenuSizeVariant(item: MenuItem): MenuSizeVariant | undefined {
   return {
     item,
     label,
+    baseName,
     rank: menuSizeVariantRank(label),
     groupKey,
   };
@@ -12099,7 +12126,7 @@ function getMenuSizeVariant(item: MenuItem): MenuSizeVariant | undefined {
 
 function extractMenuSizeLabel(value: string) {
   const normalized = value.trim();
-  if (!normalized || /\d+\s*(?:g|kg|ml|kcal|個|貫|皿|本|杯|枚)/i.test(normalized)) return undefined;
+  if (!normalized || /\d+\s*(?:個|貫|皿|本|杯|枚|切れ|袋|パック)/i.test(normalized)) return undefined;
   const parenthetical = normalized.match(/[（(]([^（）()]+)[）)]/);
   const parentheticalLabel = parenthetical ? matchMenuSizeLabel(parenthetical[1]) : undefined;
   if (parentheticalLabel) return parentheticalLabel;
@@ -12108,21 +12135,36 @@ function extractMenuSizeLabel(value: string) {
 
 function matchMenuSizeLabel(value: string) {
   const normalized = value.trim();
+  if (/^[小中大]$/.test(normalized)) return normalized;
   return menuSizeVariantLabels
     .filter((label) => normalized.includes(label))
     .sort((a, b) => b.length - a.length)[0];
 }
 
-function stripMenuSizeLabel(name: string, label: string) {
+function stripMenuSizeLabel(name: string, label: string, servingLabel?: string) {
   const escaped = escapeRegExp(label);
-  return name
+  const servingPattern = servingLabel ? escapeRegExp(servingLabel) : "";
+  let stripped = name
+    .replace(new RegExp(`[（(]\\s*${escaped}\\s*(?:\\d+(?:\\.\\d+)?\\s*g)?\\s*[）)]`, "g"), "")
+    .replace(new RegExp(`\\s*${escaped}\\s*(?:盛り|盛)?\\s*(?:\\d+(?:\\.\\d+)?\\s*g)?\\s*$`, "g"), "")
     .replace(new RegExp(`[（(]\\s*${escaped}\\s*[）)]`, "g"), "")
     .replace(new RegExp(`\\s*${escaped}\\s*$`, "g"), "")
     .replace(/\s+/g, " ")
     .trim();
+  if (servingPattern) {
+    stripped = stripped
+      .replace(new RegExp(`[（(]\\s*${servingPattern}\\s*[）)]`, "g"), "")
+      .replace(new RegExp(`\\s*${servingPattern}\\s*$`, "g"), "")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+  return stripped;
 }
 
 function menuSizeVariantRank(label: string) {
+  if (label === "小") return menuSizeVariantRanks.get(normalizeExactMenuKeyPart("小盛")) ?? 999;
+  if (label === "中") return menuSizeVariantRanks.get(normalizeExactMenuKeyPart("中盛")) ?? 999;
+  if (label === "大") return menuSizeVariantRanks.get(normalizeExactMenuKeyPart("大盛")) ?? 999;
   return menuSizeVariantRanks.get(normalizeExactMenuKeyPart(label)) ?? 999;
 }
 
