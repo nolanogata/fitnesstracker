@@ -2405,7 +2405,7 @@ function App() {
       />
 
       <nav
-        className={`safe-bottom app-bottom-nav tab-index-${bottomTabIndex} fixed inset-x-0 bottom-0 z-30 mx-auto max-w-[430px] px-3 pt-1.5`}
+        className={`safe-bottom app-bottom-nav tab-index-${bottomTabIndex} px-3 pt-1.5`}
         style={{ "--active-tab-glow-x": bottomTabGlowX } as CSSProperties & Record<"--active-tab-glow-x", string>}
       >
         <span className="tab-glass-indicator" aria-hidden="true" />

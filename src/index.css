@@ -1204,11 +1204,14 @@ button {
 }
 
 .app-bottom-nav {
-  left: 50% !important;
-  right: auto !important;
-  bottom: max(0.8rem, calc(env(safe-area-inset-bottom) + 0.25rem)) !important;
-  width: min(calc(100% - 2rem), 400px);
-  transform: translateX(-50%) translateZ(0);
+  position: fixed;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: max(0.8rem, calc(env(safe-area-inset-bottom, 0px) + 0.25rem)) !important;
+  z-index: 30;
+  width: min(calc(100vw - 2rem), 400px);
+  margin-inline: auto;
+  transform: none !important;
   overflow: hidden;
   touch-action: manipulation;
   border: 1px solid rgba(218, 226, 220, 0.56);
@@ -1218,7 +1221,6 @@ button {
   box-shadow: 0 20px 48px rgba(44, 56, 48, 0.13), 0 4px 12px rgba(44, 56, 48, 0.05), var(--glass-highlight);
   backdrop-filter: blur(34px) saturate(170%);
   -webkit-backdrop-filter: blur(34px) saturate(170%);
-  will-change: transform;
 }
 
 .app-bottom-nav::before {
