@@ -90,7 +90,7 @@ type AiFoodImportStep = "prompt" | "paste" | "match" | "timing" | "confirm";
 type WorkoutFocus = "dateLog" | undefined;
 type SettingsFocus = "ai" | "backup" | "myMenu" | "goal" | undefined;
 type SettingsSection = "ai" | "backup" | "goal" | "records" | "myMenu" | "general";
-type MyMenuSection = "list" | "new" | "edit";
+type MyMenuSection = "list" | "method" | "new" | "edit";
 type HistoryGrouping = "day" | "week" | "month";
 type ExportSection = "backup" | "logs";
 type LogExportStep = "type" | "grouping" | "period" | "output";
@@ -253,9 +253,47 @@ type AiFoodMatchCandidate = {
   reason: string;
 };
 type AiFoodImportSelection = {
-  source: "menu" | "ai_once" | "ai_menu" | "skip";
+  source: "menu" | "ai_once" | "ai_menu" | "ai_menu_only" | "skip";
   menuItemId?: string;
 };
+type AiFoodImportIntent = "log" | "menu";
+function menuItemFromAiFoodImportItem(aiItem: AiFoodBridgeItem, timestamp: string, defaultMealType?: MealType): MenuItem {
+  const name = aiItem.possible_menu_name?.trim() || aiItem.observed_name.trim() || "AI推定メニュー";
+  const brand = aiItem.possible_brand?.trim() || undefined;
+  return {
+    id: makeId("menu_user"),
+    name,
+    brand,
+    category: brand ? "チェーン店" : "AI推定",
+    tags: unique(["AI写真登録", "AI推定", aiItem.food_type ?? "", brand ?? "", ...aiItem.match_keywords]),
+    calories: aiItem.nutrition_estimate.calories,
+    protein_g: aiItem.nutrition_estimate.protein_g,
+    fat_g: aiItem.nutrition_estimate.fat_g,
+    carbs_g: aiItem.nutrition_estimate.carbs_g,
+    salt_g: aiItem.nutrition_estimate.salt_g,
+    serving_label: aiItem.quantity,
+    default_meal_type: defaultMealType,
+    data_source: "user",
+    confidence: aiItem.confidence,
+    is_public_preset: false,
+    is_user_created: true,
+    is_favorite: false,
+    created_at: timestamp,
+    updated_at: timestamp,
+  };
+}
+function userMenuItemCloneFromMenuItem(item: MenuItem, timestamp: string): MenuItem {
+  return {
+    ...item,
+    id: makeId("menu_user"),
+    data_source: "user",
+    is_public_preset: false,
+    is_user_created: true,
+    is_favorite: false,
+    created_at: timestamp,
+    updated_at: timestamp,
+  };
+}
 type PerfectFoodPlan = "meal" | "snack" | "protein" | "none";
 type PerfectFoodMode = "fit" | "improve";
 type RecommendedFoodFilter = "all" | string;
@@ -3598,8 +3636,10 @@ function FoodTab(props: {
   const [manual, setManual] = useState({ ...emptyManual, savePreset: true });
   const [manualWizardStep, setManualWizardStep] = useState<ManualFoodWizardStep>("basic");
   const [isMyMenuRegistrationOpen, setIsMyMenuRegistrationOpen] = useState(false);
+  const [myMenuRegistrationMethod, setMyMenuRegistrationMethod] = useState<"manual" | "ai" | undefined>();
   const [menuOverwriteTarget, setMenuOverwriteTarget] = useState<MenuOverwriteTarget>();
   const [isAiFoodImportOpen, setIsAiFoodImportOpen] = useState(false);
+  const [aiFoodImportIntent, setAiFoodImportIntent] = useState<AiFoodImportIntent>("log");
   const [aiFoodImportStep, setAiFoodImportStep] = useState<AiFoodImportStep>("prompt");
   const [aiFoodImportText, setAiFoodImportText] = useState("");
   const [aiFoodImportItems, setAiFoodImportItems] = useState<AiFoodBridgeItem[]>([]);
@@ -3718,6 +3758,7 @@ function FoodTab(props: {
     setMode(nextMode);
     if (nextMode === "personal" && showMyMenuIntro) dismissMyMenuIntro();
     setIsMyMenuRegistrationOpen(false);
+    setMyMenuRegistrationMethod(undefined);
     setMenuOverwriteTarget(undefined);
     if (nextMode !== "search") setQuery("");
     if (nextMode === "chain") {
@@ -3747,11 +3788,14 @@ function FoodTab(props: {
     setCopiedAiFoodPrompt(false);
     setAiFoodMealType("lunch");
   };
-  const openAiFoodImport = () => {
-    setMode("ai");
+  const openAiFoodImport = (intent: AiFoodImportIntent = "log") => {
+    setAiFoodImportIntent(intent);
+    if (intent === "log") setMode("ai");
+    if (intent === "menu") setMode("personal");
     setSelected(undefined);
     setEditingEntry(undefined);
-    setIsMyMenuRegistrationOpen(false);
+    setIsMyMenuRegistrationOpen(intent === "menu");
+    setMyMenuRegistrationMethod(intent === "menu" ? "ai" : undefined);
     setMenuOverwriteTarget(undefined);
     setIsAiFoodImportOpen(true);
     setAiFoodImportStep("prompt");
@@ -3759,7 +3803,14 @@ function FoodTab(props: {
   };
   const closeAiFoodImport = () => {
     setIsAiFoodImportOpen(false);
-    setMode("search");
+    if (aiFoodImportIntent === "menu") {
+      setMode("personal");
+      setIsMyMenuRegistrationOpen(true);
+      setMyMenuRegistrationMethod(undefined);
+    } else {
+      setMode("search");
+    }
+    setAiFoodImportIntent("log");
   };
   const parseAiFoodImport = () => {
     const result = parseAiFoodBridgeText(aiFoodImportText);
@@ -3769,10 +3820,16 @@ function FoodTab(props: {
     }
     const nextCandidates = result.items.map((item) => buildAiFoodImportCandidates(item, props.menuItems));
     setAiFoodImportItems(result.items);
-    setAiFoodImportSelections(Object.fromEntries(nextCandidates.flatMap((candidateGroup, index) => {
+    const nextSelections: Array<[number, AiFoodImportSelection]> = [];
+    nextCandidates.forEach((candidateGroup, index) => {
+      if (aiFoodImportIntent === "menu") {
+        nextSelections.push([index, { source: "ai_menu_only" }]);
+        return;
+      }
       const top = candidateGroup[0];
-      return top && top.score >= 36 ? [[index, { source: "menu", menuItemId: top.item.id } satisfies AiFoodImportSelection]] : [];
-    })));
+      if (top && top.score >= 36) nextSelections.push([index, { source: "menu", menuItemId: top.item.id }]);
+    });
+    setAiFoodImportSelections(Object.fromEntries(nextSelections));
     setAiFoodMealType(inferAiFoodMealType(result.items));
     setAiFoodImportError("");
     setAiFoodImportStep("match");
@@ -3935,12 +3992,18 @@ function FoodTab(props: {
   const saveAiFoodImport = async () => {
     const timestamp = nowIso();
     let savedCount = 0;
+    let menuSavedCount = 0;
     for (let index = 0; index < aiFoodImportItems.length; index += 1) {
       const aiItem = aiFoodImportItems[index];
       const selection = aiFoodImportSelections[index] ?? { source: "ai_once" };
       if (selection.source === "skip") continue;
       const matchedItem = selection.source === "menu" && selection.menuItemId ? menuItemsById.get(selection.menuItemId) : undefined;
       if (matchedItem) {
+        if (aiFoodImportIntent === "menu") {
+          await db.menu_items.put(userMenuItemCloneFromMenuItem(matchedItem, timestamp));
+          menuSavedCount += 1;
+          continue;
+        }
         await db.food_entries.put({
           id: makeId("food"),
           app_date: props.appDate,
@@ -3964,50 +4027,32 @@ function FoodTab(props: {
         savedCount += 1;
         continue;
       }
-      const menuItemId = selection.source === "ai_menu" ? makeId("menu_user") : undefined;
-      const name = aiItem.possible_menu_name?.trim() || aiItem.observed_name.trim() || "AI推定メニュー";
-      const brand = aiItem.possible_brand?.trim() || undefined;
-      const category = brand ? "チェーン店" : "AI推定";
-      const tags = unique(["AI写真登録", "AI推定", aiItem.food_type ?? "", brand ?? "", ...aiItem.match_keywords]);
-      if (menuItemId) {
-        await db.menu_items.put({
-          id: menuItemId,
-          name,
-          brand,
-          category,
-          tags,
-          calories: aiItem.nutrition_estimate.calories,
-          protein_g: aiItem.nutrition_estimate.protein_g,
-          fat_g: aiItem.nutrition_estimate.fat_g,
-          carbs_g: aiItem.nutrition_estimate.carbs_g,
-          salt_g: aiItem.nutrition_estimate.salt_g,
-          serving_label: aiItem.quantity,
-          default_meal_type: aiFoodMealType,
-          data_source: "user",
-          confidence: aiItem.confidence,
-          is_public_preset: false,
-          is_user_created: true,
-          is_favorite: false,
-          created_at: timestamp,
-          updated_at: timestamp,
-        });
+      const shouldSaveMenu = aiFoodImportIntent === "menu" || selection.source === "ai_menu" || selection.source === "ai_menu_only";
+      const shouldLogFood = aiFoodImportIntent === "log" && selection.source !== "ai_menu_only";
+      const aiMenuItem = menuItemFromAiFoodImportItem(aiItem, timestamp, aiFoodMealType);
+      if (shouldSaveMenu) {
+        await db.menu_items.put(aiMenuItem);
+        menuSavedCount += 1;
+      }
+      if (!shouldLogFood) {
+        continue;
       }
       await db.food_entries.put({
         id: makeId("food"),
         app_date: props.appDate,
         logged_at: timestamp,
         meal_type: aiFoodMealType,
-        name,
-        brand,
+        name: aiMenuItem.name,
+        brand: aiMenuItem.brand,
         calories: aiItem.nutrition_estimate.calories,
         protein_g: aiItem.nutrition_estimate.protein_g,
         fat_g: aiItem.nutrition_estimate.fat_g,
         carbs_g: aiItem.nutrition_estimate.carbs_g,
         salt_g: aiItem.nutrition_estimate.salt_g,
         portion_multiplier: 1,
-        entry_source: menuItemId ? "user" : "estimated",
+        entry_source: shouldSaveMenu ? "user" : "estimated",
         confidence: aiItem.confidence,
-        menu_item_id: menuItemId,
+        menu_item_id: shouldSaveMenu ? aiMenuItem.id : undefined,
         note: unique(["AI写真登録", aiItem.note ?? "", aiItem.quantity ? `AI推定量: ${aiItem.quantity}` : "", aiItem.needs_confirmation.length ? `確認事項: ${aiItem.needs_confirmation.join(" / ")}` : ""]).join(" / ") || undefined,
         created_at: timestamp,
         updated_at: timestamp,
@@ -4016,9 +4061,16 @@ function FoodTab(props: {
     }
     resetAiFoodImport();
     setIsAiFoodImportOpen(false);
-    setMode("search");
+    setMode(aiFoodImportIntent === "menu" ? "personal" : "search");
+    setIsMyMenuRegistrationOpen(false);
+    setMyMenuRegistrationMethod(undefined);
+    setAiFoodImportIntent("log");
     await props.refresh();
-    props.showToast(`${savedCount}件をAI写真登録から記録しました`);
+    const messages = [
+      savedCount ? `${savedCount}件を記録` : "",
+      menuSavedCount ? `${menuSavedCount}件をマイメニュー保存` : "",
+    ].filter(Boolean).join(" / ");
+    props.showToast(messages ? `AI写真登録から${messages}しました` : "AI写真登録で保存する項目はありませんでした");
   };
 
   const cloneSelectedToManual = () => {
@@ -4035,6 +4087,7 @@ function FoodTab(props: {
     setSelected(undefined);
     setQuery("");
     setManualWizardStep("basic");
+    setMyMenuRegistrationMethod("manual");
     setIsMyMenuRegistrationOpen(true);
     setMode("personal");
     scrollToFoodTop();
@@ -4045,6 +4098,7 @@ function FoodTab(props: {
     setSelected(undefined);
     setQuery("");
     setManualWizardStep("basic");
+    setMyMenuRegistrationMethod("manual");
     setIsMyMenuRegistrationOpen(true);
     setMode("personal");
     scrollToFoodTop();
@@ -4060,10 +4114,12 @@ function FoodTab(props: {
     setManual({ ...emptyManual, savePreset: true });
     setMenuOverwriteTarget(undefined);
     setManualWizardStep("basic");
+    setMyMenuRegistrationMethod(undefined);
     setIsMyMenuRegistrationOpen(true);
   };
   const closeMyMenuRegistration = () => {
     setIsMyMenuRegistrationOpen(false);
+    setMyMenuRegistrationMethod(undefined);
     setManual({ ...emptyManual, savePreset: true });
     setMenuOverwriteTarget(undefined);
     setManualWizardStep("basic");
@@ -4091,6 +4147,7 @@ function FoodTab(props: {
     setMenuOverwriteTarget(undefined);
     setManualWizardStep("basic");
     setIsMyMenuRegistrationOpen(false);
+    setMyMenuRegistrationMethod(undefined);
     setPortionMultiplier(1);
     setPortionQuantity(1);
     setFoodAddStep("size");
@@ -4257,6 +4314,7 @@ function FoodTab(props: {
     setManual({ ...emptyManual, savePreset: true });
     setManualWizardStep("basic");
     setIsMyMenuRegistrationOpen(false);
+    setMyMenuRegistrationMethod(undefined);
     await props.refresh();
     props.showToast(manual.savePreset ? "食事を記録し、マイメニューに保存しました" : "食事を記録しました");
   };
@@ -4533,20 +4591,39 @@ function FoodTab(props: {
                     </div>
                     <button className="secondary-button shrink-0 px-3 py-2 text-xs" onClick={closeMyMenuRegistration}>閉じる</button>
                   </div>
-                  <ManualFoodForm
-                    manual={manual}
-                    setManual={setManual}
-                    compact
-                    mode={menuOverwriteTarget ? "preset" : "log"}
-                    variant="wizard"
-                    wizardStep={manualWizardStep}
-                    setWizardStep={setManualWizardStep}
-                    includePurposeStep={!menuOverwriteTarget}
-                    submitLabel={menuOverwriteTarget ? (menuOverwriteTarget.logAfterSave ? "上書きして記録" : "上書き保存") : manual.savePreset ? "保存して記録" : "今回だけ記録"}
-                    secondarySubmitLabel={menuOverwriteTarget ? (menuOverwriteTarget.logAfterSave ? "別メニューとして保存して記録" : "別メニューとして保存") : undefined}
-                    onSecondarySave={menuOverwriteTarget ? saveManualAsNewMenu : undefined}
-                    onSave={saveManual}
-                  />
+                  {!menuOverwriteTarget && !myMenuRegistrationMethod ? (
+                    <div className="grid gap-2">
+                      <button className="food-filter-option" onClick={() => setMyMenuRegistrationMethod("manual")}>
+                        <span>
+                          <span className="block text-sm font-bold">手動で登録</span>
+                          <span className="mt-1 block text-xs text-moss">名前、単位、カテゴリ、栄養値を順番に入力します。</span>
+                        </span>
+                        <span className="mini-chip shrink-0">手動</span>
+                      </button>
+                      <button className="food-filter-option ai-food-action-option ai-food-action-save" onClick={() => openAiFoodImport("menu")}>
+                        <span>
+                          <span className="block text-sm font-bold">AIを使って登録</span>
+                          <span className="mt-1 block text-xs text-moss">写真や栄養成分表示から、マイメニューだけを保存します。</span>
+                        </span>
+                        <span className="mini-chip shrink-0">AI</span>
+                      </button>
+                    </div>
+                  ) : (
+                    <ManualFoodForm
+                      manual={manual}
+                      setManual={setManual}
+                      compact
+                      mode={menuOverwriteTarget ? "preset" : "log"}
+                      variant="wizard"
+                      wizardStep={manualWizardStep}
+                      setWizardStep={setManualWizardStep}
+                      includePurposeStep={!menuOverwriteTarget}
+                      submitLabel={menuOverwriteTarget ? (menuOverwriteTarget.logAfterSave ? "上書きして記録" : "上書き保存") : manual.savePreset ? "保存して記録" : "今回だけ記録"}
+                      secondarySubmitLabel={menuOverwriteTarget ? (menuOverwriteTarget.logAfterSave ? "別メニューとして保存して記録" : "別メニューとして保存") : undefined}
+                      onSecondarySave={menuOverwriteTarget ? saveManualAsNewMenu : undefined}
+                      onSave={saveManual}
+                    />
+                  )}
                 </section>
               )}
             </>
@@ -4817,6 +4894,7 @@ function FoodTab(props: {
 
       {isAiFoodImportOpen && (
         <AiFoodImportModal
+          intent={aiFoodImportIntent}
           step={aiFoodImportStep}
           setStep={setAiFoodImportStep}
           text={aiFoodImportText}
@@ -5983,8 +6061,16 @@ function SettingsTab(props: {
   const [goalDraft, setGoalDraft] = useState(() => settingsGoalDraftFrom(props.activeGoal, props.profile));
   const [presetDraft, setPresetDraft] = useState({ ...emptyManual, name: "", savePreset: true });
   const [editingUserMenuItemId, setEditingUserMenuItemId] = useState<string>();
-  const [activeMyMenuSection, setActiveMyMenuSection] = useState<MyMenuSection | undefined>(() => props.focus === "myMenu" ? "new" : undefined);
+  const [activeMyMenuSection, setActiveMyMenuSection] = useState<MyMenuSection | undefined>(() => props.focus === "myMenu" ? "method" : undefined);
   const [myMenuWizardStep, setMyMenuWizardStep] = useState<ManualFoodWizardStep>("basic");
+  const [settingsAiFoodImportOpen, setSettingsAiFoodImportOpen] = useState(false);
+  const [settingsAiFoodImportStep, setSettingsAiFoodImportStep] = useState<AiFoodImportStep>("prompt");
+  const [settingsAiFoodImportText, setSettingsAiFoodImportText] = useState("");
+  const [settingsAiFoodImportItems, setSettingsAiFoodImportItems] = useState<AiFoodBridgeItem[]>([]);
+  const [settingsAiFoodImportSelections, setSettingsAiFoodImportSelections] = useState<Record<number, AiFoodImportSelection>>({});
+  const [settingsAiFoodImportError, setSettingsAiFoodImportError] = useState("");
+  const [settingsCopiedAiFoodPrompt, setSettingsCopiedAiFoodPrompt] = useState(false);
+  const [settingsAiFoodMealType, setSettingsAiFoodMealType] = useState<MealType>("lunch");
   const [activeExportSection, setActiveExportSection] = useState<ExportSection | undefined>(() => props.focus === "backup" ? "backup" : undefined);
   const [reportMode, setReportMode] = useState<ReportMode>("day");
   const [question, setQuestion] = useState("");
@@ -6045,7 +6131,7 @@ function SettingsTab(props: {
     if (props.focus === "myMenu") {
       setEditingUserMenuItemId(undefined);
       setPresetDraft({ ...emptyManual, savePreset: true });
-      setActiveMyMenuSection("new");
+      setActiveMyMenuSection("method");
       setMyMenuWizardStep("basic");
     }
     if (props.focus === "backup") {
@@ -6101,6 +6187,57 @@ function SettingsTab(props: {
     : "未設定";
   const logExportCalendarCells = useMemo(() => buildMonthCalendar(logExportCalendarMonth), [logExportCalendarMonth]);
   const normalizedLogExportPeriod = normalizeDatePeriod(logExportStartDate, logExportEndDate);
+  const settingsAiFoodMatchCandidates = useMemo(
+    () => settingsAiFoodImportItems.map((item) => buildAiFoodImportCandidates(item, props.menuItems)),
+    [settingsAiFoodImportItems, props.menuItems],
+  );
+
+  const resetSettingsAiFoodImport = () => {
+    setSettingsAiFoodImportStep("prompt");
+    setSettingsAiFoodImportText("");
+    setSettingsAiFoodImportItems([]);
+    setSettingsAiFoodImportSelections({});
+    setSettingsAiFoodImportError("");
+    setSettingsCopiedAiFoodPrompt(false);
+    setSettingsAiFoodMealType("lunch");
+  };
+  const openSettingsAiFoodImport = () => {
+    resetSettingsAiFoodImport();
+    setSettingsAiFoodImportOpen(true);
+  };
+  const closeSettingsAiFoodImport = () => {
+    setSettingsAiFoodImportOpen(false);
+    resetSettingsAiFoodImport();
+  };
+  const parseSettingsAiFoodImport = () => {
+    const result = parseAiFoodBridgeText(settingsAiFoodImportText);
+    if (!result.items.length) {
+      setSettingsAiFoodImportError(result.error || "取り込める食品データが見つかりませんでした。");
+      return;
+    }
+    setSettingsAiFoodImportItems(result.items);
+    setSettingsAiFoodImportSelections(Object.fromEntries(result.items.map((_, index) => [index, { source: "ai_menu_only" } satisfies AiFoodImportSelection])));
+    setSettingsAiFoodMealType(inferAiFoodMealType(result.items));
+    setSettingsAiFoodImportError("");
+    setSettingsAiFoodImportStep("match");
+  };
+  const saveSettingsAiFoodImport = async () => {
+    const timestamp = nowIso();
+    const menuItemsById = new Map(props.menuItems.map((item) => [item.id, item]));
+    let savedCount = 0;
+    for (let index = 0; index < settingsAiFoodImportItems.length; index += 1) {
+      const aiItem = settingsAiFoodImportItems[index];
+      const selection = settingsAiFoodImportSelections[index] ?? { source: "ai_menu_only" };
+      if (selection.source === "skip") continue;
+      const matchedItem = selection.source === "menu" && selection.menuItemId ? menuItemsById.get(selection.menuItemId) : undefined;
+      await db.menu_items.put(matchedItem ? userMenuItemCloneFromMenuItem(matchedItem, timestamp) : menuItemFromAiFoodImportItem(aiItem, timestamp, settingsAiFoodMealType));
+      savedCount += 1;
+    }
+    closeSettingsAiFoodImport();
+    setActiveMyMenuSection("list");
+    await props.refresh();
+    props.showToast(savedCount ? `${savedCount}件をマイメニューに保存しました` : "保存する項目はありませんでした");
+  };
 
   useEffect(() => {
     const mode = activePauseMode ?? props.pauseModeSettings[0];
@@ -6133,7 +6270,7 @@ function SettingsTab(props: {
   const startNewUserMenuItem = () => {
     setEditingUserMenuItemId(undefined);
     setPresetDraft({ ...emptyManual, savePreset: true });
-    setActiveMyMenuSection("new");
+    setActiveMyMenuSection("method");
     setMyMenuWizardStep("basic");
   };
   const closeMyMenuSubsection = () => {
@@ -6568,7 +6705,31 @@ function SettingsTab(props: {
       {activeSettingsSection === "myMenu" && !activeMyMenuSection && (
         <section className={`compact-card divide-y divide-line overflow-hidden scroll-mt-24 ${props.focus === "myMenu" ? "border-2 border-leaf" : ""}`}>
           <SettingsMenuRow title="登録済みのマイメニュー" description={`一覧の表示、編集、削除 · ${userMenuItems.length}件`} icon={<Store size={18} />} onClick={() => setActiveMyMenuSection("list")} />
-          <SettingsMenuRow title="新規マイメニューの登録" description="名前、単位、カテゴリ、栄養値を順番に登録" icon={<Plus size={18} />} onClick={startNewUserMenuItem} />
+          <SettingsMenuRow title="新規マイメニューの登録" description="手動入力またはAI写真から登録" icon={<Plus size={18} />} onClick={startNewUserMenuItem} />
+        </section>
+      )}
+
+      {activeSettingsSection === "myMenu" && activeMyMenuSection === "method" && (
+        <section className={`compact-card scroll-mt-24 p-4 ${props.focus === "myMenu" ? "border-2 border-leaf" : ""}`}>
+          <div className="mb-3">
+            <h2 className="font-bold">新規マイメニューの登録</h2>
+          </div>
+          <div className="grid gap-2">
+            <button className="food-filter-option" onClick={() => setActiveMyMenuSection("new")}>
+              <span>
+                <span className="block text-sm font-bold">手動で登録</span>
+                <span className="mt-1 block text-xs text-moss">名前、単位、カテゴリ、栄養値を順番に入力します。</span>
+              </span>
+              <span className="mini-chip shrink-0">手動</span>
+            </button>
+            <button className="food-filter-option ai-food-action-option ai-food-action-save" onClick={openSettingsAiFoodImport}>
+              <span>
+                <span className="block text-sm font-bold">AIを使って登録</span>
+                <span className="mt-1 block text-xs text-moss">写真や栄養成分表示から、マイメニューだけを保存します。</span>
+              </span>
+              <span className="mini-chip shrink-0">AI</span>
+            </button>
+          </div>
         </section>
       )}
 
@@ -6998,6 +7159,32 @@ function SettingsTab(props: {
             setIsPauseModeOpen(false);
           }}
           onClose={() => setIsPauseModeOpen(false)}
+        />
+      )}
+      {settingsAiFoodImportOpen && (
+        <AiFoodImportModal
+          intent="menu"
+          step={settingsAiFoodImportStep}
+          setStep={setSettingsAiFoodImportStep}
+          text={settingsAiFoodImportText}
+          setText={setSettingsAiFoodImportText}
+          items={settingsAiFoodImportItems}
+          menuItems={props.menuItems}
+          candidates={settingsAiFoodMatchCandidates}
+          selections={settingsAiFoodImportSelections}
+          setSelections={setSettingsAiFoodImportSelections}
+          mealType={settingsAiFoodMealType}
+          setMealType={setSettingsAiFoodMealType}
+          error={settingsAiFoodImportError}
+          copiedPrompt={settingsCopiedAiFoodPrompt}
+          onCopyPrompt={async () => {
+            await copyText(aiFoodImportPrompt);
+            setSettingsCopiedAiFoodPrompt(true);
+          }}
+          onParse={parseSettingsAiFoodImport}
+          onSave={saveSettingsAiFoodImport}
+          onReset={resetSettingsAiFoodImport}
+          onClose={closeSettingsAiFoodImport}
         />
       )}
       {goalHelpTopic && <GoalHelpModal topic={goalHelpTopic} onClose={() => setGoalHelpTopic(undefined)} />}
@@ -7572,7 +7759,8 @@ function RecentFoodEntryRow({ entry, displayName, onLog }: { entry: FoodEntry; d
   );
 }
 
-function AiFoodImportModal({ step, setStep, text, setText, items, menuItems, candidates, selections, setSelections, mealType, setMealType, error, copiedPrompt, onCopyPrompt, onParse, onSave, onReset, onClose }: {
+function AiFoodImportModal({ intent = "log", step, setStep, text, setText, items, menuItems, candidates, selections, setSelections, mealType, setMealType, error, copiedPrompt, onCopyPrompt, onParse, onSave, onReset, onClose }: {
+  intent?: AiFoodImportIntent;
   step: AiFoodImportStep;
   setStep: (step: AiFoodImportStep) => void;
   text: string;
@@ -7592,28 +7780,33 @@ function AiFoodImportModal({ step, setStep, text, setText, items, menuItems, can
   onReset: () => void;
   onClose: () => void;
 }) {
-  const aiFoodSteps: AiFoodImportStep[] = ["prompt", "paste", "match", "timing", "confirm"];
+  const selectionCreatesFoodLog = (selection: AiFoodImportSelection | undefined) => {
+    if (intent !== "log") return false;
+    const source = selection?.source ?? "ai_once";
+    return source !== "skip" && source !== "ai_menu_only";
+  };
+  const hasLoggableSelections = (nextSelections = selections) => items.some((_, index) => selectionCreatesFoodLog(nextSelections[index]));
+  const stepUsesTiming = intent === "log" && (step !== "confirm" || hasLoggableSelections());
+  const aiFoodSteps: AiFoodImportStep[] = stepUsesTiming ? ["prompt", "paste", "match", "timing", "confirm"] : ["prompt", "paste", "match", "confirm"];
   const stepIndex = aiFoodSteps.indexOf(step);
   const [matchIndex, setMatchIndex] = useState(0);
   const [isManualSearchOpen, setIsManualSearchOpen] = useState(false);
   const [manualSearchQuery, setManualSearchQuery] = useState("");
   const menuItemsById = useMemo(() => new Map(menuItems.map((item) => [item.id, item])), [menuItems]);
-  const setSelection = (index: number, selection: AiFoodImportSelection) => {
-    setSelections({ ...selections, [index]: selection });
-  };
-  const goToNextMatchItem = (index: number) => {
+  const goToNextMatchItem = (index: number, nextSelections = selections) => {
     setIsManualSearchOpen(false);
     setManualSearchQuery("");
     if (index < items.length - 1) {
       setMatchIndex(index + 1);
       return;
     }
-    setStep("timing");
+    setStep(hasLoggableSelections(nextSelections) ? "timing" : "confirm");
   };
   const chooseCurrentSelection = (selection: AiFoodImportSelection) => {
     const index = Math.min(matchIndex, Math.max(0, items.length - 1));
-    setSelection(index, selection);
-    goToNextMatchItem(index);
+    const nextSelections = { ...selections, [index]: selection };
+    setSelections(nextSelections);
+    goToNextMatchItem(index, nextSelections);
   };
   useEffect(() => {
     if (matchIndex < items.length) return;
@@ -7666,7 +7859,7 @@ function AiFoodImportModal({ step, setStep, text, setText, items, menuItems, can
               <span className="ai-food-import-icon"><Sparkles size={17} /></span>
               <p className="text-lg font-black">AI写真登録</p>
             </div>
-            <p className="mt-1 text-xs font-semibold text-moss">AIの出力を受け取って、既存メニューと照合してから記録します。</p>
+            <p className="mt-1 text-xs font-semibold text-moss">{intent === "menu" ? "AIの出力を受け取って、マイメニューとして保存します。" : "AIの出力を受け取って、既存メニューと照合してから記録します。"}</p>
           </div>
           <button className="icon-button h-9 w-9 shrink-0" aria-label="閉じる" onClick={onClose}>×</button>
         </div>
@@ -7676,7 +7869,7 @@ function AiFoodImportModal({ step, setStep, text, setText, items, menuItems, can
           ))}
         </div>
         <p className="mt-2 text-xs font-bold text-moss">
-          {step === "prompt" ? "1. プロンプトをコピー" : step === "paste" ? "2. AI出力を貼り付け" : step === "match" ? "3. 既存メニューと照合" : step === "timing" ? "4. 記録タイミングを選択" : "5. 記録内容を確認"}
+          {step === "prompt" ? "1. プロンプトをコピー" : step === "paste" ? "2. AI出力を貼り付け" : step === "match" ? "3. 既存メニューと照合" : step === "timing" ? "4. 記録タイミングを選択" : `${aiFoodSteps.length}. ${intent === "menu" ? "保存内容を確認" : "記録内容を確認"}`}
         </p>
 
         {step === "prompt" && (
@@ -7796,25 +7989,39 @@ function AiFoodImportModal({ step, setStep, text, setText, items, menuItems, can
                         </div>
                       </div>
                     )}
+                  {intent === "log" && (
+                    <button
+                      className={`food-filter-option ai-food-action-option ai-food-action-once ${currentSelection?.source === "ai_once" ? "ai-food-action-active" : ""}`}
+                      onClick={() => chooseCurrentSelection({ source: "ai_once" })}
+                    >
+                      <span>
+                        <span className="block text-sm font-bold">AI推定値で今回だけ記録</span>
+                        <span className="mt-1 block text-xs text-moss">既存DBには登録せず、この食事ログだけ作成します。</span>
+                      </span>
+                      <span className="mini-chip shrink-0">今回</span>
+                    </button>
+                  )}
+                  {intent === "log" && (
+                    <button
+                      className={`food-filter-option ai-food-action-option ai-food-action-save ${currentSelection?.source === "ai_menu" ? "ai-food-action-active" : ""}`}
+                      onClick={() => chooseCurrentSelection({ source: "ai_menu" })}
+                    >
+                      <span>
+                        <span className="block text-sm font-bold">AI推定値を保存して記録</span>
+                        <span className="mt-1 block text-xs text-moss">次回も呼び出せるメニューとして保存し、この食事ログも作成します。</span>
+                      </span>
+                      <span className="mini-chip shrink-0">保存+記録</span>
+                    </button>
+                  )}
                   <button
-                    className={`food-filter-option ai-food-action-option ai-food-action-once ${currentSelection?.source === "ai_once" ? "ai-food-action-active" : ""}`}
-                    onClick={() => chooseCurrentSelection({ source: "ai_once" })}
+                    className={`food-filter-option ai-food-action-option ai-food-action-save ${currentSelection?.source === "ai_menu_only" ? "ai-food-action-active" : ""}`}
+                    onClick={() => chooseCurrentSelection({ source: "ai_menu_only" })}
                   >
                     <span>
-                      <span className="block text-sm font-bold">AI推定値で今回だけ記録</span>
-                      <span className="mt-1 block text-xs text-moss">既存DBには登録せず、この食事ログだけ作成します。</span>
+                      <span className="block text-sm font-bold">マイメニューに登録だけする</span>
+                      <span className="mt-1 block text-xs text-moss">食事ログには追加せず、次回呼び出せるメニューとして保存します。</span>
                     </span>
-                    <span className="mini-chip shrink-0">今回</span>
-                  </button>
-                  <button
-                    className={`food-filter-option ai-food-action-option ai-food-action-save ${currentSelection?.source === "ai_menu" ? "ai-food-action-active" : ""}`}
-                    onClick={() => chooseCurrentSelection({ source: "ai_menu" })}
-                  >
-                    <span>
-                      <span className="block text-sm font-bold">AI推定値をマイメニュー保存</span>
-                      <span className="mt-1 block text-xs text-moss">次回も呼び出せるメニューとして保存します。</span>
-                    </span>
-                    <span className="mini-chip shrink-0">保存</span>
+                    <span className="mini-chip shrink-0">保存のみ</span>
                   </button>
                   <button
                     className={`food-filter-option ai-food-action-option ai-food-action-skip ${currentSelection?.source === "skip" ? "ai-food-action-active" : ""}`}
@@ -7856,22 +8063,35 @@ function AiFoodImportModal({ step, setStep, text, setText, items, menuItems, can
 
         {step === "confirm" && (
           <div className="mt-4 space-y-3">
-            <div className="ai-food-timing-summary">
-              <span>記録タイミング</span>
-              <strong>{mealLabels[mealType]}</strong>
-            </div>
+            {hasLoggableSelections() && (
+              <div className="ai-food-timing-summary">
+                <span>記録タイミング</span>
+                <strong>{mealLabels[mealType]}</strong>
+              </div>
+            )}
             <div className="space-y-2">
               {selectedSummary.map(({ item, selection, matched }, index) => {
                 const name = matched ? formatMenuItemName(matched) : item.possible_menu_name || item.observed_name;
                 const nutrition = matched ?? item.nutrition_estimate;
                 const skipped = selection.source === "skip";
+                const statusText = skipped
+                  ? "スキップして登録しない"
+                  : intent === "menu"
+                    ? "マイメニューに保存"
+                    : matched
+                      ? "既存メニューで記録"
+                      : selection.source === "ai_menu"
+                        ? "マイメニュー保存して記録"
+                        : selection.source === "ai_menu_only"
+                          ? "マイメニューに登録だけ"
+                          : "今回だけ記録";
                 return (
                   <div className={`ai-food-summary-card ${skipped ? "ai-food-summary-skipped" : ""}`} key={`${name}-${index}`}>
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
                         <p className="truncate text-sm font-black">{name}</p>
                         <p className="mt-1 text-xs font-semibold text-moss">
-                          {skipped ? "スキップして記録しない" : matched ? "既存メニューで記録" : selection.source === "ai_menu" ? "マイメニュー保存して記録" : "今回だけ記録"}
+                          {statusText}
                         </p>
                       </div>
                       <p className="numeric-text shrink-0 text-lg font-black">{skipped ? "除外" : `${nutrition.calories}kcal`}</p>
@@ -7898,16 +8118,16 @@ function AiFoodImportModal({ step, setStep, text, setText, items, menuItems, can
                 onClose();
                 return;
               }
-              setStep(step === "paste" ? "prompt" : step === "match" ? "paste" : step === "timing" ? "match" : "timing");
+              setStep(step === "paste" ? "prompt" : step === "match" ? "paste" : step === "timing" ? "match" : hasLoggableSelections() ? "timing" : "match");
             }}
           >
             {step === "prompt" ? "閉じる" : <><ChevronLeft size={17} />戻る</>}
           </button>
           {step === "prompt" && <button className="primary-button" onClick={() => setStep("paste")}>貼り付けへ<ChevronRight size={17} /></button>}
           {step === "paste" && <button className="primary-button" onClick={onParse}>照合へ<ChevronRight size={17} /></button>}
-          {step === "match" && <button className="primary-button" disabled={!items.length} onClick={() => setStep("timing")}>タイミングへ<ChevronRight size={17} /></button>}
+          {step === "match" && <button className="primary-button" disabled={!items.length} onClick={() => setStep(hasLoggableSelections() ? "timing" : "confirm")}>{hasLoggableSelections() ? "タイミングへ" : "確認へ"}<ChevronRight size={17} /></button>}
           {step === "timing" && <button className="primary-button" disabled={!activeSummary.length} onClick={() => setStep("confirm")}>確認へ<ChevronRight size={17} /></button>}
-          {step === "confirm" && <button className="primary-button" disabled={!activeSummary.length} onClick={onSave}><Check size={17} />記録</button>}
+          {step === "confirm" && <button className="primary-button" disabled={!activeSummary.length} onClick={onSave}><Check size={17} />{hasLoggableSelections() ? "記録" : "保存"}</button>}
         </div>
         {step !== "prompt" && (
           <button className="secondary-button mt-2 w-full" onClick={onReset}><RotateCcw size={17} />最初からやり直す</button>
