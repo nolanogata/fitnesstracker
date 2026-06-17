@@ -47,6 +47,7 @@ export type Settings = {
   developer_test_active_until?: string;
   achievements?: AchievementUnlock[];
   achievements_viewed_at?: string;
+  workout_weight_presets?: Record<string, number[]>;
   created_at: string;
   updated_at: string;
 };
