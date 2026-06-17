@@ -3836,6 +3836,9 @@ function FoodTab(props: {
     scrollToFoodTop();
     window.setTimeout(() => foodSearchInputRef.current?.focus({ preventScroll: true }), 360);
   };
+  const dismissFoodKeyboard = () => {
+    if (document.activeElement === foodSearchInputRef.current) foodSearchInputRef.current?.blur();
+  };
   const scrollToFoodResults = () => {
     window.setTimeout(() => foodResultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
   };
@@ -4546,7 +4549,7 @@ function FoodTab(props: {
   return (
     <div className="scroll-mt-24 space-y-4" ref={foodTopRef}>
       <div className="sticky-panel sticky top-[74px] z-10 -mx-4 space-y-3 px-4 pb-2">
-        <form ref={foodSearchFormRef} className="compact-card flex gap-2 p-2" onSubmit={(event) => { event.preventDefault(); if (mode !== "chain") setMode("search"); scrollToFoodResults(); }}>
+        <form ref={foodSearchFormRef} className="compact-card flex gap-2 p-2" onSubmit={(event) => { event.preventDefault(); dismissFoodKeyboard(); if (mode !== "chain") setMode("search"); scrollToFoodResults(); }}>
           <div className="relative min-w-0 flex-1">
             <Search className="pointer-events-none absolute left-3 top-3.5 text-moss" size={20} />
             <input ref={foodSearchInputRef} className="h-12 w-full pl-10 text-base" value={query} onChange={(event) => updateSearchQuery(event.target.value)} placeholder={searchPlaceholder} />
@@ -4801,7 +4804,7 @@ function FoodTab(props: {
             </>
           )}
           {shouldShowFoodResults && (
-            <section className="compact-card divide-y divide-line overflow-hidden scroll-mt-24" ref={foodResultsRef}>
+            <section className="compact-card divide-y divide-line overflow-hidden scroll-mt-24" ref={foodResultsRef} onPointerDown={dismissFoodKeyboard} onTouchStart={dismissFoodKeyboard} onWheel={dismissFoodKeyboard}>
               <ListHeader title={isGlobalSearch ? (isChainScopedSearch ? `${brand}の検索結果` : "検索結果") : mode === "quick" ? generalCategory : foodModeLabel(mode)} value={`${results.length}件`} />
               {results.map((item, index) => (
                 <Fragment key={item.id}>
