@@ -244,7 +244,7 @@ type AiFoodMatchCandidate = {
   reason: string;
 };
 type AiFoodImportSelection = {
-  source: "menu" | "ai_once" | "ai_menu";
+  source: "menu" | "ai_once" | "ai_menu" | "skip";
   menuItemId?: string;
 };
 type PerfectFoodPlan = "meal" | "snack" | "protein" | "none";
@@ -3919,6 +3919,7 @@ function FoodTab(props: {
     for (let index = 0; index < aiFoodImportItems.length; index += 1) {
       const aiItem = aiFoodImportItems[index];
       const selection = aiFoodImportSelections[index] ?? { source: "ai_once" };
+      if (selection.source === "skip") continue;
       const matchedItem = selection.source === "menu" && selection.menuItemId ? menuItemsById.get(selection.menuItemId) : undefined;
       if (matchedItem) {
         await db.food_entries.put({
@@ -7582,6 +7583,8 @@ function AiFoodImportModal({ step, setStep, text, setText, items, candidates, se
       : undefined;
     return { item, selection, matched };
   });
+  const activeSummary = selectedSummary.filter(({ selection }) => selection.source !== "skip");
+  const skippedCount = selectedSummary.length - activeSummary.length;
   return (
     <div className="fixed inset-0 z-40 flex items-end bg-ink/30 px-4 pb-4" onClick={onClose}>
       <div className="ai-food-import-sheet compact-card max-h-[86vh] w-full overflow-y-auto p-4" onClick={(event) => event.stopPropagation()}>
@@ -7649,9 +7652,12 @@ function AiFoodImportModal({ step, setStep, text, setText, items, candidates, se
                   <p className="ai-food-note mt-2">確認: {item.needs_confirmation.join(" / ")}</p>
                 )}
                 <div className="mt-3 space-y-2">
+                  {candidates[index]?.length > 0 && (
+                    <p className="ai-food-section-label">照合候補</p>
+                  )}
                   {candidates[index]?.slice(0, 4).map((candidate) => (
                     <button
-                      className={`food-filter-option ${selections[index]?.source === "menu" && selections[index]?.menuItemId === candidate.item.id ? "food-filter-option-active" : ""}`}
+                      className={`food-filter-option ai-food-candidate-option ${selections[index]?.source === "menu" && selections[index]?.menuItemId === candidate.item.id ? "food-filter-option-active" : ""}`}
                       key={candidate.item.id}
                       onClick={() => setSelection(index, { source: "menu", menuItemId: candidate.item.id })}
                     >
@@ -7662,8 +7668,10 @@ function AiFoodImportModal({ step, setStep, text, setText, items, candidates, se
                       <span className="mini-chip shrink-0">候補</span>
                     </button>
                   ))}
+                  <div className="ai-food-action-group">
+                    <p className="ai-food-section-label">このメニューの扱い</p>
                   <button
-                    className={`food-filter-option ${selections[index]?.source === "ai_once" ? "food-filter-option-active" : ""}`}
+                    className={`food-filter-option ai-food-action-option ai-food-action-once ${selections[index]?.source === "ai_once" ? "ai-food-action-active" : ""}`}
                     onClick={() => setSelection(index, { source: "ai_once" })}
                   >
                     <span>
@@ -7673,7 +7681,7 @@ function AiFoodImportModal({ step, setStep, text, setText, items, candidates, se
                     <span className="mini-chip shrink-0">今回</span>
                   </button>
                   <button
-                    className={`food-filter-option ${selections[index]?.source === "ai_menu" ? "food-filter-option-active" : ""}`}
+                    className={`food-filter-option ai-food-action-option ai-food-action-save ${selections[index]?.source === "ai_menu" ? "ai-food-action-active" : ""}`}
                     onClick={() => setSelection(index, { source: "ai_menu" })}
                   >
                     <span>
@@ -7682,6 +7690,17 @@ function AiFoodImportModal({ step, setStep, text, setText, items, candidates, se
                     </span>
                     <span className="mini-chip shrink-0">保存</span>
                   </button>
+                  <button
+                    className={`food-filter-option ai-food-action-option ai-food-action-skip ${selections[index]?.source === "skip" ? "ai-food-action-active" : ""}`}
+                    onClick={() => setSelection(index, { source: "skip" })}
+                  >
+                    <span>
+                      <span className="block text-sm font-bold">この項目はスキップ</span>
+                      <span className="mt-1 block text-xs text-moss">このメニューは食事ログに登録しません。</span>
+                    </span>
+                    <span className="mini-chip shrink-0">除外</span>
+                  </button>
+                  </div>
                 </div>
               </div>
             ))}
@@ -7692,7 +7711,8 @@ function AiFoodImportModal({ step, setStep, text, setText, items, candidates, se
           <div className="mt-4 space-y-3">
             <div className="ai-food-helper-card">
               <p className="text-sm font-black text-ink">いつの記録にする？</p>
-              <p className="mt-1 text-xs font-semibold text-moss">取り込むメニューすべてに同じタイミングを設定します。あとから食事ログで個別編集できます。</p>
+              <p className="mt-1 text-xs font-semibold text-moss">取り込む{activeSummary.length}件に同じタイミングを設定します。あとから食事ログで個別編集できます。</p>
+              {skippedCount > 0 && <p className="mt-1 text-xs font-semibold text-moss">スキップ中: {skippedCount}件</p>}
             </div>
             <div className="grid grid-cols-2 gap-2">
               {Object.entries(mealLabels).map(([key, label]) => (
@@ -7718,22 +7738,25 @@ function AiFoodImportModal({ step, setStep, text, setText, items, candidates, se
               {selectedSummary.map(({ item, selection, matched }, index) => {
                 const name = matched ? formatMenuItemName(matched) : item.possible_menu_name || item.observed_name;
                 const nutrition = matched ?? item.nutrition_estimate;
+                const skipped = selection.source === "skip";
                 return (
-                  <div className="ai-food-summary-card" key={`${name}-${index}`}>
+                  <div className={`ai-food-summary-card ${skipped ? "ai-food-summary-skipped" : ""}`} key={`${name}-${index}`}>
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
                         <p className="truncate text-sm font-black">{name}</p>
                         <p className="mt-1 text-xs font-semibold text-moss">
-                          {matched ? "既存メニューで記録" : selection.source === "ai_menu" ? "マイメニュー保存して記録" : "今回だけ記録"}
+                          {skipped ? "スキップして記録しない" : matched ? "既存メニューで記録" : selection.source === "ai_menu" ? "マイメニュー保存して記録" : "今回だけ記録"}
                         </p>
                       </div>
-                      <p className="numeric-text shrink-0 text-lg font-black">{nutrition.calories}kcal</p>
+                      <p className="numeric-text shrink-0 text-lg font-black">{skipped ? "除外" : `${nutrition.calories}kcal`}</p>
                     </div>
-                    <div className="mt-2 grid grid-cols-3 gap-2">
-                      <MetricPill label="P" value={`${nutrition.protein_g}g`} />
-                      <MetricPill label="F" value={`${nutrition.fat_g}g`} />
-                      <MetricPill label="C" value={`${nutrition.carbs_g}g`} />
-                    </div>
+                    {!skipped && (
+                      <div className="mt-2 grid grid-cols-3 gap-2">
+                        <MetricPill label="P" value={`${nutrition.protein_g}g`} />
+                        <MetricPill label="F" value={`${nutrition.fat_g}g`} />
+                        <MetricPill label="C" value={`${nutrition.carbs_g}g`} />
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -7757,8 +7780,8 @@ function AiFoodImportModal({ step, setStep, text, setText, items, candidates, se
           {step === "prompt" && <button className="primary-button" onClick={() => setStep("paste")}>貼り付けへ<ChevronRight size={17} /></button>}
           {step === "paste" && <button className="primary-button" onClick={onParse}>照合へ<ChevronRight size={17} /></button>}
           {step === "match" && <button className="primary-button" disabled={!items.length} onClick={() => setStep("timing")}>タイミングへ<ChevronRight size={17} /></button>}
-          {step === "timing" && <button className="primary-button" disabled={!items.length} onClick={() => setStep("confirm")}>確認へ<ChevronRight size={17} /></button>}
-          {step === "confirm" && <button className="primary-button" disabled={!items.length} onClick={onSave}><Check size={17} />記録</button>}
+          {step === "timing" && <button className="primary-button" disabled={!activeSummary.length} onClick={() => setStep("confirm")}>確認へ<ChevronRight size={17} /></button>}
+          {step === "confirm" && <button className="primary-button" disabled={!activeSummary.length} onClick={onSave}><Check size={17} />記録</button>}
         </div>
         {step !== "prompt" && (
           <button className="secondary-button mt-2 w-full" onClick={onReset}><RotateCcw size={17} />最初からやり直す</button>
