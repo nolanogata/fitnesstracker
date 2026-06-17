@@ -89,6 +89,9 @@ type SettingsFocus = "ai" | "backup" | "myMenu" | "goal" | undefined;
 type SettingsSection = "ai" | "backup" | "goal" | "records" | "myMenu" | "general";
 type MyMenuSection = "list" | "new" | "edit";
 type HistoryGrouping = "day" | "week" | "month";
+type ExportSection = "backup" | "logs";
+type LogExportStep = "type" | "grouping" | "period" | "output";
+type LogExportType = "food" | "workout" | "food_workout";
 type EditableRecordTab = "food" | "workout";
 const bottomTabs: Tab[] = ["home", "food", "workout", "records", "settings"];
 type BackupInfo = {
@@ -113,6 +116,13 @@ type CalendarCell = {
   day?: number;
 };
 type ReportMode = HistoryGrouping;
+type LogExportResult = {
+  text: string;
+  csv: string;
+  markdown: string;
+  basename: string;
+  summary: string;
+};
 type GoalHelpTopic = "phase" | "activity" | "targetBodyFat";
 type AppUpdate = {
   id: string;
@@ -646,6 +656,15 @@ const achievementProgressSpecs: Record<string, AchievementProgressSpec> = {
 };
 const appUpdates: AppUpdate[] = [
   {
+    id: "2026-06-17-settings-export-logs",
+    title: "Settingsのエクスポートを拡張",
+    date: "2026-06-17",
+    items: [
+      "Settingsのバックアップ項目をエクスポートに名称変更し、バックアップJSONとログ出力を階層化しました。",
+      "食事ログ、ワークアウトログ、両方のログを日別・週別・月別で期間指定し、テキストコピー、CSV保存、MD保存できるようにしました。",
+    ],
+  },
+  {
     id: "2026-06-17-special-card-confetti-layout",
     title: "Home演出の表示を調整",
     date: "2026-06-17",
@@ -740,8 +759,8 @@ const appUpdates: AppUpdate[] = [
     title: "Settingsを階層化",
     date: "2026-06-16",
     items: [
-      "SettingsをAI相談、バックアップ、ゴール設定、記録設定、マイメニュー、一般に分けました。",
-      "HomeからAI相談やバックアップ、ゴール設定へ移動する導線は、そのまま該当画面を直接開くようにしました。",
+      "SettingsをAI相談、エクスポート、ゴール設定、記録設定、マイメニュー、一般に分けました。",
+      "HomeからAI相談やエクスポート、ゴール設定へ移動する導線は、そのまま該当画面を直接開くようにしました。",
       "一時停止モードを記録設定に追加し、AIレポートに休養期間として含めるようにしました。",
       "一時停止期間は、連続記録トロフィーのストリークを途切れさせないようにしました。",
       "登録済みマイメニューを一覧から編集できるようにしました。",
@@ -5624,11 +5643,19 @@ function SettingsTab(props: {
   const [editingUserMenuItemId, setEditingUserMenuItemId] = useState<string>();
   const [activeMyMenuSection, setActiveMyMenuSection] = useState<MyMenuSection | undefined>(() => props.focus === "myMenu" ? "new" : undefined);
   const [myMenuWizardStep, setMyMenuWizardStep] = useState<ManualFoodWizardStep>("basic");
+  const [activeExportSection, setActiveExportSection] = useState<ExportSection | undefined>(() => props.focus === "backup" ? "backup" : undefined);
   const [reportMode, setReportMode] = useState<ReportMode>("day");
   const [question, setQuestion] = useState("");
   const [report, setReport] = useState("");
   const [copiedReport, setCopiedReport] = useState(false);
   const [backupImportMessage, setBackupImportMessage] = useState("");
+  const [logExportStep, setLogExportStep] = useState<LogExportStep>("type");
+  const [logExportType, setLogExportType] = useState<LogExportType>("food_workout");
+  const [logExportGrouping, setLogExportGrouping] = useState<HistoryGrouping>("day");
+  const [logExportStartDate, setLogExportStartDate] = useState(addDays(props.appDate, -6));
+  const [logExportEndDate, setLogExportEndDate] = useState(props.appDate);
+  const [logExportResult, setLogExportResult] = useState<LogExportResult>();
+  const [copiedLogExport, setCopiedLogExport] = useState(false);
   const [goalHelpTopic, setGoalHelpTopic] = useState<GoalHelpTopic>();
   const [isMacroOverrideOpen, setIsMacroOverrideOpen] = useState(false);
   const [isProfileNameOpen, setIsProfileNameOpen] = useState(false);
@@ -5676,6 +5703,9 @@ function SettingsTab(props: {
       setPresetDraft({ ...emptyManual, savePreset: true });
       setActiveMyMenuSection("new");
       setMyMenuWizardStep("basic");
+    }
+    if (props.focus === "backup") {
+      setActiveExportSection("backup");
     }
   }, [props.focus]);
 
@@ -5765,6 +5795,11 @@ function SettingsTab(props: {
     setEditingUserMenuItemId(undefined);
     setPresetDraft({ ...emptyManual, savePreset: true });
     setMyMenuWizardStep("basic");
+  };
+  const resetLogExportWizard = () => {
+    setLogExportStep("type");
+    setLogExportResult(undefined);
+    setCopiedLogExport(false);
   };
   const saveUserMenuItem = async () => {
     if (!presetDraft.name.trim()) return;
@@ -5990,6 +6025,23 @@ function SettingsTab(props: {
     await props.refresh();
     props.showToast("ゴールを保存しました");
   };
+  const generateLogExport = () => {
+    const result = buildLogExport({
+      type: logExportType,
+      grouping: logExportGrouping,
+      startDate: logExportStartDate,
+      endDate: logExportEndDate,
+      foodEntries: props.allData.foodEntries,
+      menuItems: props.menuItems,
+      workoutSessions: props.allData.workoutSessions,
+      workoutExercises: props.allData.workoutExercises,
+      workoutSets: props.allData.workoutSets,
+    });
+    setLogExportResult(result);
+    setCopiedLogExport(false);
+    setLogExportStep("output");
+    props.showToast("ログを出力しました");
+  };
 
   const aiReportSection = (
     <section className={`compact-card p-4 ${props.focus === "ai" ? "border-2 border-leaf" : ""}`}>
@@ -6054,7 +6106,7 @@ function SettingsTab(props: {
   );
   const sectionTitles: Record<SettingsSection, { title: string; subtitle: string }> = {
     ai: { title: "AI相談レポート", subtitle: "AIに渡す相談材料を生成します。" },
-    backup: { title: "バックアップ", subtitle: "この端末のローカルデータを保存・復元します。" },
+    backup: { title: "エクスポート", subtitle: "バックアップ保存とログ出力を管理します。" },
     goal: { title: "ゴール設定", subtitle: "目標体重、PFC、運動目標を調整します。" },
     records: { title: "記録設定", subtitle: "旅行や休養など、通常評価と分けたい期間を管理します。" },
     myMenu: { title: "マイメニュー", subtitle: "自分用の食事メニューを登録・編集します。" },
@@ -6066,6 +6118,10 @@ function SettingsTab(props: {
       closeMyMenuSubsection();
       return;
     }
+    if (activeSettingsSection === "backup" && activeExportSection) {
+      setActiveExportSection(undefined);
+      return;
+    }
     setActiveSettingsSection(undefined);
   };
 
@@ -6075,7 +6131,7 @@ function SettingsTab(props: {
         <>
           <section className="compact-card divide-y divide-line overflow-hidden">
             <SettingsMenuRow title="AI相談レポート" description="AIにコピーする日別・週別・月別レポート" icon={<FileText size={18} />} onClick={() => setActiveSettingsSection("ai")} />
-            <SettingsMenuRow title="バックアップ" description={backupMessage(props.backupInfo)} icon={<Archive size={18} />} onClick={() => setActiveSettingsSection("backup")} />
+            <SettingsMenuRow title="エクスポート" description="バックアップJSON / タイプ別ログ出力" icon={<Archive size={18} />} onClick={() => setActiveSettingsSection("backup")} />
             <SettingsMenuRow title="ゴール設定" description={`${phaseLabels[goalDraft.phase]} / ${calculated?.target_calories ?? "-"}kcal`} icon={<SlidersHorizontal size={18} />} onClick={() => setActiveSettingsSection("goal")} />
           </section>
           <section className="compact-card divide-y divide-line overflow-hidden">
@@ -6228,9 +6284,19 @@ function SettingsTab(props: {
 
       {activeSettingsSection === "ai" && aiReportSection}
 
-      {activeSettingsSection === "backup" && <section className={`compact-card scroll-mt-24 p-4 ${props.focus === "backup" ? "border-2 border-leaf" : ""}`}>
+      {activeSettingsSection === "backup" && !activeExportSection && (
+        <section className={`compact-card divide-y divide-line overflow-hidden scroll-mt-24 ${props.focus === "backup" ? "border-2 border-leaf" : ""}`}>
+          <SettingsMenuRow title="バックアップJSON" description={backupMessage(props.backupInfo)} icon={<Archive size={18} />} onClick={() => setActiveExportSection("backup")} />
+          <SettingsMenuRow title="タイプ別ログ出力" description="食事・ワークアウトを期間指定して出力" icon={<FileDown size={18} />} onClick={() => {
+            resetLogExportWizard();
+            setActiveExportSection("logs");
+          }} />
+        </section>
+      )}
+
+      {activeSettingsSection === "backup" && activeExportSection === "backup" && <section className={`compact-card scroll-mt-24 p-4 ${props.focus === "backup" ? "border-2 border-leaf" : ""}`}>
         <div className="flex items-center justify-between gap-2">
-          <h2 className="font-bold">バックアップ</h2>
+          <h2 className="font-bold">バックアップJSON</h2>
           {props.focus === "backup" && <span className="rounded-md bg-leaf px-2 py-1 text-[11px] font-bold text-moss">保存はこちら</span>}
         </div>
         <div className={`mt-2 rounded-md border p-3 text-sm ${props.backupInfo.level === "danger" ? "border-clay/40 bg-clay/10" : "border-leaf/40 bg-leaf/10"}`}>
@@ -6267,6 +6333,100 @@ function SettingsTab(props: {
           }}><Trash2 size={17} />リセット</button>
         </div>
       </section>}
+
+      {activeSettingsSection === "backup" && activeExportSection === "logs" && (
+        <section className="compact-card scroll-mt-24 p-4">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h2 className="font-bold">タイプ別ログ出力</h2>
+              <p className="mt-1 text-xs font-semibold text-moss">食事ログ・ワークアウトログを期間指定して出力します。</p>
+            </div>
+            <span className="numeric-text shrink-0 rounded-md bg-rice px-2 py-1 text-[11px] font-bold text-moss">
+              {logExportStep === "type" ? "1/4" : logExportStep === "grouping" ? "2/4" : logExportStep === "period" ? "3/4" : "4/4"}
+            </span>
+          </div>
+          <div className="manual-wizard-progress mt-4" aria-hidden="true">
+            {(["type", "grouping", "period", "output"] as LogExportStep[]).map((step) => (
+              <span className={(["type", "grouping", "period", "output"] as LogExportStep[]).indexOf(step) <= (["type", "grouping", "period", "output"] as LogExportStep[]).indexOf(logExportStep) ? "food-add-progress-dot food-add-progress-dot-active" : "food-add-progress-dot"} key={step} />
+            ))}
+          </div>
+
+          {logExportStep === "type" && (
+            <div className="mt-4 grid gap-2">
+              {([
+                ["food", "食事ログのみ", "食事名、PFC、kcal、食事タイミングを出力"],
+                ["workout", "ワークアウトログのみ", "セッション、種目、セット内容を出力"],
+                ["food_workout", "食事とワークアウトログ", "同じ期間の食事と運動をまとめて出力"],
+              ] as Array<[LogExportType, string, string]>).map(([value, title, description]) => (
+                <button className={`food-filter-option ${logExportType === value ? "food-filter-option-active" : ""}`} key={value} onClick={() => setLogExportType(value)}>
+                  <span>
+                    <span className="block text-sm font-bold">{title}</span>
+                    <span className="mt-1 block text-xs text-moss">{description}</span>
+                  </span>
+                  <span className="mini-chip shrink-0">{logExportType === value ? "選択中" : "選択"}</span>
+                </button>
+              ))}
+              <button className="primary-button mt-2 w-full" onClick={() => setLogExportStep("grouping")}>次へ<ChevronRight size={17} /></button>
+            </div>
+          )}
+
+          {logExportStep === "grouping" && (
+            <div className="mt-4 grid gap-2">
+              {([
+                ["day", "日別", "1日ごとにログをまとめます"],
+                ["week", "週別", "週単位でログをまとめます"],
+                ["month", "月別", "月単位でログをまとめます"],
+              ] as Array<[HistoryGrouping, string, string]>).map(([value, title, description]) => (
+                <button className={`food-filter-option ${logExportGrouping === value ? "food-filter-option-active" : ""}`} key={value} onClick={() => setLogExportGrouping(value)}>
+                  <span>
+                    <span className="block text-sm font-bold">{title}</span>
+                    <span className="mt-1 block text-xs text-moss">{description}</span>
+                  </span>
+                  <span className="mini-chip shrink-0">{logExportGrouping === value ? "選択中" : "選択"}</span>
+                </button>
+              ))}
+              <div className="mt-2 grid grid-cols-2 gap-2">
+                <button className="secondary-button" onClick={() => setLogExportStep("type")}><ChevronLeft size={17} />戻る</button>
+                <button className="primary-button" onClick={() => setLogExportStep("period")}>次へ<ChevronRight size={17} /></button>
+              </div>
+            </div>
+          )}
+
+          {logExportStep === "period" && (
+            <div className="mt-4 grid gap-3">
+              <div className="grid grid-cols-2 gap-2">
+                <SelectField label="開始日" hint={`${historyGroupingLabel(logExportGrouping)}の開始`}>
+                  <input type="date" value={logExportStartDate} onChange={(event) => setLogExportStartDate(event.target.value)} />
+                </SelectField>
+                <SelectField label="終了日" hint={`${historyGroupingLabel(logExportGrouping)}の終了`}>
+                  <input type="date" value={logExportEndDate} onChange={(event) => setLogExportEndDate(event.target.value)} />
+                </SelectField>
+              </div>
+              <p className="rounded-2xl border border-line bg-rice/60 px-3 py-2 text-xs font-semibold text-moss">開始日と終了日が逆でも、出力時に自動で並べ替えます。</p>
+              <div className="grid grid-cols-2 gap-2">
+                <button className="secondary-button" onClick={() => setLogExportStep("grouping")}><ChevronLeft size={17} />戻る</button>
+                <button className="primary-button" disabled={!logExportStartDate || !logExportEndDate} onClick={generateLogExport}><FileText size={17} />出力</button>
+              </div>
+            </div>
+          )}
+
+          {logExportStep === "output" && logExportResult && (
+            <div className="mt-4">
+              <p className="rounded-2xl border border-line bg-rice/60 px-3 py-2 text-xs font-semibold text-moss">{logExportResult.summary}</p>
+              <textarea className="mt-3 min-h-64 w-full font-mono text-xs" value={logExportResult.text} readOnly />
+              <div className="mt-2 grid grid-cols-2 gap-2">
+                <button className="primary-button" onClick={async () => {
+                  await copyText(logExportResult.text);
+                  setCopiedLogExport(true);
+                }}><Copy size={17} />{copiedLogExport ? "コピー済み" : "テキストコピー"}</button>
+                <button className="secondary-button" onClick={() => downloadText(`${logExportResult.basename}.csv`, logExportResult.csv, "text/csv;charset=utf-8")}><FileDown size={17} />CSV保存</button>
+                <button className="secondary-button" onClick={() => downloadText(`${logExportResult.basename}.md`, logExportResult.markdown, "text/markdown")}><FileDown size={17} />MD保存</button>
+                <button className="secondary-button" onClick={() => setLogExportStep("period")}><ChevronLeft size={17} />期間に戻る</button>
+              </div>
+            </div>
+          )}
+        </section>
+      )}
 
       {activeSettingsSection === "records" && <section className="compact-card p-4 text-sm text-moss">
         <div className="special-mode-settings mt-3">
@@ -6672,7 +6832,7 @@ function Onboarding({ refresh }: { refresh: () => Promise<void> }) {
         <div className="mt-5 min-h-[16rem]">
           {renderStep()}
         </div>
-        <p className="mt-4 rounded-3xl bg-surface p-3 text-xs leading-relaxed text-moss">初回設定後は、Settingsのバックアップから週1回くらいJSONエクスポートしておくと安心です。</p>
+        <p className="mt-4 rounded-3xl bg-surface p-3 text-xs leading-relaxed text-moss">初回設定後は、Settingsのエクスポートから週1回くらいJSONエクスポートしておくと安心です。</p>
         <div className="mt-5 grid grid-cols-2 gap-2">
           <button className="secondary-button" disabled={step === 0} onClick={goBack}><ChevronLeft size={17} />戻る</button>
           {step === lastStep ? (
@@ -9320,6 +9480,194 @@ function formatWeekLabel(weekStart: string) {
 function formatMonthLabel(month: string) {
   const [year, monthNumber] = month.split("-");
   return `${year}年${Number(monthNumber)}月`;
+}
+
+function historyGroupingLabel(grouping: HistoryGrouping) {
+  return { day: "日別", week: "週別", month: "月別" }[grouping];
+}
+
+function logExportTypeLabel(type: LogExportType) {
+  return {
+    food: "食事ログのみ",
+    workout: "ワークアウトログのみ",
+    food_workout: "食事とワークアウトログ",
+  }[type];
+}
+
+function normalizeDatePeriod(startDate: string, endDate: string) {
+  return startDate <= endDate ? { start: startDate, end: endDate } : { start: endDate, end: startDate };
+}
+
+function logGroupKey(dateString: string, grouping: HistoryGrouping) {
+  if (grouping === "week") return weekKey(dateString);
+  if (grouping === "month") return monthKey(dateString);
+  return dateString;
+}
+
+function logGroupLabel(key: string, grouping: HistoryGrouping) {
+  if (grouping === "week") return formatWeekLabel(key);
+  if (grouping === "month") return formatMonthLabel(key);
+  return formatJapaneseDate(key);
+}
+
+function buildLogExport(input: {
+  type: LogExportType;
+  grouping: HistoryGrouping;
+  startDate: string;
+  endDate: string;
+  foodEntries: FoodEntry[];
+  menuItems: MenuItem[];
+  workoutSessions: WorkoutSession[];
+  workoutExercises: WorkoutExercise[];
+  workoutSets: WorkoutSet[];
+}): LogExportResult {
+  const { start, end } = normalizeDatePeriod(input.startDate, input.endDate);
+  const includeFood = input.type === "food" || input.type === "food_workout";
+  const includeWorkout = input.type === "workout" || input.type === "food_workout";
+  const foodEntries = includeFood
+    ? input.foodEntries
+      .filter((entry) => entry.app_date >= start && entry.app_date <= end)
+      .sort((a, b) => `${a.app_date} ${a.logged_at}`.localeCompare(`${b.app_date} ${b.logged_at}`))
+    : [];
+  const workoutSessions = includeWorkout
+    ? input.workoutSessions
+      .filter((session) => session.app_date >= start && session.app_date <= end)
+      .sort((a, b) => `${a.app_date} ${a.logged_at}`.localeCompare(`${b.app_date} ${b.logged_at}`))
+    : [];
+  const exercisesBySession = new Map<string, WorkoutExercise[]>();
+  input.workoutExercises.forEach((exercise) => {
+    exercisesBySession.set(exercise.session_id, [...(exercisesBySession.get(exercise.session_id) ?? []), exercise]);
+  });
+  exercisesBySession.forEach((items, sessionId) => {
+    exercisesBySession.set(sessionId, [...items].sort((a, b) => a.order - b.order));
+  });
+  const setsByExercise = new Map<string, WorkoutSet[]>();
+  input.workoutSets.forEach((set) => {
+    setsByExercise.set(set.workout_exercise_id, [...(setsByExercise.get(set.workout_exercise_id) ?? []), set]);
+  });
+  setsByExercise.forEach((items, exerciseId) => {
+    setsByExercise.set(exerciseId, [...items].sort((a, b) => a.set_order - b.set_order));
+  });
+
+  const groupKeys = new Set<string>();
+  foodEntries.forEach((entry) => groupKeys.add(logGroupKey(entry.app_date, input.grouping)));
+  workoutSessions.forEach((session) => groupKeys.add(logGroupKey(session.app_date, input.grouping)));
+  const sortedGroupKeys = [...groupKeys].sort();
+  const csvRows: string[][] = [["group", "date", "log_type", "meal_or_session", "item", "detail", "calories", "protein_g", "fat_g", "carbs_g", "weight_kg", "reps", "duration_min", "note"]];
+  const textLines = [
+    `100% トラッカー ログ出力`,
+    `種類: ${logExportTypeLabel(input.type)}`,
+    `集計: ${historyGroupingLabel(input.grouping)}`,
+    `期間: ${formatJapaneseDate(start)} - ${formatJapaneseDate(end)}`,
+    "",
+  ];
+  const mdLines = [
+    `# 100% トラッカー ログ出力`,
+    "",
+    `- 種類: ${logExportTypeLabel(input.type)}`,
+    `- 集計: ${historyGroupingLabel(input.grouping)}`,
+    `- 期間: ${formatJapaneseDate(start)} - ${formatJapaneseDate(end)}`,
+    "",
+  ];
+
+  if (!sortedGroupKeys.length) {
+    textLines.push("対象期間のログはありません。");
+    mdLines.push("対象期間のログはありません。");
+  }
+
+  sortedGroupKeys.forEach((key) => {
+    const groupLabel = logGroupLabel(key, input.grouping);
+    const groupFood = foodEntries.filter((entry) => logGroupKey(entry.app_date, input.grouping) === key);
+    const groupWorkouts = workoutSessions.filter((session) => logGroupKey(session.app_date, input.grouping) === key);
+    textLines.push(`## ${groupLabel}`);
+    mdLines.push(`## ${groupLabel}`);
+
+    if (includeFood) {
+      textLines.push(`食事ログ (${groupFood.length}件)`);
+      mdLines.push(`### 食事ログ (${groupFood.length}件)`);
+      if (!groupFood.length) {
+        textLines.push("- なし");
+        mdLines.push("- なし");
+      }
+      groupFood.forEach((entry) => {
+        const name = formatFoodEntryName(entry, input.menuItems);
+        const meal = mealLabels[entry.meal_type];
+        const nutrition = `${entry.calories}kcal P${entry.protein_g} F${entry.fat_g} C${entry.carbs_g}${entry.salt_g !== undefined ? ` 塩分${entry.salt_g}g` : ""}`;
+        const line = `- ${formatJapaneseDate(entry.app_date)} ${meal}: ${name} / ${nutrition}`;
+        textLines.push(line);
+        mdLines.push(line);
+        csvRows.push([groupLabel, entry.app_date, "food", meal, name, nutrition, String(entry.calories), String(entry.protein_g), String(entry.fat_g), String(entry.carbs_g), "", "", "", entry.note ?? ""]);
+      });
+    }
+
+    if (includeWorkout) {
+      textLines.push(`ワークアウトログ (${groupWorkouts.length}件)`);
+      mdLines.push(`### ワークアウトログ (${groupWorkouts.length}件)`);
+      if (!groupWorkouts.length) {
+        textLines.push("- なし");
+        mdLines.push("- なし");
+      }
+      groupWorkouts.forEach((session) => {
+        const sessionExercises = exercisesBySession.get(session.id) ?? [];
+        const sessionLine = `- ${formatJapaneseDate(session.app_date)} ${session.title} (${sessionExercises.length}種目)`;
+        textLines.push(sessionLine);
+        mdLines.push(sessionLine);
+        if (!sessionExercises.length) {
+          csvRows.push([groupLabel, session.app_date, "workout", session.title, "", "種目なし", "", "", "", "", "", "", "", session.note ?? ""]);
+        }
+        sessionExercises.forEach((exercise) => {
+          const sets = setsByExercise.get(exercise.id) ?? [];
+          const detail = sets.length ? sets.map(formatWorkoutSetExportLabel).join(" / ") : "セットなし";
+          textLines.push(`  - ${exercise.exercise_name}: ${detail}`);
+          mdLines.push(`  - ${exercise.exercise_name}: ${detail}`);
+          if (!sets.length) {
+            csvRows.push([groupLabel, session.app_date, "workout", session.title, exercise.exercise_name, "セットなし", "", "", "", "", "", "", "", exercise.note ?? session.note ?? ""]);
+          }
+          sets.forEach((set) => {
+            csvRows.push([
+              groupLabel,
+              session.app_date,
+              "workout",
+              session.title,
+              exercise.exercise_name,
+              `set ${set.set_order}${set.is_warmup ? " warmup" : ""}`,
+              set.active_calories === undefined ? "" : String(set.active_calories),
+              "",
+              "",
+              "",
+              set.weight_kg === undefined ? "" : String(set.weight_kg),
+              set.reps === undefined ? "" : String(set.reps),
+              set.duration_min === undefined ? "" : String(set.duration_min),
+              unique([set.note ?? "", exercise.note ?? "", session.note ?? ""]).join(" / "),
+            ]);
+          });
+        });
+      });
+    }
+    textLines.push("");
+    mdLines.push("");
+  });
+
+  const basename = `100-percent-tracker-log-${input.type}-${input.grouping}-${start}_${end}`;
+  const summary = `${logExportTypeLabel(input.type)} / ${historyGroupingLabel(input.grouping)} / ${formatJapaneseDate(start)} - ${formatJapaneseDate(end)} / 食事${foodEntries.length}件・ワークアウト${workoutSessions.length}件`;
+  return {
+    text: textLines.join("\n").trimEnd(),
+    markdown: mdLines.join("\n").trimEnd(),
+    csv: csvRows.map((row) => row.map(escapeCsvCell).join(",")).join("\n"),
+    basename,
+    summary,
+  };
+}
+
+function formatWorkoutSetExportLabel(set: WorkoutSet) {
+  if (set.duration_min !== undefined || set.active_calories !== undefined) {
+    return `${set.set_order}: ${set.duration_min ?? 0}分${set.active_calories !== undefined ? ` / ${set.active_calories}kcal` : ""}${set.is_warmup ? " (WU)" : ""}`;
+  }
+  return `${set.set_order}: ${formatWorkoutLoadLabel(set.weight_kg ?? 0, set.load_type)} x ${set.reps ?? "-"}回${set.is_warmup ? " (WU)" : ""}`;
+}
+
+function escapeCsvCell(value: string) {
+  return /[",\n\r]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value;
 }
 
 function round1(value: number) {
