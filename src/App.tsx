@@ -82,12 +82,13 @@ import { getWeeklyWorkoutStatus, type WeeklyWorkoutStatus } from "./lib/workoutS
 
 type Tab = "home" | "food" | "workout" | "records" | "settings";
 type FoodMode = "search" | "favorite" | "chain" | "quick" | "manual" | "personal" | "recommend" | "ai";
-type WorkoutMode = "favorite" | "preset" | "body" | "equipment" | "previous" | "search";
+type WorkoutMode = "favorite" | "preset" | "body" | "equipment" | "my" | "search";
 type FoodFocus = "todayLog" | "specialMode" | undefined;
 type FoodAddStep = "size" | "customSize" | "quantity" | "timing" | "confirm";
 type ManualFoodWizardStep = "basic" | "unit" | "purpose" | "category" | "nutrition" | "confirm";
 type AiFoodImportStep = "prompt" | "paste" | "match" | "timing" | "confirm";
 type WorkoutFocus = "dateLog" | undefined;
+type MyTrainingWizardStep = "method" | "source" | "basic" | "defaults" | "presets" | "confirm";
 type SettingsFocus = "ai" | "backup" | "myMenu" | "goal" | undefined;
 type SettingsSection = "ai" | "backup" | "goal" | "records" | "myMenu" | "general";
 type MyMenuSection = "list" | "method" | "new" | "edit";
@@ -196,6 +197,21 @@ type WorkoutExerciseDraft = {
   load_type?: WorkoutLoadType;
   duration_min: number;
   setSchemeText: string;
+};
+type MyTrainingDraft = {
+  sourceExerciseId?: string;
+  name: string;
+  body_part: string;
+  equipment_type: string;
+  movement_pattern: string;
+  machine_name: string;
+  sets: number;
+  reps: number;
+  weight_kg: number;
+  load_type?: WorkoutLoadType;
+  duration_min: number;
+  weight_presets: number[];
+  favorite: boolean;
 };
 type ManualFoodDraft = {
   entry_kind: "meal" | "ingredient";
@@ -438,6 +454,79 @@ function manualFoodDraftFromMenuItem(item: MenuItem): ManualFoodDraft {
     salt_g: typeof item.salt_g === "number" ? formatStored(item.salt_g) : "",
     savePreset: true,
     favorite: !!item.is_favorite,
+  };
+}
+
+function myTrainingDraftFromExercise(exercise?: ExercisePreset, overrides: Partial<MyTrainingDraft> = {}): MyTrainingDraft {
+  const firstSet = exercise?.default_set_scheme?.[0];
+  const isCardio = exercise ? isCardioWorkoutItem(exercise) : false;
+  const isBodyweight = exercise ? isBodyweightStrengthItem(exercise) : false;
+  const weight = round1(Math.max(0, exercise?.default_weight_kg ?? firstSet?.weight_kg ?? 0));
+  const step = exercise ? inferWeightStep(exercise) : 2.5;
+  return {
+    sourceExerciseId: exercise?.id,
+    name: exercise ? `${exercise.name} カスタム` : "",
+    body_part: exercise?.body_part ?? "胸",
+    equipment_type: exercise?.equipment_type ?? "マシン",
+    movement_pattern: exercise?.movement_pattern ?? "custom",
+    machine_name: exercise?.machine_name ?? "",
+    sets: isCardio ? 1 : Math.min(5, Math.max(1, Math.round(exercise?.default_sets ?? exercise?.default_set_scheme?.length ?? 3))),
+    reps: Math.max(0, Math.round(exercise?.default_reps ?? firstSet?.reps ?? (isCardio ? 0 : 10))),
+    weight_kg: isBodyweight ? 0 : weight,
+    load_type: firstSet?.load_type ?? exercise?.default_set_scheme?.find((set) => set.load_type)?.load_type ?? (isBodyweight ? "bodyweight" : undefined),
+    duration_min: Math.max(0, Math.round(exercise?.default_duration_min ?? firstSet?.duration_min ?? 20)),
+    weight_presets: defaultWorkoutWeightPresets(weight, step),
+    favorite: true,
+    ...overrides,
+  };
+}
+
+function myTrainingDraftFromWorkoutDraft(draft: WorkoutExerciseDraft, presets: number[], overrides: Partial<MyTrainingDraft> = {}): MyTrainingDraft {
+  return myTrainingDraftFromExercise(draft.exercise, {
+    name: `${draft.exercise.name} カスタム`,
+    sets: draft.sets,
+    reps: draft.reps,
+    weight_kg: draft.weight_kg,
+    load_type: draft.load_type,
+    duration_min: draft.duration_min,
+    weight_presets: presets,
+    favorite: true,
+    ...overrides,
+  });
+}
+
+function exercisePresetFromMyTrainingDraft(draft: MyTrainingDraft, timestamp: string): ExercisePreset {
+  const name = draft.name.trim();
+  const bodyPart = draft.body_part.trim() || "その他";
+  const equipmentType = draft.equipment_type.trim() || "その他";
+  const machineName = draft.machine_name.trim() || undefined;
+  const isCardio = bodyPart === "有酸素" || equipmentType === "有酸素";
+  const isBodyweight = !isCardio && /自重|自宅/.test(equipmentType);
+  const setCount = isCardio ? 1 : Math.min(5, Math.max(1, Math.round(draft.sets)));
+  const reps = isCardio ? 0 : Math.max(0, Math.round(draft.reps));
+  const loadType = isCardio ? undefined : draft.load_type ?? (isBodyweight ? "bodyweight" : undefined);
+  const weightKg = isCardio || loadType === "bodyweight" ? undefined : round1(Math.max(0, draft.weight_kg));
+  const durationMin = Math.max(0, Math.round(draft.duration_min));
+  return {
+    id: makeId("exercise_user"),
+    name: name || "マイトレ",
+    body_part: bodyPart,
+    equipment_type: equipmentType,
+    movement_pattern: draft.movement_pattern.trim() || "custom",
+    machine_name: machineName,
+    default_sets: setCount,
+    default_reps: isCardio ? undefined : reps,
+    default_weight_kg: weightKg,
+    default_duration_min: isCardio ? durationMin : undefined,
+    default_set_scheme: isCardio
+      ? [{ reps: 0, duration_min: durationMin, active_calories: estimateActiveCalories(name, durationMin, 70) }]
+      : Array.from({ length: setCount }, () => ({ reps, weight_kg: weightKg, load_type: loadType })),
+    is_public_preset: false,
+    is_user_created: true,
+    is_favorite: draft.favorite,
+    preset_pack: draft.sourceExerciseId ? "my_training_customized" : "my_training",
+    created_at: timestamp,
+    updated_at: timestamp,
   };
 }
 
@@ -4995,6 +5084,8 @@ function WorkoutTab(props: {
   const [templateExerciseQuery, setTemplateExerciseQuery] = useState("");
   const [templateTargetItem, setTemplateTargetItem] = useState<{ label: string; item: TemplateExercise }>();
   const [exerciseDraft, setExerciseDraft] = useState<WorkoutExerciseDraft>();
+  const [isMyTrainingModalOpen, setIsMyTrainingModalOpen] = useState(false);
+  const [myTrainingInitialDraft, setMyTrainingInitialDraft] = useState<MyTrainingDraft>();
   const [templateSaveMessage, setTemplateSaveMessage] = useState("");
   const [workoutWeightPresetStore, setWorkoutWeightPresetStore] = useState(() => mergeWorkoutWeightPresetStores(readLocalWorkoutWeightPresetStore(), props.settings?.workout_weight_presets));
   const [isTemplateReorderMode, setIsTemplateReorderMode] = useState(false);
@@ -5246,6 +5337,32 @@ function WorkoutTab(props: {
     await props.refresh();
   };
 
+  const openMyTrainingModal = (initialDraft?: MyTrainingDraft) => {
+    setMyTrainingInitialDraft(initialDraft);
+    setIsMyTrainingModalOpen(true);
+  };
+
+  const saveMyTrainingDraft = async (draft: MyTrainingDraft) => {
+    const timestamp = nowIso();
+    const exercise = exercisePresetFromMyTrainingDraft(draft, timestamp);
+    const presetKeys = workoutWeightPresetKeys(exercise);
+    await db.exercise_presets.put(exercise);
+    if (draft.weight_presets.length) {
+      await saveWorkoutWeightPresetStore(saveWorkoutWeightPresets(presetKeys, draft.weight_presets, workoutWeightPresetStore));
+    }
+    await props.refresh();
+    setMode("my");
+    setIsMyTrainingModalOpen(false);
+    setMyTrainingInitialDraft(undefined);
+    props.showToast(`${exercise.name}をマイトレに保存しました`);
+  };
+
+  const deleteMyTrainingExercise = async (exercise: ExercisePreset) => {
+    if (!confirm(`マイトレ「${exercise.name}」を削除しますか？過去の記録は残ります。`)) return;
+    await db.exercise_presets.delete(exercise.id);
+    await props.refresh();
+  };
+
   const updateTemplateExercises = async (template: WorkoutTemplate, exercises: TemplateExercise[]) => {
     await db.workout_templates.update(template.id, {
       exercises,
@@ -5444,36 +5561,10 @@ function WorkoutTab(props: {
     props.showToast(`${template.name}を今日のワークアウトに追加しました`);
   };
 
-  const copyPrevious = async () => {
-    const previous = props.workoutSessions.find((session) => session.app_date !== props.appDate);
-    if (!previous) return;
-    const exercises = props.workoutExercises.filter((exercise) => exercise.session_id === previous.id).sort((a, b) => a.order - b.order);
-    const timestamp = nowIso();
-    const newSession: WorkoutSession = {
-      ...previous,
-      id: makeId("session"),
-      app_date: props.appDate,
-      logged_at: timestamp,
-      title: `${previous.title} コピー`,
-      created_at: timestamp,
-      updated_at: timestamp,
-    };
-    await db.workout_sessions.put(newSession);
-    let firstExerciseId: string | undefined;
-    for (const exercise of exercises) {
-      const newExercise = { ...exercise, id: makeId("workout_exercise"), session_id: newSession.id, created_at: timestamp, updated_at: timestamp };
-      firstExerciseId ??= newExercise.id;
-      await db.workout_exercises.put(newExercise);
-      const sets = props.workoutSets.filter((set) => set.workout_exercise_id === exercise.id);
-      await db.workout_sets.bulkPut(sets.map((set) => ({ ...set, id: makeId("set"), workout_exercise_id: newExercise.id, created_at: timestamp, updated_at: timestamp })));
-    }
-    setSessionId(newSession.id);
-    await props.refresh();
-    setFocusedExerciseId(firstExerciseId);
-    props.showToast("前回のワークアウトをコピーしました");
-  };
-
   const favoriteExercises = useMemo(() => props.exercisePresets.filter((item) => item.is_favorite), [props.exercisePresets]);
+  const myTrainingExercises = useMemo(() => props.exercisePresets
+    .filter((item) => item.is_user_created)
+    .sort((a, b) => (b.updated_at || b.created_at).localeCompare(a.updated_at || a.created_at)), [props.exercisePresets]);
   const exerciseResults = useMemo(() => props.exercisePresets
     .filter((item) => {
       if (mode === "body" && filter) return item.body_part === filter;
@@ -5492,7 +5583,7 @@ function WorkoutTab(props: {
   return (
     <div className="space-y-4" ref={workoutTopRef}>
       <div className="grid grid-cols-3 gap-2">
-        {(["favorite", "preset", "body", "equipment", "previous", "search"] as const).map((item) => (
+        {(["favorite", "preset", "body", "equipment", "my", "search"] as const).map((item) => (
           <button className={`mode-button ${mode === item ? "mode-button-active" : ""}`} key={item} onClick={() => setMode(item)}>{workoutModeLabel(item)}</button>
         ))}
       </div>
@@ -5590,8 +5681,28 @@ function WorkoutTab(props: {
         </div>
       )}
 
-      {mode === "previous" && (
-        <button className="primary-button w-full" onClick={copyPrevious}><RotateCcw size={17} />前回コピー</button>
+      {mode === "my" && (
+        <section className="compact-card divide-y divide-line">
+          <div className="p-3">
+            <button className="primary-button w-full" onClick={() => openMyTrainingModal()}><Plus size={17} />マイトレを登録</button>
+          </div>
+          <ListHeader title="マイトレ" value={`${myTrainingExercises.length}件`} />
+          {myTrainingExercises.map((exercise) => {
+            const pictogram = getWorkoutPictogram(exercise.body_part, exercise.equipment_type);
+            return (
+              <div className="flex items-center justify-between gap-3 px-4 py-3" key={exercise.id}>
+                <Pictogram {...pictogram} />
+                <button className="min-w-0 flex-1 text-left" onClick={() => openExerciseDraft(exercise)}>
+                  <p className="truncate text-sm font-semibold">{exercise.name}</p>
+                  <p className="truncate text-xs text-moss">{exercise.body_part} · {exercise.equipment_type}</p>
+                </button>
+                <button className="icon-button h-9 w-9" aria-label={`${exercise.name}を追加`} onClick={() => openExerciseDraft(exercise)}><Plus size={17} /></button>
+                <button className="icon-button h-9 w-9 text-clay" aria-label={`${exercise.name}を削除`} onClick={() => deleteMyTrainingExercise(exercise)}><Trash2 size={16} /></button>
+              </div>
+            );
+          })}
+          {myTrainingExercises.length === 0 && <EmptyLine text="ジムや狙い方に合わせた種目を登録できます" />}
+        </section>
       )}
 
       {(mode === "body" || mode === "equipment" || mode === "search") && (
@@ -5722,6 +5833,20 @@ function WorkoutTab(props: {
             scrollToWorkoutTop();
           }}
           onSave={() => addPresetExercise(exerciseDraft)}
+          onSaveAsMyTraining={(draft, presets) => openMyTrainingModal(myTrainingDraftFromWorkoutDraft(draft, presets))}
+        />
+      )}
+
+      {isMyTrainingModalOpen && (
+        <MyTrainingModal
+          exercisePresets={props.exercisePresets}
+          initialDraft={myTrainingInitialDraft}
+          weightPresetStore={workoutWeightPresetStore}
+          onClose={() => {
+            setIsMyTrainingModalOpen(false);
+            setMyTrainingInitialDraft(undefined);
+          }}
+          onSave={saveMyTrainingDraft}
         />
       )}
     </div>
@@ -8505,7 +8630,280 @@ function ExercisePresetRow({ exercise, isFavorite, onAdd, onToggleFavorite, onPi
   );
 }
 
-function ExerciseAddModal({ draft, setDraft, weightPresetStore, onSaveWeightPresetStore, onClose, onAddAnother, onSave }: {
+function MyTrainingModal({ initialDraft, exercisePresets, weightPresetStore, onClose, onSave }: {
+  initialDraft?: MyTrainingDraft;
+  exercisePresets: ExercisePreset[];
+  weightPresetStore: Record<string, number[]>;
+  onClose: () => void;
+  onSave: (draft: MyTrainingDraft) => void | Promise<void>;
+}) {
+  const [step, setStep] = useState<MyTrainingWizardStep>(initialDraft ? "basic" : "method");
+  const [draft, setDraft] = useState<MyTrainingDraft>(() => initialDraft ?? myTrainingDraftFromExercise());
+  const [sourceQuery, setSourceQuery] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+  const isCardio = draft.body_part === "有酸素" || draft.equipment_type === "有酸素";
+  const isBodyweight = !isCardio && /自重|自宅/.test(draft.equipment_type);
+  const bodyPartOptions = useMemo(() => unique(["胸", "背中", "肩", "腕", "脚", "体幹", "有酸素", ...exercisePresets.map((item) => item.body_part)]).slice(0, 12), [exercisePresets]);
+  const equipmentOptions = useMemo(() => unique(["マシン", "フリーウェイト", "スミスマシン", "ケーブル", "自重", "有酸素", ...exercisePresets.map((item) => item.equipment_type)]).slice(0, 12), [exercisePresets]);
+  const sourceResults = useMemo(() => {
+    const query = sourceQuery.trim().toLowerCase();
+    return exercisePresets
+      .filter((exercise) => {
+        if (!query) return true;
+        return `${exercise.name} ${exercise.body_part} ${exercise.equipment_type}`.toLowerCase().includes(query);
+      })
+      .slice(0, 12);
+  }, [exercisePresets, sourceQuery]);
+  const normalizedPresets = draft.weight_presets.length ? draft.weight_presets.slice(0, 5) : defaultWorkoutWeightPresets(draft.weight_kg, 2.5);
+  const updateDraft = (patch: Partial<MyTrainingDraft>) => setDraft((current) => ({ ...current, ...patch }));
+  const selectSourceExercise = (exercise: ExercisePreset) => {
+    const stepValue = inferWeightStep(exercise);
+    const firstSet = exercise.default_set_scheme?.[0];
+    const weight = round1(Math.max(0, exercise.default_weight_kg ?? firstSet?.weight_kg ?? 0));
+    setDraft(myTrainingDraftFromExercise(exercise, {
+      name: `${exercise.name} カスタム`,
+      weight_presets: loadWorkoutWeightPresets(workoutWeightPresetKeys(exercise), weight, stepValue, weightPresetStore),
+    }));
+    setStep("basic");
+  };
+  const goBack = () => {
+    if (step === "method") return onClose();
+    if (step === "source") return setStep("method");
+    if (step === "basic") return initialDraft ? onClose() : setStep(draft.sourceExerciseId ? "source" : "method");
+    if (step === "defaults") return setStep("basic");
+    if (step === "presets") return setStep("defaults");
+    setStep(isCardio ? "defaults" : "presets");
+  };
+  const goNext = () => {
+    if (step === "basic") return setStep("defaults");
+    if (step === "defaults") return setStep(isCardio || isBodyweight ? "confirm" : "presets");
+    if (step === "presets") return setStep("confirm");
+  };
+  const save = async () => {
+    if (isSaving || !draft.name.trim()) return;
+    setIsSaving(true);
+    try {
+      await onSave({
+        ...draft,
+        weight_kg: isBodyweight ? 0 : draft.weight_kg,
+        load_type: isBodyweight ? "bodyweight" : draft.load_type,
+        weight_presets: isCardio || isBodyweight ? [] : normalizedPresets,
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+  const progress = ["method", "source", "basic", "defaults", "presets", "confirm"].filter((item) => {
+    if (initialDraft && (item === "method" || item === "source")) return false;
+    if ((isCardio || isBodyweight) && item === "presets") return false;
+    return true;
+  });
+  const title = step === "method" ? "マイトレ登録" : step === "source" ? "元の種目を選択" : step === "basic" ? "基本情報" : step === "defaults" ? "初期値" : step === "presets" ? "重量プリセット" : "登録内容";
+
+  return (
+    <div className="fixed inset-0 z-40 flex items-end bg-ink/30 px-4 pb-4" onClick={onClose}>
+      <div className="compact-card max-h-[86vh] w-full overflow-y-auto p-4" onClick={(event) => event.stopPropagation()}>
+        <div className="flex items-start gap-3">
+          <Pictogram {...getWorkoutPictogram(draft.body_part, draft.equipment_type)} />
+          <div className="min-w-0 flex-1">
+            <p className="text-lg font-bold">{title}</p>
+            <p className="mt-1 text-sm text-moss">狙い方やジム差分を別名の種目として保存します。</p>
+          </div>
+          <button className="icon-button h-9 w-9" aria-label="閉じる" onClick={onClose}>×</button>
+        </div>
+        <div className="mt-4 grid grid-cols-6 gap-2">
+          {progress.map((item) => (
+            <span className={`h-1.5 rounded-full ${item === step ? "bg-moss" : "bg-line"}`} key={item} />
+          ))}
+        </div>
+
+        {step === "method" && (
+          <div className="mt-5 grid gap-2">
+            <button className="choice-button h-auto min-h-[4.75rem] flex-col items-start justify-center px-4 py-3 text-left" onClick={() => setStep("source")}>
+              <span className="font-black">既存の種目をカスタマイズ</span>
+              <span className="mt-1 text-xs font-semibold text-moss">ペックフライ上部狙い、別ジムのマシンなどを元種目から作ります。</span>
+            </button>
+            <button
+              className="choice-button h-auto min-h-[4.75rem] flex-col items-start justify-center px-4 py-3 text-left"
+              onClick={() => {
+                setDraft(myTrainingDraftFromExercise(undefined, { name: "" }));
+                setStep("basic");
+              }}
+            >
+              <span className="font-black">新規登録</span>
+              <span className="mt-1 text-xs font-semibold text-moss">部位、器具、重量プリセットを最初から設定します。</span>
+            </button>
+          </div>
+        )}
+
+        {step === "source" && (
+          <div className="mt-5 space-y-3">
+            <input className="h-12 w-full text-base" value={sourceQuery} onChange={(event) => setSourceQuery(event.target.value)} placeholder="種目名・部位・器具で検索" />
+            <div className="max-h-80 divide-y divide-line overflow-y-auto rounded-md border border-line bg-rice/40">
+              {sourceResults.map((exercise) => (
+                <button className="flex w-full items-center gap-3 px-3 py-3 text-left" key={exercise.id} onClick={() => selectSourceExercise(exercise)}>
+                  <Pictogram {...getWorkoutPictogram(exercise.body_part, exercise.equipment_type)} />
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-bold">{exercise.name}</span>
+                    <span className="block truncate text-xs text-moss">{exercise.body_part} · {exercise.equipment_type}</span>
+                  </span>
+                  <ChevronRight size={17} />
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {step === "basic" && (
+          <div className="mt-5 space-y-4">
+            <label className="block text-sm font-bold">
+              種目名
+              <input className="mt-2 h-12 w-full text-base" value={draft.name} onChange={(event) => updateDraft({ name: event.target.value })} placeholder="例: ペックフライ 上部狙い" />
+            </label>
+            <div>
+              <p className="mb-2 text-sm font-bold">部位</p>
+              <div className="grid grid-cols-3 gap-2">
+                {bodyPartOptions.map((item) => (
+                  <button className={`mini-chip h-10 ${draft.body_part === item ? "mini-chip-active" : ""}`} key={item} onClick={() => updateDraft({ body_part: item })}>{item}</button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <p className="mb-2 text-sm font-bold">器具</p>
+              <div className="grid grid-cols-2 gap-2">
+                {equipmentOptions.map((item) => (
+                  <button className={`mini-chip h-10 ${draft.equipment_type === item ? "mini-chip-active" : ""}`} key={item} onClick={() => updateDraft({ equipment_type: item, load_type: /自重|自宅/.test(item) ? "bodyweight" : draft.load_type })}>{item}</button>
+                ))}
+              </div>
+            </div>
+            <label className="block text-sm font-bold">
+              マシン・メモ
+              <input className="mt-2 h-12 w-full text-base" value={draft.machine_name} onChange={(event) => updateDraft({ machine_name: event.target.value })} placeholder="例: 手幅広め / 台を1段上げる" />
+            </label>
+          </div>
+        )}
+
+        {step === "defaults" && (
+          <div className="mt-5 space-y-4">
+            {isCardio ? (
+              <WizardNumberControl
+                label="初期分数"
+                value={draft.duration_min}
+                suffix="min"
+                step={5}
+                min={0}
+                max={120}
+                onChange={(duration_min) => updateDraft({ duration_min })}
+              />
+            ) : (
+              <>
+                {isBodyweight && (
+                  <div className="rounded-md bg-rice p-3 text-sm font-bold text-moss">自重種目として保存します。</div>
+                )}
+                {!isBodyweight && (
+                  <WizardNumberControl
+                    label="初期重量"
+                    value={draft.weight_kg}
+                    suffix="kg"
+                    step={inferWeightStep({ name: draft.name, equipment_type: draft.equipment_type })}
+                    min={0}
+                    max={sliderMax(draft.weight_kg, 200, inferWeightStep({ name: draft.name, equipment_type: draft.equipment_type }))}
+                    onChange={(weight_kg) => updateDraft({ weight_kg })}
+                  />
+                )}
+                <WizardNumberControl
+                  label="初期回数"
+                  value={draft.reps}
+                  suffix="回"
+                  step={1}
+                  min={0}
+                  max={50}
+                  onChange={(reps) => updateDraft({ reps: Math.max(0, Math.round(reps)) })}
+                />
+                <WizardNumberControl
+                  label="初期セット"
+                  value={draft.sets}
+                  suffix="set"
+                  step={1}
+                  min={1}
+                  max={5}
+                  onChange={(sets) => updateDraft({ sets: Math.min(5, Math.max(1, Math.round(sets))) })}
+                />
+              </>
+            )}
+          </div>
+        )}
+
+        {step === "presets" && (
+          <div className="mt-5 space-y-3">
+            <p className="text-sm font-bold">よく使う重量</p>
+            <div className="grid grid-cols-2 gap-2">
+              {normalizedPresets.map((value, index) => (
+                <label className="rounded-md border border-line bg-rice/60 p-3 text-xs font-bold text-moss" key={index}>
+                  プリセット{index + 1}
+                  <input
+                    className="mt-2 h-11 w-full text-base"
+                    type="number"
+                    value={value}
+                    onChange={(event) => {
+                      const next = [...normalizedPresets];
+                      next[index] = round1(Math.max(0, Number(event.target.value) || 0));
+                      updateDraft({ weight_presets: next });
+                    }}
+                  />
+                </label>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {step === "confirm" && (
+          <div className="mt-5 space-y-3">
+            <div className="rounded-md bg-rice p-4">
+              <p className="text-xs font-bold text-moss">登録する種目</p>
+              <p className="mt-2 text-lg font-black">{draft.name || "未入力"}</p>
+              <p className="mt-1 text-sm font-semibold text-moss">{draft.body_part} · {draft.equipment_type}</p>
+              <p className="mt-3 text-sm font-bold">
+                {isCardio
+                  ? `${Math.max(0, Math.round(draft.duration_min))}分`
+                  : `${formatWorkoutLoadLabel(draft.weight_kg, isBodyweight ? "bodyweight" : draft.load_type)} × ${Math.max(0, Math.round(draft.reps))}回 × ${Math.min(5, Math.max(1, Math.round(draft.sets)))}set`}
+              </p>
+            </div>
+            {!isCardio && !isBodyweight && (
+              <div className="rounded-md bg-rice p-3">
+                <p className="mb-2 text-xs font-bold text-moss">重量プリセット</p>
+                <div className="grid grid-cols-5 gap-1.5">
+                  {normalizedPresets.map((value, index) => <span className="mini-chip" key={index}>{formatControlValue(value)}</span>)}
+                </div>
+              </div>
+            )}
+            <label className="flex items-center justify-between rounded-md border border-line bg-rice px-3 py-3 text-sm font-bold">
+              お気に入りにも追加
+              <input type="checkbox" checked={draft.favorite} onChange={(event) => updateDraft({ favorite: event.target.checked })} />
+            </label>
+          </div>
+        )}
+
+        {step === "method" ? (
+          <button className="secondary-button mt-5 w-full" onClick={onClose}>閉じる</button>
+        ) : (
+          <div className="mt-5 grid grid-cols-2 gap-2">
+            <button className="secondary-button" onClick={goBack}>{initialDraft && step === "basic" ? "閉じる" : "戻る"}</button>
+            {step === "source" ? (
+              <button className="secondary-button" onClick={onClose}>閉じる</button>
+            ) : step === "confirm" ? (
+              <button className="primary-button" disabled={isSaving || !draft.name.trim()} onClick={save}><Save size={17} />{isSaving ? "保存中" : "保存"}</button>
+            ) : (
+              <button className="primary-button" disabled={step === "basic" && !draft.name.trim()} onClick={goNext}>次へ<ChevronRight size={17} /></button>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ExerciseAddModal({ draft, setDraft, weightPresetStore, onSaveWeightPresetStore, onClose, onAddAnother, onSave, onSaveAsMyTraining }: {
   draft: WorkoutExerciseDraft;
   setDraft: (draft: WorkoutExerciseDraft) => void;
   weightPresetStore: Record<string, number[]>;
@@ -8513,6 +8911,7 @@ function ExerciseAddModal({ draft, setDraft, weightPresetStore, onSaveWeightPres
   onClose: () => void;
   onAddAnother: () => void;
   onSave: () => void | Promise<void>;
+  onSaveAsMyTraining: (draft: WorkoutExerciseDraft, presets: number[]) => void;
 }) {
   const isCardio = draft.exercise.body_part === "有酸素" || draft.exercise.equipment_type === "有酸素";
   const isBodyweight = isBodyweightStrengthItem(draft.exercise);
@@ -8740,6 +9139,7 @@ function ExerciseAddModal({ draft, setDraft, weightPresetStore, onSaveWeightPres
               <button className="secondary-button" onClick={() => setStep(isCardio ? "duration" : "sets")}>戻る</button>
               <button className="primary-button whitespace-nowrap" disabled={isSaving} onClick={handleSave}><Plus size={17} />{isSaving ? "追加中" : "今日の記録に追加"}</button>
             </div>
+            <button className="secondary-button w-full" onClick={() => onSaveAsMyTraining(draft, weightPresets)}><Save size={17} />別名で種目登録して保存</button>
           </div>
         )}
       </div>
@@ -11431,7 +11831,7 @@ function workoutModeLabel(mode: WorkoutMode) {
     preset: "プリセット",
     body: "部位",
     equipment: "器具",
-    previous: "前回",
+    my: "マイトレ",
     search: "検索",
   }[mode];
 }
