@@ -51,6 +51,7 @@ import type {
   ActivityLevel,
   AiReport,
   BackupPayload,
+  Confidence,
   ExercisePreset,
   FoodEntry,
   Goal,
@@ -656,6 +657,15 @@ const achievementProgressSpecs: Record<string, AchievementProgressSpec> = {
   streak_100: { metric: "streak", target: 100, unit: "日" },
 };
 const appUpdates: AppUpdate[] = [
+  {
+    id: "2026-06-17-food-menu-edit-variants",
+    title: "Foodメニュー編集を改善",
+    date: "2026-06-17",
+    items: [
+      "検索結果の鉛筆ボタンから、非公式・推定メニューの編集フォームが正しく開くようにしました。",
+      "上書き編集時に、元メニューを残したまま別メニューとして保存できるようにしました。",
+    ],
+  },
   {
     id: "2026-06-17-settings-export-logs",
     title: "Settingsのエクスポートを拡張",
@@ -3807,17 +3817,21 @@ function FoodTab(props: {
     setManual(toManualDraft(item, nextMealType));
     setMenuOverwriteTarget(undefined);
     setSelected(undefined);
+    setQuery("");
     setManualWizardStep("basic");
     setIsMyMenuRegistrationOpen(true);
     setMode("personal");
+    scrollToFoodTop();
   };
   const startMenuOverwrite = (item: MenuItem, options?: Pick<MenuOverwriteTarget, "logAfterSave" | "logMultiplier"> & { mealType?: MealType }) => {
     setManual(toManualDraft(item, options?.mealType ?? item.default_meal_type ?? mealType));
     setMenuOverwriteTarget({ item, logAfterSave: options?.logAfterSave, logMultiplier: options?.logMultiplier });
     setSelected(undefined);
+    setQuery("");
     setManualWizardStep("basic");
     setIsMyMenuRegistrationOpen(true);
     setMode("personal");
+    scrollToFoodTop();
   };
   const openMenuEdit = (item: MenuItem) => {
     if (canOverwriteMenuItem(item)) {
@@ -3839,9 +3853,7 @@ function FoodTab(props: {
     setManualWizardStep("basic");
   };
 
-  const saveManual = async () => {
-    const timestamp = nowIso();
-    let menuItemId: string | undefined;
+  const getManualSavePayload = () => {
     const nutrition = draftNutrition(manual);
     const baseName = manual.name.trim() || `${mealLabels[manual.meal_type]}のマニュアル`;
     const ingredientGrams = manual.entry_kind === "ingredient" ? ingredientGramValue(manual) : undefined;
@@ -3854,7 +3866,82 @@ function FoodTab(props: {
       manual.entry_kind === "ingredient" ? `材料入力: ${ingredientServingLabel ?? "g未入力"} / 栄養値は100gあたりから換算` : "",
       nutrition.unknown.length ? `未入力: ${nutrition.unknown.join("/")}` : "",
     ]).join(" / ") || undefined;
-    const confidence = nutrition.unknown.length ? "low" : "high";
+    const confidence: Confidence = nutrition.unknown.length ? "low" : "high";
+    return { nutrition, baseName, ingredientGrams, ingredientServingLabel, displayName, brand, tags, note, confidence };
+  };
+
+  const resetManualRegistration = () => {
+    setManual({ ...emptyManual, savePreset: true });
+    setMenuOverwriteTarget(undefined);
+    setManualWizardStep("basic");
+    setIsMyMenuRegistrationOpen(false);
+    setPortionMultiplier(1);
+    setPortionQuantity(1);
+    setFoodAddStep("size");
+  };
+
+  const saveManualAsNewMenu = async () => {
+    const timestamp = nowIso();
+    const payload = getManualSavePayload();
+    const menuItemId = makeId("menu_user");
+    await db.menu_items.put({
+      id: menuItemId,
+      name: payload.baseName,
+      brand: payload.brand || undefined,
+      category: manual.category,
+      tags: payload.tags,
+      calories: payload.nutrition.calories,
+      protein_g: payload.nutrition.protein_g,
+      fat_g: payload.nutrition.fat_g,
+      carbs_g: payload.nutrition.carbs_g,
+      salt_g: payload.nutrition.salt_g,
+      serving_label: payload.ingredientServingLabel,
+      weight_g: payload.ingredientGrams,
+      default_meal_type: manual.meal_type,
+      data_source: "user",
+      confidence: payload.confidence,
+      is_public_preset: false,
+      is_user_created: true,
+      is_favorite: manual.favorite,
+      created_at: timestamp,
+      updated_at: timestamp,
+    });
+    if (menuOverwriteTarget?.logAfterSave) {
+      const logMultiplier = Math.max(0, menuOverwriteTarget.logMultiplier ?? 1);
+      const servingGrams = payload.ingredientGrams ?? menuItemServingGrams(menuOverwriteTarget.item);
+      const loggedName = servingGrams && logMultiplier !== 1
+        ? `${payload.baseName}（${formatControlValue(round1(servingGrams * logMultiplier))}g）`
+        : payload.displayName;
+      await db.food_entries.put({
+        id: makeId("food"),
+        app_date: props.appDate,
+        logged_at: timestamp,
+        meal_type: manual.meal_type,
+        name: loggedName,
+        brand: payload.brand || undefined,
+        calories: Math.round(payload.nutrition.calories * logMultiplier),
+        protein_g: round1(payload.nutrition.protein_g * logMultiplier),
+        fat_g: round1(payload.nutrition.fat_g * logMultiplier),
+        carbs_g: round1(payload.nutrition.carbs_g * logMultiplier),
+        salt_g: payload.nutrition.salt_g === undefined ? undefined : round1(payload.nutrition.salt_g * logMultiplier),
+        portion_multiplier: logMultiplier,
+        entry_source: "user",
+        confidence: payload.confidence,
+        menu_item_id: menuItemId,
+        note: payload.note,
+        created_at: timestamp,
+        updated_at: timestamp,
+      });
+    }
+    resetManualRegistration();
+    await props.refresh();
+    props.showToast(menuOverwriteTarget?.logAfterSave ? "別メニューとして保存して記録しました" : "別メニューとして保存しました");
+  };
+
+  const saveManual = async () => {
+    const timestamp = nowIso();
+    let menuItemId: string | undefined;
+    const { nutrition, baseName, ingredientGrams, ingredientServingLabel, displayName, brand, tags, note, confidence } = getManualSavePayload();
     if (menuOverwriteTarget) {
       const sourceItem = menuOverwriteTarget.item;
       const logMultiplier = Math.max(0, menuOverwriteTarget.logMultiplier ?? 1);
@@ -3901,13 +3988,7 @@ function FoodTab(props: {
           updated_at: timestamp,
         });
       }
-      setManual({ ...emptyManual, savePreset: true });
-      setMenuOverwriteTarget(undefined);
-      setManualWizardStep("basic");
-      setIsMyMenuRegistrationOpen(false);
-      setPortionMultiplier(1);
-      setPortionQuantity(1);
-      setFoodAddStep("size");
+      resetManualRegistration();
       await props.refresh();
       props.showToast(menuOverwriteTarget.logAfterSave ? "メニューを上書きして記録しました" : "メニューを上書きしました");
       return;
@@ -4245,6 +4326,8 @@ function FoodTab(props: {
                   setWizardStep={setManualWizardStep}
                   includePurposeStep={!menuOverwriteTarget}
                   submitLabel={menuOverwriteTarget ? (menuOverwriteTarget.logAfterSave ? "上書きして記録" : "上書き保存") : manual.savePreset ? "保存して記録" : "今回だけ記録"}
+                  secondarySubmitLabel={menuOverwriteTarget ? (menuOverwriteTarget.logAfterSave ? "別メニューとして保存して記録" : "別メニューとして保存") : undefined}
+                  onSecondarySave={menuOverwriteTarget ? saveManualAsNewMenu : undefined}
                   onSave={saveManual}
                 />
               </section>
@@ -6943,7 +7026,7 @@ function Onboarding({ refresh }: { refresh: () => Promise<void> }) {
   );
 }
 
-function ManualFoodForm({ manual, setManual, onSave, compact = false, mode = "log", variant = "form", wizardStep = "basic", setWizardStep, submitLabel = "保存", includePurposeStep = false }: {
+function ManualFoodForm({ manual, setManual, onSave, compact = false, mode = "log", variant = "form", wizardStep = "basic", setWizardStep, submitLabel = "保存", secondarySubmitLabel, onSecondarySave, includePurposeStep = false }: {
   manual: ManualFoodDraft;
   setManual: (manual: ManualFoodDraft) => void;
   onSave: () => void;
@@ -6953,6 +7036,8 @@ function ManualFoodForm({ manual, setManual, onSave, compact = false, mode = "lo
   wizardStep?: ManualFoodWizardStep;
   setWizardStep?: (step: ManualFoodWizardStep) => void;
   submitLabel?: string;
+  secondarySubmitLabel?: string;
+  onSecondarySave?: () => void;
   includePurposeStep?: boolean;
 }) {
   const subcategories = genericCategories[manual.category] ?? [];
@@ -7096,6 +7181,11 @@ function ManualFoodForm({ manual, setManual, onSave, compact = false, mode = "lo
             </div>
             {manual.savePreset && <label className="chip"><input type="checkbox" checked={manual.favorite} onChange={(event) => setManual({ ...manual, favorite: event.target.checked })} />お気に入りに追加</label>}
             <button className="primary-button w-full" disabled={!manual.name.trim()} onClick={onSave}><Save size={17} />{submitLabel}</button>
+            {onSecondarySave && (
+              <button className="secondary-button w-full" disabled={!manual.name.trim()} onClick={onSecondarySave}>
+                <Plus size={17} />{secondarySubmitLabel ?? "別メニューとして保存"}
+              </button>
+            )}
           </div>
         )}
 
