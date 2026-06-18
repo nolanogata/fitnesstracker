@@ -3948,21 +3948,11 @@ main[data-accent]:not([data-accent="classic"]) .ai-report-section .text-moss {
 :root[data-accent]:not([data-accent="classic"]) .home-hero-theme-frame {
   border-color: var(--accent-border);
   background:
-    radial-gradient(
-      circle at var(--hero-progress-sheen-x, 16%) 10%,
-      color-mix(in srgb, var(--accent-secondary) calc(var(--hero-progress-level, 0) * 0.24%), transparent),
-      transparent 32%
-    ),
-    radial-gradient(
-      circle at 82% 78%,
-      color-mix(in srgb, var(--accent-primary) calc(var(--hero-progress-level, 0) * 0.13%), transparent),
-      transparent 36%
-    ),
     linear-gradient(
       180deg,
-      color-mix(in srgb, var(--accent-secondary) calc(var(--hero-progress-level, 0) * 0.11%), transparent) 0%,
-      color-mix(in srgb, var(--accent-primary) calc(var(--hero-progress-level, 0) * 0.05%), transparent) 48%,
-      color-mix(in srgb, var(--accent-secondary) calc(var(--hero-progress-level, 0) * 0.08%), transparent) 100%
+      color-mix(in srgb, var(--accent-secondary) calc(var(--hero-progress-level, 0) * 0.14%), transparent) 0%,
+      color-mix(in srgb, var(--accent-primary) calc(var(--hero-progress-level, 0) * 0.08%), transparent) 52%,
+      color-mix(in srgb, var(--accent-secondary) calc(var(--hero-progress-level, 0) * 0.04%), transparent) 100%
     ),
     var(--glass-bg-strong);
 }
