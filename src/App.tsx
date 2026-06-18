@@ -1901,6 +1901,8 @@ function App() {
   const activeSpecialMode = useMemo(() => getActiveSpecialMode(appDate, specialModeSettings), [appDate, specialModeSettings]);
   const activePauseMode = useMemo(() => getActivePauseMode(appDate, pauseModeSettings), [appDate, pauseModeSettings]);
   const isDeveloperTestMode = useMemo(() => isDeveloperTestModeActive(settings, currentTime), [settings?.developer_test_active_until, currentTime]);
+  const shouldForceTrophyAnimation = isDeveloperTestMode && !!settings?.developer_force_trophy_animation;
+  const developerProgressPercent = isDeveloperTestMode ? settings?.developer_progress_percent : undefined;
   const openSpecialFoodMode = () => {
     if (!activeSpecialMode?.foodQuery) return;
     setSettingsFocus(undefined);
@@ -2224,7 +2226,7 @@ function App() {
         await db.settings.update("local", { achievements: currentWithCounts, updated_at: timestamp });
         setSettings({ ...settings, achievements: currentWithCounts, updated_at: timestamp });
       }
-      if (announce && isDeveloperTestMode) {
+      if (announce && shouldForceTrophyAnimation) {
         const replayId = unique(ids).find((id) => knownIds.has(id));
         const definition = replayId ? achievementDefinition(replayId) : undefined;
         if (definition) showAchievementCelebration(definition);
@@ -2248,7 +2250,7 @@ function App() {
   };
   const unlockAchievementLater = (id: string) => {
     void unlockAchievements([id], false).then((freshIds) => {
-      if (!freshIds.length && !isDeveloperTestMode) return;
+      if (!freshIds.length && !shouldForceTrophyAnimation) return;
       setPendingAchievementIds((current) => unique([...current, id]));
     });
   };
@@ -2273,6 +2275,26 @@ function App() {
     const timestamp = nowIso();
     await db.settings.update("local", { achievements_viewed_at: timestamp, updated_at: timestamp });
     setSettings({ ...settings, achievements_viewed_at: timestamp, updated_at: timestamp });
+  };
+  const unlockAllAchievements = async () => {
+    if (!settings) return;
+    const timestamp = nowIso();
+    const existingById = new Map((settings.achievements ?? []).map((achievement) => [achievement.id, achievement]));
+    const nextAchievements = achievementDefinitions.map((definition) => {
+      const existing = existingById.get(definition.id);
+      const progress = achievementProgress[definition.id];
+      const count = Math.max(existing?.count ?? 1, progress?.current ?? 1);
+      return {
+        id: definition.id,
+        unlocked_at: existing?.unlocked_at ?? timestamp,
+        count,
+      };
+    });
+    await db.settings.update("local", { achievements: nextAchievements, updated_at: timestamp });
+    setSettings({ ...settings, achievements: nextAchievements, updated_at: timestamp });
+    const firstLocked = achievementDefinitions.find((definition) => !existingById.has(definition.id));
+    if (firstLocked) showAchievementCelebration(firstLocked, achievementDefinitions.length);
+    showToast("トロフィーを全アンロックしました");
   };
   const reloadLatestApp = async () => {
     await refresh();
@@ -2460,6 +2482,7 @@ function App() {
             activeSpecialMode={activeSpecialMode}
             activePauseMode={activePauseMode}
             isExceptionDay={isExceptionDay}
+            developerProgressPercent={developerProgressPercent}
             isEditingPastDate={isEditingPastDate}
             latestWeight={latestWeight}
             weightLogs={weightLogs}
@@ -2587,6 +2610,7 @@ function App() {
             pauseModeSettings={pauseModeSettings}
             activeSpecialMode={activeSpecialMode}
             isDeveloperTestMode={isDeveloperTestMode}
+            achievementProgress={achievementProgress}
             focus={settingsFocus}
             backupInfo={backupInfo}
             settings={settings}
@@ -2597,6 +2621,7 @@ function App() {
             openUpdateNotes={openUpdateNotes}
             refresh={refresh}
             showToast={showToast}
+            unlockAllAchievements={unlockAllAchievements}
             allData={{ foodEntries, weightLogs, workoutSessions, workoutExercises, workoutSets }}
           />
         )}
@@ -2614,6 +2639,9 @@ function App() {
       )}
       {toast && <QuickToast key={toast.id} text={toast.text} />}
       <WorkoutPrCelebrationOverlay celebration={prCelebration} />
+      {isDeveloperTestMode && settings?.developer_test_overlay_enabled && (
+        <div className="developer-test-overlay">テストモード</div>
+      )}
       <AchievementCelebrationOverlay
         celebration={achievementCelebration}
         onClose={() => setAchievementCelebration(undefined)}
@@ -3176,6 +3204,7 @@ function HomeTab(props: {
   activeSpecialMode?: ActiveSpecialMode;
   activePauseMode?: ActivePauseMode;
   isExceptionDay: boolean;
+  developerProgressPercent?: number;
   isEditingPastDate: boolean;
   latestWeight?: WeightLog;
   weightLogs: WeightLog[];
@@ -3211,6 +3240,9 @@ function HomeTab(props: {
   const remaining = (props.goal?.target_calories ?? 0) - props.dayTotals.calories;
   const calorieState = getCalorieState(remaining, props.goal?.target_calories ?? 0);
   const average7 = movingAverage(props.weightLogs, 7);
+  const developerProgressPercent = typeof props.developerProgressPercent === "number"
+    ? Math.max(0, Math.min(110, Math.round(props.developerProgressPercent)))
+    : undefined;
   const caloriePercent = props.goal?.target_calories ? Math.min(100, Math.round((props.dayTotals.calories / props.goal.target_calories) * 100)) : 0;
   const backupTitle = props.backupInfo.level === "danger" ? "バックアップ推奨" : "そろそろバックアップ";
   const todayWorkoutCalories = useMemo(() => {
@@ -3233,24 +3265,26 @@ function HomeTab(props: {
   const shouldMaskGoalProgress = props.isExceptionDay;
   const shouldShowRainbowProgress = props.isCheatDay || !!props.activeSpecialMode;
   const shouldShowPausedProgress = !shouldShowRainbowProgress && !!props.activePauseMode;
-  const heroProgressPercent = shouldMaskGoalProgress ? 100 : caloriePercent;
-  const shouldUseThemeHeroFrame = !shouldShowRainbowProgress && !shouldShowPausedProgress && !(calorieDelta && calorieDelta > 0);
+  const heroProgressPercent = shouldMaskGoalProgress ? 100 : Math.min(100, developerProgressPercent ?? caloriePercent);
+  const heroGlowPercent = shouldMaskGoalProgress ? 100 : developerProgressPercent ?? heroProgressPercent;
+  const isDeveloperProgressOver = typeof developerProgressPercent === "number" && developerProgressPercent > 100;
+  const shouldUseThemeHeroFrame = !shouldShowRainbowProgress && !shouldShowPausedProgress && !isDeveloperProgressOver && !(calorieDelta && calorieDelta > 0);
   const heroThemeGlowClass = !shouldUseThemeHeroFrame
     ? ""
-    : heroProgressPercent >= 90
+    : heroGlowPercent >= 90
       ? "home-hero-theme-frame home-hero-theme-glow-90 home-hero-theme-spin"
-      : heroProgressPercent >= 75
+      : heroGlowPercent >= 75
         ? "home-hero-theme-frame home-hero-theme-glow-75"
-        : heroProgressPercent >= 50
+        : heroGlowPercent >= 50
           ? "home-hero-theme-frame home-hero-theme-glow-50"
-          : heroProgressPercent >= 25
+          : heroGlowPercent >= 25
             ? "home-hero-theme-frame home-hero-theme-glow-25"
             : "home-hero-theme-frame home-hero-theme-glow-0";
   const heroProgressClass = shouldShowRainbowProgress
     ? "home-progress-rainbow"
     : shouldShowPausedProgress
       ? "home-progress-paused"
-      : calorieDelta && calorieDelta > 0 ? "home-progress-over" : "home-progress-normal";
+      : (isDeveloperProgressOver || (calorieDelta && calorieDelta > 0)) ? "home-progress-over" : "home-progress-normal";
   const calorieDisplayText = shouldMaskGoalProgress ? "-" : calorieDeltaText;
   const calorieMoodClass = props.isCheatDay ? "cheat" : props.activeSpecialMode ? "trip" : props.activePauseMode ? "cheat" : typeof calorieDelta === "number" ? (calorieDelta > 0 ? "over" : Math.abs(calorieDelta) <= 100 ? "on-track" : "left") : "neutral";
   const calorieMoodLabel = props.isCheatDay ? "cheat day" : props.activeSpecialMode ? "travel mode" : props.activePauseMode ? "pause mode" : typeof calorieDelta === "number" ? (calorieDelta > 0 ? "over" : Math.abs(calorieDelta) <= 100 ? "on track" : "left") : calorieState.label;
@@ -6393,6 +6427,7 @@ function SettingsTab(props: {
   pauseModeSettings: SpecialModeSettings[];
   activeSpecialMode?: ActiveSpecialMode;
   isDeveloperTestMode: boolean;
+  achievementProgress: Record<string, AchievementProgress>;
   focus?: SettingsFocus;
   backupInfo: BackupInfo;
   settings?: AppSettings;
@@ -6403,6 +6438,7 @@ function SettingsTab(props: {
   openUpdateNotes: () => void;
   refresh: () => Promise<void>;
   showToast: (text: string) => void;
+  unlockAllAchievements: () => Promise<void>;
   allData: {
     foodEntries: FoodEntry[];
     weightLogs: WeightLog[];
@@ -6458,6 +6494,7 @@ function SettingsTab(props: {
   const [pauseStartDraft, setPauseStartDraft] = useState(props.appDate);
   const [pauseEndDraft, setPauseEndDraft] = useState(addDays(props.appDate, 6));
   const [developerTapCount, setDeveloperTapCount] = useState(0);
+  const [isDeveloperMenuOpen, setIsDeveloperMenuOpen] = useState(false);
   const themeOptions: Array<{ value: ThemeMode; label: string }> = [
     { value: "system", label: "端末に合わせる" },
     { value: "light", label: "ライト" },
@@ -6500,6 +6537,24 @@ function SettingsTab(props: {
     await props.refresh();
     props.showToast(`テーマカラーを${themeAccentLabels[theme_accent]}にしました`);
   };
+  const saveSettingsPatch = async (patch: Partial<AppSettings>) => {
+    const timestamp = nowIso();
+    if (props.settings) {
+      await db.settings.update("local", { ...patch, updated_at: timestamp });
+    } else {
+      await db.settings.put({
+        id: "local",
+        day_boundary_hour: 3,
+        onboarding_completed: true,
+        theme_mode: props.themeMode,
+        theme_accent: props.themeAccent,
+        created_at: timestamp,
+        updated_at: timestamp,
+        ...patch,
+      });
+    }
+    await props.refresh();
+  };
 
   useEffect(() => {
     if (!props.focus) return;
@@ -6522,6 +6577,9 @@ function SettingsTab(props: {
   useEffect(() => {
     setProfileNameDraft(props.profile?.name ?? "");
   }, [props.profile?.name]);
+  useEffect(() => {
+    if (!props.isDeveloperTestMode) setIsDeveloperMenuOpen(false);
+  }, [props.isDeveloperTestMode]);
 
   const calculated = props.profile
     ? calculateTargets({
@@ -6577,6 +6635,11 @@ function SettingsTab(props: {
     () => settingsAiFoodImportItems.map((item) => buildAiFoodImportCandidates(item, props.menuItems)),
     [settingsAiFoodImportItems, props.menuItems],
   );
+  const developerProgressPercent = Math.max(0, Math.min(110, Math.round(props.settings?.developer_progress_percent ?? 0)));
+  const developerForceTrophyAnimation = !!props.settings?.developer_force_trophy_animation;
+  const developerTestOverlayEnabled = !!props.settings?.developer_test_overlay_enabled;
+  const developerHokkaidoMode = props.specialModeSettings.find((mode) => mode.id === "hokkaido_trip");
+  const isDeveloperHokkaidoModeEnabled = !!developerHokkaidoMode?.enabled;
 
   const resetSettingsAiFoodImport = () => {
     setSettingsAiFoodImportStep("prompt");
@@ -6876,35 +6939,59 @@ function SettingsTab(props: {
     await savePauseMode();
   };
   const saveDeveloperTestMode = async (enabled: boolean) => {
-    const timestamp = nowIso();
     const developer_test_active_until = enabled ? new Date(Date.now() + 12 * 60 * 60 * 1000).toISOString() : undefined;
-    if (props.settings) {
-      await db.settings.update("local", { developer_test_active_until, updated_at: timestamp });
-    } else {
-      await db.settings.put({
-        id: "local",
-        day_boundary_hour: 3,
-        onboarding_completed: true,
-        developer_test_active_until,
-        created_at: timestamp,
-        updated_at: timestamp,
-      });
-    }
-    await props.refresh();
+    await saveSettingsPatch(enabled
+      ? { developer_test_active_until }
+      : {
+          developer_test_active_until,
+          developer_force_trophy_animation: false,
+          developer_progress_percent: undefined,
+          developer_test_overlay_enabled: false,
+        });
     setDeveloperTapCount(0);
+    setIsDeveloperMenuOpen(enabled);
     props.showToast(enabled ? "テストモードに入りました" : "テストモードを終了しました");
   };
   const handleDeveloperModeTap = async () => {
     if (props.isDeveloperTestMode) {
-      await saveDeveloperTestMode(false);
+      setIsDeveloperMenuOpen(true);
       return;
     }
     const next = developerTapCount + 1;
-    if (next >= 5) {
+    if (next >= 10) {
       await saveDeveloperTestMode(true);
       return;
     }
     setDeveloperTapCount(next);
+    if (next >= 5) props.showToast(`開発者モードまであと${10 - next}回`);
+  };
+  const toggleDeveloperHokkaidoMode = async () => {
+    const definition = specialModeDefinitions.find((mode) => mode.id === "hokkaido_trip");
+    const fallback: SpecialModeSettings = {
+      id: "hokkaido_trip",
+      enabled: true,
+      label: definition?.label ?? "北海道旅行",
+      short_label: definition?.shortLabel ?? "北",
+      food_query: definition?.foodQuery ?? "北海道旅行",
+      start_date: props.appDate,
+      end_date: props.appDate,
+    };
+    const nextModes = props.specialModeSettings.some((mode) => mode.id === "hokkaido_trip")
+      ? props.specialModeSettings.map((mode) => mode.id === "hokkaido_trip"
+        ? {
+            ...mode,
+            enabled: !isDeveloperHokkaidoModeEnabled,
+            deleted: false,
+            label: mode.label ?? fallback.label,
+            short_label: mode.short_label ?? fallback.short_label,
+            food_query: mode.food_query ?? fallback.food_query,
+            start_date: props.appDate,
+            end_date: props.appDate,
+          }
+        : mode)
+      : [...props.specialModeSettings, fallback];
+    await saveSpecialModeSettings(nextModes);
+    props.showToast(isDeveloperHokkaidoModeEnabled ? "北海道モードをOFFにしました" : "北海道モードをONにしました");
   };
   const saveGoalSettings = async () => {
     if (!props.profile) return;
@@ -7567,11 +7654,95 @@ function SettingsTab(props: {
           }}><Pencil size={17} />ユーザー名変更</button>
           <button className="secondary-button w-full" onClick={props.openUpdateNotes}><FileText size={17} />更新内容</button>
           <button className="secondary-button w-full" onClick={handleDeveloperModeTap}>
-            <Settings size={17} />開発者モード
+            <Settings size={17} />{props.isDeveloperTestMode ? "開発者モードメニュー" : "開発者モード"}
             {props.isDeveloperTestMode && <span className="mini-chip ml-auto">テスト中</span>}
           </button>
         </div>
       </section>}
+      {isDeveloperMenuOpen && props.isDeveloperTestMode && (
+        <div className="fixed inset-0 z-[68] flex items-end bg-ink/35 px-4 pb-4" onClick={() => setIsDeveloperMenuOpen(false)}>
+          <div className="developer-menu compact-card w-full p-4" onClick={(event) => event.stopPropagation()}>
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-xl font-black text-ink">開発者モード</p>
+                <p className="mt-1 text-xs font-bold text-moss">表示確認と実績テスト用のメニューです。</p>
+              </div>
+              <button className="icon-button h-10 w-10" aria-label="閉じる" onClick={() => setIsDeveloperMenuOpen(false)}>×</button>
+            </div>
+            <div className="mt-4 grid gap-3">
+              <div className="developer-control-row">
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-black text-ink">トロフィーアニメーションを強制再生</p>
+                  <p className="mt-1 text-xs font-semibold text-moss">既に獲得済みの実績でも演出を確認できます。</p>
+                </div>
+                <button
+                  className={`special-mode-toggle ${developerForceTrophyAnimation ? "special-mode-toggle-on" : ""}`}
+                  type="button"
+                  aria-pressed={developerForceTrophyAnimation}
+                  onClick={() => void saveSettingsPatch({ developer_force_trophy_animation: !developerForceTrophyAnimation })}
+                >
+                  <span className="special-mode-toggle-track"><span className="special-mode-toggle-knob" /></span>
+                  <span className="special-mode-toggle-copy"><span className="special-mode-toggle-state">{developerForceTrophyAnimation ? "ON" : "OFF"}</span></span>
+                </button>
+              </div>
+              <div className="developer-control-row developer-control-column">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-black text-ink">プログレスバーを進める</p>
+                    <p className="mt-1 text-xs font-semibold text-moss">Homeのヒーローカード表示だけを上書きします。</p>
+                  </div>
+                  <span className="numeric-text rounded-full bg-leaf/15 px-3 py-1 text-sm font-black text-leaf">{developerProgressPercent}%</span>
+                </div>
+                <input
+                  className="developer-range mt-3 w-full"
+                  type="range"
+                  min={0}
+                  max={110}
+                  step={1}
+                  value={developerProgressPercent}
+                  onChange={(event) => void saveSettingsPatch({ developer_progress_percent: Number(event.currentTarget.value) })}
+                />
+              </div>
+              <div className="developer-control-row">
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-black text-ink">北海道モード</p>
+                  <p className="mt-1 text-xs font-semibold text-moss">今日だけ北海道旅行モードとして表示します。</p>
+                </div>
+                <button
+                  className={`special-mode-toggle ${isDeveloperHokkaidoModeEnabled ? "special-mode-toggle-on" : ""}`}
+                  type="button"
+                  aria-pressed={isDeveloperHokkaidoModeEnabled}
+                  onClick={() => void toggleDeveloperHokkaidoMode()}
+                >
+                  <span className="special-mode-toggle-track"><span className="special-mode-toggle-knob" /></span>
+                  <span className="special-mode-toggle-copy"><span className="special-mode-toggle-state">{isDeveloperHokkaidoModeEnabled ? "ON" : "OFF"}</span></span>
+                </button>
+              </div>
+              <div className="developer-control-row">
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-black text-ink">テストモードオーバーレイ</p>
+                  <p className="mt-1 text-xs font-semibold text-moss">画面右下に黄色のテスト表示を出します。</p>
+                </div>
+                <button
+                  className={`special-mode-toggle ${developerTestOverlayEnabled ? "special-mode-toggle-on" : ""}`}
+                  type="button"
+                  aria-pressed={developerTestOverlayEnabled}
+                  onClick={() => void saveSettingsPatch({ developer_test_overlay_enabled: !developerTestOverlayEnabled })}
+                >
+                  <span className="special-mode-toggle-track"><span className="special-mode-toggle-knob" /></span>
+                  <span className="special-mode-toggle-copy"><span className="special-mode-toggle-state">{developerTestOverlayEnabled ? "ON" : "OFF"}</span></span>
+                </button>
+              </div>
+              <button className="secondary-button w-full" onClick={() => void props.unlockAllAchievements()}>
+                <Trophy size={17} />トロフィー全アンロック
+              </button>
+              <button className="danger-soft-button w-full" onClick={() => void saveDeveloperTestMode(false)}>
+                <Settings size={17} />開発者モードを終了
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {isMacroOverrideOpen && (
         <MacroOverrideModal
           draft={goalDraft}
