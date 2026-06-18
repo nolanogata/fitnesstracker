@@ -88,19 +88,20 @@
   --accent-icon-shadow: rgba(47, 111, 120, 0.2);
 }
 
+:root[data-accent="orange"],
 :root[data-accent="ruby"] {
-  --primary-tint: #8f4a57;
-  --active-tint: #d9788a;
-  --accent-primary: #8f4a57;
-  --accent-secondary: #d9788a;
-  --accent-soft: rgba(244, 218, 223, 0.78);
-  --accent-faint: rgba(217, 120, 138, 0.14);
-  --accent-border: rgba(217, 120, 138, 0.5);
-  --accent-focus: rgba(217, 120, 138, 0.32);
-  --accent-text: #864656;
-  --accent-button-bg: linear-gradient(135deg, rgba(143, 74, 87, 0.95), rgba(217, 120, 138, 0.86));
-  --accent-button-shadow: rgba(116, 52, 65, 0.22);
-  --accent-icon-shadow: rgba(143, 74, 87, 0.2);
+  --primary-tint: #b75a12;
+  --active-tint: #f08224;
+  --accent-primary: #b75a12;
+  --accent-secondary: #f08224;
+  --accent-soft: rgba(255, 228, 198, 0.78);
+  --accent-faint: rgba(240, 130, 36, 0.14);
+  --accent-border: rgba(240, 130, 36, 0.5);
+  --accent-focus: rgba(240, 130, 36, 0.32);
+  --accent-text: #8a4a12;
+  --accent-button-bg: linear-gradient(135deg, rgba(183, 90, 18, 0.95), rgba(255, 159, 50, 0.88));
+  --accent-button-shadow: rgba(134, 72, 18, 0.22);
+  --accent-icon-shadow: rgba(183, 90, 18, 0.2);
 }
 
 :root[data-accent="violet"] {
@@ -149,20 +150,21 @@
   --accent-icon-shadow: rgba(114, 191, 208, 0.22);
 }
 
+:root[data-theme="dark"][data-accent="orange"],
 :root[data-theme="dark"][data-accent="ruby"] {
-  --primary-tint: #f0b1bd;
-  --active-tint: #e48a9a;
-  --accent-primary: #f0b1bd;
-  --accent-secondary: #e48a9a;
-  --accent-soft: rgba(228, 138, 154, 0.2);
-  --accent-faint: rgba(228, 138, 154, 0.13);
-  --accent-border: rgba(240, 177, 189, 0.34);
-  --accent-focus: rgba(240, 177, 189, 0.34);
-  --accent-text: #ffe3e8;
+  --primary-tint: #ffc078;
+  --active-tint: #ff9f45;
+  --accent-primary: #ffc078;
+  --accent-secondary: #ff9f45;
+  --accent-soft: rgba(255, 159, 69, 0.2);
+  --accent-faint: rgba(255, 159, 69, 0.13);
+  --accent-border: rgba(255, 192, 120, 0.34);
+  --accent-focus: rgba(255, 192, 120, 0.34);
+  --accent-text: #ffe2bd;
   --accent-readable: #edf4ee;
-  --accent-button-bg: linear-gradient(135deg, rgba(166, 88, 102, 0.94), rgba(121, 58, 71, 0.9));
+  --accent-button-bg: linear-gradient(135deg, rgba(205, 102, 23, 0.94), rgba(141, 70, 19, 0.9));
   --accent-button-shadow: rgba(0, 0, 0, 0.24);
-  --accent-icon-shadow: rgba(228, 138, 154, 0.22);
+  --accent-icon-shadow: rgba(255, 159, 69, 0.22);
 }
 
 :root[data-theme="dark"][data-accent="violet"] {
