@@ -3267,6 +3267,7 @@ function HomeTab(props: {
   const shouldShowPausedProgress = !shouldShowRainbowProgress && !!props.activePauseMode;
   const heroProgressPercent = shouldMaskGoalProgress ? 100 : Math.min(100, developerProgressPercent ?? caloriePercent);
   const heroGlowPercent = shouldMaskGoalProgress ? 100 : developerProgressPercent ?? heroProgressPercent;
+  const heroBackgroundProgress = Math.max(0, Math.min(100, heroGlowPercent));
   const isDeveloperProgressOver = typeof developerProgressPercent === "number" && developerProgressPercent > 100;
   const shouldUseThemeHeroFrame = !shouldShowRainbowProgress && !shouldShowPausedProgress && !isDeveloperProgressOver && !(calorieDelta && calorieDelta > 0);
   const heroThemeGlowClass = !shouldUseThemeHeroFrame
@@ -3288,6 +3289,10 @@ function HomeTab(props: {
   const calorieDisplayText = shouldMaskGoalProgress ? "-" : calorieDeltaText;
   const calorieMoodClass = props.isCheatDay ? "cheat" : props.activeSpecialMode ? "trip" : props.activePauseMode ? "cheat" : typeof calorieDelta === "number" ? (calorieDelta > 0 ? "over" : Math.abs(calorieDelta) <= 100 ? "on-track" : "left") : "neutral";
   const calorieMoodLabel = props.isCheatDay ? "cheat day" : props.activeSpecialMode ? "travel mode" : props.activePauseMode ? "pause mode" : typeof calorieDelta === "number" ? (calorieDelta > 0 ? "over" : Math.abs(calorieDelta) <= 100 ? "on track" : "left") : calorieState.label;
+  const heroStyle = {
+    "--hero-progress-level": String(heroBackgroundProgress),
+    "--hero-progress-sheen-x": `${16 + heroBackgroundProgress * 0.68}%`,
+  } as CSSProperties & Record<"--hero-progress-level" | "--hero-progress-sheen-x", string>;
   const foodSummary = `${props.todayEntries.length}件 / ${props.dayTotals.calories} kcal`;
   const workoutSummary = todayWorkoutCalories > 0 ? `${props.todayWorkouts.length}回 / ${todayWorkoutCalories} kcal` : `${props.todayWorkouts.length}回`;
   const macroStats = [
@@ -3479,7 +3484,10 @@ function HomeTab(props: {
         </button>
       )}
 
-      <section className={`home-hero-card home-hero-${calorieMoodClass} ${heroThemeGlowClass} ${props.activeSpecialMode?.id === "hokkaido_trip" ? "home-hero-hokkaido" : ""}`}>
+      <section
+        className={`home-hero-card home-hero-${calorieMoodClass} ${heroThemeGlowClass} ${props.activeSpecialMode?.id === "hokkaido_trip" ? "home-hero-hokkaido" : ""}`}
+        style={heroStyle}
+      >
         <div className="flex items-center justify-between gap-3">
           <p className="text-sm font-semibold text-ink/80">今日のカロリー</p>
           {props.isCheatDay && <span className="home-cheat-badge">チートデー</span>}
