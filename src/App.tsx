@@ -63,6 +63,7 @@ import type {
   Settings as AppSettings,
   SpecialModeSettings,
   TemplateExercise,
+  ThemeAccent,
   ThemeMode,
   WeightLog,
   WorkoutLoadType,
@@ -100,6 +101,14 @@ type LogExportType = "food" | "workout" | "food_workout";
 type LogExportDateTarget = "start" | "end";
 type EditableRecordTab = "food" | "workout";
 const bottomTabs: Tab[] = ["home", "food", "workout", "records", "settings"];
+const themeAccentOptions: Array<{ value: ThemeAccent; label: string; colors: [string, string] }> = [
+  { value: "classic", label: "クラシック", colors: ["#566e61", "#9fbea9"] },
+  { value: "aqua", label: "アクア", colors: ["#2f6f78", "#72bfd0"] },
+  { value: "ruby", label: "ルビー", colors: ["#8f4a57", "#e48a9a"] },
+  { value: "violet", label: "バイオレット", colors: ["#625293", "#a99bea"] },
+  { value: "graphite", label: "グラファイト", colors: ["#4d5559", "#a6b0b5"] },
+];
+const themeAccentLabels = Object.fromEntries(themeAccentOptions.map((option) => [option.value, option.label])) as Record<ThemeAccent, string>;
 type BackupInfo = {
   lastBackupAt?: string;
   daysSinceBackup?: number;
@@ -1864,6 +1873,7 @@ function App() {
   const activeGoal = goals.find((goal) => goal.is_active);
   const latestUpdate = appUpdates[0];
   const themeMode = settings?.theme_mode ?? "system";
+  const themeAccent = settings?.theme_accent ?? "classic";
   const resolvedTheme: "light" | "dark" = themeMode === "system" ? (prefersDarkTheme ? "dark" : "light") : themeMode;
   const specialModeSettings = useMemo(() => getSpecialModeSettings(settings), [settings]);
   const pauseModeSettings = useMemo(() => getPauseModeSettings(settings), [settings]);
@@ -2010,6 +2020,7 @@ function App() {
     const root = document.documentElement;
     const themeColor = resolvedTheme === "dark" ? "#000000" : "#ffffff";
     root.dataset.theme = resolvedTheme;
+    root.dataset.accent = themeAccent;
     root.style.colorScheme = resolvedTheme;
     document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]').forEach((meta) => {
       if (!meta.media) meta.content = themeColor;
@@ -2018,7 +2029,7 @@ function App() {
       "content",
       resolvedTheme === "dark" ? "black-translucent" : "default",
     );
-  }, [resolvedTheme]);
+  }, [resolvedTheme, themeAccent]);
 
   useEffect(() => {
     const refreshCurrentTime = () => setCurrentTime(new Date());
@@ -2332,7 +2343,7 @@ function App() {
   }
 
   return (
-    <main className={`theme-${resolvedTheme} app-shell app-shell-${tab} mx-auto min-h-screen max-w-[430px] md:max-w-[760px] text-ink ${tab === "home" ? `home-shell home-shell-${homeTone}` : ""} ${isEditingPastDate ? "app-shell-past-editing" : ""}`} data-theme={resolvedTheme}>
+    <main className={`theme-${resolvedTheme} app-shell app-shell-${tab} mx-auto min-h-screen max-w-[430px] md:max-w-[760px] text-ink ${tab === "home" ? `home-shell home-shell-${homeTone}` : ""} ${isEditingPastDate ? "app-shell-past-editing" : ""}`} data-theme={resolvedTheme} data-accent={themeAccent}>
       <header className={`safe-top app-header sticky top-0 z-20 px-4 pb-3 ${tab === "home" ? "home-header" : ""}`}>
         <div className="flex items-center justify-between">
           <div>
@@ -2559,6 +2570,7 @@ function App() {
             backupInfo={backupInfo}
             settings={settings}
             themeMode={themeMode}
+            themeAccent={themeAccent}
             resolvedTheme={resolvedTheme}
             markBackupNow={markBackupNow}
             openUpdateNotes={openUpdateNotes}
@@ -6289,6 +6301,7 @@ function SettingsTab(props: {
   backupInfo: BackupInfo;
   settings?: AppSettings;
   themeMode: ThemeMode;
+  themeAccent: ThemeAccent;
   resolvedTheme: "light" | "dark";
   markBackupNow: () => void;
   openUpdateNotes: () => void;
@@ -6365,12 +6378,31 @@ function SettingsTab(props: {
         day_boundary_hour: 3,
         onboarding_completed: true,
         theme_mode,
+        theme_accent: props.themeAccent,
         created_at: timestamp,
         updated_at: timestamp,
       });
     }
     await props.refresh();
     props.showToast(theme_mode === "system" ? "表示を端末設定に合わせます" : `${theme_mode === "dark" ? "ダーク" : "ライト"}モードにしました`);
+  };
+  const updateThemeAccent = async (theme_accent: ThemeAccent) => {
+    const timestamp = nowIso();
+    if (props.settings) {
+      await db.settings.update("local", { theme_accent, updated_at: timestamp });
+    } else {
+      await db.settings.put({
+        id: "local",
+        day_boundary_hour: 3,
+        onboarding_completed: true,
+        theme_mode: props.themeMode,
+        theme_accent,
+        created_at: timestamp,
+        updated_at: timestamp,
+      });
+    }
+    await props.refresh();
+    props.showToast(`テーマカラーを${themeAccentLabels[theme_accent]}にしました`);
   };
 
   useEffect(() => {
@@ -6920,7 +6952,7 @@ function SettingsTab(props: {
             <SettingsMenuRow title="記録設定" description={`旅行 ${isTravelModeEnabled ? "ON" : "OFF"} / 一時停止 ${isPauseModeEnabled ? "ON" : "OFF"}`} icon={<CalendarDays size={18} />} onClick={() => setActiveSettingsSection("records")} />
             <SettingsMenuRow title="マイメニュー" description={`登録済み ${userMenuItems.length}件`} icon={<Store size={18} />} onClick={() => setActiveSettingsSection("myMenu")} />
             <SettingsMenuRow title="マイトレ" description={`登録済み ${myTrainingExercises.length}件`} icon={<Dumbbell size={18} />} onClick={() => setActiveSettingsSection("myTraining")} />
-            <SettingsMenuRow title="一般" description={`表示 ${props.resolvedTheme === "dark" ? "ダーク" : "ライト"} / ${props.profile?.name || "未設定"}`} icon={<Settings size={18} />} onClick={() => setActiveSettingsSection("general")} />
+            <SettingsMenuRow title="一般" description={`表示 ${props.resolvedTheme === "dark" ? "ダーク" : "ライト"} / ${themeAccentLabels[props.themeAccent]} / ${props.profile?.name || "未設定"}`} icon={<Settings size={18} />} onClick={() => setActiveSettingsSection("general")} />
           </section>
         </>
       )}
@@ -6939,7 +6971,7 @@ function SettingsTab(props: {
         <div className="flex items-start justify-between gap-3">
           <div>
             <h2 className="font-bold">表示設定</h2>
-            <p className="mt-1 text-xs text-moss">現在は{props.resolvedTheme === "dark" ? "ダーク" : "ライト"}で表示中です。</p>
+            <p className="mt-1 text-xs text-moss">現在は{props.resolvedTheme === "dark" ? "ダーク" : "ライト"} / {themeAccentLabels[props.themeAccent]}で表示中です。</p>
           </div>
           <select
             className="min-w-[9.5rem] text-sm font-bold"
@@ -6951,6 +6983,23 @@ function SettingsTab(props: {
               <option key={option.value} value={option.value}>{option.label}</option>
             ))}
           </select>
+        </div>
+        <div className="mt-4">
+          <p className="text-xs font-black text-moss">テーマカラー</p>
+          <div className="theme-accent-grid mt-2">
+            {themeAccentOptions.map((option) => (
+              <button
+                className={`theme-accent-option ${props.themeAccent === option.value ? "theme-accent-option-active" : ""}`}
+                key={option.value}
+                aria-pressed={props.themeAccent === option.value}
+                onClick={() => updateThemeAccent(option.value)}
+              >
+                <span className="theme-accent-swatch" style={{ "--swatch-start": option.colors[0], "--swatch-end": option.colors[1] } as CSSProperties} />
+                <span>{option.label}</span>
+              </button>
+            ))}
+          </div>
+          <p className="mt-2 text-xs text-moss">主要ボタン、選択中のチップ、下部ナビのアクセントに反映します。</p>
         </div>
       </section>}
 
@@ -11446,6 +11495,7 @@ async function persistWorkoutWeightPresetStore(store: Record<string, number[]>, 
     day_boundary_hour: 3,
     onboarding_completed: true,
     theme_mode: "system",
+    theme_accent: "classic",
     workout_weight_presets: normalized,
     created_at: timestamp,
     updated_at: timestamp,

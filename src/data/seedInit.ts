@@ -69,6 +69,7 @@ export async function initializeSeeds() {
         day_boundary_hour: 3,
         onboarding_completed: false,
         theme_mode: "system",
+        theme_accent: "classic",
         created_at: timestamp,
         updated_at: timestamp,
       });

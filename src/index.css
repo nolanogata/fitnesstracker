@@ -20,6 +20,17 @@
   --text-muted: #8e978f;
   --primary-tint: #566e61;
   --active-tint: #6f8f7d;
+  --accent-primary: #566e61;
+  --accent-secondary: #6f8f7d;
+  --accent-soft: rgba(221, 232, 225, 0.72);
+  --accent-faint: rgba(111, 143, 125, 0.14);
+  --accent-border: rgba(111, 143, 125, 0.54);
+  --accent-focus: rgba(111, 143, 125, 0.34);
+  --accent-text: #4f6a5b;
+  --accent-readable: #1f2722;
+  --accent-button-bg: linear-gradient(135deg, rgba(86, 110, 97, 0.94), rgba(111, 143, 125, 0.86));
+  --accent-button-shadow: rgba(54, 74, 63, 0.22);
+  --accent-icon-shadow: rgba(79, 106, 91, 0.18);
   --danger-coral: #d97a68;
   --chart-grid: rgba(94, 105, 97, 0.18);
   --chart-point-fill: #f7f6f2;
@@ -46,9 +57,144 @@
   --text-muted: #85928a;
   --primary-tint: #a9bfaf;
   --active-tint: #9fbea9;
+  --accent-primary: #a9bfaf;
+  --accent-secondary: #9fbea9;
+  --accent-soft: rgba(159, 190, 169, 0.18);
+  --accent-faint: rgba(159, 190, 169, 0.12);
+  --accent-border: rgba(166, 199, 176, 0.34);
+  --accent-focus: rgba(166, 199, 176, 0.34);
+  --accent-text: #dff0e5;
+  --accent-readable: #edf4ee;
+  --accent-button-bg: linear-gradient(135deg, rgba(128, 163, 142, 0.94), rgba(91, 129, 108, 0.9));
+  --accent-button-shadow: rgba(0, 0, 0, 0.24);
+  --accent-icon-shadow: rgba(159, 190, 169, 0.22);
   --danger-coral: #f09a86;
   --chart-grid: rgba(214, 226, 217, 0.18);
   --chart-point-fill: #1e2722;
+}
+
+:root[data-accent="aqua"] {
+  --primary-tint: #2f6f78;
+  --active-tint: #58aebe;
+  --accent-primary: #2f6f78;
+  --accent-secondary: #58aebe;
+  --accent-soft: rgba(208, 233, 238, 0.76);
+  --accent-faint: rgba(72, 160, 178, 0.14);
+  --accent-border: rgba(72, 160, 178, 0.5);
+  --accent-focus: rgba(72, 160, 178, 0.32);
+  --accent-text: #2d6570;
+  --accent-button-bg: linear-gradient(135deg, rgba(47, 111, 120, 0.95), rgba(88, 174, 190, 0.86));
+  --accent-button-shadow: rgba(30, 91, 100, 0.22);
+  --accent-icon-shadow: rgba(47, 111, 120, 0.2);
+}
+
+:root[data-accent="ruby"] {
+  --primary-tint: #8f4a57;
+  --active-tint: #d9788a;
+  --accent-primary: #8f4a57;
+  --accent-secondary: #d9788a;
+  --accent-soft: rgba(244, 218, 223, 0.78);
+  --accent-faint: rgba(217, 120, 138, 0.14);
+  --accent-border: rgba(217, 120, 138, 0.5);
+  --accent-focus: rgba(217, 120, 138, 0.32);
+  --accent-text: #864656;
+  --accent-button-bg: linear-gradient(135deg, rgba(143, 74, 87, 0.95), rgba(217, 120, 138, 0.86));
+  --accent-button-shadow: rgba(116, 52, 65, 0.22);
+  --accent-icon-shadow: rgba(143, 74, 87, 0.2);
+}
+
+:root[data-accent="violet"] {
+  --primary-tint: #625293;
+  --active-tint: #9d8fe2;
+  --accent-primary: #625293;
+  --accent-secondary: #9d8fe2;
+  --accent-soft: rgba(226, 222, 246, 0.78);
+  --accent-faint: rgba(157, 143, 226, 0.14);
+  --accent-border: rgba(157, 143, 226, 0.5);
+  --accent-focus: rgba(157, 143, 226, 0.32);
+  --accent-text: #5e5189;
+  --accent-button-bg: linear-gradient(135deg, rgba(98, 82, 147, 0.95), rgba(157, 143, 226, 0.86));
+  --accent-button-shadow: rgba(73, 59, 118, 0.22);
+  --accent-icon-shadow: rgba(98, 82, 147, 0.2);
+}
+
+:root[data-accent="graphite"] {
+  --primary-tint: #4d5559;
+  --active-tint: #7f8b91;
+  --accent-primary: #4d5559;
+  --accent-secondary: #7f8b91;
+  --accent-soft: rgba(225, 229, 231, 0.78);
+  --accent-faint: rgba(127, 139, 145, 0.14);
+  --accent-border: rgba(127, 139, 145, 0.5);
+  --accent-focus: rgba(127, 139, 145, 0.32);
+  --accent-text: #4d5559;
+  --accent-button-bg: linear-gradient(135deg, rgba(77, 85, 89, 0.95), rgba(127, 139, 145, 0.86));
+  --accent-button-shadow: rgba(48, 54, 58, 0.2);
+  --accent-icon-shadow: rgba(77, 85, 89, 0.18);
+}
+
+:root[data-theme="dark"][data-accent="aqua"] {
+  --primary-tint: #a8d8e2;
+  --active-tint: #72bfd0;
+  --accent-primary: #a8d8e2;
+  --accent-secondary: #72bfd0;
+  --accent-soft: rgba(114, 191, 208, 0.2);
+  --accent-faint: rgba(114, 191, 208, 0.13);
+  --accent-border: rgba(146, 219, 232, 0.34);
+  --accent-focus: rgba(146, 219, 232, 0.34);
+  --accent-text: #d9f6fb;
+  --accent-readable: #edf4ee;
+  --accent-button-bg: linear-gradient(135deg, rgba(73, 143, 155, 0.94), rgba(45, 101, 112, 0.9));
+  --accent-button-shadow: rgba(0, 0, 0, 0.24);
+  --accent-icon-shadow: rgba(114, 191, 208, 0.22);
+}
+
+:root[data-theme="dark"][data-accent="ruby"] {
+  --primary-tint: #f0b1bd;
+  --active-tint: #e48a9a;
+  --accent-primary: #f0b1bd;
+  --accent-secondary: #e48a9a;
+  --accent-soft: rgba(228, 138, 154, 0.2);
+  --accent-faint: rgba(228, 138, 154, 0.13);
+  --accent-border: rgba(240, 177, 189, 0.34);
+  --accent-focus: rgba(240, 177, 189, 0.34);
+  --accent-text: #ffe3e8;
+  --accent-readable: #edf4ee;
+  --accent-button-bg: linear-gradient(135deg, rgba(166, 88, 102, 0.94), rgba(121, 58, 71, 0.9));
+  --accent-button-shadow: rgba(0, 0, 0, 0.24);
+  --accent-icon-shadow: rgba(228, 138, 154, 0.22);
+}
+
+:root[data-theme="dark"][data-accent="violet"] {
+  --primary-tint: #c8c0f2;
+  --active-tint: #a99bea;
+  --accent-primary: #c8c0f2;
+  --accent-secondary: #a99bea;
+  --accent-soft: rgba(169, 155, 234, 0.2);
+  --accent-faint: rgba(169, 155, 234, 0.13);
+  --accent-border: rgba(200, 192, 242, 0.34);
+  --accent-focus: rgba(200, 192, 242, 0.34);
+  --accent-text: #eeeaff;
+  --accent-readable: #edf4ee;
+  --accent-button-bg: linear-gradient(135deg, rgba(111, 95, 169, 0.94), rgba(79, 67, 129, 0.9));
+  --accent-button-shadow: rgba(0, 0, 0, 0.24);
+  --accent-icon-shadow: rgba(169, 155, 234, 0.22);
+}
+
+:root[data-theme="dark"][data-accent="graphite"] {
+  --primary-tint: #c8d0d4;
+  --active-tint: #a6b0b5;
+  --accent-primary: #c8d0d4;
+  --accent-secondary: #a6b0b5;
+  --accent-soft: rgba(166, 176, 181, 0.18);
+  --accent-faint: rgba(166, 176, 181, 0.12);
+  --accent-border: rgba(200, 208, 212, 0.32);
+  --accent-focus: rgba(200, 208, 212, 0.32);
+  --accent-text: #f1f5f6;
+  --accent-readable: #edf4ee;
+  --accent-button-bg: linear-gradient(135deg, rgba(105, 116, 122, 0.94), rgba(72, 80, 84, 0.9));
+  --accent-button-shadow: rgba(0, 0, 0, 0.24);
+  --accent-icon-shadow: rgba(166, 176, 181, 0.2);
 }
 
 html,
@@ -827,11 +973,54 @@ button {
   flex: 0 0 auto;
   align-items: center;
   justify-content: center;
-  border: 1px solid rgba(111, 143, 125, 0.24);
+  border: 1px solid var(--accent-focus);
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.58);
-  color: var(--moss);
+  color: var(--accent-text);
   box-shadow: var(--glass-highlight);
+}
+
+.theme-accent-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.55rem;
+}
+
+.theme-accent-option {
+  display: inline-flex;
+  min-height: 3.1rem;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.6rem;
+  border: 1px solid var(--glass-border);
+  border-radius: 18px;
+  background: var(--glass-bg);
+  padding: 0.55rem 0.7rem;
+  color: var(--text-primary);
+  font-size: 0.78rem;
+  font-weight: 900;
+  box-shadow: 0 8px 18px rgba(44, 56, 48, 0.06), var(--glass-highlight);
+  transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
+}
+
+.theme-accent-option:active {
+  transform: scale(0.985);
+}
+
+.theme-accent-option-active {
+  border-color: var(--accent-border);
+  background: var(--accent-soft);
+  color: var(--accent-readable);
+}
+
+.theme-accent-swatch {
+  width: 1.45rem;
+  height: 1.45rem;
+  flex: 0 0 auto;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--swatch-start), var(--swatch-end));
+  box-shadow: 0 6px 14px color-mix(in srgb, var(--swatch-start) 28%, transparent), var(--glass-highlight);
 }
 
 .special-mode-test-button {
@@ -1186,9 +1375,9 @@ button {
 }
 
 .home-primary-action {
-  background: linear-gradient(135deg, rgba(86, 110, 97, 0.94), rgba(111, 143, 125, 0.86));
+  background: var(--accent-button-bg);
   color: #fff;
-  box-shadow: 0 18px 38px rgba(54, 74, 63, 0.22), var(--glass-highlight);
+  box-shadow: 0 18px 38px var(--accent-button-shadow), var(--glass-highlight);
 }
 
 .home-secondary-action {
@@ -1260,7 +1449,7 @@ button {
   border-radius: 22px;
   background:
     radial-gradient(circle at 24% 18%, rgba(255, 255, 255, 0.76), transparent 28%),
-    linear-gradient(135deg, rgba(255, 255, 255, 0.34), rgba(159, 190, 169, 0.18)),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.34), var(--accent-soft)),
     rgba(255, 255, 255, 0.18);
   box-shadow:
     0 12px 28px rgba(35, 45, 38, 0.13),
@@ -1501,8 +1690,8 @@ button {
   @apply inline-flex items-center justify-center gap-2 px-4 py-3 text-sm font-bold text-white transition active:scale-[0.98];
   border: 1px solid rgba(255, 255, 255, 0.52);
   border-radius: 999px;
-  background: linear-gradient(135deg, rgba(86, 110, 97, 0.94), rgba(111, 143, 125, 0.86));
-  box-shadow: 0 16px 34px rgba(54, 74, 63, 0.22), var(--glass-highlight);
+  background: var(--accent-button-bg);
+  box-shadow: 0 16px 34px var(--accent-button-shadow), var(--glass-highlight);
   backdrop-filter: blur(18px) saturate(135%);
   -webkit-backdrop-filter: blur(18px) saturate(135%);
 }
@@ -1525,9 +1714,9 @@ button {
 }
 
 .chip-active {
-  border-color: rgba(111, 143, 125, 0.54);
-  background: rgba(221, 232, 225, 0.72);
-  color: #1f2722;
+  border-color: var(--accent-border);
+  background: var(--accent-soft);
+  color: var(--accent-readable);
 }
 
 .manual-subcategory-scroll {
@@ -1550,9 +1739,9 @@ button {
 }
 
 .mini-chip-active {
-  border-color: rgba(111, 143, 125, 0.56);
-  background: rgba(221, 232, 225, 0.62);
-  color: #1f2722;
+  border-color: var(--accent-border);
+  background: var(--accent-soft);
+  color: var(--accent-readable);
 }
 
 .choice-button {
@@ -1564,9 +1753,9 @@ button {
 }
 
 .choice-button-active {
-  border-color: rgba(111, 143, 125, 0.56);
-  background: rgba(221, 232, 225, 0.62);
-  color: #1f2722;
+  border-color: var(--accent-border);
+  background: var(--accent-soft);
+  color: var(--accent-readable);
 }
 
 .source-badge {
@@ -1574,10 +1763,10 @@ button {
 }
 
 .source-badge-official {
-  border-color: rgba(86, 110, 97, 0.38);
-  background: rgba(111, 143, 125, 0.74);
+  border-color: var(--accent-border);
+  background: color-mix(in srgb, var(--accent-secondary) 78%, transparent);
   color: #fff;
-  box-shadow: 0 4px 10px rgba(82, 106, 87, 0.12), var(--glass-highlight);
+  box-shadow: 0 4px 10px var(--accent-faint), var(--glass-highlight);
 }
 
 .source-badge-estimated {
@@ -1605,21 +1794,21 @@ button {
   align-items: center;
   justify-content: center;
   min-height: 1.55rem;
-  border: 1px solid rgba(111, 143, 125, 0.36);
+  border: 1px solid var(--accent-border);
   border-radius: 999px;
-  background: rgba(221, 232, 225, 0.72);
+  background: var(--accent-soft);
   padding: 0.22rem 0.58rem;
-  color: #466355;
+  color: var(--accent-text);
   font-family: var(--rounded-number-font);
   font-size: 0.64rem;
   font-weight: 950;
   line-height: 1;
   white-space: nowrap;
-  box-shadow: 0 6px 14px rgba(82, 106, 87, 0.08), var(--glass-highlight);
+  box-shadow: 0 6px 14px var(--accent-faint), var(--glass-highlight);
 }
 
 .recommendation-divider {
-  background: rgba(111, 143, 125, 0.14);
+  background: var(--accent-faint);
 }
 
 .mode-button {
@@ -1633,10 +1822,10 @@ button {
 }
 
 .mode-button-active {
-  border-color: rgba(111, 143, 125, 0.56);
-  background: rgba(221, 232, 225, 0.78);
-  color: #1f2722;
-  box-shadow: 0 8px 18px rgba(82, 106, 87, 0.08), var(--glass-highlight);
+  border-color: var(--accent-border);
+  background: var(--accent-soft);
+  color: var(--accent-readable);
+  box-shadow: 0 8px 18px var(--accent-faint), var(--glass-highlight);
 }
 
 .ai-food-mode-button {
@@ -2171,8 +2360,8 @@ button {
 }
 
 .food-filter-option-active {
-  border-color: rgba(111, 143, 125, 0.34);
-  background: rgba(221, 232, 225, 0.72);
+  border-color: var(--accent-focus);
+  background: var(--accent-soft);
 }
 
 @keyframes food-filter-pulse {
@@ -2300,12 +2489,12 @@ button {
 }
 
 .tab-button:focus-visible {
-  outline: 2px solid rgba(111, 143, 125, 0.34);
+  outline: 2px solid var(--accent-focus);
   outline-offset: 2px;
 }
 
 .tab-button-active {
-  color: #4f6a5b;
+  color: var(--accent-text);
 }
 
 .tab-button-icon {
@@ -2322,7 +2511,7 @@ button {
 .tab-button-active .tab-button-icon {
   color: var(--active-tint);
   animation: tab-icon-pop 360ms cubic-bezier(0.2, 1.35, 0.32, 1);
-  filter: drop-shadow(0 4px 8px rgba(79, 106, 91, 0.18));
+  filter: drop-shadow(0 4px 8px var(--accent-icon-shadow));
 }
 
 @keyframes tab-icon-pop {
@@ -3214,9 +3403,9 @@ button {
 }
 
 .theme-dark .settings-menu-icon {
-  border-color: rgba(159, 190, 169, 0.2);
+  border-color: var(--accent-focus);
   background: rgba(255, 255, 255, 0.08);
-  color: #dcebe0;
+  color: var(--accent-text);
 }
 
 .theme-dark .special-mode-test-button {
@@ -3268,14 +3457,14 @@ button {
 }
 
 .theme-dark .special-mode-toggle-on {
-  border-color: rgba(159, 190, 169, 0.46);
-  background: linear-gradient(135deg, rgba(111, 143, 125, 0.34), rgba(255, 255, 255, 0.1));
-  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.24), 0 0 18px rgba(111, 143, 125, 0.14), var(--glass-highlight);
+  border-color: var(--accent-border);
+  background: linear-gradient(135deg, var(--accent-faint), rgba(255, 255, 255, 0.1));
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.24), 0 0 18px var(--accent-faint), var(--glass-highlight);
 }
 
 .theme-dark .special-mode-toggle-on .special-mode-toggle-track {
-  background: linear-gradient(135deg, #7fa58f, #5d816c);
-  box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.18), 0 0 14px rgba(127, 165, 143, 0.24);
+  background: var(--accent-button-bg);
+  box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.18), 0 0 14px var(--accent-faint);
 }
 
 .theme-dark .special-mode-toggle-on .special-mode-toggle-state {
@@ -3285,13 +3474,13 @@ button {
 .theme-dark .primary-button,
 .theme-dark .home-primary-action {
   border-color: rgba(255, 255, 255, 0.18);
-  background: linear-gradient(135deg, rgba(128, 163, 142, 0.94), rgba(91, 129, 108, 0.9));
+  background: var(--accent-button-bg);
   color: #f7fbf8;
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.24), var(--glass-highlight);
+  box-shadow: 0 12px 28px var(--accent-button-shadow), var(--glass-highlight);
 }
 
 .theme-dark .home-reminder-notice {
-  border-color: rgba(159, 190, 169, 0.28);
+  border-color: var(--accent-border);
   background: linear-gradient(135deg, rgba(31, 52, 42, 0.86), rgba(18, 25, 21, 0.78));
 }
 
@@ -3300,9 +3489,9 @@ button {
 .theme-dark .chip-active,
 .theme-dark .mini-chip-active,
 .theme-dark .tap-tile-active {
-  border-color: rgba(166, 199, 176, 0.34);
-  background: rgba(159, 190, 169, 0.18);
-  color: #edf4ee;
+  border-color: var(--accent-border);
+  background: var(--accent-soft);
+  color: var(--accent-readable);
 }
 
 .theme-dark .tab-button {
@@ -3310,7 +3499,7 @@ button {
 }
 
 .theme-dark .tab-button-active {
-  color: #dff0e5;
+  color: var(--accent-text);
 }
 
 .theme-dark .app-bottom-nav {
@@ -3321,7 +3510,7 @@ button {
 
 .theme-dark .app-bottom-nav::before {
   background:
-    radial-gradient(circle at var(--active-tab-glow-x, 12.5%) 18%, rgba(219, 241, 226, 0.2), transparent 18%),
+    radial-gradient(circle at var(--active-tab-glow-x, 12.5%) 18%, var(--accent-faint), transparent 18%),
     linear-gradient(135deg, rgba(255, 255, 255, 0.06), transparent 44%);
 }
 
@@ -3329,12 +3518,12 @@ button {
   border-color: rgba(255, 255, 255, 0.18);
   background:
     radial-gradient(circle at 24% 18%, rgba(255, 255, 255, 0.17), transparent 28%),
-    linear-gradient(135deg, rgba(255, 255, 255, 0.13), rgba(159, 190, 169, 0.12)),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.13), var(--accent-soft)),
     rgba(255, 255, 255, 0.06);
   box-shadow:
     0 12px 28px rgba(0, 0, 0, 0.28),
     inset 0 1px 0 rgba(255, 255, 255, 0.18),
-    inset 0 -1px 0 rgba(159, 190, 169, 0.1);
+    inset 0 -1px 0 var(--accent-faint);
 }
 
 .theme-dark .sticky-panel form.compact-card {
