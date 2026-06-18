@@ -105,6 +105,7 @@ const themeAccentOptions: Array<{ value: ThemeAccent; label: string; colors: [st
   { value: "classic", label: "クラシック", colors: ["#566e61", "#9fbea9"] },
   { value: "orange", label: "オレンジ", colors: ["#b75a12", "#ff9f32"] },
   { value: "aqua", label: "アクア", colors: ["#2f6f78", "#72bfd0"] },
+  { value: "graphite", label: "グラファイト", colors: ["#4d5559", "#a6b0b5"] },
 ];
 const themeAccentLabels = Object.fromEntries(themeAccentOptions.map((option) => [option.value, option.label])) as Record<ThemeAccent, string>;
 function normalizeThemeAccent(value: unknown): ThemeAccent {
@@ -387,7 +388,7 @@ const chainCategories: Record<string, string[]> = {
   和食: ["スシロー", "はま寿司", "トリトン", "北々亭"],
   定食: ["大戸屋", "やよい軒", "しんぱち食堂", "とんでん"],
   ファミレス: ["びっくりドンキー", "ガスト", "ロイヤルホスト", "サイゼリヤ", "オリーブの丘", "デニーズ", "ジョイフル", "ジョナサン", "華屋与兵衛", "藍屋"],
-  イタリアン: ["パンチョ", "カプリチョーザ", "マンマパスタ"],
+  イタリアン: ["パンチョ", "カプリチョーザ", "マンマパスタ", "ポポラマーマ"],
   エスニック: ["モンスーンカフェ"],
   カフェ: ["スターバックス", "ドトール", "タリーズ", "コメダ珈琲"],
   ドーナツ: ["ミスタードーナツ", "クリスピークリーム", "アイムドーナツ"],
@@ -4568,7 +4569,7 @@ function FoodTab(props: {
           >
             <SlidersHorizontal size={18} />
           </button>
-          <button type="submit" className={`${mode === "search" || isGlobalSearch ? "primary-button" : "secondary-button"} h-12 px-4`}>検索</button>
+          <button type="submit" className={`food-search-submit-button ${mode === "search" || isGlobalSearch ? "primary-button" : "secondary-button"} h-12 px-4`}>検索</button>
         </form>
         {showFoodFilterIntro && mode !== "manual" && (
           <section className="food-filter-intro compact-card p-3">
