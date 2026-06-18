@@ -3291,8 +3291,7 @@ function HomeTab(props: {
   const calorieMoodLabel = props.isCheatDay ? "cheat day" : props.activeSpecialMode ? "travel mode" : props.activePauseMode ? "pause mode" : typeof calorieDelta === "number" ? (calorieDelta > 0 ? "over" : Math.abs(calorieDelta) <= 100 ? "on track" : "left") : calorieState.label;
   const heroStyle = {
     "--hero-progress-level": String(heroBackgroundProgress),
-    "--hero-progress-sheen-x": `${16 + heroBackgroundProgress * 0.68}%`,
-  } as CSSProperties & Record<"--hero-progress-level" | "--hero-progress-sheen-x", string>;
+  } as CSSProperties & Record<"--hero-progress-level", string>;
   const foodSummary = `${props.todayEntries.length}件 / ${props.dayTotals.calories} kcal`;
   const workoutSummary = todayWorkoutCalories > 0 ? `${props.todayWorkouts.length}回 / ${todayWorkoutCalories} kcal` : `${props.todayWorkouts.length}回`;
   const macroStats = [
