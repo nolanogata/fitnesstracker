@@ -104,11 +104,15 @@ const bottomTabs: Tab[] = ["home", "food", "workout", "records", "settings"];
 const themeAccentOptions: Array<{ value: ThemeAccent; label: string; colors: [string, string] }> = [
   { value: "classic", label: "クラシック", colors: ["#566e61", "#9fbea9"] },
   { value: "aqua", label: "アクア", colors: ["#2f6f78", "#72bfd0"] },
-  { value: "ruby", label: "ルビー", colors: ["#8f4a57", "#e48a9a"] },
+  { value: "orange", label: "オレンジ", colors: ["#b75a12", "#ff9f32"] },
   { value: "violet", label: "バイオレット", colors: ["#625293", "#a99bea"] },
   { value: "graphite", label: "グラファイト", colors: ["#4d5559", "#a6b0b5"] },
 ];
 const themeAccentLabels = Object.fromEntries(themeAccentOptions.map((option) => [option.value, option.label])) as Record<ThemeAccent, string>;
+function normalizeThemeAccent(value: unknown): ThemeAccent {
+  if (value === "ruby") return "orange";
+  return themeAccentOptions.some((option) => option.value === value) ? value as ThemeAccent : "classic";
+}
 type BackupInfo = {
   lastBackupAt?: string;
   daysSinceBackup?: number;
@@ -1873,7 +1877,7 @@ function App() {
   const activeGoal = goals.find((goal) => goal.is_active);
   const latestUpdate = appUpdates[0];
   const themeMode = settings?.theme_mode ?? "system";
-  const themeAccent = settings?.theme_accent ?? "classic";
+  const themeAccent = normalizeThemeAccent(settings?.theme_accent);
   const resolvedTheme: "light" | "dark" = themeMode === "system" ? (prefersDarkTheme ? "dark" : "light") : themeMode;
   const specialModeSettings = useMemo(() => getSpecialModeSettings(settings), [settings]);
   const pauseModeSettings = useMemo(() => getPauseModeSettings(settings), [settings]);
