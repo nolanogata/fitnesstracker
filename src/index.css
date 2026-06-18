@@ -4021,9 +4021,9 @@ main[data-accent]:not([data-accent="classic"]) .ai-report-section .text-moss {
 }
 
 :root[data-accent="crazy_pink"] .home-macro-over {
-  color: #ffd5f7;
-  background: linear-gradient(135deg, rgba(255, 43, 214, 0.2), rgba(255, 72, 118, 0.16), rgba(138, 44, 255, 0.1));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 0 14px rgba(255, 43, 214, 0.16), var(--glass-highlight);
+  color: #8f005f;
+  background: linear-gradient(135deg, rgba(255, 43, 214, 0.16), rgba(255, 72, 118, 0.12), rgba(138, 44, 255, 0.08));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.56), 0 0 14px rgba(255, 43, 214, 0.1), var(--glass-highlight);
 }
 
 :root[data-accent="crazy_pink"] .home-macro-over .home-macro-dot {
@@ -4032,14 +4032,26 @@ main[data-accent]:not([data-accent="classic"]) .ai-report-section .text-moss {
 }
 
 :root[data-accent="crazy_yellow"] .home-macro-over {
-  color: #ffe4b2;
+  color: #8b2834;
   background: linear-gradient(135deg, rgba(255, 73, 91, 0.19), rgba(244, 255, 0, 0.12), rgba(0, 255, 168, 0.08));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 0 14px rgba(255, 73, 91, 0.14), var(--glass-highlight);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.56), 0 0 14px rgba(255, 73, 91, 0.1), var(--glass-highlight);
 }
 
 :root[data-accent="crazy_yellow"] .home-macro-over .home-macro-dot {
   background: #ff495b;
   box-shadow: 0 0 8px rgba(255, 73, 91, 0.88), 0 0 14px rgba(244, 255, 0, 0.18);
+}
+
+:root[data-theme="dark"][data-accent="crazy_pink"] .home-macro-over {
+  color: #ffd5f7;
+  background: linear-gradient(135deg, rgba(255, 43, 214, 0.2), rgba(255, 72, 118, 0.16), rgba(138, 44, 255, 0.1));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 0 14px rgba(255, 43, 214, 0.16), var(--glass-highlight);
+}
+
+:root[data-theme="dark"][data-accent="crazy_yellow"] .home-macro-over {
+  color: #ffe4b2;
+  background: linear-gradient(135deg, rgba(255, 73, 91, 0.19), rgba(244, 255, 0, 0.12), rgba(0, 255, 168, 0.08));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 0 14px rgba(255, 73, 91, 0.14), var(--glass-highlight);
 }
 
 @media (prefers-reduced-motion: reduce) {
