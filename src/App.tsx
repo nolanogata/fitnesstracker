@@ -3234,6 +3234,18 @@ function HomeTab(props: {
   const shouldShowRainbowProgress = props.isCheatDay || !!props.activeSpecialMode;
   const shouldShowPausedProgress = !shouldShowRainbowProgress && !!props.activePauseMode;
   const heroProgressPercent = shouldMaskGoalProgress ? 100 : caloriePercent;
+  const shouldUseThemeHeroFrame = !shouldShowRainbowProgress && !shouldShowPausedProgress && !(calorieDelta && calorieDelta > 0);
+  const heroThemeGlowClass = !shouldUseThemeHeroFrame
+    ? ""
+    : heroProgressPercent >= 90
+      ? "home-hero-theme-frame home-hero-theme-glow-90 home-hero-theme-spin"
+      : heroProgressPercent >= 75
+        ? "home-hero-theme-frame home-hero-theme-glow-75"
+        : heroProgressPercent >= 50
+          ? "home-hero-theme-frame home-hero-theme-glow-50"
+          : heroProgressPercent >= 25
+            ? "home-hero-theme-frame home-hero-theme-glow-25"
+            : "home-hero-theme-frame home-hero-theme-glow-0";
   const heroProgressClass = shouldShowRainbowProgress
     ? "home-progress-rainbow"
     : shouldShowPausedProgress
@@ -3433,7 +3445,7 @@ function HomeTab(props: {
         </button>
       )}
 
-      <section className={`home-hero-card home-hero-${calorieMoodClass} ${props.activeSpecialMode?.id === "hokkaido_trip" ? "home-hero-hokkaido" : ""}`}>
+      <section className={`home-hero-card home-hero-${calorieMoodClass} ${heroThemeGlowClass} ${props.activeSpecialMode?.id === "hokkaido_trip" ? "home-hero-hokkaido" : ""}`}>
         <div className="flex items-center justify-between gap-3">
           <p className="text-sm font-semibold text-ink/80">今日のカロリー</p>
           {props.isCheatDay && <span className="home-cheat-badge">チートデー</span>}
