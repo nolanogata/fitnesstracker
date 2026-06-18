@@ -172,6 +172,11 @@ type AchievementMetric =
   | "calorieMasterDays"
   | "proteinDays"
   | "macroBalanceDays"
+  | "perfectOverallDays"
+  | "perfectCalorieDays"
+  | "perfectProteinDays"
+  | "perfectFatDays"
+  | "perfectCarbDays"
   | "weightGoalDayMoves"
   | "weightGoalAverageMoves";
 type AchievementProgressSpec = {
@@ -771,6 +776,11 @@ const achievementDefinitions: AchievementDefinition[] = [
   { id: "macro_balance_7", title: "マクロの守り手", description: "PFCバランス達成日が7日ある", tone: "nutrition" },
   { id: "macro_balance_14", title: "栄養錬成術師", description: "PFCバランス達成日が14日ある", tone: "nutrition" },
   { id: "macro_balance_30", title: "マクロマスター", description: "PFCバランス達成日が30日ある", tone: "nutrition" },
+  { id: "perfect_overall", title: "ピタリ賞・総合", description: "kcal/P/F/Cをすべて目標ぴったりで記録した", tone: "nutrition" },
+  { id: "perfect_calorie", title: "kcalピタリ賞", description: "摂取カロリーを目標ぴったりで記録した", tone: "nutrition" },
+  { id: "perfect_protein", title: "Pピタリ賞", description: "たんぱく質を目標ぴったりで記録した", tone: "nutrition" },
+  { id: "perfect_fat", title: "Fピタリ賞", description: "脂質を目標ぴったりで記録した", tone: "nutrition" },
+  { id: "perfect_carb", title: "Cピタリ賞", description: "炭水化物を目標ぴったりで記録した", tone: "nutrition" },
   { id: "workout_3", title: "鍛錬の火種", description: "ワークアウトを3回記録した", tone: "training" },
   { id: "workout_10", title: "十戦の鍛錬者", description: "ワークアウトを10回記録した", tone: "training" },
   { id: "workout_30", title: "月間ファイター", description: "ワークアウトを30回記録した", tone: "training" },
@@ -837,6 +847,11 @@ const achievementProgressSpecs: Record<string, AchievementProgressSpec> = {
   macro_balance_7: { metric: "macroBalanceDays", target: 7, unit: "日" },
   macro_balance_14: { metric: "macroBalanceDays", target: 14, unit: "日" },
   macro_balance_30: { metric: "macroBalanceDays", target: 30, unit: "日" },
+  perfect_overall: { metric: "perfectOverallDays", target: 1, unit: "日", repeatable: true },
+  perfect_calorie: { metric: "perfectCalorieDays", target: 1, unit: "日", repeatable: true },
+  perfect_protein: { metric: "perfectProteinDays", target: 1, unit: "日", repeatable: true },
+  perfect_fat: { metric: "perfectFatDays", target: 1, unit: "日", repeatable: true },
+  perfect_carb: { metric: "perfectCarbDays", target: 1, unit: "日", repeatable: true },
   workout_3: { metric: "workouts", target: 3, unit: "回" },
   workout_10: { metric: "workouts", target: 10, unit: "回" },
   workout_30: { metric: "workouts", target: 30, unit: "回" },
@@ -2944,6 +2959,15 @@ function getAchievementSnapshot(params: {
     params.foodEntries.forEach((entry) => {
       foodEntriesByDate.set(entry.app_date, [...(foodEntriesByDate.get(entry.app_date) ?? []), entry]);
     });
+    const foodDays = [...foodEntriesByDate.entries()]
+      .filter(([date, entries]) => date <= params.currentAppDate && entries.length > 0)
+      .map(([, entries]) => sumFood(entries));
+    const perfectCounts = countPerfectNutritionDays(foodDays, params.goal);
+    addMilestones(perfectCounts.overall, [[1, "perfect_overall"]]);
+    addMilestones(perfectCounts.calories, [[1, "perfect_calorie"]]);
+    addMilestones(perfectCounts.protein, [[1, "perfect_protein"]]);
+    addMilestones(perfectCounts.fat, [[1, "perfect_fat"]]);
+    addMilestones(perfectCounts.carbs, [[1, "perfect_carb"]]);
     const completedFoodDays = [...foodEntriesByDate.entries()]
       .filter(([date, entries]) => date < params.currentAppDate && entries.length > 0)
       .map(([, entries]) => sumFood(entries));
@@ -2970,6 +2994,43 @@ function getAchievementSnapshot(params: {
     unlocked.add("weekly_workout_goal");
   }
   return { ids: [...unlocked], counts };
+}
+
+function countPerfectNutritionDays(
+  totals: Array<{ calories: number; protein: number; fat: number; carbs: number }>,
+  goal: Goal,
+) {
+  type PerfectNutritionCounts = { overall: number; calories: number; protein: number; fat: number; carbs: number };
+  const hasCalorieTarget = goal.target_calories > 0;
+  const hasProteinTarget = goal.target_protein_g > 0;
+  const hasFatTarget = goal.target_fat_g > 0;
+  const hasCarbTarget = goal.target_carbs_g > 0;
+  const isPerfectCalorie = (total: { calories: number }) => (
+    hasCalorieTarget && Math.round(total.calories) === Math.round(goal.target_calories)
+  );
+  const isPerfectProtein = (total: { protein: number }) => (
+    hasProteinTarget && round1(total.protein) === round1(goal.target_protein_g)
+  );
+  const isPerfectFat = (total: { fat: number }) => (
+    hasFatTarget && round1(total.fat) === round1(goal.target_fat_g)
+  );
+  const isPerfectCarb = (total: { carbs: number }) => (
+    hasCarbTarget && round1(total.carbs) === round1(goal.target_carbs_g)
+  );
+  const canCountOverall = hasCalorieTarget && hasProteinTarget && hasFatTarget && hasCarbTarget;
+  return totals.reduce<PerfectNutritionCounts>((counts, total) => {
+    const calories = isPerfectCalorie(total);
+    const protein = isPerfectProtein(total);
+    const fat = isPerfectFat(total);
+    const carbs = isPerfectCarb(total);
+    return {
+      overall: counts.overall + (canCountOverall && calories && protein && fat && carbs ? 1 : 0),
+      calories: counts.calories + (calories ? 1 : 0),
+      protein: counts.protein + (protein ? 1 : 0),
+      fat: counts.fat + (fat ? 1 : 0),
+      carbs: counts.carbs + (carbs ? 1 : 0),
+    };
+  }, { overall: 0, calories: 0, protein: 0, fat: 0, carbs: 0 });
 }
 
 function pauseDatesUpTo(endDate: string, settings: SpecialModeSettings[]) {
