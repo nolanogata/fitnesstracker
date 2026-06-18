@@ -16,6 +16,7 @@
   --card-glow-strong: 0 24px 58px rgba(77, 85, 89, 0.13), 0 16px 38px rgba(201, 214, 235, 0.16), 0 4px 12px rgba(44, 56, 48, 0.06);
   --glass-shadow: 0 10px 24px rgba(52, 59, 63, 0.07), 0 2px 8px rgba(44, 56, 48, 0.04);
   --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.92);
+  --text-primary: #1f2722;
   --text-secondary: #5e6961;
   --text-muted: #8e978f;
   --primary-tint: #566e61;
@@ -32,6 +33,15 @@
   --accent-button-text: #fff;
   --accent-button-shadow: rgba(54, 74, 63, 0.22);
   --accent-icon-shadow: rgba(79, 106, 91, 0.18);
+  --accent-progress-bg: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+  --accent-progress-shadow: 0 0 14px var(--accent-faint), 0 0 22px var(--accent-icon-shadow);
+  --accent-pill-bg: color-mix(in srgb, var(--accent-secondary) 18%, transparent);
+  --accent-pill-color: var(--accent-text);
+  --accent-pill-dot: var(--accent-secondary);
+  --official-badge-bg: color-mix(in srgb, var(--accent-secondary) 72%, transparent);
+  --official-badge-border: var(--accent-border);
+  --official-badge-color: var(--accent-button-text, #fff);
+  --official-badge-shadow: 0 4px 12px var(--accent-faint), var(--glass-highlight);
   --danger-coral: #d97a68;
   --chart-grid: rgba(94, 105, 97, 0.18);
   --chart-point-fill: #f7f6f2;
@@ -54,6 +64,7 @@
   --card-glow-strong: 0 26px 64px rgba(166, 176, 181, 0.13), 0 14px 42px rgba(126, 151, 177, 0.1), 0 20px 44px rgba(0, 0, 0, 0.42);
   --glass-shadow: 0 14px 30px rgba(0, 0, 0, 0.28);
   --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  --text-primary: #edf4ee;
   --text-secondary: #c6ced1;
   --text-muted: #8e999e;
   --primary-tint: #a9bfaf;
@@ -70,6 +81,15 @@
   --accent-button-text: #fff;
   --accent-button-shadow: rgba(0, 0, 0, 0.24);
   --accent-icon-shadow: rgba(159, 190, 169, 0.22);
+  --accent-progress-bg: linear-gradient(90deg, color-mix(in srgb, var(--accent-primary) 72%, #fff 8%), var(--accent-secondary));
+  --accent-progress-shadow: 0 0 16px var(--accent-faint), 0 0 24px var(--accent-icon-shadow);
+  --accent-pill-bg: color-mix(in srgb, var(--accent-secondary) 18%, transparent);
+  --accent-pill-color: var(--accent-text);
+  --accent-pill-dot: var(--accent-secondary);
+  --official-badge-bg: color-mix(in srgb, var(--accent-secondary) 58%, rgba(255, 255, 255, 0.1));
+  --official-badge-border: var(--accent-border);
+  --official-badge-color: var(--accent-readable);
+  --official-badge-shadow: 0 4px 12px var(--accent-faint), var(--glass-highlight);
   --danger-coral: #f09a86;
   --chart-grid: rgba(214, 226, 217, 0.18);
   --chart-point-fill: #1e2722;
@@ -135,6 +155,13 @@
   --accent-button-bg: linear-gradient(135deg, rgba(255, 43, 214, 0.96), rgba(138, 44, 255, 0.9));
   --accent-button-shadow: rgba(213, 0, 188, 0.28);
   --accent-icon-shadow: rgba(255, 43, 214, 0.28);
+  --accent-progress-bg: linear-gradient(90deg, #ff2bd6 0%, #ff8af1 42%, #8a2cff 100%);
+  --accent-progress-shadow: 0 0 12px rgba(255, 43, 214, 0.42), 0 0 24px rgba(138, 44, 255, 0.22);
+  --accent-pill-bg: linear-gradient(135deg, rgba(255, 43, 214, 0.16), rgba(138, 44, 255, 0.12));
+  --accent-pill-color: #a90095;
+  --accent-pill-dot: #ff2bd6;
+  --official-badge-bg: linear-gradient(135deg, rgba(255, 43, 214, 0.78), rgba(138, 44, 255, 0.62));
+  --official-badge-shadow: 0 0 12px rgba(255, 43, 214, 0.24), var(--glass-highlight);
 }
 
 :root[data-accent="crazy_yellow"] {
@@ -152,6 +179,14 @@
   --accent-button-text: #151900;
   --accent-button-shadow: rgba(151, 173, 0, 0.25);
   --accent-icon-shadow: rgba(217, 242, 0, 0.28);
+  --accent-progress-bg: linear-gradient(90deg, #dfff00 0%, #f6ff6b 45%, #00ffa8 100%);
+  --accent-progress-shadow: 0 0 12px rgba(223, 255, 0, 0.42), 0 0 24px rgba(0, 255, 168, 0.2);
+  --accent-pill-bg: linear-gradient(135deg, rgba(223, 255, 0, 0.18), rgba(0, 255, 168, 0.1));
+  --accent-pill-color: #6d7a00;
+  --accent-pill-dot: #dfff00;
+  --official-badge-bg: linear-gradient(135deg, rgba(223, 255, 0, 0.84), rgba(0, 255, 168, 0.58));
+  --official-badge-color: #111500;
+  --official-badge-shadow: 0 0 12px rgba(223, 255, 0, 0.24), var(--glass-highlight);
 }
 
 :root[data-theme="dark"][data-accent="aqua"] {
@@ -217,6 +252,13 @@
   --accent-button-bg: linear-gradient(135deg, rgba(255, 43, 214, 0.95), rgba(90, 40, 200, 0.92));
   --accent-button-shadow: rgba(255, 43, 214, 0.26);
   --accent-icon-shadow: rgba(255, 43, 214, 0.3);
+  --accent-progress-bg: linear-gradient(90deg, #ff2bd6 0%, #ff8af1 42%, #a987ff 100%);
+  --accent-progress-shadow: 0 0 14px rgba(255, 43, 214, 0.46), 0 0 26px rgba(169, 135, 255, 0.24);
+  --accent-pill-bg: linear-gradient(135deg, rgba(255, 43, 214, 0.18), rgba(169, 135, 255, 0.12));
+  --accent-pill-color: #ffd3fb;
+  --accent-pill-dot: #ff8af1;
+  --official-badge-bg: linear-gradient(135deg, rgba(255, 43, 214, 0.72), rgba(90, 40, 200, 0.62));
+  --official-badge-shadow: 0 0 14px rgba(255, 43, 214, 0.26), var(--glass-highlight);
 }
 
 :root[data-theme="dark"][data-accent="crazy_yellow"] {
@@ -234,6 +276,14 @@
   --accent-button-text: #111500;
   --accent-button-shadow: rgba(223, 255, 0, 0.25);
   --accent-icon-shadow: rgba(223, 255, 0, 0.28);
+  --accent-progress-bg: linear-gradient(90deg, #dfff00 0%, #f6ff6b 45%, #7cffd4 100%);
+  --accent-progress-shadow: 0 0 14px rgba(223, 255, 0, 0.42), 0 0 24px rgba(124, 255, 212, 0.2);
+  --accent-pill-bg: linear-gradient(135deg, rgba(223, 255, 0, 0.18), rgba(124, 255, 212, 0.1));
+  --accent-pill-color: #fbffb3;
+  --accent-pill-dot: #f6ff6b;
+  --official-badge-bg: linear-gradient(135deg, rgba(223, 255, 0, 0.88), rgba(124, 255, 212, 0.64));
+  --official-badge-color: #111500;
+  --official-badge-shadow: 0 0 14px rgba(223, 255, 0, 0.24), var(--glass-highlight);
 }
 
 html,
@@ -776,7 +826,7 @@ button {
   padding: 1.35rem 1.4rem 1.2rem;
   box-shadow:
     0 0 0 1px rgba(255, 255, 255, 0.58),
-    0 0 22px rgba(111, 143, 125, 0.13),
+    0 0 22px var(--accent-faint),
     0 0 10px rgba(44, 56, 48, 0.04),
     var(--glass-highlight);
 }
@@ -793,8 +843,8 @@ button {
 .home-hero-on-track {
   background: var(--glass-bg-strong);
   box-shadow:
-    0 0 0 1px rgba(111, 143, 125, 0.22),
-    0 0 22px rgba(111, 143, 125, 0.16),
+    0 0 0 1px var(--accent-border),
+    0 0 22px var(--accent-faint),
     0 0 10px rgba(44, 56, 48, 0.04),
     var(--glass-highlight);
 }
@@ -940,11 +990,22 @@ button {
 }
 
 .home-progress-track {
+  background: color-mix(in srgb, var(--accent-secondary) 14%, rgba(255, 255, 255, 0.55)) !important;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.46);
 }
 
 .home-progress-fill {
   transition: width 220ms ease, background 160ms ease;
+}
+
+.home-progress-normal {
+  background: var(--accent-progress-bg);
+  box-shadow: var(--accent-progress-shadow);
+}
+
+.home-progress-over {
+  background: linear-gradient(90deg, var(--danger-coral), color-mix(in srgb, var(--danger-coral) 62%, #ffd166));
+  box-shadow: 0 0 14px color-mix(in srgb, var(--danger-coral) 34%, transparent);
 }
 
 .home-progress-cheat,
@@ -1125,8 +1186,8 @@ button {
 }
 
 .food-add-progress-dot-active {
-  background: linear-gradient(135deg, #6f8f7d, #9fbda9);
-  box-shadow: 0 0 12px rgba(111, 143, 125, 0.22);
+  background: var(--accent-progress-bg);
+  box-shadow: var(--accent-progress-shadow);
 }
 
 .food-add-choice {
@@ -1341,12 +1402,13 @@ button {
 }
 
 .home-macro-safe {
-  color: #4b6759;
-  background: rgba(140, 167, 152, 0.18);
+  color: var(--accent-pill-color);
+  background: var(--accent-pill-bg);
 }
 
 .home-macro-safe .home-macro-dot {
-  background: #6f8f7d;
+  background: var(--accent-pill-dot);
+  box-shadow: 0 0 8px var(--accent-icon-shadow);
 }
 
 .home-macro-over {
@@ -1384,6 +1446,29 @@ button {
   text-overflow: clip;
   white-space: nowrap;
   font-weight: 800;
+}
+
+.workout-goal-progress-value {
+  color: var(--text-primary);
+}
+
+.workout-goal-progress-value-complete {
+  color: var(--accent-text);
+}
+
+.workout-goal-progress-track {
+  background: color-mix(in srgb, var(--accent-secondary) 12%, rgba(31, 39, 34, 0.08));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.36);
+}
+
+.workout-goal-progress-fill {
+  background: linear-gradient(90deg, color-mix(in srgb, var(--accent-primary) 64%, #c99848), color-mix(in srgb, var(--accent-secondary) 58%, #e6bd70));
+  box-shadow: 0 0 10px color-mix(in srgb, var(--accent-secondary) 22%, transparent);
+}
+
+.workout-goal-progress-fill-complete {
+  background: var(--accent-progress-bg);
+  box-shadow: var(--accent-progress-shadow);
 }
 
 .home-checkin-edit {
@@ -1820,14 +1905,16 @@ button {
 }
 
 .source-badge-official {
-  border-color: var(--accent-border);
-  background: color-mix(in srgb, var(--accent-secondary) 78%, transparent);
-  color: var(--accent-button-text, #fff);
-  box-shadow: 0 4px 10px var(--accent-faint), var(--glass-highlight);
+  border-color: var(--official-badge-border);
+  background: var(--official-badge-bg);
+  color: var(--official-badge-color);
+  box-shadow: var(--official-badge-shadow);
 }
 
 .source-badge-estimated {
-  @apply border-ink/15 bg-white/40 text-moss;
+  border-color: color-mix(in srgb, var(--accent-secondary) 14%, rgba(31, 39, 34, 0.16));
+  background: color-mix(in srgb, var(--accent-secondary) 9%, rgba(255, 255, 255, 0.42));
+  color: color-mix(in srgb, var(--accent-text) 58%, var(--text-secondary));
 }
 
 .source-badge-partial {
@@ -1843,7 +1930,9 @@ button {
 }
 
 .source-badge-user {
-  @apply border-ink/20 bg-ink/5 text-ink;
+  border-color: color-mix(in srgb, var(--accent-secondary) 12%, rgba(31, 39, 34, 0.18));
+  background: color-mix(in srgb, var(--accent-secondary) 7%, rgba(31, 39, 34, 0.05));
+  color: color-mix(in srgb, var(--accent-text) 45%, var(--text-secondary));
 }
 
 .recommendation-rank-badge {
@@ -2996,8 +3085,8 @@ main[data-accent]:not([data-accent="classic"]) .ai-report-section .text-moss {
 }
 
 .theme-dark .home-macro-safe {
-  color: #c7ddcf;
-  background: rgba(159, 190, 169, 0.14);
+  color: var(--accent-pill-color);
+  background: var(--accent-pill-bg);
 }
 
 .theme-dark .home-macro-over {
@@ -3721,15 +3810,10 @@ main[data-accent]:not([data-accent="classic"]) .ai-report-section .text-moss {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 6px 16px rgba(0, 0, 0, 0.18);
 }
 
-.theme-dark .source-badge-official {
-  background: rgba(128, 163, 142, 0.82);
-  color: #f7fbf8;
-}
-
 .theme-dark .source-badge-estimated,
 .theme-dark .source-badge-user {
   border-color: rgba(255, 255, 255, 0.14);
-  background: rgba(255, 255, 255, 0.08);
+  background: color-mix(in srgb, var(--accent-secondary) 8%, rgba(255, 255, 255, 0.08));
   color: var(--text-secondary);
 }
 

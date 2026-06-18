@@ -3238,7 +3238,7 @@ function HomeTab(props: {
     ? "home-progress-rainbow"
     : shouldShowPausedProgress
       ? "home-progress-paused"
-      : calorieDelta && calorieDelta > 0 ? "bg-clay" : "bg-moss";
+      : calorieDelta && calorieDelta > 0 ? "home-progress-over" : "home-progress-normal";
   const calorieDisplayText = shouldMaskGoalProgress ? "-" : calorieDeltaText;
   const calorieMoodClass = props.isCheatDay ? "cheat" : props.activeSpecialMode ? "trip" : props.activePauseMode ? "cheat" : typeof calorieDelta === "number" ? (calorieDelta > 0 ? "over" : Math.abs(calorieDelta) <= 100 ? "on-track" : "left") : "neutral";
   const calorieMoodLabel = props.isCheatDay ? "cheat day" : props.activeSpecialMode ? "travel mode" : props.activePauseMode ? "pause mode" : typeof calorieDelta === "number" ? (calorieDelta > 0 ? "over" : Math.abs(calorieDelta) <= 100 ? "on track" : "left") : calorieState.label;
@@ -10442,10 +10442,10 @@ function WorkoutGoalProgress({ label, done, target }: { label: string; done: num
     <div>
       <div className="flex items-center justify-between gap-2 text-xs">
         <span className="font-bold text-ink">{label}</span>
-        <span className={complete ? "font-bold text-moss" : "font-bold text-ink"}>{done}/{target || "-"}</span>
+        <span className={`font-bold workout-goal-progress-value ${complete ? "workout-goal-progress-value-complete" : ""}`}>{done}/{target || "-"}</span>
       </div>
-      <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-oat">
-        <div className={`h-full rounded-full ${complete ? "bg-moss" : "bg-sun"}`} style={{ width: `${percent}%` }} />
+      <div className="workout-goal-progress-track mt-2 h-1.5 overflow-hidden rounded-full">
+        <div className={`h-full rounded-full workout-goal-progress-fill ${complete ? "workout-goal-progress-fill-complete" : ""}`} style={{ width: `${percent}%` }} />
       </div>
     </div>
   );
