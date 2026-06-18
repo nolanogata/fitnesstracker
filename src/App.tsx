@@ -84,7 +84,7 @@ import { getWeeklyWorkoutStatus, type WeeklyWorkoutStatus } from "./lib/workoutS
 type Tab = "home" | "food" | "workout" | "records" | "settings";
 type FoodMode = "search" | "favorite" | "chain" | "quick" | "manual" | "personal" | "recommend" | "ai";
 type WorkoutMode = "favorite" | "preset" | "body" | "equipment" | "my" | "search";
-type FoodFocus = "todayLog" | "specialMode" | undefined;
+type FoodFocus = "todayLog" | "specialMode" | "favorite" | undefined;
 type FoodAddStep = "size" | "customSize" | "quantity" | "timing" | "confirm";
 type ManualFoodWizardStep = "basic" | "unit" | "purpose" | "category" | "nutrition" | "confirm";
 type AiFoodImportStep = "prompt" | "paste" | "match" | "timing" | "confirm";
@@ -2451,7 +2451,7 @@ function App() {
             needsGoalTargetPeriod={needsGoalTargetPeriod}
             setTab={(nextTab) => {
               setSettingsFocus(undefined);
-              setFoodFocus(undefined);
+              setFoodFocus(nextTab === "food" ? "favorite" : undefined);
               setWorkoutFocus(undefined);
               setTab(nextTab);
             }}
@@ -3884,6 +3884,19 @@ function FoodTab(props: {
     if (props.focus !== "todayLog") return;
     const timer = window.setTimeout(() => {
       todayLogRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      props.onFocusHandled();
+    }, 80);
+    return () => window.clearTimeout(timer);
+  }, [props.focus]);
+  useEffect(() => {
+    if (props.focus !== "favorite") return;
+    setMode("favorite");
+    setQuery("");
+    setIsMyMenuRegistrationOpen(false);
+    setMyMenuRegistrationMethod(undefined);
+    setMenuOverwriteTarget(undefined);
+    const timer = window.setTimeout(() => {
+      scrollToFoodTop();
       props.onFocusHandled();
     }, 80);
     return () => window.clearTimeout(timer);
