@@ -47,6 +47,9 @@ export type Settings = {
   special_modes?: SpecialModeSettings[];
   pause_modes?: SpecialModeSettings[];
   developer_test_active_until?: string;
+  developer_force_trophy_animation?: boolean;
+  developer_progress_percent?: number;
+  developer_test_overlay_enabled?: boolean;
   achievements?: AchievementUnlock[];
   achievements_viewed_at?: string;
   workout_weight_presets?: Record<string, number[]>;
