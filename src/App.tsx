@@ -267,6 +267,7 @@ type MenuOverwriteTarget = {
   item: MenuItem;
   logAfterSave?: boolean;
   logMultiplier?: number;
+  logPortionLabel?: string;
 };
 type FoodEntryEditDraft = {
   name: string;
@@ -4104,8 +4105,16 @@ function FoodTab(props: {
   const selectedPortionLabel = selected
     ? (hasSelectedSizeVariants && portionMultiplier === 1 ? selectedSizeVariantLabel : undefined)
       ?? selectedPortionOptionLabel
-      ?? (selectedStapleConfig && selectedServingGrams ? `${selectedStapleConfig.label}${formatControlValue(round1(selectedServingGrams * portionMultiplier))}g` : "カスタム")
+      ?? (selectedStapleConfig && selectedServingGrams ? `${selectedStapleConfig.label}${formatControlValue(round1(selectedServingGrams * portionMultiplier))}g` : undefined)
+      ?? (selectedServingGrams ? `${formatControlValue(round1(selectedServingGrams * portionMultiplier))}g` : "カスタム")
     : "";
+  const selectedPortionLogLabel = selected
+    ? formatFoodPortionLogLabel({
+      portionLabel: selectedPortionLabel,
+      quantity: portionQuantity,
+      forceSingleQuantity: portionMultiplier !== (defaultPortionOption?.value ?? 1),
+    })
+    : undefined;
   const selectedNutrition = selected ? getAdjustedMenuNutrition(selected, portionMultiplier, portionQuantity) : undefined;
   const selectedCalories = selectedNutrition?.calories ?? 0;
   const selectedProtein = selectedNutrition?.protein_g ?? 0;
@@ -4203,11 +4212,8 @@ function FoodTab(props: {
     if (!selected) return;
     const timestamp = nowIso();
     const nutrition = getAdjustedMenuNutrition(selected, portionMultiplier, portionQuantity);
-    const loggedName = selectedStapleConfig && portionMultiplier !== 1
-      ? `${selected.name}（${selectedStapleConfig.label} ${formatControlValue(round1(selectedStapleConfig.defaultGrams * portionMultiplier))}g）`
-      : selectedServingGrams && multiplier !== 1
-        ? `${selected.name}（${formatControlValue(round1(selectedServingGrams * multiplier))}g）`
-        : selected.name;
+    const loggedName = formatFoodLoggedName(selected.name, selectedPortionLogLabel);
+    const portionNote = selectedPortionLogLabel ? `記録量: ${selectedPortionLogLabel}` : undefined;
     await db.food_entries.put({
       id: makeId("food"),
       app_date: props.appDate,
@@ -4224,6 +4230,7 @@ function FoodTab(props: {
       entry_source: selected.data_source,
       confidence: selected.confidence,
       menu_item_id: selected.id,
+      note: portionNote,
       created_at: timestamp,
       updated_at: timestamp,
     });
@@ -4321,7 +4328,7 @@ function FoodTab(props: {
   const cloneSelectedToManual = () => {
     if (!selected) return;
     if (canOverwriteMenuItem(selected)) {
-      startMenuOverwrite(selected, { logAfterSave: true, logMultiplier: multiplier, mealType });
+      startMenuOverwrite(selected, { logAfterSave: true, logMultiplier: multiplier, logPortionLabel: selectedPortionLogLabel, mealType });
       return;
     }
     cloneMenuItemToManual(selected, mealType);
@@ -4337,9 +4344,9 @@ function FoodTab(props: {
     setMode("personal");
     scrollToFoodTop();
   };
-  const startMenuOverwrite = (item: MenuItem, options?: Pick<MenuOverwriteTarget, "logAfterSave" | "logMultiplier"> & { mealType?: MealType }) => {
+  const startMenuOverwrite = (item: MenuItem, options?: Pick<MenuOverwriteTarget, "logAfterSave" | "logMultiplier" | "logPortionLabel"> & { mealType?: MealType }) => {
     setManual(toManualDraft(item, options?.mealType ?? item.default_meal_type ?? mealType));
-    setMenuOverwriteTarget({ item, logAfterSave: options?.logAfterSave, logMultiplier: options?.logMultiplier });
+    setMenuOverwriteTarget({ item, logAfterSave: options?.logAfterSave, logMultiplier: options?.logMultiplier, logPortionLabel: options?.logPortionLabel });
     setSelected(undefined);
     setQuery("");
     setManualWizardStep("basic");
@@ -4426,10 +4433,8 @@ function FoodTab(props: {
     });
     if (menuOverwriteTarget?.logAfterSave) {
       const logMultiplier = Math.max(0, menuOverwriteTarget.logMultiplier ?? 1);
-      const servingGrams = payload.ingredientGrams ?? menuItemServingGrams(menuOverwriteTarget.item);
-      const loggedName = servingGrams && logMultiplier !== 1
-        ? `${payload.baseName}（${formatControlValue(round1(servingGrams * logMultiplier))}g）`
-        : payload.displayName;
+      const loggedName = menuOverwriteTarget.logPortionLabel ? formatFoodLoggedName(payload.baseName, menuOverwriteTarget.logPortionLabel) : payload.displayName ?? payload.baseName;
+      const logNote = unique([payload.note ?? "", menuOverwriteTarget.logPortionLabel ? `記録量: ${menuOverwriteTarget.logPortionLabel}` : ""]).join(" / ") || undefined;
       await db.food_entries.put({
         id: makeId("food"),
         app_date: props.appDate,
@@ -4446,7 +4451,7 @@ function FoodTab(props: {
         entry_source: "user",
         confidence: payload.confidence,
         menu_item_id: menuItemId,
-        note: payload.note,
+        note: logNote,
         created_at: timestamp,
         updated_at: timestamp,
       });
@@ -4483,8 +4488,8 @@ function FoodTab(props: {
         updated_at: timestamp,
       });
       if (menuOverwriteTarget.logAfterSave) {
-        const servingGrams = menuItemServingGrams(sourceItem);
-        const loggedName = servingGrams && logMultiplier !== 1 ? `${baseName}（${formatControlValue(round1(servingGrams * logMultiplier))}g）` : displayName;
+        const loggedName = menuOverwriteTarget.logPortionLabel ? formatFoodLoggedName(baseName, menuOverwriteTarget.logPortionLabel) : displayName ?? baseName;
+        const logNote = unique([note ?? "", menuOverwriteTarget.logPortionLabel ? `記録量: ${menuOverwriteTarget.logPortionLabel}` : ""]).join(" / ") || undefined;
         await db.food_entries.put({
           id: makeId("food"),
           app_date: props.appDate,
@@ -4501,7 +4506,7 @@ function FoodTab(props: {
           entry_source: "user",
           confidence,
           menu_item_id: sourceItem.id,
-          note,
+          note: logNote,
           created_at: timestamp,
           updated_at: timestamp,
         });
@@ -12390,6 +12395,29 @@ function formatFoodEntryName(entry: FoodEntry, menuItems: MenuItem[]) {
   const menuItem = menuItems.find((item) => item.id === entry.menu_item_id);
   if (!menuItem || entry.name !== menuItem.name) return entry.name;
   return formatMenuItemName(menuItem);
+}
+
+function formatFoodPortionLogLabel({
+  portionLabel,
+  quantity,
+  forceSingleQuantity = false,
+}: {
+  portionLabel?: string;
+  quantity: number;
+  forceSingleQuantity?: boolean;
+}) {
+  const label = portionLabel?.trim();
+  if (!label) return undefined;
+  const safeQuantity = Math.max(0, quantity);
+  if (safeQuantity !== 1) return `${label} × ${formatFoodAmountValue(safeQuantity)}`;
+  return forceSingleQuantity ? label : undefined;
+}
+
+function formatFoodLoggedName(name: string, portionLogLabel?: string) {
+  const label = portionLogLabel?.trim();
+  if (!label) return name;
+  if (name.includes(`（${label}）`) || name.includes(`(${label})`)) return name;
+  return `${name}（${label}）`;
 }
 
 function menuItemServingGrams(item: Pick<MenuItem, "serving_label" | "weight_g">) {
