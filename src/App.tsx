@@ -3431,13 +3431,13 @@ function HomeTab(props: {
         <button className="home-primary-action" onClick={() => props.setTab("food")}>食事を記録 <ChevronRight size={17} /></button>
         <button className="home-secondary-action" onClick={() => props.setTab("workout")}>ワークアウト記録 <ChevronRight size={17} /></button>
       </div>
-      <div className="flex justify-center gap-3 text-xs font-semibold text-moss/80">
+      <div className="home-link-actions flex justify-center gap-3 text-xs font-semibold text-moss/80">
         <button className="px-1.5 py-1" onClick={() => {
           props.unlockAchievement("used_perfect_food");
           setIsPerfectFoodOpen(true);
         }}>ぴったりフード</button>
         <button className="px-2 py-1" onClick={() => props.setTab("settings")}>ゴールを確認</button>
-        <button className="px-2 py-1 text-moss/70" onClick={props.openAiReport}>AIレポート</button>
+        <button className="px-2 py-1" onClick={props.openAiReport}>AIレポート</button>
       </div>
 
       <button className="home-glass-card relative w-full p-5 text-left" onClick={() => setIsCheckInOpen(true)}>
@@ -6869,7 +6869,7 @@ function SettingsTab(props: {
   };
 
   const aiReportSection = (
-    <section className={`compact-card p-4 ${props.focus === "ai" ? "border-2 border-leaf" : ""}`}>
+    <section className={`ai-report-section compact-card p-4 ${props.focus === "ai" ? "border-2 border-leaf" : ""}`}>
       <div className="flex items-center justify-between gap-2">
         <h2 className="font-bold">AI相談レポート</h2>
         {props.focus === "ai" && <span className="rounded-md bg-leaf px-2 py-1 text-[11px] font-bold text-white">相談を作成</span>}
@@ -12337,10 +12337,17 @@ function menuItemServingGrams(item: Pick<MenuItem, "serving_label" | "weight_g">
 
 function getStaplePortionConfig(item: MenuItem): StaplePortionConfig | undefined {
   if (isSupplementLikeMenuItem(item)) return undefined;
-  const text = [item.name, item.category, item.serving_label, ...item.tags].filter(Boolean).join(" ");
-  const hasNoodle = hasFoodToken(text, ["麺", "ラーメン", "油そば", "うどん", "そば", "パスタ", "焼きそば", "フォー", "春雨"]);
-  const hasRice = hasFoodToken(text, ["ごはん", "ご飯", "白米", "ライス", "丼", "カレー", "定食", "弁当", "プレート", "ディッシュ", "ガパオ", "チャーハン", "オムライス"]);
-  const isRiceComposite = hasFoodToken(text, ["定食", "弁当", "プレート", "ディッシュ", "丼", "カレー", "ガパオ", "チャーハン", "オムライス"]) || (hasFoodToken(text, ["セット"]) && hasRice);
+  const primaryText = [item.name, item.serving_label].filter(Boolean).join(" ");
+  const text = [primaryText, item.category, ...item.tags].filter(Boolean).join(" ");
+  const noodleTokens = ["麺", "ラーメン", "油そば", "うどん", "そば", "パスタ", "焼きそば", "フォー", "春雨"];
+  const riceTokens = ["ごはん", "ご飯", "白米", "ライス", "丼", "カレー", "定食", "弁当", "プレート", "ディッシュ", "ガパオ", "チャーハン", "オムライス"];
+  const sideOnlyTokens = ["天ぷら", "かしわ天", "ちくわ天", "かき揚げ", "コロッケ", "唐揚げ", "から揚げ", "トッピング", "サイド", "単品"];
+  const hasNoodle = hasFoodToken(primaryText, noodleTokens);
+  const hasRice = hasFoodToken(primaryText, riceTokens);
+  const hasStapleInPrimaryText = hasNoodle || hasRice;
+  if (!hasStapleInPrimaryText && hasFoodToken(text, sideOnlyTokens)) return undefined;
+  const compositeText = hasStapleInPrimaryText ? primaryText : text;
+  const isRiceComposite = hasFoodToken(compositeText, ["定食", "弁当", "プレート", "ディッシュ", "丼", "カレー", "ガパオ", "チャーハン", "オムライス"]) || (hasFoodToken(primaryText, ["セット"]) && hasRice);
   const isComposite = isRiceComposite || hasNoodle;
   if (!isComposite && !hasRice) return undefined;
   if (hasNoodle) {

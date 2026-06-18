@@ -2227,25 +2227,40 @@ button {
 
 :root:not([data-accent="classic"]) .perfect-food-item .text-moss,
 :root:not([data-accent="classic"]) .perfect-food-group .text-moss,
-:root:not([data-accent="classic"]) .perfect-food-panel .text-moss {
+:root:not([data-accent="classic"]) .perfect-food-panel .text-moss,
+main[data-accent]:not([data-accent="classic"]) .perfect-food-item .text-moss,
+main[data-accent]:not([data-accent="classic"]) .perfect-food-group .text-moss,
+main[data-accent]:not([data-accent="classic"]) .perfect-food-panel .text-moss {
   color: var(--accent-text) !important;
 }
 
 :root:not([data-accent="classic"]) .perfect-food-fit-easy,
 :root:not([data-accent="classic"]) .perfect-food-fit-good,
-:root:not([data-accent="classic"]) .perfect-food-detail-ok {
+:root:not([data-accent="classic"]) .perfect-food-detail-ok,
+main[data-accent]:not([data-accent="classic"]) .perfect-food-fit-easy,
+main[data-accent]:not([data-accent="classic"]) .perfect-food-fit-good,
+main[data-accent]:not([data-accent="classic"]) .perfect-food-detail-ok {
   border-color: var(--accent-border);
   background: var(--accent-soft);
   color: var(--accent-text);
 }
 
 :root:not([data-accent="classic"]) .perfect-food-log-button,
-:root:not([data-accent="classic"]) .perfect-food-more-button {
+:root:not([data-accent="classic"]) .perfect-food-more-button,
+main[data-accent]:not([data-accent="classic"]) .perfect-food-log-button,
+main[data-accent]:not([data-accent="classic"]) .perfect-food-more-button {
   border-color: var(--accent-border);
   background:
     linear-gradient(135deg, var(--accent-faint), rgba(255, 255, 255, 0.42)),
     var(--glass-bg-soft);
   color: var(--accent-text);
+}
+
+main[data-accent]:not([data-accent="classic"]) .home-link-actions,
+main[data-accent]:not([data-accent="classic"]) .home-link-actions button,
+main[data-accent]:not([data-accent="classic"]) .ai-report-section h2,
+main[data-accent]:not([data-accent="classic"]) .ai-report-section .text-moss {
+  color: var(--accent-text) !important;
 }
 
 .food-filter-button {
@@ -3652,6 +3667,24 @@ button {
 .theme-dark .text-moss,
 .theme-dark .text-muted {
   color: var(--text-secondary) !important;
+}
+
+.theme-dark[data-accent]:not([data-accent="classic"]) .home-link-actions,
+.theme-dark[data-accent]:not([data-accent="classic"]) .home-link-actions button,
+.theme-dark[data-accent]:not([data-accent="classic"]) .ai-report-section h2,
+.theme-dark[data-accent]:not([data-accent="classic"]) .ai-report-section .text-moss,
+.theme-dark[data-accent]:not([data-accent="classic"]) .perfect-food-item .text-moss,
+.theme-dark[data-accent]:not([data-accent="classic"]) .perfect-food-group .text-moss,
+.theme-dark[data-accent]:not([data-accent="classic"]) .perfect-food-panel .text-moss {
+  color: var(--accent-text) !important;
+}
+
+.theme-dark[data-accent]:not([data-accent="classic"]) .perfect-food-fit-easy,
+.theme-dark[data-accent]:not([data-accent="classic"]) .perfect-food-fit-good,
+.theme-dark[data-accent]:not([data-accent="classic"]) .perfect-food-detail-ok {
+  border-color: var(--accent-border);
+  background: var(--accent-soft);
+  color: var(--accent-readable) !important;
 }
 
 .theme-dark .bg-rice,
