@@ -104,6 +104,21 @@
   --accent-icon-shadow: rgba(183, 90, 18, 0.2);
 }
 
+:root[data-accent="graphite"] {
+  --primary-tint: #4d5559;
+  --active-tint: #7f8b91;
+  --accent-primary: #4d5559;
+  --accent-secondary: #7f8b91;
+  --accent-soft: rgba(225, 229, 231, 0.78);
+  --accent-faint: rgba(127, 139, 145, 0.14);
+  --accent-border: rgba(127, 139, 145, 0.5);
+  --accent-focus: rgba(127, 139, 145, 0.32);
+  --accent-text: #4d5559;
+  --accent-button-bg: linear-gradient(135deg, rgba(77, 85, 89, 0.95), rgba(127, 139, 145, 0.86));
+  --accent-button-shadow: rgba(48, 54, 58, 0.2);
+  --accent-icon-shadow: rgba(77, 85, 89, 0.18);
+}
+
 :root[data-theme="dark"][data-accent="aqua"] {
   --primary-tint: #a8d8e2;
   --active-tint: #72bfd0;
@@ -135,6 +150,22 @@
   --accent-button-bg: linear-gradient(135deg, rgba(205, 102, 23, 0.94), rgba(141, 70, 19, 0.9));
   --accent-button-shadow: rgba(0, 0, 0, 0.24);
   --accent-icon-shadow: rgba(255, 159, 69, 0.22);
+}
+
+:root[data-theme="dark"][data-accent="graphite"] {
+  --primary-tint: #c8d0d4;
+  --active-tint: #a6b0b5;
+  --accent-primary: #c8d0d4;
+  --accent-secondary: #a6b0b5;
+  --accent-soft: rgba(166, 176, 181, 0.18);
+  --accent-faint: rgba(166, 176, 181, 0.12);
+  --accent-border: rgba(200, 208, 212, 0.32);
+  --accent-focus: rgba(200, 208, 212, 0.32);
+  --accent-text: #f1f5f6;
+  --accent-readable: #f4f7f8;
+  --accent-button-bg: linear-gradient(135deg, rgba(105, 116, 122, 0.94), rgba(72, 80, 84, 0.9));
+  --accent-button-shadow: rgba(0, 0, 0, 0.24);
+  --accent-icon-shadow: rgba(166, 176, 181, 0.2);
 }
 
 html,
@@ -2194,24 +2225,57 @@ button {
   color: #b85f4f;
 }
 
+:root:not([data-accent="classic"]) .perfect-food-item .text-moss,
+:root:not([data-accent="classic"]) .perfect-food-group .text-moss,
+:root:not([data-accent="classic"]) .perfect-food-panel .text-moss {
+  color: var(--accent-text) !important;
+}
+
+:root:not([data-accent="classic"]) .perfect-food-fit-easy,
+:root:not([data-accent="classic"]) .perfect-food-fit-good,
+:root:not([data-accent="classic"]) .perfect-food-detail-ok {
+  border-color: var(--accent-border);
+  background: var(--accent-soft);
+  color: var(--accent-text);
+}
+
+:root:not([data-accent="classic"]) .perfect-food-log-button,
+:root:not([data-accent="classic"]) .perfect-food-more-button {
+  border-color: var(--accent-border);
+  background:
+    linear-gradient(135deg, var(--accent-faint), rgba(255, 255, 255, 0.42)),
+    var(--glass-bg-soft);
+  color: var(--accent-text);
+}
+
 .food-filter-button {
   display: inline-flex;
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  border: 1px solid var(--glass-border);
+  border: 1px solid var(--accent-border);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.5);
-  color: var(--text-secondary);
-  box-shadow: 0 10px 24px rgba(35, 45, 38, 0.06), var(--glass-highlight);
+  background:
+    linear-gradient(135deg, var(--accent-faint), rgba(255, 255, 255, 0.5)),
+    var(--glass-bg);
+  color: var(--accent-text);
+  box-shadow: 0 10px 24px var(--accent-faint), var(--glass-highlight);
   backdrop-filter: blur(22px) saturate(140%);
   -webkit-backdrop-filter: blur(22px) saturate(140%);
 }
 
 .food-filter-button-active {
-  border-color: rgba(111, 143, 125, 0.36);
-  background: rgba(221, 232, 225, 0.78);
-  color: #566e61;
+  border-color: var(--accent-border);
+  background: var(--accent-soft);
+  color: var(--accent-text);
+}
+
+.food-search-submit-button.secondary-button {
+  border-color: var(--accent-border);
+  background:
+    linear-gradient(135deg, var(--accent-faint), rgba(255, 255, 255, 0.36)),
+    var(--glass-bg);
+  color: var(--accent-text);
 }
 
 .food-filter-button-highlight {
@@ -2883,6 +2947,15 @@ button {
   box-shadow: 0 14px 30px rgba(0, 0, 0, 0.28), var(--glass-highlight);
 }
 
+.theme-dark:not([data-accent="classic"]) .perfect-food-panel,
+.theme-dark:not([data-accent="classic"]) .perfect-food-group,
+:root[data-theme="dark"]:not([data-accent="classic"]) .perfect-food-panel,
+:root[data-theme="dark"]:not([data-accent="classic"]) .perfect-food-group {
+  background:
+    linear-gradient(180deg, rgba(37, 42, 44, 0.9), rgba(18, 21, 23, 0.82)),
+    rgba(255, 255, 255, 0.06) !important;
+}
+
 .theme-dark .perfect-food-item,
 :root[data-theme="dark"] .perfect-food-item {
   border: 1px solid rgba(255, 255, 255, 0.13);
@@ -2891,6 +2964,13 @@ button {
     rgba(255, 255, 255, 0.08) !important;
   color: #f8fbf8;
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.24), var(--glass-highlight);
+}
+
+.theme-dark:not([data-accent="classic"]) .perfect-food-item,
+:root[data-theme="dark"]:not([data-accent="classic"]) .perfect-food-item {
+  background:
+    linear-gradient(135deg, rgba(36, 41, 43, 0.96), rgba(23, 26, 28, 0.88)),
+    rgba(255, 255, 255, 0.08) !important;
 }
 
 .theme-dark .perfect-food-item-over,
@@ -2920,6 +3000,15 @@ button {
   color: rgba(215, 228, 218, 0.82) !important;
 }
 
+.theme-dark:not([data-accent="classic"]) .perfect-food-item .text-moss,
+.theme-dark:not([data-accent="classic"]) .perfect-food-group .text-moss,
+.theme-dark:not([data-accent="classic"]) .perfect-food-panel .text-moss,
+:root[data-theme="dark"]:not([data-accent="classic"]) .perfect-food-item .text-moss,
+:root[data-theme="dark"]:not([data-accent="classic"]) .perfect-food-group .text-moss,
+:root[data-theme="dark"]:not([data-accent="classic"]) .perfect-food-panel .text-moss {
+  color: var(--accent-text) !important;
+}
+
 .theme-dark .perfect-food-log-button,
 .theme-dark .perfect-food-more-button,
 :root[data-theme="dark"] .perfect-food-log-button,
@@ -2929,6 +3018,17 @@ button {
     linear-gradient(135deg, rgba(238, 244, 239, 0.16), rgba(185, 206, 190, 0.1)),
     rgba(255, 255, 255, 0.1);
   color: #eef6f0;
+}
+
+.theme-dark:not([data-accent="classic"]) .perfect-food-log-button,
+.theme-dark:not([data-accent="classic"]) .perfect-food-more-button,
+:root[data-theme="dark"]:not([data-accent="classic"]) .perfect-food-log-button,
+:root[data-theme="dark"]:not([data-accent="classic"]) .perfect-food-more-button {
+  border-color: var(--accent-border);
+  background:
+    linear-gradient(135deg, var(--accent-faint), rgba(255, 255, 255, 0.08)),
+    var(--glass-bg-soft);
+  color: var(--accent-readable);
 }
 
 .theme-dark .perfect-food-fit-badge,
@@ -2978,6 +3078,17 @@ button {
   color: #d8eadc;
 }
 
+.theme-dark:not([data-accent="classic"]) .perfect-food-fit-easy,
+.theme-dark:not([data-accent="classic"]) .perfect-food-fit-good,
+.theme-dark:not([data-accent="classic"]) .perfect-food-detail-ok,
+:root[data-theme="dark"]:not([data-accent="classic"]) .perfect-food-fit-easy,
+:root[data-theme="dark"]:not([data-accent="classic"]) .perfect-food-fit-good,
+:root[data-theme="dark"]:not([data-accent="classic"]) .perfect-food-detail-ok {
+  border-color: var(--accent-border);
+  background: var(--accent-soft);
+  color: var(--accent-readable);
+}
+
 .theme-dark .perfect-food-detail-warn,
 :root[data-theme="dark"] .perfect-food-detail-warn {
   border-color: rgba(238, 191, 108, 0.28);
@@ -2994,15 +3105,26 @@ button {
 
 .theme-dark .food-filter-button,
 :root[data-theme="dark"] .food-filter-button {
-  border-color: rgba(255, 255, 255, 0.16);
-  background: rgba(255, 255, 255, 0.08);
-  color: #d7e4da;
+  border-color: var(--accent-border);
+  background:
+    linear-gradient(135deg, var(--accent-faint), rgba(255, 255, 255, 0.08)),
+    var(--glass-bg);
+  color: var(--accent-text);
 }
 
 .theme-dark .food-filter-button-active,
 :root[data-theme="dark"] .food-filter-button-active {
   border-color: var(--accent-border);
   background: var(--accent-soft);
+  color: var(--accent-readable);
+}
+
+.theme-dark .food-search-submit-button.secondary-button,
+:root[data-theme="dark"] .food-search-submit-button.secondary-button {
+  border-color: var(--accent-border);
+  background:
+    linear-gradient(135deg, var(--accent-faint), rgba(255, 255, 255, 0.08)),
+    var(--glass-bg);
   color: var(--accent-readable);
 }
 

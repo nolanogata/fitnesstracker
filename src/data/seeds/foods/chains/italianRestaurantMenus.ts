@@ -6,6 +6,7 @@ const sources = {
   カプリチョーザ: "https://capricciosa.com/menu/",
   マンマパスタ: "https://www.giraud.co.jp/mamma",
   オリーブの丘: "https://www.olivenooka.jp/menu/index.html",
+  ポポラマーマ: "https://www.popolamama.com/menu/",
 } as const;
 
 type ItalianRestaurantMenu = {
@@ -18,6 +19,8 @@ type ItalianRestaurantMenu = {
   salt_g?: number;
   tags: string[];
   serving_label?: string;
+  source_url?: string;
+  fetched_at?: string;
 };
 
 const item = (input: ItalianRestaurantMenu) =>
@@ -33,9 +36,174 @@ const item = (input: ItalianRestaurantMenu) =>
     salt_g: input.salt_g,
     serving_label: input.serving_label ?? "1品",
     default_meal_type: "lunch",
-    source_url: sources[input.brand],
-    fetched_at: fetchedAt,
+    source_url: input.source_url ?? sources[input.brand],
+    fetched_at: input.fetched_at ?? fetchedAt,
   });
+
+type PopolamamaCategory = "pasta" | "pizza" | "side" | "salad";
+type PopolamamaRow = {
+  category: PopolamamaCategory;
+  section?: string;
+  name: string;
+  calories: number;
+  salt_g: number;
+};
+type PopolamamaMacroProfile = "pasta" | "creamPasta" | "oilPasta" | "pizza" | "thinPizza" | "side" | "friedSide" | "meatSide" | "salad" | "omurice";
+
+const popolamamaFetchedAt = "2026-06-18T00:00:00.000Z";
+const popolamamaSources: Record<PopolamamaCategory, string> = {
+  pasta: "https://www.popolamama.com/info/category/menu_pasta",
+  pizza: "https://www.popolamama.com/info/category/menu_pizza",
+  side: "https://www.popolamama.com/info/category/menu_side",
+  salad: "https://www.popolamama.com/info/category/menu_salad",
+};
+const popolamamaCategoryTags: Record<PopolamamaCategory, string[]> = {
+  pasta: ["パスタ"],
+  pizza: ["ピザ"],
+  side: ["サイド"],
+  salad: ["サラダ"],
+};
+const popolamamaMacroRatios: Record<PopolamamaMacroProfile, { protein: number; fat: number; carbs: number }> = {
+  pasta: { protein: 0.14, fat: 0.3, carbs: 0.56 },
+  creamPasta: { protein: 0.14, fat: 0.38, carbs: 0.48 },
+  oilPasta: { protein: 0.13, fat: 0.35, carbs: 0.52 },
+  pizza: { protein: 0.17, fat: 0.36, carbs: 0.47 },
+  thinPizza: { protein: 0.17, fat: 0.38, carbs: 0.45 },
+  side: { protein: 0.18, fat: 0.42, carbs: 0.4 },
+  friedSide: { protein: 0.12, fat: 0.47, carbs: 0.41 },
+  meatSide: { protein: 0.28, fat: 0.55, carbs: 0.17 },
+  salad: { protein: 0.12, fat: 0.48, carbs: 0.4 },
+  omurice: { protein: 0.14, fat: 0.34, carbs: 0.52 },
+};
+
+const roundMacro = (value: number) => Math.round(value * 10) / 10;
+const estimatePopolamamaMacros = (calories: number, profile: PopolamamaMacroProfile) => {
+  const ratio = popolamamaMacroRatios[profile];
+  return {
+    protein_g: roundMacro((calories * ratio.protein) / 4),
+    fat_g: roundMacro((calories * ratio.fat) / 9),
+    carbs_g: roundMacro((calories * ratio.carbs) / 4),
+  };
+};
+const inferPopolamamaProfile = (row: PopolamamaRow): PopolamamaMacroProfile => {
+  const name = row.name;
+  if (row.category === "salad") return "salad";
+  if (row.category === "pizza") return name.includes("うすパリ") ? "thinPizza" : "pizza";
+  if (name.includes("オムライス")) return "omurice";
+  if (row.category === "side") {
+    if (name.includes("ソーセージ") || name.includes("カマンベール") || name.includes("チキン")) return "meatSide";
+    if (name.includes("ポテト") || name.includes("ナゲット") || name.includes("アヒージョ") || name.includes("トースト")) return "friedSide";
+    return "side";
+  }
+  if (row.section?.includes("クリーム") || name.includes("カルボナーラ") || name.includes("クリーム")) return "creamPasta";
+  if (row.section?.includes("オリーブオイル") || name.includes("ペペロンチーノ") || name.includes("バター")) return "oilPasta";
+  return "pasta";
+};
+const buildPopolamamaTags = (row: PopolamamaRow) => {
+  const tags = [...popolamamaCategoryTags[row.category]];
+  if (row.section) tags.push(row.section);
+  if (row.name.includes("全粒粉")) tags.push("全粒粉");
+  if (row.name.includes("ハーフ")) tags.push("ハーフ");
+  tags.push("公式カロリー", "PFC推定");
+  return tags;
+};
+
+const popolamamaRows: PopolamamaRow[] = [
+  { category: "pasta", section: "全粒粉入り生パスタ", name: "全粒粉入り生パスタ 北海道産カマンベールとモッツァレラのトマトソース", calories: 677, salt_g: 4.2 },
+  { category: "pasta", section: "全粒粉入り生パスタ", name: "全粒粉入り生パスタ ヨード卵・光と吊るしベーコンのカルボナーラ", calories: 805, salt_g: 4.6 },
+  { category: "pasta", section: "全粒粉入り生パスタ", name: "全粒粉入り生パスタ ボンゴレ・ビアンコ", calories: 552, salt_g: 5.6 },
+  { category: "pasta", section: "全粒粉入り生パスタ", name: "全粒粉入り生パスタ ほうれん草と吊るしベーコンのしょうゆ", calories: 550, salt_g: 4.6 },
+  { category: "pasta", section: "全粒粉入り生パスタ", name: "全粒粉入り生パスタ ナスとツナ・きのこのペペロンチーノしょうゆ", calories: 591, salt_g: 5.3 },
+  { category: "pasta", section: "全粒粉入り生パスタ", name: "全粒粉入り生パスタ ヨード卵・光のカルボナーラ豆乳スープ", calories: 832, salt_g: 6.5 },
+  { category: "pasta", section: "全粒粉入り生パスタ", name: "全粒粉入り生パスタ ハーフトマトとニンニク", calories: 309, salt_g: 2.1 },
+  { category: "pasta", section: "ハーフスパゲティ", name: "ハーフ トマトとニンニク", calories: 332, salt_g: 2.4 },
+  { category: "pasta", section: "ハーフスパゲティ", name: "ハーフ たらこ", calories: 219, salt_g: 2.7 },
+  { category: "pasta", section: "ハーフスパゲティ", name: "ハーフ ボンゴレ・ビアンコ", calories: 299, salt_g: 3.3 },
+  { category: "pasta", section: "ハーフスパゲティ", name: "ハーフ 本格ボロネーゼ", calories: 273, salt_g: 2.7 },
+  { category: "pasta", section: "ハーフスパゲティ", name: "ハーフ ほうれん草と吊るしベーコンのしょうゆ", calories: 300, salt_g: 2.8 },
+  { category: "pasta", section: "ハーフスパゲティ", name: "ハーフ ヨード卵・光と吊るしベーコンのカルボナーラ", calories: 458, salt_g: 2.9 },
+  { category: "pasta", section: "ハーフスパゲティ", name: "ハーフ ソーセージのナポリタン", calories: 352, salt_g: 2.8 },
+  { category: "pasta", section: "ハーフスパゲティ", name: "ハーフ ナスと吊るしベーコンのアラビアータ", calories: 359, salt_g: 2.7 },
+  { category: "pasta", section: "スープタイプ", name: "ヨード卵・光のカルボナーラスープ", calories: 878, salt_g: 7.1 },
+  { category: "pasta", section: "スープタイプ", name: "吊るしベーコンとツナのトマトスープ", calories: 690, salt_g: 6.2 },
+  { category: "pasta", section: "スープタイプ", name: "海の幸辛口トマトスープ", calories: 713, salt_g: 6.1 },
+  { category: "pasta", section: "スープタイプ", name: "ヨード卵・光と吊るしベーコンのレッドカルボナーラスープ", calories: 832, salt_g: 6.2 },
+  { category: "pasta", section: "スープタイプ", name: "渡り蟹のトマトスープ", calories: 663, salt_g: 6 },
+  { category: "pasta", section: "クリーム味", name: "ヨード卵・光と吊るしベーコンのカルボナーラ", calories: 851, salt_g: 5.2 },
+  { category: "pasta", section: "クリーム味", name: "ヨード卵・光と吊るしベーコンのカルボナーラ レッジャーノチーズ掛け", calories: 890, salt_g: 5.4 },
+  { category: "pasta", section: "クリーム味", name: "ヨード卵・光と吊るしベーコンのレッドカルボナーラ", calories: 850, salt_g: 5.7 },
+  { category: "pasta", section: "クリーム味", name: "北海道産ポテトとソーセージ・ほうれん草のクリーム", calories: 872, salt_g: 5.2 },
+  { category: "pasta", section: "クリーム味", name: "渡り蟹のトマトクリーム", calories: 775, salt_g: 5.5 },
+  { category: "pasta", section: "ジェノベーゼ味", name: "レッジャーノチーズのジェノベーゼ", calories: 672, salt_g: 5.2 },
+  { category: "pasta", section: "ジェノベーゼ味", name: "ほうれん草と吊るしベーコンのジェノベーゼ", calories: 680, salt_g: 5.5 },
+  { category: "pasta", section: "ジェノベーゼ味", name: "北海道産ポテト・ソーセージのジェノベーゼ", calories: 748, salt_g: 6.1 },
+  { category: "pasta", section: "ジェノベーゼ味", name: "よくばりジェノベーゼ", calories: 726, salt_g: 6.8 },
+  { category: "pasta", section: "トマト味", name: "トマトとニンニク", calories: 662, salt_g: 4.5 },
+  { category: "pasta", section: "トマト味", name: "ナスと吊るしベーコンのアラビアータ", calories: 718, salt_g: 5 },
+  { category: "pasta", section: "トマト味", name: "北海道産カマンベールとモッツァレラのトマトソース", calories: 723, salt_g: 4.8 },
+  { category: "pasta", section: "トマト味", name: "国産鶏とナス・モッツァレラのトマトソース", calories: 766, salt_g: 5.1 },
+  { category: "pasta", section: "トマト味", name: "ツナと吊るしベーコンのアラビアータ", calories: 717, salt_g: 5.1 },
+  { category: "pasta", section: "トマト味", name: "ペスカトーレ", calories: 668, salt_g: 4.2 },
+  { category: "pasta", section: "トマト味", name: "よくばりアラビアータ", calories: 679, salt_g: 4.3 },
+  { category: "pasta", section: "トマト味", name: "ソーセージのナポリタン", calories: 702, salt_g: 5.2 },
+  { category: "pasta", section: "トマト味", name: "よくばりナポリタン", calories: 734, salt_g: 6.6 },
+  { category: "pasta", section: "トマト味", name: "本格ボロネーゼ", calories: 545, salt_g: 5.1 },
+  { category: "pasta", section: "トマト味", name: "ナスとチーズのボロネーゼ", calories: 742, salt_g: 6.1 },
+  { category: "pasta", section: "トマト味", name: "レッジャーノチーズときのこのボロネーゼ", calories: 662, salt_g: 6.2 },
+  { category: "pasta", section: "和風味", name: "ペペロンチーノしょうゆ", calories: 559, salt_g: 4.6 },
+  { category: "pasta", section: "和風味", name: "たらこ", calories: 436, salt_g: 5.1 },
+  { category: "pasta", section: "和風味", name: "イカと熟成明太子 バター仕立て", calories: 543, salt_g: 5.1 },
+  { category: "pasta", section: "和風味", name: "ほうれん草と吊るしベーコンのしょうゆ", calories: 596, salt_g: 5.2 },
+  { category: "pasta", section: "和風味", name: "国産鶏ときのこのガーリックしょうゆ", calories: 622, salt_g: 5.9 },
+  { category: "pasta", section: "和風味", name: "ナスとツナ・きのこのペペロンチーノしょうゆ", calories: 637, salt_g: 5.9 },
+  { category: "pasta", section: "和風味", name: "よくばりペペロンチーノしょうゆ", calories: 659, salt_g: 4.6 },
+  { category: "pasta", section: "和風味", name: "海の幸 ガーリックバターしょうゆ", calories: 660, salt_g: 6.2 },
+  { category: "pasta", section: "オリーブオイル", name: "ペペロンチーノ", calories: 574, salt_g: 4.9 },
+  { category: "pasta", section: "オリーブオイル", name: "レッドペペロンチーノ", calories: 598, salt_g: 5.5 },
+  { category: "pasta", section: "オリーブオイル", name: "ほうれん草と吊るしベーコンのペペロンチーノ", calories: 621, salt_g: 5.3 },
+  { category: "pasta", section: "オリーブオイル", name: "きのこと吊るしベーコン・セミドライトマトのオリーブペペロンチーノ", calories: 613, salt_g: 5.8 },
+  { category: "pasta", section: "オリーブオイル", name: "吊るしベーコンとセミドライトマトのバジリコペペロンチーノ", calories: 635, salt_g: 5.5 },
+  { category: "pasta", section: "オリーブオイル", name: "海の幸ペペロンチーノ", calories: 671, salt_g: 6.6 },
+  { category: "pasta", section: "オリーブオイル", name: "ボンゴレ・ビアンコ", calories: 598, salt_g: 6.2 },
+  { category: "pasta", section: "オリーブオイル", name: "よくばりペペロンチーノ", calories: 679, salt_g: 4.5 },
+  { category: "pizza", name: "国産小麦生地のマルゲリータピッツァ", calories: 507, salt_g: 3.1 },
+  { category: "pizza", name: "国産小麦生地のサラミピッツァ", calories: 645, salt_g: 4.4 },
+  { category: "pizza", name: "国産小麦生地のたっぷりチーズピッツァ ハチミツ掛け", calories: 652, salt_g: 3.8 },
+  { category: "pizza", name: "うすパリ生地のマルゲリータ", calories: 244, salt_g: 1.3 },
+  { category: "pizza", name: "うすパリ生地のサラミピッツァ", calories: 285, salt_g: 1.9 },
+  { category: "pizza", name: "うすパリ生地のたっぷりチーズピッツァ ハチミツ掛け", calories: 305, salt_g: 1.7 },
+  { category: "side", name: "パンチェッタとカマンベール", calories: 132, salt_g: 1 },
+  { category: "side", name: "タコのマリネ", calories: 132, salt_g: 0.8 },
+  { category: "side", name: "5種ソーセージのオーブン焼き", calories: 326, salt_g: 2 },
+  { category: "side", name: "ポポラさんのオムレツ", calories: 233, salt_g: 2 },
+  { category: "side", name: "あさりとムール貝の白ワイン蒸し", calories: 155, salt_g: 2.9 },
+  { category: "side", name: "エビと北海道産ポテトのバジルアヒージョ バケット付き", calories: 581, salt_g: 2 },
+  { category: "side", name: "きのことセミドライトマトのアヒージョ バケット付き", calories: 524, salt_g: 3.5 },
+  { category: "side", name: "ブルスケッタ", calories: 142, salt_g: 0.6 },
+  { category: "side", name: "ニョッキ モッツァレラのトマトソース", calories: 332, salt_g: 3 },
+  { category: "side", name: "ニョッキ チーズクリーム", calories: 384, salt_g: 3.4 },
+  { category: "side", name: "Vポテト", calories: 309, salt_g: 1.4 },
+  { category: "side", name: "チキンナゲット", calories: 235, salt_g: 2.2 },
+  { category: "side", name: "Vポテト＆ナゲット", calories: 418, salt_g: 2.3 },
+  { category: "side", name: "Vポテトとチーズのオーブン焼き", calories: 373, salt_g: 2.1 },
+  { category: "side", name: "ガーリックトースト", calories: 228, salt_g: 1.2 },
+  { category: "side", name: "本格デミグラスのオムライス", calories: 718, salt_g: 4.8 },
+  { category: "salad", name: "ガーデンサラダ", calories: 94, salt_g: 1 },
+];
+
+const popolamamaMenuFoods = popolamamaRows.map((row) => {
+  const macros = estimatePopolamamaMacros(row.calories, inferPopolamamaProfile(row));
+  return item({
+    brand: "ポポラマーマ",
+    name: row.name,
+    calories: row.calories,
+    salt_g: row.salt_g,
+    tags: buildPopolamamaTags(row),
+    source_url: popolamamaSources[row.category],
+    fetched_at: popolamamaFetchedAt,
+    ...macros,
+  });
+});
 
 export const italianRestaurantMenuFoods = [
   item({ brand: "カプリチョーザ", name: "トマトとニンニク", calories: 760, protein_g: 21, fat_g: 25, carbs_g: 111, salt_g: 3.4, tags: ["パスタ", "トマト"] }),
@@ -105,4 +273,6 @@ export const italianRestaurantMenuFoods = [
   item({ brand: "オリーブの丘", name: "チキンのオーブン焼き", calories: 540, protein_g: 42, fat_g: 34, carbs_g: 12, salt_g: 2.4, tags: ["肉料理", "チキン"] }),
   item({ brand: "オリーブの丘", name: "やわらか牛肉のビーフシチュー", calories: 690, protein_g: 38, fat_g: 42, carbs_g: 34, salt_g: 3.2, tags: ["肉料理", "牛肉"] }),
   item({ brand: "オリーブの丘", name: "ライス", calories: 330, protein_g: 5, fat_g: 1, carbs_g: 74, salt_g: 0.0, tags: ["ライス"], serving_label: "普通" }),
+
+  ...popolamamaMenuFoods,
 ];
