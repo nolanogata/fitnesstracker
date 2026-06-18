@@ -53,6 +53,7 @@ import type {
   AiReport,
   BackupPayload,
   Confidence,
+  DataSource,
   ExercisePreset,
   FoodEntry,
   Goal,
@@ -262,6 +263,7 @@ type ManualFoodDraft = {
   note: string;
   savePreset: boolean;
   favorite: boolean;
+  officialVerified: boolean;
 };
 type MenuOverwriteTarget = {
   item: MenuItem;
@@ -456,6 +458,7 @@ const emptyManual: ManualFoodDraft = {
   note: "",
   savePreset: false,
   favorite: false,
+  officialVerified: false,
 };
 
 const manualFoodWizardSteps: Array<{ key: ManualFoodWizardStep; label: string }> = [
@@ -494,6 +497,7 @@ function manualFoodDraftFromMenuItem(item: MenuItem): ManualFoodDraft {
     salt_g: typeof item.salt_g === "number" ? formatStored(item.salt_g) : "",
     savePreset: true,
     favorite: !!item.is_favorite,
+    officialVerified: item.data_source === "official",
   };
 }
 
@@ -4437,14 +4441,23 @@ function FoodTab(props: {
     const ingredientServingLabel = ingredientGrams === undefined ? undefined : `${formatControlValue(ingredientGrams)}g`;
     const displayName = manual.entry_kind === "ingredient" && ingredientServingLabel ? `${baseName}（${ingredientServingLabel}）` : baseName;
     const brand = manual.brand.trim();
-    const tags = unique([manual.category, manual.subcategory, brand, manual.entry_kind === "ingredient" ? "材料" : "", ...(nutrition.unknown.length ? ["栄養素一部不明"] : [])]);
+    const dataSource: DataSource = manual.officialVerified ? "official" : "user";
+    const confidence: Confidence = manual.officialVerified ? "high" : nutrition.unknown.length ? "low" : "high";
+    const tags = unique([
+      manual.category,
+      manual.subcategory,
+      brand,
+      manual.entry_kind === "ingredient" ? "材料" : "",
+      manual.officialVerified ? "公式値" : "",
+      ...(nutrition.unknown.length ? ["栄養素一部不明"] : []),
+    ]);
     const note = unique([
       manual.note,
+      manual.officialVerified ? "公式値確認済み" : "",
       manual.entry_kind === "ingredient" ? `材料入力: ${ingredientServingLabel ?? "g未入力"} / 栄養値は100gあたりから換算` : "",
       nutrition.unknown.length ? `未入力: ${nutrition.unknown.join("/")}` : "",
     ]).join(" / ") || undefined;
-    const confidence: Confidence = nutrition.unknown.length ? "low" : "high";
-    return { nutrition, baseName, ingredientGrams, ingredientServingLabel, displayName, brand, tags, note, confidence };
+    return { nutrition, baseName, ingredientGrams, ingredientServingLabel, displayName, brand, tags, note, dataSource, confidence };
   };
 
   const resetManualRegistration = () => {
@@ -4476,7 +4489,7 @@ function FoodTab(props: {
       serving_label: payload.ingredientServingLabel,
       weight_g: payload.ingredientGrams,
       default_meal_type: manual.meal_type,
-      data_source: "user",
+      data_source: payload.dataSource,
       confidence: payload.confidence,
       is_public_preset: false,
       is_user_created: true,
@@ -4501,7 +4514,7 @@ function FoodTab(props: {
         carbs_g: round1(payload.nutrition.carbs_g * logMultiplier),
         salt_g: payload.nutrition.salt_g === undefined ? undefined : round1(payload.nutrition.salt_g * logMultiplier),
         portion_multiplier: logMultiplier,
-        entry_source: "user",
+        entry_source: payload.dataSource,
         confidence: payload.confidence,
         menu_item_id: menuItemId,
         note: logNote,
@@ -4517,7 +4530,7 @@ function FoodTab(props: {
   const saveManual = async () => {
     const timestamp = nowIso();
     let menuItemId: string | undefined;
-    const { nutrition, baseName, ingredientGrams, ingredientServingLabel, displayName, brand, tags, note, confidence } = getManualSavePayload();
+    const { nutrition, baseName, ingredientGrams, ingredientServingLabel, displayName, brand, tags, note, dataSource, confidence } = getManualSavePayload();
     if (menuOverwriteTarget) {
       const sourceItem = menuOverwriteTarget.item;
       const logMultiplier = Math.max(0, menuOverwriteTarget.logMultiplier ?? 1);
@@ -4526,7 +4539,7 @@ function FoodTab(props: {
         name: baseName,
         brand: brand || undefined,
         category: manual.category,
-        tags: unique([...tags, "ユーザー補正"]),
+        tags: unique([...tags, dataSource === "official" ? "公式値確認済み" : "ユーザー補正"]),
         calories: nutrition.calories,
         protein_g: nutrition.protein_g,
         fat_g: nutrition.fat_g,
@@ -4535,7 +4548,7 @@ function FoodTab(props: {
         serving_label: ingredientServingLabel,
         weight_g: ingredientGrams,
         default_meal_type: manual.meal_type,
-        data_source: "user",
+        data_source: dataSource,
         confidence,
         is_favorite: manual.favorite,
         updated_at: timestamp,
@@ -4556,7 +4569,7 @@ function FoodTab(props: {
           carbs_g: round1(nutrition.carbs_g * logMultiplier),
           salt_g: nutrition.salt_g === undefined ? undefined : round1(nutrition.salt_g * logMultiplier),
           portion_multiplier: logMultiplier,
-          entry_source: "user",
+          entry_source: dataSource,
           confidence,
           menu_item_id: sourceItem.id,
           note: logNote,
@@ -4585,7 +4598,7 @@ function FoodTab(props: {
         serving_label: ingredientServingLabel,
         weight_g: ingredientGrams,
         default_meal_type: manual.meal_type,
-        data_source: "user",
+        data_source: dataSource,
         confidence,
         is_public_preset: false,
         is_user_created: true,
@@ -4607,7 +4620,7 @@ function FoodTab(props: {
       carbs_g: nutrition.carbs_g,
       salt_g: nutrition.salt_g,
       portion_multiplier: 1,
-      entry_source: "user",
+      entry_source: dataSource,
       confidence,
       menu_item_id: menuItemId,
       note,
@@ -6782,7 +6795,16 @@ function SettingsTab(props: {
     const nutrition = draftNutrition(presetDraft);
     const ingredientGrams = presetDraft.entry_kind === "ingredient" ? ingredientGramValue(presetDraft) : undefined;
     const ingredientServingLabel = ingredientGrams === undefined ? undefined : `${formatControlValue(ingredientGrams)}g`;
-    const tags = unique([presetDraft.category, presetDraft.subcategory, presetDraft.brand, presetDraft.entry_kind === "ingredient" ? "材料" : "", ...(nutrition.unknown.length ? ["栄養素一部不明"] : [])]);
+    const dataSource: DataSource = presetDraft.officialVerified ? "official" : "user";
+    const confidence: Confidence = presetDraft.officialVerified ? "high" : nutrition.unknown.length ? "low" : "high";
+    const tags = unique([
+      presetDraft.category,
+      presetDraft.subcategory,
+      presetDraft.brand,
+      presetDraft.entry_kind === "ingredient" ? "材料" : "",
+      presetDraft.officialVerified ? "公式値" : "",
+      ...(nutrition.unknown.length ? ["栄養素一部不明"] : []),
+    ]);
     const editingItem = editingUserMenuItemId ? userMenuItems.find((item) => item.id === editingUserMenuItemId) : undefined;
     await db.menu_items.put({
       id: editingItem?.id ?? makeId("menu_user"),
@@ -6797,8 +6819,10 @@ function SettingsTab(props: {
       salt_g: nutrition.salt_g,
       serving_label: ingredientServingLabel,
       weight_g: ingredientGrams,
-      data_source: "user",
-      confidence: nutrition.unknown.length ? "low" : "high",
+      data_source: dataSource,
+      confidence,
+      source_url: dataSource === "official" ? editingItem?.source_url : undefined,
+      fetched_at: dataSource === "official" ? editingItem?.fetched_at : undefined,
       is_public_preset: false,
       is_user_created: true,
       is_favorite: presetDraft.favorite,
@@ -8293,6 +8317,17 @@ function ManualFoodForm({ manual, setManual, onSave, compact = false, mode = "lo
               <p className="numeric-text mt-2 text-xs font-bold text-moss">{isIngredient ? `${formatControlValue(ingredientGramValue(manual) ?? 0)}g · ` : ""}{previewNutrition.calories}kcal · P{previewNutrition.protein_g} F{previewNutrition.fat_g} C{previewNutrition.carbs_g}</p>
             </div>
             {manual.savePreset && <label className="chip"><input type="checkbox" checked={manual.favorite} onChange={(event) => setManual({ ...manual, favorite: event.target.checked })} />お気に入りに追加</label>}
+            <label className="chip">
+              <input
+                type="checkbox"
+                checked={manual.officialVerified}
+                onChange={(event) => setManual({ ...manual, officialVerified: event.target.checked })}
+              />
+              公式値として登録
+            </label>
+            <p className="rounded-2xl border border-line bg-rice/60 px-3 py-2 text-xs font-semibold text-moss">
+              公式サイト・パッケージ等で栄養値を確認できている場合だけONにします。保存後は「公式値・信用度 高」として扱います。
+            </p>
             <button className="primary-button w-full" disabled={!manual.name.trim()} onClick={onSave}><Save size={17} />{submitLabel}</button>
             {onSecondarySave && (
               <button className="secondary-button w-full" disabled={!manual.name.trim()} onClick={onSecondarySave}>
@@ -8368,6 +8403,7 @@ function ManualFoodForm({ manual, setManual, onSave, compact = false, mode = "lo
       <div className="mt-3 flex flex-wrap gap-2">
         {!isPresetOnly && <label className="chip"><input type="checkbox" checked={manual.savePreset} onChange={(event) => setManual({ ...manual, savePreset: event.target.checked })} />メニューとして登録</label>}
         <label className="chip"><input type="checkbox" checked={manual.favorite} onChange={(event) => setManual({ ...manual, favorite: event.target.checked })} />お気に入り</label>
+        <label className="chip"><input type="checkbox" checked={manual.officialVerified} onChange={(event) => setManual({ ...manual, officialVerified: event.target.checked })} />公式値として登録</label>
       </div>
       <button className="primary-button mt-3 w-full" onClick={onSave}><Save size={17} />保存</button>
     </section>
@@ -12156,11 +12192,12 @@ function toManualDraft(item: MenuItem, mealType: MealType = "lunch"): ManualFood
     note: item.data_source === "estimated" ? "推定メニューから編集" : item.data_source === "unofficial" ? "非公式メニューから編集" : "",
     savePreset: true,
     favorite: item.is_favorite,
+    officialVerified: item.data_source === "official",
   };
 }
 
 function canOverwriteMenuItem(item: MenuItem) {
-  return item.data_source !== "official";
+  return item.data_source !== "official" || item.is_user_created;
 }
 
 function exercisePresetToTemplateExercise(exercise: ExercisePreset): TemplateExercise {
