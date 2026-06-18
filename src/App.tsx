@@ -103,10 +103,8 @@ type EditableRecordTab = "food" | "workout";
 const bottomTabs: Tab[] = ["home", "food", "workout", "records", "settings"];
 const themeAccentOptions: Array<{ value: ThemeAccent; label: string; colors: [string, string] }> = [
   { value: "classic", label: "クラシック", colors: ["#566e61", "#9fbea9"] },
-  { value: "aqua", label: "アクア", colors: ["#2f6f78", "#72bfd0"] },
   { value: "orange", label: "オレンジ", colors: ["#b75a12", "#ff9f32"] },
-  { value: "violet", label: "バイオレット", colors: ["#625293", "#a99bea"] },
-  { value: "graphite", label: "グラファイト", colors: ["#4d5559", "#a6b0b5"] },
+  { value: "aqua", label: "アクア", colors: ["#2f6f78", "#72bfd0"] },
 ];
 const themeAccentLabels = Object.fromEntries(themeAccentOptions.map((option) => [option.value, option.label])) as Record<ThemeAccent, string>;
 function normalizeThemeAccent(value: unknown): ThemeAccent {
@@ -7016,7 +7014,7 @@ function SettingsTab(props: {
               </button>
             ))}
           </div>
-          <p className="mt-2 text-xs text-moss">主要ボタン、選択中のチップ、下部ナビのアクセントに反映します。</p>
+          <p className="mt-2 text-xs text-moss">カードはグラファイト基調のまま、主要ボタン、選択中のチップ、下部ナビに反映します。</p>
         </div>
       </section>}
 
