@@ -29,6 +29,7 @@
   --accent-text: #4f6a5b;
   --accent-readable: #1f2722;
   --accent-button-bg: linear-gradient(135deg, rgba(86, 110, 97, 0.94), rgba(111, 143, 125, 0.86));
+  --accent-button-text: #fff;
   --accent-button-shadow: rgba(54, 74, 63, 0.22);
   --accent-icon-shadow: rgba(79, 106, 91, 0.18);
   --danger-coral: #d97a68;
@@ -66,6 +67,7 @@
   --accent-text: #dff0e5;
   --accent-readable: #edf4ee;
   --accent-button-bg: linear-gradient(135deg, rgba(128, 163, 142, 0.94), rgba(91, 129, 108, 0.9));
+  --accent-button-text: #fff;
   --accent-button-shadow: rgba(0, 0, 0, 0.24);
   --accent-icon-shadow: rgba(159, 190, 169, 0.22);
   --danger-coral: #f09a86;
@@ -119,6 +121,39 @@
   --accent-icon-shadow: rgba(77, 85, 89, 0.18);
 }
 
+:root[data-accent="crazy_pink"] {
+  --primary-tint: #e000c9;
+  --active-tint: #ff4fe1;
+  --accent-primary: #e000c9;
+  --accent-secondary: #8a2cff;
+  --accent-soft: rgba(255, 218, 252, 0.78);
+  --accent-faint: rgba(255, 43, 214, 0.17);
+  --accent-border: rgba(255, 43, 214, 0.56);
+  --accent-focus: rgba(138, 44, 255, 0.34);
+  --accent-text: #a90095;
+  --accent-readable: #231025;
+  --accent-button-bg: linear-gradient(135deg, rgba(255, 43, 214, 0.96), rgba(138, 44, 255, 0.9));
+  --accent-button-shadow: rgba(213, 0, 188, 0.28);
+  --accent-icon-shadow: rgba(255, 43, 214, 0.28);
+}
+
+:root[data-accent="crazy_yellow"] {
+  --primary-tint: #96a800;
+  --active-tint: #d9f200;
+  --accent-primary: #96a800;
+  --accent-secondary: #f4ff00;
+  --accent-soft: rgba(250, 255, 184, 0.8);
+  --accent-faint: rgba(217, 242, 0, 0.18);
+  --accent-border: rgba(188, 210, 0, 0.58);
+  --accent-focus: rgba(0, 255, 168, 0.26);
+  --accent-text: #6d7a00;
+  --accent-readable: #1b2100;
+  --accent-button-bg: linear-gradient(135deg, rgba(244, 255, 0, 0.95), rgba(0, 255, 168, 0.74));
+  --accent-button-text: #151900;
+  --accent-button-shadow: rgba(151, 173, 0, 0.25);
+  --accent-icon-shadow: rgba(217, 242, 0, 0.28);
+}
+
 :root[data-theme="dark"][data-accent="aqua"] {
   --primary-tint: #a8d8e2;
   --active-tint: #72bfd0;
@@ -166,6 +201,39 @@
   --accent-button-bg: linear-gradient(135deg, rgba(105, 116, 122, 0.94), rgba(72, 80, 84, 0.9));
   --accent-button-shadow: rgba(0, 0, 0, 0.24);
   --accent-icon-shadow: rgba(166, 176, 181, 0.2);
+}
+
+:root[data-theme="dark"][data-accent="crazy_pink"] {
+  --primary-tint: #ff8af1;
+  --active-tint: #ff4fe1;
+  --accent-primary: #ff8af1;
+  --accent-secondary: #a987ff;
+  --accent-soft: rgba(255, 43, 214, 0.22);
+  --accent-faint: rgba(255, 43, 214, 0.16);
+  --accent-border: rgba(255, 138, 241, 0.42);
+  --accent-focus: rgba(169, 135, 255, 0.38);
+  --accent-text: #ffd3fb;
+  --accent-readable: #fff2fd;
+  --accent-button-bg: linear-gradient(135deg, rgba(255, 43, 214, 0.95), rgba(90, 40, 200, 0.92));
+  --accent-button-shadow: rgba(255, 43, 214, 0.26);
+  --accent-icon-shadow: rgba(255, 43, 214, 0.3);
+}
+
+:root[data-theme="dark"][data-accent="crazy_yellow"] {
+  --primary-tint: #f6ff6b;
+  --active-tint: #dfff00;
+  --accent-primary: #f6ff6b;
+  --accent-secondary: #7cffd4;
+  --accent-soft: rgba(223, 255, 0, 0.2);
+  --accent-faint: rgba(223, 255, 0, 0.15);
+  --accent-border: rgba(246, 255, 107, 0.42);
+  --accent-focus: rgba(124, 255, 212, 0.32);
+  --accent-text: #fbffb3;
+  --accent-readable: #ffffe5;
+  --accent-button-bg: linear-gradient(135deg, rgba(223, 255, 0, 0.96), rgba(0, 255, 168, 0.78));
+  --accent-button-text: #111500;
+  --accent-button-shadow: rgba(223, 255, 0, 0.25);
+  --accent-icon-shadow: rgba(223, 255, 0, 0.28);
 }
 
 html,
@@ -994,6 +1062,23 @@ button {
   box-shadow: 0 6px 14px color-mix(in srgb, var(--swatch-start) 28%, transparent), var(--glass-highlight);
 }
 
+:root[data-accent="crazy_pink"] .theme-accent-option-active,
+:root[data-accent="crazy_yellow"] .theme-accent-option-active {
+  box-shadow:
+    0 0 0 1px var(--accent-focus) inset,
+    0 0 18px var(--accent-faint),
+    0 12px 26px var(--accent-button-shadow),
+    var(--glass-highlight);
+}
+
+:root[data-accent="crazy_pink"] .theme-accent-option-active .theme-accent-swatch,
+:root[data-accent="crazy_yellow"] .theme-accent-option-active .theme-accent-swatch {
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.84) inset,
+    0 0 16px color-mix(in srgb, var(--swatch-start) 48%, transparent),
+    0 0 24px color-mix(in srgb, var(--swatch-end) 34%, transparent);
+}
+
 .special-mode-test-button {
   display: inline-flex;
   min-height: 2.35rem;
@@ -1347,7 +1432,7 @@ button {
 
 .home-primary-action {
   background: var(--accent-button-bg);
-  color: #fff;
+  color: var(--accent-button-text, #fff);
   box-shadow: 0 18px 38px var(--accent-button-shadow), var(--glass-highlight);
 }
 
@@ -1662,6 +1747,7 @@ button {
   border: 1px solid rgba(255, 255, 255, 0.52);
   border-radius: 999px;
   background: var(--accent-button-bg);
+  color: var(--accent-button-text, #fff);
   box-shadow: 0 16px 34px var(--accent-button-shadow), var(--glass-highlight);
   backdrop-filter: blur(18px) saturate(135%);
   -webkit-backdrop-filter: blur(18px) saturate(135%);
@@ -1736,7 +1822,7 @@ button {
 .source-badge-official {
   border-color: var(--accent-border);
   background: color-mix(in srgb, var(--accent-secondary) 78%, transparent);
-  color: #fff;
+  color: var(--accent-button-text, #fff);
   box-shadow: 0 4px 10px var(--accent-faint), var(--glass-highlight);
 }
 
@@ -3552,7 +3638,7 @@ main[data-accent]:not([data-accent="classic"]) .ai-report-section .text-moss {
 .theme-dark .home-primary-action {
   border-color: rgba(255, 255, 255, 0.18);
   background: var(--accent-button-bg);
-  color: #f7fbf8;
+  color: var(--accent-button-text, #f7fbf8);
   box-shadow: 0 12px 28px var(--accent-button-shadow), var(--glass-highlight);
 }
 
