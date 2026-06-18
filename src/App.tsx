@@ -3521,8 +3521,7 @@ function PerfectFoodModal({ dayTotals, goal, menuItems, onClose, onLog }: {
   onClose: () => void;
   onLog: (item: MenuItem) => void | Promise<void>;
 }) {
-  const [page, setPage] = useState<0 | 1 | 2>(0);
-  const [perfectMode, setPerfectMode] = useState<PerfectFoodMode>("fit");
+  const [page, setPage] = useState<0 | 1>(0);
   const [plans, setPlans] = useState<PerfectFoodPlan[]>(["none"]);
   const [expandedGroups, setExpandedGroups] = useState<string[]>([]);
   const remaining = getRemainingNutrition(dayTotals, goal);
@@ -3533,7 +3532,7 @@ function PerfectFoodModal({ dayTotals, goal, menuItems, onClose, onLog }: {
     fat: Math.max(0, remaining.fat - planned.fat),
     carbs: Math.max(0, remaining.carbs - planned.carbs),
   };
-  const suggestionGroups = useMemo(() => buildPerfectFoodSuggestions(menuItems, adjusted, plans, perfectMode), [menuItems, adjusted.calories, adjusted.protein, adjusted.fat, adjusted.carbs, plans, perfectMode]);
+  const suggestionGroups = useMemo(() => buildPerfectFoodSuggestions(menuItems, adjusted, plans, "fit"), [menuItems, adjusted.calories, adjusted.protein, adjusted.fat, adjusted.carbs, plans]);
   const togglePlan = (plan: PerfectFoodPlan) => {
     setPlans((current) => {
       if (plan === "none") return ["none"];
@@ -3551,37 +3550,17 @@ function PerfectFoodModal({ dayTotals, goal, menuItems, onClose, onLog }: {
         <div className="flex items-start justify-between gap-3">
           <div>
             <p className="text-lg font-bold">ぴったりフード</p>
-            <p className="mt-1 text-xs text-moss">{page === 0 ? "目的を選択" : page === 1 ? "計算から引く予定" : perfectMode === "fit" ? "残り枠で食べられる候補" : "目標に近づく候補"}</p>
+            <p className="mt-1 text-xs text-moss">{page === 0 ? "計算から引く予定" : "残り枠で食べられる候補"}</p>
           </div>
           <button className="icon-button h-9 w-9" aria-label="閉じる" onClick={onClose}>×</button>
         </div>
-        <div className="mt-4 grid grid-cols-3 gap-2">
-          {["目的", "予定", "候補"].map((label, index) => (
-            <button className={`mini-chip ${page === index ? "mini-chip-active" : ""}`} key={label} onClick={() => setPage(index as 0 | 1 | 2)}>{label}</button>
+        <div className="mt-4 grid grid-cols-2 gap-2">
+          {["予定", "候補"].map((label, index) => (
+            <button className={`mini-chip ${page === index ? "mini-chip-active" : ""}`} key={label} onClick={() => setPage(index as 0 | 1)}>{label}</button>
           ))}
         </div>
 
         {page === 0 && (
-          <div className="mt-5 space-y-3">
-            <button className={`food-filter-option ${perfectMode === "fit" ? "food-filter-option-active" : ""}`} onClick={() => setPerfectMode("fit")}>
-              <span>
-                <span className="block text-sm font-bold">残りの栄養値で何が食べられるか知りたい</span>
-                <span className="mt-1 block text-xs text-moss">食べたあとにkcal/F/Cの余裕がどれくらい残るかを見ます。</span>
-              </span>
-              <span className="mini-chip shrink-0">{perfectMode === "fit" ? "選択中" : "選択"}</span>
-            </button>
-            <button className={`food-filter-option ${perfectMode === "improve" ? "food-filter-option-active" : ""}`} onClick={() => setPerfectMode("improve")}>
-              <span>
-                <span className="block text-sm font-bold">何を足せば目標に近づけるか</span>
-                <span className="mt-1 block text-xs text-moss">食べたあと、目標まであとどれくらい必要かを見ます。</span>
-              </span>
-              <span className="mini-chip shrink-0">{perfectMode === "improve" ? "選択中" : "選択"}</span>
-            </button>
-            <button className="primary-button w-full" onClick={() => setPage(1)}>予定を引く <ChevronRight size={17} /></button>
-          </div>
-        )}
-
-        {page === 1 && (
           <div className="mt-5 space-y-4">
             <p className="text-sm font-semibold text-moss">このあと食べる予定があるものを、候補計算から先に引きます。</p>
             <div className="grid gap-2">
@@ -3597,13 +3576,13 @@ function PerfectFoodModal({ dayTotals, goal, menuItems, onClose, onLog }: {
               <p className="numeric-text mt-2 text-sm font-bold">あと {Math.round(adjusted.calories)}kcal / P{round1(adjusted.protein)} F{round1(adjusted.fat)} C{round1(adjusted.carbs)}</p>
             </div>
             <div className="grid grid-cols-2 gap-2">
-              <button className="secondary-button" onClick={() => setPage(0)}>戻る</button>
-              <button className="primary-button" onClick={() => setPage(2)}>候補を見る</button>
+              <button className="secondary-button" onClick={onClose}>閉じる</button>
+              <button className="primary-button" onClick={() => setPage(1)}>候補を見る</button>
             </div>
           </div>
         )}
 
-        {page === 2 && (
+        {page === 1 && (
           <div className="mt-5 space-y-4">
             {suggestionGroups.length ? suggestionGroups.map((group) => {
               const isExpanded = expandedGroups.includes(group.label);
@@ -3617,13 +3596,14 @@ function PerfectFoodModal({ dayTotals, goal, menuItems, onClose, onLog }: {
                 </div>
                 <div className="space-y-2">
                   {visibleItems.map((item) => {
-                    const fit = getPerfectFoodFit(item, adjusted, perfectMode);
+                    const fit = getPerfectFoodFit(item, adjusted, "fit");
                     return (
                       <div className={`perfect-food-item perfect-food-item-${fit.tone} rounded-xl bg-surface/70 p-3`} key={item.id}>
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0">
                             <p className="truncate text-sm font-bold">{formatMenuItemName(item)}</p>
                             <p className="numeric-text mt-1 text-xs text-moss">{item.brand ? `${item.brand} · ` : ""}{item.calories}kcal · P{round1(item.protein_g)} F{round1(item.fat_g)} C{round1(item.carbs_g)}</p>
+                            <p className="mt-3 text-[11px] font-black text-moss">食後の残り枠</p>
                             <div className="mt-2 flex flex-wrap gap-1.5">
                               {fit.details.map((detail) => (
                                 <span className={`perfect-food-detail-chip perfect-food-detail-${detail.tone}`} key={detail.label}>{detail.label}</span>
@@ -3651,7 +3631,7 @@ function PerfectFoodModal({ dayTotals, goal, menuItems, onClose, onLog }: {
               <p className="perfect-food-panel rounded-md bg-rice p-4 text-center text-sm font-semibold text-moss">候補を出すにはゴール設定が必要です</p>
             )}
             <div className="grid grid-cols-2 gap-2">
-              <button className="secondary-button" onClick={() => setPage(1)}>戻る</button>
+              <button className="secondary-button" onClick={() => setPage(0)}>戻る</button>
               <button className="primary-button" onClick={onClose}>閉じる</button>
             </div>
           </div>
@@ -3664,29 +3644,28 @@ function PerfectFoodModal({ dayTotals, goal, menuItems, onClose, onLog }: {
 function getPerfectFoodFit(item: MenuItem, target: { calories: number; protein: number; fat: number; carbs: number }, mode: PerfectFoodMode = "improve") {
   const balance = getPerfectFoodBalance(item, target);
   const details: { label: string; tone: "protein" | "ok" | "warn" | "over" }[] = [];
-  const calorieLeftLabel = balance.calorieOver > 25 ? `kcal+${Math.round(balance.calorieOver)}` : `kcal余裕${Math.max(0, Math.round(balance.calorieLeft))}`;
+  const calorieLeftLabel = balance.calorieOver > 25 ? `kcal超過${Math.round(balance.calorieOver)}` : `残り${Math.max(0, Math.round(balance.calorieLeft))}kcal`;
   details.push({ label: calorieLeftLabel, tone: balance.calorieOver > 25 ? "over" : balance.calorieLeft <= 100 ? "warn" : "ok" });
   if (target.protein > 0) {
     details.push(balance.proteinLeft > 0.5
-      ? { label: `Pあと${round1(balance.proteinLeft)}g`, tone: "protein" }
-      : { label: "Pクリア", tone: "ok" });
+      ? { label: `P残り${round1(balance.proteinLeft)}g`, tone: "protein" }
+      : { label: "P残り0g", tone: "ok" });
   }
   if (target.fat > 0) {
     details.push(balance.fatOver > 0.5
-      ? { label: `F+${round1(balance.fatOver)}g`, tone: "over" }
-      : { label: `F余裕${round1(Math.max(0, balance.fatLeft))}g`, tone: balance.fatLeft <= 3 ? "warn" : "ok" });
+      ? { label: `F超過${round1(balance.fatOver)}g`, tone: "over" }
+      : { label: `F残り${round1(Math.max(0, balance.fatLeft))}g`, tone: balance.fatLeft <= 3 ? "warn" : "ok" });
   }
   if (target.carbs > 0) {
     details.push(balance.carbsOver > 0.5
-      ? { label: `C+${round1(balance.carbsOver)}g`, tone: "over" }
-      : { label: `C余裕${round1(Math.max(0, balance.carbsLeft))}g`, tone: balance.carbsLeft <= 10 ? "warn" : "ok" });
+      ? { label: `C超過${round1(balance.carbsOver)}g`, tone: "over" }
+      : { label: `C残り${round1(Math.max(0, balance.carbsLeft))}g`, tone: balance.carbsLeft <= 10 ? "warn" : "ok" });
   }
 
   if (mode === "fit") {
-    if (balance.hasOver) return { tone: "over" as const, label: "枠超過", details };
-    if (balance.nonProteinLoad >= 0.88) return { tone: "tight" as const, label: "枠ギリ", details };
-    if (balance.nonProteinLoad >= 0.45) return { tone: "good" as const, label: "食べられる", details };
-    return { tone: "easy" as const, label: "余裕あり", details };
+    if (balance.hasOver) return { tone: "over" as const, label: "超過あり", details };
+    if (balance.nonProteinLoad >= 0.88) return { tone: "tight" as const, label: "残り少なめ", details };
+    return { tone: "good" as const, label: "枠内", details };
   }
 
   if (balance.hasOver) return { tone: "over" as const, label: "超過あり", details };
