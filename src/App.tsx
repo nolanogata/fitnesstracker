@@ -12291,6 +12291,7 @@ function menuItemServingGrams(item: Pick<MenuItem, "serving_label" | "weight_g">
 }
 
 function getStaplePortionConfig(item: MenuItem): StaplePortionConfig | undefined {
+  if (isSupplementLikeMenuItem(item)) return undefined;
   const text = [item.name, item.category, item.serving_label, ...item.tags].filter(Boolean).join(" ");
   const hasNoodle = hasFoodToken(text, ["麺", "ラーメン", "油そば", "うどん", "そば", "パスタ", "焼きそば", "フォー", "春雨"]);
   const hasRice = hasFoodToken(text, ["ごはん", "ご飯", "白米", "ライス", "丼", "カレー", "定食", "弁当", "プレート", "ディッシュ", "ガパオ", "チャーハン", "オムライス"]);
@@ -12383,7 +12384,7 @@ function getPortionOptions(item: MenuItem): PortionOption[] {
     ];
   }
 
-  if (item.category === "プロテイン" || hasFoodToken(text, ["プロテイン", "プロテインバー", "プロテインドリンク", "プロテインゼリー"])) {
+  if (isSupplementLikeMenuItem(item) || item.category === "プロテイン" || hasFoodToken(text, ["プロテイン", "プロテインバー", "プロテインドリンク", "プロテインゼリー"])) {
     return [
       { label: "半分", value: 0.5 },
       { label: standardLabel === "普通" ? "1回分" : standardLabel, value: 1 },
@@ -12416,6 +12417,11 @@ function getPortionOptions(item: MenuItem): PortionOption[] {
 
 function hasFoodToken(text: string, tokens: string[]) {
   return tokens.some((token) => text.includes(token));
+}
+
+function isSupplementLikeMenuItem(item: Pick<MenuItem, "name" | "category" | "serving_label" | "tags">) {
+  const text = [item.name, item.category, item.serving_label, ...item.tags].filter(Boolean).join(" ");
+  return item.category === "サプリ" || hasFoodToken(text, ["サプリ", "クレアチン", "EAA", "BCAA", "グルタミン", "シトルリン", "プレワークアウト", "マルチビタミン", "ビタミン", "ミネラル"]);
 }
 
 function doubleServingLabel(servingLabel: string | undefined, fallback: string) {
