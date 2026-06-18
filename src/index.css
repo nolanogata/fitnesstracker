@@ -3857,6 +3857,148 @@ main[data-accent]:not([data-accent="classic"]) .ai-report-section .text-moss {
   color: var(--accent-readable) !important;
 }
 
+@keyframes hero-theme-glow-orbit {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 1px var(--accent-border),
+      -10px -8px 24px color-mix(in srgb, var(--accent-primary) 30%, transparent),
+      8px 8px 26px color-mix(in srgb, var(--accent-secondary) 22%, transparent),
+      0 0 12px rgba(0, 0, 0, 0.18),
+      var(--glass-highlight);
+  }
+  25% {
+    box-shadow:
+      0 0 0 1px var(--accent-border),
+      10px -8px 24px color-mix(in srgb, var(--accent-primary) 28%, transparent),
+      -8px 8px 28px color-mix(in srgb, var(--accent-secondary) 28%, transparent),
+      0 0 12px rgba(0, 0, 0, 0.18),
+      var(--glass-highlight);
+  }
+  50% {
+    box-shadow:
+      0 0 0 1px var(--accent-border),
+      10px 9px 28px color-mix(in srgb, var(--accent-primary) 28%, transparent),
+      -8px -8px 26px color-mix(in srgb, var(--accent-secondary) 30%, transparent),
+      0 0 12px rgba(0, 0, 0, 0.18),
+      var(--glass-highlight);
+  }
+  75% {
+    box-shadow:
+      0 0 0 1px var(--accent-border),
+      -10px 9px 26px color-mix(in srgb, var(--accent-primary) 28%, transparent),
+      8px -8px 28px color-mix(in srgb, var(--accent-secondary) 30%, transparent),
+      0 0 12px rgba(0, 0, 0, 0.18),
+      var(--glass-highlight);
+  }
+}
+
+:root[data-accent]:not([data-accent="classic"]) .home-hero-theme-frame {
+  border-color: var(--accent-border);
+}
+
+:root[data-accent]:not([data-accent="classic"]) .home-hero-theme-glow-0 {
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--accent-border) 52%, transparent),
+    0 0 10px color-mix(in srgb, var(--accent-secondary) 8%, transparent),
+    0 0 10px rgba(0, 0, 0, 0.12),
+    var(--glass-highlight);
+}
+
+:root[data-accent]:not([data-accent="classic"]) .home-hero-theme-glow-25 {
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--accent-border) 66%, transparent),
+    0 0 16px color-mix(in srgb, var(--accent-secondary) 12%, transparent),
+    0 0 10px rgba(0, 0, 0, 0.13),
+    var(--glass-highlight);
+}
+
+:root[data-accent]:not([data-accent="classic"]) .home-hero-theme-glow-50 {
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--accent-border) 78%, transparent),
+    0 0 22px color-mix(in srgb, var(--accent-secondary) 17%, transparent),
+    0 0 12px rgba(0, 0, 0, 0.14),
+    var(--glass-highlight);
+}
+
+:root[data-accent]:not([data-accent="classic"]) .home-hero-theme-glow-75 {
+  box-shadow:
+    0 0 0 1px var(--accent-border),
+    0 0 28px color-mix(in srgb, var(--accent-secondary) 24%, transparent),
+    0 0 16px color-mix(in srgb, var(--accent-primary) 14%, transparent),
+    0 0 12px rgba(0, 0, 0, 0.15),
+    var(--glass-highlight);
+}
+
+:root[data-accent]:not([data-accent="classic"]) .home-hero-theme-glow-90 {
+  box-shadow:
+    0 0 0 1px var(--accent-border),
+    0 0 34px color-mix(in srgb, var(--accent-secondary) 34%, transparent),
+    0 0 22px color-mix(in srgb, var(--accent-primary) 22%, transparent),
+    0 0 12px rgba(0, 0, 0, 0.16),
+    var(--glass-highlight);
+}
+
+:root[data-accent]:not([data-accent="classic"]) .home-hero-theme-spin {
+  animation: hero-theme-glow-orbit 3.2s ease-in-out infinite;
+}
+
+:root[data-accent="crazy_pink"] .home-macro-pill,
+:root[data-accent="crazy_yellow"] .home-macro-pill {
+  box-shadow: 0 0 10px color-mix(in srgb, var(--accent-secondary) 10%, transparent), var(--glass-highlight);
+}
+
+:root[data-accent="crazy_pink"] .home-macro-low,
+:root[data-accent="crazy_yellow"] .home-macro-low {
+  color: var(--accent-pill-color);
+  background: color-mix(in srgb, var(--accent-secondary) 14%, transparent);
+}
+
+:root[data-accent="crazy_pink"] .home-macro-low .home-macro-dot,
+:root[data-accent="crazy_yellow"] .home-macro-low .home-macro-dot {
+  background: var(--accent-pill-dot);
+  box-shadow: 0 0 8px var(--accent-icon-shadow);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root[data-accent]:not([data-accent="classic"]) .home-hero-theme-spin {
+    animation: none;
+  }
+}
+
+:root:not([data-accent="classic"]):not([data-accent="graphite"]) .source-badge-estimated,
+:root:not([data-accent="classic"]):not([data-accent="graphite"]) .source-badge-user,
+:root:not([data-accent="classic"]):not([data-accent="graphite"]) .source-badge-quick,
+:root:not([data-accent="classic"]):not([data-accent="graphite"]) .source-badge-partial,
+:root:not([data-accent="classic"]):not([data-accent="graphite"]) .perfect-food-fit-badge,
+:root:not([data-accent="classic"]):not([data-accent="graphite"]) .perfect-food-detail-chip:not(.perfect-food-detail-ok),
+main[data-accent]:not([data-accent="classic"]):not([data-accent="graphite"]) .source-badge-estimated,
+main[data-accent]:not([data-accent="classic"]):not([data-accent="graphite"]) .source-badge-user,
+main[data-accent]:not([data-accent="classic"]):not([data-accent="graphite"]) .source-badge-quick,
+main[data-accent]:not([data-accent="classic"]):not([data-accent="graphite"]) .source-badge-partial,
+main[data-accent]:not([data-accent="classic"]):not([data-accent="graphite"]) .perfect-food-fit-badge,
+main[data-accent]:not([data-accent="classic"]):not([data-accent="graphite"]) .perfect-food-detail-chip:not(.perfect-food-detail-ok) {
+  border-color: color-mix(in srgb, var(--accent-secondary) 20%, var(--glass-border));
+  background: color-mix(in srgb, var(--accent-secondary) 10%, var(--glass-bg-soft));
+  color: color-mix(in srgb, var(--accent-readable) 72%, var(--text-secondary)) !important;
+  box-shadow: var(--glass-highlight);
+  filter: saturate(0.72);
+}
+
+:root:not([data-accent="classic"]):not([data-accent="graphite"]) .perfect-food-detail-ok,
+main[data-accent]:not([data-accent="classic"]):not([data-accent="graphite"]) .perfect-food-detail-ok {
+  border-color: color-mix(in srgb, var(--accent-secondary) 28%, var(--glass-border));
+  background: color-mix(in srgb, var(--accent-secondary) 14%, var(--glass-bg-soft));
+  color: color-mix(in srgb, var(--accent-readable) 78%, var(--text-secondary));
+}
+
+:root:not([data-accent="classic"]):not([data-accent="graphite"]) .source-badge-official,
+main[data-accent]:not([data-accent="classic"]):not([data-accent="graphite"]) .source-badge-official,
+:root:not([data-accent="classic"]):not([data-accent="graphite"]) .recommendation-rank-badge,
+main[data-accent]:not([data-accent="classic"]):not([data-accent="graphite"]) .recommendation-rank-badge {
+  filter: saturate(0.98);
+}
+
 .theme-dark .bg-rice,
 .theme-dark .bg-surface,
 .theme-dark .bg-white,
