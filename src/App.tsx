@@ -106,6 +106,8 @@ const themeAccentOptions: Array<{ value: ThemeAccent; label: string; colors: [st
   { value: "orange", label: "オレンジ", colors: ["#b75a12", "#ff9f32"] },
   { value: "aqua", label: "アクア", colors: ["#2f6f78", "#72bfd0"] },
   { value: "graphite", label: "グラファイト", colors: ["#4d5559", "#a6b0b5"] },
+  { value: "crazy_pink", label: "クレイジーピンク", colors: ["#ff2bd6", "#8a2cff"] },
+  { value: "crazy_yellow", label: "クレイジーイエロー", colors: ["#f4ff00", "#00ffa8"] },
 ];
 const themeAccentLabels = Object.fromEntries(themeAccentOptions.map((option) => [option.value, option.label])) as Record<ThemeAccent, string>;
 function normalizeThemeAccent(value: unknown): ThemeAccent {

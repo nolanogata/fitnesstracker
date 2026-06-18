@@ -13,7 +13,7 @@ export type DataSource = "official" | "unofficial" | "estimated" | "quick_estima
 export type Confidence = "high" | "medium" | "low";
 export type MealType = "breakfast" | "lunch" | "dinner" | "snack" | "gym_before" | "gym_after";
 export type ThemeMode = "system" | "light" | "dark";
-export type ThemeAccent = "classic" | "orange" | "aqua" | "graphite";
+export type ThemeAccent = "classic" | "orange" | "aqua" | "graphite" | "crazy_pink" | "crazy_yellow";
 export type SpecialModeId = "hokkaido_trip" | string;
 
 export type SpecialModeSettings = {
