@@ -29,6 +29,7 @@ import { doutorOfficialFoods } from "./chains/doutorOfficial";
 import { externalNutritionFoods } from "./externalNutrition";
 import { gyudonTeishokuOfficialCoverageFoods } from "./chains/gyudonTeishokuOfficialCoverage";
 import { italianRestaurantMenuFoods } from "./chains/italianRestaurantMenus";
+import { ikinariSteakOfficialFoods } from "./chains/ikinaristeakOfficial";
 import { kfcOfficialFoods } from "./chains/kfcOfficial";
 import { komerakuMenuFoods } from "./chains/komerakuMenu";
 import { konamonoChainFoods } from "./chains/konamonoChains";
@@ -95,6 +96,7 @@ export const foodSeeds = [
   ...bikkuriDonkeyMenuFoods,
   ...italianRestaurantMenuFoods,
   ...panchoMenuFoods,
+  ...ikinariSteakOfficialFoods,
   ...pepperLunchTsukemenMenuFoods,
   ...tondenMenuFoods,
   ...monsoonCafeMenuFoods,
