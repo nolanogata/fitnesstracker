@@ -1429,7 +1429,7 @@ button {
 
 .home-pull-shell .home-dashboard {
   display: grid;
-  gap: 0.9rem;
+  gap: 1.3rem;
   transition: transform 180ms ease;
 }
 
