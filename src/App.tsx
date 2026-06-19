@@ -12548,27 +12548,15 @@ function buildMenuSizeVariantIndex(items: MenuItem[]): MenuSizeVariantIndex {
 }
 
 function mergeMenuSizeVariantItems(items: MenuItem[], variantIndex: MenuSizeVariantIndex) {
-  const groups = new Map<string, MenuSizeVariant[]>();
-  items.forEach((item) => {
+  const emittedGroupKeys = new Set<string>();
+  return items.flatMap((item) => {
     const variant = variantIndex.variantsByItemId.get(item.id);
-    if (!variant) return;
-    groups.set(variant.groupKey, [...(groups.get(variant.groupKey) ?? []), variant]);
-  });
-  const groupedItemIds = new Set(
-    [...groups.values()]
-      .filter((variants) => variants.length > 1)
-      .flatMap((variants) => variants.map((variant) => variant.item.id)),
-  );
-  const representativeByGroup = new Map<string, string>();
-  [...groups.entries()].forEach(([groupKey, variants]) => {
-    if (variants.length <= 1) return;
-    const representative = pickMenuSizeVariantRepresentative(variants);
-    representativeByGroup.set(groupKey, representative.item.id);
-  });
-  return items.filter((item) => {
-    if (!groupedItemIds.has(item.id)) return true;
-    const variant = variantIndex.variantsByItemId.get(item.id);
-    return !!variant && representativeByGroup.get(variant.groupKey) === item.id;
+    if (!variant) return [item];
+    const groupVariants = variantIndex.variantsByGroupKey.get(variant.groupKey) ?? [];
+    if (groupVariants.length <= 1) return [item];
+    if (emittedGroupKeys.has(variant.groupKey)) return [];
+    emittedGroupKeys.add(variant.groupKey);
+    return [pickMenuSizeVariantRepresentative(groupVariants).item];
   });
 }
 

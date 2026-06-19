@@ -42,6 +42,7 @@ export type Settings = {
   onboarding_completed: boolean;
   theme_mode?: ThemeMode;
   theme_accent?: ThemeAccent;
+  data_seed_version?: number;
   active_goal_id?: string;
   hidden_workout_template_ids?: string[];
   special_modes?: SpecialModeSettings[];

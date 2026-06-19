@@ -1,5 +1,5 @@
 import type { MenuItem } from "../../../types";
-import { stableId } from "../../../lib/ids";
+import { stableIdWithHash } from "../../../lib/ids";
 
 type SeedInput = Omit<MenuItem, "id" | "created_at" | "updated_at" | "is_public_preset" | "is_user_created" | "is_favorite"> & {
   is_favorite?: boolean;
@@ -8,7 +8,7 @@ type SeedInput = Omit<MenuItem, "id" | "created_at" | "updated_at" | "is_public_
 export const makeMenuSeed = (input: SeedInput): MenuItem => {
   const timestamp = "2026-01-01T00:00:00.000Z";
   return {
-    id: stableId("menu", [input.brand, input.name, input.serving_label, input.data_source]),
+    id: stableIdWithHash("menu", [input.brand, input.name, input.serving_label, input.data_source]),
     ...input,
     is_public_preset: input.data_source !== "user",
     is_user_created: false,
