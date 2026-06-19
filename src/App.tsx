@@ -1958,7 +1958,7 @@ function App() {
   };
 
   const refresh = async () => {
-    const [nextSettings, nextProfile, nextGoals, nextMenu, nextFood, nextWeights, nextExercises, nextTemplates, nextSessions, nextWorkoutExercises, nextSets, nextReports] =
+    const [nextSettings, nextProfile, nextGoals, nextMenu, rawFood, nextWeights, nextExercises, nextTemplates, nextSessions, nextWorkoutExercises, nextSets, nextReports] =
       await Promise.all([
         db.settings.get("local"),
         db.profile.get("local"),
@@ -1973,6 +1973,11 @@ function App() {
         db.workout_sets.toArray(),
         db.ai_reports.toArray(),
       ]);
+    const repairedFoodResult = repairExactSizeVariantFoodEntries(rawFood, nextMenu);
+    if (repairedFoodResult.updates.length) {
+      await Promise.all(repairedFoodResult.updates.map(({ id, patch }) => db.food_entries.update(id, patch)));
+    }
+    const nextFood = repairedFoodResult.entries;
     setSettings(nextSettings);
     setProfile(nextProfile);
     setGoals(nextGoals);
@@ -12566,6 +12571,81 @@ function findExactMenuSizeVariantByGrams(selected: MenuItem, variantIndex: MenuS
     })
     .filter((entry): entry is { variant: MenuSizeVariant; grams: number } => !!entry)
     .find((entry) => Math.abs(entry.grams - roundedTarget) < 0.1)?.variant.item;
+}
+
+function repairExactSizeVariantFoodEntries(entries: FoodEntry[], menuItems: MenuItem[]) {
+  const menuById = new Map(menuItems.map((item) => [item.id, item]));
+  const variantIndex = buildMenuSizeVariantIndex(menuItems);
+  const timestamp = nowIso();
+  const updates: Array<{ id: string; patch: Partial<FoodEntry> }> = [];
+  const repairedEntries = entries.map((entry) => {
+    const currentItem = entry.menu_item_id ? menuById.get(entry.menu_item_id) : undefined;
+    if (!currentItem || currentItem.is_user_created || currentItem.data_source !== "official") return entry;
+    const targetGrams = extractLoggedFoodPortionGrams(entry);
+    if (!targetGrams) return entry;
+    const exactItem = findExactMenuSizeVariantByGrams(currentItem, variantIndex, targetGrams);
+    if (!exactItem || exactItem.data_source !== "official") return entry;
+    const baseGrams = getStaplePortionConfigs(currentItem)[0]?.defaultGrams;
+    const baseRatio = baseGrams ? targetGrams / baseGrams : 1;
+    const quantity = baseRatio > 0 ? Math.max(1, Math.round((entry.portion_multiplier || 1) / baseRatio)) : Math.max(1, Math.round(entry.portion_multiplier || 1));
+    const nextName = formatFoodLoggedName(exactItem.name, entry.name === exactItem.name ? undefined : extractLoggedFoodPortionLabel(entry));
+    const nextEntry: FoodEntry = {
+      ...entry,
+      name: nextName,
+      brand: exactItem.brand,
+      calories: Math.round(exactItem.calories * quantity),
+      protein_g: round1(exactItem.protein_g * quantity),
+      fat_g: round1(exactItem.fat_g * quantity),
+      carbs_g: round1(exactItem.carbs_g * quantity),
+      salt_g: exactItem.salt_g === undefined ? undefined : round1(exactItem.salt_g * quantity),
+      portion_multiplier: quantity,
+      entry_source: exactItem.data_source,
+      confidence: exactItem.confidence,
+      menu_item_id: exactItem.id,
+      updated_at: timestamp,
+    };
+    const didChange = (
+      nextEntry.menu_item_id !== entry.menu_item_id ||
+      nextEntry.name !== entry.name ||
+      nextEntry.calories !== entry.calories ||
+      Math.abs(nextEntry.protein_g - entry.protein_g) >= 0.1 ||
+      Math.abs(nextEntry.fat_g - entry.fat_g) >= 0.1 ||
+      Math.abs(nextEntry.carbs_g - entry.carbs_g) >= 0.1 ||
+      nextEntry.portion_multiplier !== entry.portion_multiplier
+    );
+    if (!didChange) return entry;
+    updates.push({
+      id: entry.id,
+      patch: {
+        name: nextEntry.name,
+        brand: nextEntry.brand,
+        calories: nextEntry.calories,
+        protein_g: nextEntry.protein_g,
+        fat_g: nextEntry.fat_g,
+        carbs_g: nextEntry.carbs_g,
+        salt_g: nextEntry.salt_g,
+        portion_multiplier: nextEntry.portion_multiplier,
+        entry_source: nextEntry.entry_source,
+        confidence: nextEntry.confidence,
+        menu_item_id: nextEntry.menu_item_id,
+        updated_at: nextEntry.updated_at,
+      },
+    });
+    return nextEntry;
+  });
+  return { entries: repairedEntries, updates };
+}
+
+function extractLoggedFoodPortionGrams(entry: FoodEntry) {
+  const text = [entry.name, entry.note].filter(Boolean).join(" ");
+  const match = text.match(/(?:肉|ステーキ|ハンバーグ|バーグ|チキン)\s*(\d+(?:\.\d+)?)\s*g/i);
+  return match ? Number(match[1]) : undefined;
+}
+
+function extractLoggedFoodPortionLabel(entry: FoodEntry) {
+  const text = [entry.note, entry.name].filter(Boolean).join(" ");
+  const match = text.match(/(?:記録量:\s*)?((?:肉|ステーキ|ハンバーグ|バーグ|チキン)\s*\d+(?:\.\d+)?\s*g)/i);
+  return match?.[1]?.replace(/\s+/g, "");
 }
 
 function getMenuDisplayName(item: MenuItem, variantIndex: MenuSizeVariantIndex) {
