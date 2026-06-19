@@ -3,6 +3,14 @@ import { foodSeeds } from "./seeds/foods";
 import { exerciseSeeds, workoutTemplateSeeds } from "./seeds/workouts";
 import { nowIso } from "../lib/date";
 
+const DATA_SEED_VERSION = 2026061903;
+
+function menuSeedNaturalKey(item: { brand?: string; name: string; serving_label?: string; data_source: string }) {
+  return [item.brand ?? "", item.name, item.serving_label ?? "", item.data_source]
+    .map((value) => value.trim().toLowerCase())
+    .join("|");
+}
+
 export async function initializeSeeds() {
   const timestamp = nowIso();
   await db.transaction("rw", db.settings, db.menu_items, db.exercise_presets, db.workout_templates, async () => {
@@ -17,6 +25,10 @@ export async function initializeSeeds() {
     const userCorrectedMenuItemIds = new Set(existingMenuItems
       .filter((item) => !item.is_user_created && item.data_source === "user")
       .map((item) => item.id));
+    const userCorrectedMenuItemKeys = new Set(existingMenuItems
+      .filter((item) => !item.is_user_created && item.data_source === "user")
+      .map(menuSeedNaturalKey));
+    const foodSeedIdByNaturalKey = new Map(foodSeeds.map((item) => [menuSeedNaturalKey(item), item.id]));
     const favoriteExerciseIds = new Set(existingExercises.filter((exercise) => exercise.is_favorite).map((exercise) => exercise.id));
     const workoutTemplateOrders = new Map(existingWorkoutTemplates.map((template) => [template.id, template.display_order]));
     const officialFoodReplacementNames = new Set([
@@ -77,6 +89,7 @@ export async function initializeSeeds() {
     const fullFoodRefreshBrands = new Set([
       "いきなりステーキ",
     ]);
+    const shouldRunCriticalFoodRefresh = (settings?.data_seed_version ?? 0) < DATA_SEED_VERSION;
     if (!settings) {
       await db.settings.put({
         id: "local",
@@ -84,7 +97,13 @@ export async function initializeSeeds() {
         onboarding_completed: false,
         theme_mode: "system",
         theme_accent: "classic",
+        data_seed_version: DATA_SEED_VERSION,
         created_at: timestamp,
+        updated_at: timestamp,
+      });
+    } else if (shouldRunCriticalFoodRefresh) {
+      await db.settings.update("local", {
+        data_seed_version: DATA_SEED_VERSION,
         updated_at: timestamp,
       });
     }
@@ -92,7 +111,9 @@ export async function initializeSeeds() {
     await db.menu_items.bulkDelete(existingMenuItems
       .filter((item) => {
         if (item.is_user_created || item.data_source === "user") return false;
-        if (fullFoodRefreshBrands.has(item.brand ?? "")) return true;
+        const seedId = foodSeedIdByNaturalKey.get(menuSeedNaturalKey(item));
+        if (seedId && seedId !== item.id) return true;
+        if (shouldRunCriticalFoodRefresh && fullFoodRefreshBrands.has(item.brand ?? "")) return true;
         if (["大戸屋", "はなまるうどん", "タリーズ", "なか卯"].includes(item.brand ?? "") && item.data_source === "estimated") return true;
         if (item.brand === "しんぱち食堂" && item.data_source === "estimated") return true;
         if (officialFoodRefreshBrands.has(item.brand ?? "") && item.data_source === "official") return true;
@@ -100,7 +121,7 @@ export async function initializeSeeds() {
       })
       .map((item) => item.id));
     await db.menu_items.bulkPut(foodSeeds
-      .filter((item) => !userCorrectedMenuItemIds.has(item.id))
+      .filter((item) => !userCorrectedMenuItemIds.has(item.id) && !userCorrectedMenuItemKeys.has(menuSeedNaturalKey(item)))
       .map((item) => ({
         ...item,
         is_favorite: item.is_favorite || favoriteMenuItemIds.has(item.id) || favoriteMenuItemKeys.has(`${item.brand ?? ""}|${item.name}`),
