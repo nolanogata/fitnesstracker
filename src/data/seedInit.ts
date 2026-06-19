@@ -63,6 +63,20 @@ export async function initializeSeeds() {
       "ドトール|チーズトースト",
       "ドトール|ミルクレープ",
     ]);
+    const officialFoodRefreshBrands = new Set([
+      "ケンタッキー",
+      "モスバーガー",
+      "サブウェイ",
+      "ドトール",
+      "タリーズ",
+      "なか卯",
+      "はなまるうどん",
+      "CoCo壱番屋",
+      "いきなりステーキ",
+    ]);
+    const fullFoodRefreshBrands = new Set([
+      "いきなりステーキ",
+    ]);
     if (!settings) {
       await db.settings.put({
         id: "local",
@@ -78,9 +92,10 @@ export async function initializeSeeds() {
     await db.menu_items.bulkDelete(existingMenuItems
       .filter((item) => {
         if (item.is_user_created || item.data_source === "user") return false;
+        if (fullFoodRefreshBrands.has(item.brand ?? "")) return true;
         if (["大戸屋", "はなまるうどん", "タリーズ", "なか卯"].includes(item.brand ?? "") && item.data_source === "estimated") return true;
         if (item.brand === "しんぱち食堂" && item.data_source === "estimated") return true;
-        if (["ケンタッキー", "モスバーガー", "サブウェイ", "ドトール", "タリーズ", "なか卯", "はなまるうどん", "CoCo壱番屋"].includes(item.brand ?? "") && item.data_source === "official") return true;
+        if (officialFoodRefreshBrands.has(item.brand ?? "") && item.data_source === "official") return true;
         return officialFoodReplacementNames.has(`${item.brand ?? ""}|${item.name}`);
       })
       .map((item) => item.id));

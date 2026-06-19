@@ -12695,7 +12695,6 @@ function getMenuSizeVariant(item: MenuItem): MenuSizeVariant | undefined {
   if (!baseName || baseName === item.name && !fromServing) return undefined;
   const groupKey = [
     item.brand,
-    item.category,
     baseName,
   ].map(normalizeExactMenuKeyPart).join("|");
   return {
