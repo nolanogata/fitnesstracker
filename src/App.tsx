@@ -7303,16 +7303,16 @@ function SettingsTab(props: {
             </div>
             <button className="primary-button shrink-0 px-3 py-2 text-xs" onClick={startNewUserMenuItem}><Plus size={15} />新規</button>
           </div>
-          <div className="divide-y divide-line overflow-hidden rounded-3xl border border-line/70 bg-white/30">
+          <div className="settings-record-list">
             {userMenuItems.map((item) => (
-              <div className="flex items-center justify-between gap-3 px-3 py-2" key={item.id}>
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold">{formatMenuItemName(item)}</p>
-                  <p className="numeric-text truncate text-xs text-moss">{item.brand || item.category} · {item.serving_label ? `${item.serving_label} · ` : ""}{item.calories}kcal · P{item.protein_g} F{item.fat_g} C{item.carbs_g}</p>
+              <div className="settings-record-row" key={item.id}>
+                <div className="settings-record-content">
+                  <p className="settings-record-title">{formatMenuItemName(item)}</p>
+                  <p className="settings-record-meta">{item.brand || item.category} · {item.serving_label ? `${item.serving_label} · ` : ""}{item.calories}kcal · P{item.protein_g} F{item.fat_g} C{item.carbs_g}</p>
                 </div>
                 <div className="flex shrink-0 gap-1">
-                  <button className="icon-button h-8 w-8" aria-label={`${formatMenuItemName(item)}を編集`} onClick={() => editUserMenuItem(item)}><Pencil size={14} /></button>
-                  <button className="icon-button h-8 w-8 text-clay" aria-label={`${formatMenuItemName(item)}を削除`} onClick={() => deleteUserMenuItem(item)}><Trash2 size={14} /></button>
+                  <button className="icon-button settings-record-action" aria-label={`${formatMenuItemName(item)}を編集`} onClick={() => editUserMenuItem(item)}><Pencil size={14} /></button>
+                  <button className="icon-button settings-record-action settings-record-action-danger" aria-label={`${formatMenuItemName(item)}を削除`} onClick={() => deleteUserMenuItem(item)}><Trash2 size={14} /></button>
                 </div>
               </div>
             ))}
@@ -7368,19 +7368,19 @@ function SettingsTab(props: {
             </div>
             <button className="primary-button shrink-0 px-3 py-2 text-xs" onClick={startNewSettingsMyTraining}><Plus size={15} />新規</button>
           </div>
-          <div className="divide-y divide-line overflow-hidden rounded-3xl border border-line/70 bg-white/30">
+          <div className="settings-record-list">
             {myTrainingExercises.map((exercise) => {
               const pictogram = getWorkoutPictogram(exercise.body_part, exercise.equipment_type);
               return (
-                <div className="flex items-center justify-between gap-3 px-3 py-2" key={exercise.id}>
+                <div className="settings-record-row" key={exercise.id}>
                   <Pictogram {...pictogram} />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-semibold">{exercise.name}</p>
-                    <p className="numeric-text truncate text-xs text-moss">{exercise.body_part} · {exercise.equipment_type}</p>
+                  <div className="settings-record-content">
+                    <p className="settings-record-title">{exercise.name}</p>
+                    <p className="settings-record-meta">{exercise.body_part} · {exercise.equipment_type}</p>
                   </div>
                   <div className="flex shrink-0 gap-1">
-                    <button className="icon-button h-8 w-8" aria-label={`${exercise.name}を編集`} onClick={() => editSettingsMyTraining(exercise)}><Pencil size={14} /></button>
-                    <button className="icon-button h-8 w-8 text-clay" aria-label={`${exercise.name}を削除`} onClick={() => deleteSettingsMyTraining(exercise)}><Trash2 size={14} /></button>
+                    <button className="icon-button settings-record-action" aria-label={`${exercise.name}を編集`} onClick={() => editSettingsMyTraining(exercise)}><Pencil size={14} /></button>
+                    <button className="icon-button settings-record-action settings-record-action-danger" aria-label={`${exercise.name}を削除`} onClick={() => deleteSettingsMyTraining(exercise)}><Trash2 size={14} /></button>
                   </div>
                 </div>
               );
