@@ -1,4 +1,5 @@
-import { estimated, official } from "./helpers";
+import { official } from "./helpers";
+import { estimatedWithProfileTags } from "./estimationProfiles";
 
 const fetchedAt = "2026-06-14T00:00:00.000Z";
 
@@ -33,11 +34,12 @@ const officialProduct = (input: ProductInput) =>
   });
 
 const estimatedProduct = (input: ProductInput) =>
-  estimated({
+  estimatedWithProfileTags({
     ...input,
     tags: ["プロテイン", "タンパク質", "公式商品確認", "栄養推定", ...input.tags],
     default_meal_type: "snack",
     fetched_at: fetchedAt,
+    profile: "supplement",
   });
 
 export const proteinProductFoods = [
@@ -87,5 +89,5 @@ export const proteinProductFoods = [
   officialProduct({ brand: "森永製菓", name: "inバー プロテイン グラノーラ", category: "プロテイン", tags: ["プロテインバー", "inバー", "グラノーラ", "低脂質", "食塩上限値"], calories: 114, protein_g: 10.9, fat_g: 0.6, carbs_g: 17.1, salt_g: 0.51, serving_label: "33g", source_url: morinagaBarSource }),
   officialProduct({ brand: "森永製菓", name: "inバー ジュニアプロテイン ココア", category: "プロテイン", tags: ["プロテインバー", "inバー", "ジュニア", "食塩上限値"], calories: 152, protein_g: 8.6, fat_g: 8.5, carbs_g: 10.3, salt_g: 0.6, serving_label: "30g", source_url: morinagaBarSource }),
 
-  estimated({ brand: "NUTO", name: "NUTO プロテイン", category: "プロテイン", tags: ["プロテイン", "タンパク質", "プロテインパウダー", "ホエイ", "ラベル確認"], calories: 114, protein_g: 21, fat_g: 1.5, carbs_g: 4.1, salt_g: 0.1, serving_label: "1杯分 28g", default_meal_type: "snack", fetched_at: fetchedAt }),
+  estimatedWithProfileTags({ brand: "NUTO", name: "NUTO プロテイン", category: "プロテイン", tags: ["プロテイン", "タンパク質", "プロテインパウダー", "ホエイ", "ラベル確認"], calories: 114, protein_g: 21, fat_g: 1.5, carbs_g: 4.1, salt_g: 0.1, serving_label: "1杯分 28g", default_meal_type: "snack", fetched_at: fetchedAt, profile: "supplement" }),
 ];

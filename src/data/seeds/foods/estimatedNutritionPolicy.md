@@ -56,11 +56,12 @@ Migrated to shared profiles:
 - `donutChains.ts`, `cafeMenus.ts`, `costcoFoodCourt.ts`, `dailyChainsOfficial.ts`, `shinpachiEstimated.ts`: remaining chain-scoped estimated rows now use shared profile evidence tags; official rows remain official.
 - `generic.ts`: generic fallback menu rows now keep their existing kcal/P/F/C values while adding inferred profile evidence tags by category, name, tags, and serving label.
 - `genericKonamono.ts`: generic powder/flour-based menu rows now add profile evidence tags while keeping existing kcal/P/F/C values.
+- `frozenFoods.ts`, `pantryProducts.ts`, `proteinProducts.ts`, `hokkaidoTravelFoods.ts`: package, pantry, protein, frozen, and travel-food estimates now preserve existing values while adding shared profile evidence tags.
 
 Needs later cleanup:
 
-- Non-chain package, pantry, frozen, protein, and travel-food estimates that manually entered kcal/P/F/C without `推定方式:*` tags.
 - Store-scoped menus where rice size or side contents vary by location.
+- Mixed staple sets should keep editable staple components explicit, for example noodle amount and rice/bowl amount on the same item.
 
 ## Generic Preset Rule
 

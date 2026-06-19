@@ -1,4 +1,4 @@
-import { estimated } from "./helpers";
+import { estimatedWithProfileTags, type NutritionEstimateProfile } from "./estimationProfiles";
 
 const fetchedAt = "2026-06-15T00:00:00.000Z";
 
@@ -17,12 +17,19 @@ type PantryProductInput = {
 };
 
 const pantryProduct = (input: PantryProductInput) =>
-  estimated({
+  estimatedWithProfileTags({
     ...input,
     tags: ["市販品", "ストック食品", ...input.tags],
     default_meal_type: "snack",
     fetched_at: fetchedAt,
+    profile: inferPantryProfile(input),
   });
+
+const inferPantryProfile = (input: PantryProductInput): NutritionEstimateProfile => {
+  const text = [input.name, input.category, ...input.tags].join(" ");
+  if (text.includes("サバ") || text.includes("さば") || text.includes("イワシ") || text.includes("いわし") || text.includes("魚")) return "fishSetMeal";
+  return "proteinTopping";
+};
 
 const hagoromoSource = "https://www.hagoromofoods.co.jp/";
 const maruhaSource = "https://www.maruha-nichiro.co.jp/products/";
