@@ -14,6 +14,9 @@ UI confidence labels:
 - `推定値 · 信用度 低`: no official or third-party source was checked for that row.
 - `非公式値 · 信用度 中`: third-party nutrition source, not brand-verified.
 
+Estimated nutrition rules are maintained in `src/data/seeds/foods/estimatedNutritionPolicy.md`.
+New estimated rows should use shared estimation profiles from `src/data/seeds/foods/estimationProfiles.ts` when a suitable profile exists.
+
 ## Priority Official Sources
 
 - KFC: official nutrition PDF. Added selected core items from the 2026-06-03 nutrition sheet.
