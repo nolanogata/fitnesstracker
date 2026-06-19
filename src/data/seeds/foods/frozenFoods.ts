@@ -1,4 +1,4 @@
-import { estimated } from "./helpers";
+import { estimatedWithProfileTags, type NutritionEstimateProfile } from "./estimationProfiles";
 
 const fetchedAt = "2026-06-15T00:00:00.000Z";
 
@@ -17,23 +17,44 @@ type FrozenInput = {
 };
 
 const frozenGeneric = (input: FrozenInput) =>
-  estimated({
+  estimatedWithProfileTags({
     ...input,
     tags: ["冷凍食品", "一般", ...input.tags],
     default_meal_type: "lunch",
     fetched_at: fetchedAt,
+    profile: inferFrozenProfile(input),
   });
 
 type FrozenProductInput = Required<Pick<FrozenInput, "brand" | "source_url">> & Omit<FrozenInput, "brand" | "source_url" | "category">;
 
 const frozenEstimatedProduct = (input: FrozenProductInput) =>
-  estimated({
+  estimatedWithProfileTags({
     ...input,
     category: "冷凍食品",
     tags: ["市販品", "冷凍食品", "公式商品確認", "栄養推定", ...input.tags],
     default_meal_type: "lunch",
     fetched_at: fetchedAt,
+    profile: inferFrozenProfile({ ...input, category: "冷凍食品" }),
   });
+
+const inferFrozenProfile = (input: FrozenInput): NutritionEstimateProfile => {
+  const text = [input.brand, input.name, input.category, input.serving_label, ...input.tags].filter(Boolean).join(" ");
+  if (text.includes("チャーハン") || text.includes("炒飯") || text.includes("ビビンバ")) return "friedRice";
+  if (text.includes("おにぎり")) return "onigiri";
+  if (text.includes("ピラフ") || text.includes("チキンライス")) return "plainRice";
+  if (text.includes("ラーメン") || text.includes("担々麺") || text.includes("ちゃんぽん")) return "ramen";
+  if (text.includes("うどん") || text.includes("そば") || text.includes("焼そば") || text.includes("焼きそば")) return "sobaNoodle";
+  if (text.includes("カルボナーラ") || text.includes("クリーミー")) return "creamPasta";
+  if (text.includes("ペペロンチーノ")) return "oilPasta";
+  if (text.includes("パスタ") || text.includes("スパゲティ") || text.includes("ナポリタン")) return "pasta";
+  if (text.includes("餃子") || text.includes("ギョーザ")) return "gyoza";
+  if (text.includes("唐揚げ") || text.includes("から揚げ") || text.includes("フライ") || text.includes("コロッケ") || text.includes("揚げ")) return "friedSide";
+  if (text.includes("ハンバーグ")) return "hamburgerPlate";
+  if (text.includes("グラタン")) return "riceSetMeal";
+  if (text.includes("お好み焼") || text.includes("ねぎ焼") || text.includes("たこ焼")) return "konamono";
+  if (text.includes("今川焼") || text.includes("スイーツ") || text.includes("和菓子")) return "dessert";
+  return "riceSetMeal";
+};
 
 export const frozenFoods = [
   frozenGeneric({ name: "冷凍チャーハン", category: "ごはん・丼", tags: ["チャーハン", "主食"], calories: 610, protein_g: 16, fat_g: 20, carbs_g: 92, salt_g: 3.2, serving_label: "1食 300g" }),

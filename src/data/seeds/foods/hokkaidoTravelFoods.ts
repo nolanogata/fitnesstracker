@@ -1,4 +1,4 @@
-import { estimated } from "./helpers";
+import { estimatedWithProfileTags, type NutritionEstimateProfile } from "./estimationProfiles";
 import type { MealType } from "../../../types";
 
 const fetchedAt = "2026-06-16T00:00:00.000Z";
@@ -25,7 +25,7 @@ type HokkaidoTravelFood = {
 };
 
 const travelFood = (item: HokkaidoTravelFood) =>
-  estimated({
+  estimatedWithProfileTags({
     brand: item.brand,
     name: item.name,
     category: item.category,
@@ -39,7 +39,31 @@ const travelFood = (item: HokkaidoTravelFood) =>
     default_meal_type: item.default_meal_type ?? "lunch",
     source_url: item.source_url,
     fetched_at: fetchedAt,
+    profile: inferTravelProfile(item),
   });
+
+const inferTravelProfile = (item: HokkaidoTravelFood): NutritionEstimateProfile => {
+  const text = [item.brand, item.name, item.category, item.serving_label, ...item.tags].filter(Boolean).join(" ");
+  if (text.includes("寿司") || text.includes("握り") || text.includes("軍艦") || text.includes("巻物") || text.includes("海鮮丼") || text.includes("いなり")) return "sushiRiceBowl";
+  if (text.includes("ラーメン")) return "ramen";
+  if (text.includes("うどん") || text.includes("そば")) return "sobaNoodle";
+  if (text.includes("スープカレー") || text.includes("カレー")) return "curryRice";
+  if (text.includes("豚丼") || text.includes("丼")) return "riceBowl";
+  if (text.includes("炊き込み") || text.includes("ガーリックライス") || text.includes("ほっき飯") || text.includes("ご飯") || text.includes("白米")) return "plainRice";
+  if (text.includes("ピザ") || text.includes("ピッツァ")) return "pizza";
+  if (text.includes("パン") || text.includes("クロワッサン")) return "bread";
+  if (text.includes("ポテトフライ")) return "fries";
+  if (text.includes("唐揚げ") || text.includes("から揚げ") || text.includes("天ぷら") || text.includes("コロッケ") || text.includes("フライ") || text.includes("げそあげ")) return "friedSide";
+  if (text.includes("ステーキ") || text.includes("ジンギスカン") || text.includes("和牛") || text.includes("牛") || text.includes("羊")) return "meatSetMeal";
+  if (text.includes("魚") || text.includes("刺身") || text.includes("蟹") || text.includes("帆立") || text.includes("ほたて") || text.includes("鮑") || text.includes("海鮮")) return "fishSetMeal";
+  if (text.includes("スープ") || text.includes("椀物") || text.includes("味噌汁")) return "soup";
+  if (text.includes("サラダ") || text.includes("野菜")) return "vegetableSide";
+  if (text.includes("アイス") || text.includes("プリン") || text.includes("甘味") || text.includes("スイーツ") || text.includes("バターサンド") || text.includes("ソフトクリーム")) return "dessert";
+  if (text.includes("ビール") || text.includes("アルコール")) return "alcohol";
+  if (text.includes("ドリンク") || text.includes("コーラ")) return "drink";
+  if (text.includes("チーズ") || text.includes("乳製品")) return "dairy";
+  return "riceSetMeal";
+};
 
 const sushiTags = ["寿司", "海鮮", "北海道"];
 const tritonTags = ["トリトン", "回転寿司", "公式メニュー確認", ...sushiTags];
