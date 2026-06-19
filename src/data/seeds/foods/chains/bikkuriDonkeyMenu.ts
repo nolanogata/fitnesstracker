@@ -135,6 +135,23 @@ const inferProfile = ({ name, kinds }: BikkuriDonkeyMenuInput): NutritionEstimat
   return "riceSetMeal";
 };
 
+const inferServingLabel = ({ name, kinds }: BikkuriDonkeyMenuInput) => {
+  if (name === "ライス") return "1食";
+  if (name === "チーズソース" || name === "カリーソース" || name === "ペッパーソース" || name === "おろしそ") return "1皿";
+  if (kinds.includes("dish") || kinds.includes("lunch")) {
+    if (name.includes("ミニマム")) return "ハンバーグ100g＋ご飯";
+    if (name.includes("ハンバーグ&コロコロステーキ")) return "ハンバーグ150g＋肉150g＋ご飯";
+    if (name.includes("ハンバーグ") || name.includes("バーグ")) return "ハンバーグ150g＋ご飯";
+  }
+  if (kinds.includes("steak") || kinds.includes("takeout") || kinds.includes("no_milk_wheat_egg")) {
+    if (name.includes("ガーリックチキンステーキ")) return "チキン220g";
+    if (name.includes("ハンバーグ&コロコロステーキ")) return "ハンバーグ150g＋肉150g";
+    if (name.includes("コロコロステーキ")) return "肉150g";
+    if (name.includes("ハンバーグ") || name.includes("バーグ")) return name.includes("ミニマム") ? "ハンバーグ100g" : "ハンバーグ150g";
+  }
+  return "1品";
+};
+
 const item = (input: BikkuriDonkeyMenuInput) => {
   const nutrition = inferNutrition(input);
 
@@ -144,7 +161,7 @@ const item = (input: BikkuriDonkeyMenuInput) => {
     category: "チェーン店",
     tags: ["ファミレス", "びっくりドンキー", "ハンバーグ", "公式メニュー確認", "栄養推定", ...input.kinds.map((kind) => kindLabels[kind])],
     ...nutrition,
-    serving_label: "1品",
+    serving_label: inferServingLabel(input),
     default_meal_type: inferMealType(input.kinds),
     source_url: sourceUrl,
     fetched_at: fetchedAt,
