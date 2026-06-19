@@ -223,6 +223,7 @@ type StaplePortionConfig = {
   carbsPer100g: number;
 };
 type StaplePortionMultipliers = Partial<Record<StaplePortionConfig["kind"], number>>;
+type NutritionSnapshot = Pick<MenuItem, "calories" | "protein_g" | "fat_g" | "carbs_g" | "salt_g">;
 type WorkoutExerciseDraft = {
   exercise: ExercisePreset;
   sets: number;
@@ -4226,6 +4227,15 @@ function FoodTab(props: {
       : undefined,
     [selected?.id, selectedServingGrams, hasSelectedSizeVariants, hasSelectedCompositeStaples, portionMultiplier, menuSizeVariantIndex],
   );
+  const selectedSizeVariantTargetGrams = selected && selectedServingGrams && hasSelectedSizeVariants && !hasSelectedCompositeStaples
+    ? selectedServingGrams * portionMultiplier
+    : undefined;
+  const selectedSizeVariantNutrition = useMemo(
+    () => selected && selectedSizeVariantTargetGrams && hasSelectedSizeVariants && !hasSelectedCompositeStaples
+      ? getSizeVariantNutritionForTargetGrams(selected, menuSizeVariantIndex, selectedSizeVariantTargetGrams)
+      : undefined,
+    [selected?.id, selectedSizeVariantTargetGrams, hasSelectedSizeVariants, hasSelectedCompositeStaples, menuSizeVariantIndex],
+  );
   const selectedExactSizeVariantLabel = selectedExactSizeVariant ? menuSizeVariantIndex.variantsByItemId.get(selectedExactSizeVariant.id)?.label : undefined;
   const selectedResolvedItem = selectedExactSizeVariant ?? selected;
   const selectedCompositePortionLabel = hasSelectedCompositeStaples
@@ -4251,13 +4261,23 @@ function FoodTab(props: {
       forceSingleQuantity: hasSelectedCustomPortion,
     })
     : undefined;
-  const selectedNutrition = selectedResolvedItem ? getAdjustedMenuNutrition(
-    selectedResolvedItem,
-    selectedExactSizeVariant ? 1 : portionMultiplier,
-    portionQuantity,
-    selectedExactSizeVariant ? undefined : hasSelectedCompositeStaples ? staplePortionMultipliers : undefined,
-  ) : undefined;
-  const selectedEntryPortionMultiplier = selectedExactSizeVariant || hasSelectedCompositeStaples ? Math.max(0, portionQuantity) : multiplier;
+  const selectedNutrition = selectedResolvedItem
+    ? selectedSizeVariantNutrition
+      ? {
+        calories: Math.round(selectedSizeVariantNutrition.calories * portionQuantity),
+        protein_g: round1(selectedSizeVariantNutrition.protein_g * portionQuantity),
+        fat_g: round1(selectedSizeVariantNutrition.fat_g * portionQuantity),
+        carbs_g: round1(selectedSizeVariantNutrition.carbs_g * portionQuantity),
+        salt_g: selectedSizeVariantNutrition.salt_g === undefined ? undefined : round1(selectedSizeVariantNutrition.salt_g * portionQuantity),
+      }
+      : getAdjustedMenuNutrition(
+        selectedResolvedItem,
+        selectedExactSizeVariant ? 1 : portionMultiplier,
+        portionQuantity,
+        selectedExactSizeVariant ? undefined : hasSelectedCompositeStaples ? staplePortionMultipliers : undefined,
+      )
+    : undefined;
+  const selectedEntryPortionMultiplier = selectedExactSizeVariant || selectedSizeVariantNutrition || hasSelectedCompositeStaples ? Math.max(0, portionQuantity) : multiplier;
   const selectedCalories = selectedNutrition?.calories ?? 0;
   const selectedProtein = selectedNutrition?.protein_g ?? 0;
   const selectedFat = selectedNutrition?.fat_g ?? 0;
@@ -4353,7 +4373,7 @@ function FoodTab(props: {
   const saveSelected = async () => {
     if (!selectedResolvedItem) return;
     const timestamp = nowIso();
-    const nutrition = getAdjustedMenuNutrition(
+    const nutrition = selectedNutrition ?? getAdjustedMenuNutrition(
       selectedResolvedItem,
       selectedExactSizeVariant ? 1 : portionMultiplier,
       portionQuantity,
@@ -12562,6 +12582,11 @@ function getMenuSizeVariants(selected: MenuItem, variantIndex: MenuSizeVariantIn
 function findExactMenuSizeVariantByGrams(selected: MenuItem, variantIndex: MenuSizeVariantIndex, targetGrams: number) {
   if (!Number.isFinite(targetGrams) || targetGrams <= 0) return undefined;
   const roundedTarget = round1(targetGrams);
+  return getMenuSizeVariantGramEntries(selected, variantIndex)
+    .find((entry) => Math.abs(entry.grams - roundedTarget) < 0.1)?.variant.item;
+}
+
+function getMenuSizeVariantGramEntries(selected: MenuItem, variantIndex: MenuSizeVariantIndex) {
   return getMenuSizeVariants(selected, variantIndex)
     .map((variant) => {
       const labelGrams = extractMenuSizeGrams(variant.label);
@@ -12570,7 +12595,49 @@ function findExactMenuSizeVariantByGrams(selected: MenuItem, variantIndex: MenuS
       return grams === undefined ? undefined : { variant, grams: round1(grams) };
     })
     .filter((entry): entry is { variant: MenuSizeVariant; grams: number } => !!entry)
-    .find((entry) => Math.abs(entry.grams - roundedTarget) < 0.1)?.variant.item;
+    .sort((a, b) => a.grams - b.grams);
+}
+
+function getSizeVariantNutritionForTargetGrams(selected: MenuItem, variantIndex: MenuSizeVariantIndex, targetGrams: number): NutritionSnapshot | undefined {
+  if (!Number.isFinite(targetGrams) || targetGrams <= 0) return undefined;
+  const entries = getMenuSizeVariantGramEntries(selected, variantIndex);
+  if (entries.length < 2) return undefined;
+  const roundedTarget = round1(targetGrams);
+  const exact = entries.find((entry) => Math.abs(entry.grams - roundedTarget) < 0.1);
+  if (exact) return nutritionSnapshotFromMenuItem(exact.variant.item);
+
+  const lower = [...entries].reverse().find((entry) => entry.grams < roundedTarget);
+  const upper = entries.find((entry) => entry.grams > roundedTarget);
+  const [start, end] = lower && upper
+    ? [lower, upper]
+    : roundedTarget < entries[0].grams
+      ? [entries[0], entries[1]]
+      : [entries[entries.length - 2], entries[entries.length - 1]];
+  if (!start || !end || start.grams === end.grams) return undefined;
+
+  const ratio = (roundedTarget - start.grams) / (end.grams - start.grams);
+  const interpolate = (from: number, to: number) => Math.max(0, from + (to - from) * ratio);
+  const interpolateOptional = (from?: number, to?: number) => {
+    if (from === undefined || to === undefined) return undefined;
+    return round1(interpolate(from, to));
+  };
+  return {
+    calories: Math.max(0, Math.round(interpolate(start.variant.item.calories, end.variant.item.calories))),
+    protein_g: round1(interpolate(start.variant.item.protein_g, end.variant.item.protein_g)),
+    fat_g: round1(interpolate(start.variant.item.fat_g, end.variant.item.fat_g)),
+    carbs_g: round1(interpolate(start.variant.item.carbs_g, end.variant.item.carbs_g)),
+    salt_g: interpolateOptional(start.variant.item.salt_g, end.variant.item.salt_g),
+  };
+}
+
+function nutritionSnapshotFromMenuItem(item: MenuItem): NutritionSnapshot {
+  return {
+    calories: item.calories,
+    protein_g: item.protein_g,
+    fat_g: item.fat_g,
+    carbs_g: item.carbs_g,
+    salt_g: item.salt_g,
+  };
 }
 
 function repairExactSizeVariantFoodEntries(entries: FoodEntry[], menuItems: MenuItem[]) {
