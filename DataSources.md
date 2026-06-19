@@ -17,6 +17,17 @@ UI confidence labels:
 Estimated nutrition rules are maintained in `src/data/seeds/foods/estimatedNutritionPolicy.md`.
 New estimated rows should use shared estimation profiles from `src/data/seeds/foods/estimationProfiles.ts` when a suitable profile exists.
 
+## Portion And Size Calculation
+
+Size and amount changes are treated as nutrition-critical behavior:
+
+- If the same branded menu has official size variants, exact size matches must use the official row directly.
+- If the user enters a custom gram amount between official size variants, interpolate from the neighboring official rows instead of subtracting a generic meat/rice/noodle coefficient.
+- Generic staple coefficients are only a fallback when there is no usable official size family.
+- Set meals should not scale the whole meal unless the whole menu is actually ordered in multiple servings. Adjust realistic components only: rice, noodles, steak meat, hamburger patty, or chicken amount.
+- Fixed-count foods such as sushi pieces, nuggets, packaged units, and side items should remain count/quantity based, not size-family based.
+- Logged food entries are snapshots. Repair routines may update past official entries only when the stored portion text exactly maps to a known official size variant.
+
 ## Priority Official Sources
 
 - KFC: official nutrition PDF. Added selected core items from the 2026-06-03 nutrition sheet.
