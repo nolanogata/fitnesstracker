@@ -12618,9 +12618,10 @@ function formatMenuItemName(item: Pick<MenuItem, "name" | "serving_label">) {
 }
 
 function formatFoodEntryName(entry: FoodEntry, menuItems: MenuItem[]) {
-  if (!entry.menu_item_id) return entry.name;
+  const normalizedEntryName = normalizeFoodLoggedQuantityName(entry.name);
+  if (!entry.menu_item_id) return normalizedEntryName;
   const menuItem = menuItems.find((item) => item.id === entry.menu_item_id);
-  if (!menuItem || entry.name !== menuItem.name) return entry.name;
+  if (!menuItem || entry.name !== menuItem.name) return normalizedEntryName;
   return formatMenuItemName(menuItem);
 }
 
@@ -12636,7 +12637,7 @@ function formatFoodPortionLogLabel({
   const label = portionLabel?.trim();
   if (!label) return undefined;
   const safeQuantity = Math.max(0, quantity);
-  if (safeQuantity !== 1) return `${label} × ${formatFoodAmountValue(safeQuantity)}`;
+  if (safeQuantity !== 1) return formatFoodQuantitySummary(label, safeQuantity);
   return forceSingleQuantity ? label : undefined;
 }
 
@@ -12644,7 +12645,34 @@ function formatFoodLoggedName(name: string, portionLogLabel?: string) {
   const label = portionLogLabel?.trim();
   if (!label) return name;
   if (name.includes(`（${label}）`) || name.includes(`(${label})`)) return name;
-  return `${name}（${label}）`;
+  return normalizeFoodLoggedQuantityName(`${name}（${label}）`);
+}
+
+function normalizeFoodLoggedQuantityName(name: string) {
+  return name.replace(/[（(]([^（）()]+)[）)]\s*[（(]\s*\1\s*×\s*([0-9]+(?:\.[0-9]+)?)\s*[）)]/g, (_, label: string, quantityText: string) => {
+    return `（${label}）（${formatFoodQuantitySummary(label, Number(quantityText))}）`;
+  });
+}
+
+function formatFoodQuantitySummary(label: string, quantity: number) {
+  const safeQuantity = Math.max(0, quantity);
+  const normalized = label.trim();
+  const countMatch = normalized.match(/^(\d+(?:\.\d+)?)\s*(個|本|枚|杯|食|袋|粒|切れ|パック)$/);
+  if (countMatch) {
+    const total = round1(Number(countMatch[1]) * safeQuantity);
+    return `合計${formatFoodAmountValue(total)}${countMatch[2]}`;
+  }
+  const gramsMatch = normalized.match(/^(\d+(?:\.\d+)?)\s*g$/i);
+  if (gramsMatch) {
+    const total = round1(Number(gramsMatch[1]) * safeQuantity);
+    return `合計${formatFoodAmountValue(total)}g`;
+  }
+  const mlMatch = normalized.match(/^(\d+(?:\.\d+)?)\s*(ml|mL|ML)$/);
+  if (mlMatch) {
+    const total = round1(Number(mlMatch[1]) * safeQuantity);
+    return `合計${formatFoodAmountValue(total)}ml`;
+  }
+  return `${normalized} × ${formatFoodAmountValue(safeQuantity)}回分`;
 }
 
 function menuItemServingGrams(item: Pick<MenuItem, "serving_label" | "weight_g">) {

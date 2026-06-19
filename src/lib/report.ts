@@ -94,7 +94,7 @@ export function generateMarkdownReport(input: {
     const brand = entry.brand ? `${entry.brand} / ` : "";
     const note = entry.note ? ` / ${entry.note}` : "";
     const mealType = mealTypeLabels[entry.meal_type] ?? entry.meal_type;
-    return `- ${entry.app_date} ${mealType}: ${brand}${entry.name} ${entry.calories}kcal / P${entry.protein_g} F${entry.fat_g} C${entry.carbs_g}${formatFoodEntrySourceNote(entry)}${note}`;
+    return `- ${entry.app_date} ${mealType}: ${brand}${normalizeFoodLoggedQuantityName(entry.name)} ${entry.calories}kcal / P${entry.protein_g} F${entry.fat_g} C${entry.carbs_g}${formatFoodEntrySourceNote(entry)}${note}`;
   });
 
   const exerciseLines = scopedExercises.map((exercise) => {
@@ -302,6 +302,37 @@ function formatFoodEntrySourceNote(entry: FoodEntry) {
   if (entry.entry_source === "quick_estimate") return " / データ: クイック見積（推定値・要確認）";
   if (entry.entry_source === "estimated") return " / データ: 推定値（要確認）";
   return entry.confidence === "high" ? "" : " / データ: 要確認";
+}
+
+function normalizeFoodLoggedQuantityName(name: string) {
+  return name.replace(/[（(]([^（）()]+)[）)]\s*[（(]\s*\1\s*×\s*([0-9]+(?:\.[0-9]+)?)\s*[）)]/g, (_, label: string, quantityText: string) => {
+    return `（${label}）（${formatFoodQuantitySummary(label, Number(quantityText))}）`;
+  });
+}
+
+function formatFoodQuantitySummary(label: string, quantity: number) {
+  const safeQuantity = Math.max(0, quantity);
+  const normalized = label.trim();
+  const countMatch = normalized.match(/^(\d+(?:\.\d+)?)\s*(個|本|枚|杯|食|袋|粒|切れ|パック)$/);
+  if (countMatch) {
+    const total = round1(Number(countMatch[1]) * safeQuantity);
+    return `合計${formatFoodAmountValue(total)}${countMatch[2]}`;
+  }
+  const gramsMatch = normalized.match(/^(\d+(?:\.\d+)?)\s*g$/i);
+  if (gramsMatch) {
+    const total = round1(Number(gramsMatch[1]) * safeQuantity);
+    return `合計${formatFoodAmountValue(total)}g`;
+  }
+  const mlMatch = normalized.match(/^(\d+(?:\.\d+)?)\s*(ml|mL|ML)$/);
+  if (mlMatch) {
+    const total = round1(Number(mlMatch[1]) * safeQuantity);
+    return `合計${formatFoodAmountValue(total)}ml`;
+  }
+  return `${normalized} × ${formatFoodAmountValue(safeQuantity)}回分`;
+}
+
+function formatFoodAmountValue(value: number) {
+  return Number.isInteger(value) ? `${value}` : `${value.toFixed(1).replace(/\.0$/, "")}`;
 }
 
 function buildWorkoutSummaryLines(input: {
