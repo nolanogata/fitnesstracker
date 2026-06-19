@@ -38,6 +38,9 @@ UI confidence labels:
   - デニーズ: official menu category pages were checked on 2026-06-12. Added selected official-menu-name entries as `estimated/medium`.
   - ロイヤルホスト, ジョイフル, 華屋与兵衛, サイゼリヤ, オリーブの丘: official menu/category pages were checked on 2026-06-12. Added representative official-menu-name or official-category entries as `estimated/medium`; P/F/C values are not official.
 - モンスーンカフェ: official site and store PDF menus were checked on 2026-06-12. Added representative official-menu-name entries from grand, weekday lunch, and takeout menus as `estimated/medium`; P/F/C values are not official.
+- ペッパーランチ: official all-menu page was checked on 2026-06-19. Added selected official-menu-name entries as `estimated/medium`; P/F/C values are not official.
+- 舎鈴: official おしながき page was checked on 2026-06-19. Added selected official-menu-name entries as `estimated/medium`; P/F/C values are not official.
+- 三田製麺所: official menu page was checked on 2026-06-19. Added selected official-menu-name entries as `estimated/medium`; P/F/C values are not official.
 - Cafe chains:
   - Starbucks: official menu API/list pages were checked on 2026-06-12. Added selected official-menu-name entries as `estimated/medium`.
   - Doutor and Tully's: official menu pages were checked on 2026-06-12. Added selected official-menu-name entries as `estimated/medium`.

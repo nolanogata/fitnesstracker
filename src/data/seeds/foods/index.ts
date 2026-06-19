@@ -41,6 +41,7 @@ import { nakauOfficialFoods } from "./chains/nakauOfficial";
 import { ootoyaMenuFoods } from "./chains/ootoyaMenu";
 import { originBentoOfficialFoods } from "./chains/originBentoOfficial";
 import { panchoMenuFoods } from "./chains/panchoMenu";
+import { pepperLunchTsukemenMenuFoods } from "./chains/pepperLunchTsukemenMenus";
 import { shinpachiAllEstimatedFoods } from "./chains/shinpachiEstimated";
 import { subwayOfficialFoods } from "./chains/subwayOfficial";
 import { sukiyaOfficialFoods } from "./chains/sukiyaOfficial";
@@ -94,6 +95,7 @@ export const foodSeeds = [
   ...bikkuriDonkeyMenuFoods,
   ...italianRestaurantMenuFoods,
   ...panchoMenuFoods,
+  ...pepperLunchTsukemenMenuFoods,
   ...tondenMenuFoods,
   ...monsoonCafeMenuFoods,
   ...externalNutritionFoods,
