@@ -2461,7 +2461,7 @@ function App() {
         </div>
       </header>
 
-      <section className={tab === "home" ? "px-4 pb-28 pt-1" : "px-4 pb-28 pt-4"}>
+      <section className={tab === "home" ? "px-4 pb-28 pt-3" : "px-4 pb-28 pt-4"}>
         {isEditingPastDate && (
           <div className="past-edit-banner mb-4">
             <div className="min-w-0 flex-1">
