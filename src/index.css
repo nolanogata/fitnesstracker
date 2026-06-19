@@ -1428,6 +1428,8 @@ button {
 }
 
 .home-pull-shell .home-dashboard {
+  display: grid;
+  gap: 0.9rem;
   transition: transform 180ms ease;
 }
 
@@ -1588,19 +1590,19 @@ button {
 .home-action-row {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.75rem;
+  gap: 0.7rem;
 }
 
 .home-primary-action,
 .home-secondary-action {
   display: inline-flex;
-  min-height: 3.6rem;
+  min-height: 3.35rem;
   min-width: 0;
   align-items: center;
   justify-content: center;
   gap: 0.45rem;
   border-radius: 26px;
-  padding: 0.8rem 0.75rem;
+  padding: 0.68rem 0.75rem;
   font-size: 0.9rem;
   font-weight: 800;
   white-space: nowrap;
@@ -1630,6 +1632,15 @@ button {
 .home-primary-action:active,
 .home-secondary-action:active {
   transform: scale(0.985);
+}
+
+.home-link-actions {
+  margin-block: -0.1rem 0;
+}
+
+.home-checkin-card,
+.home-mini-card {
+  box-shadow: 0 12px 30px rgba(44, 56, 48, 0.08), var(--glass-highlight);
 }
 
 .home-sheet {
