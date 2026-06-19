@@ -9302,15 +9302,15 @@ function MyTrainingModal({ initialDraft, exercisePresets, weightPresetStore, onC
         {step === "source" && (
           <div className="mt-5 space-y-3">
             <input className="h-12 w-full text-base" value={sourceQuery} onChange={(event) => setSourceQuery(event.target.value)} placeholder="種目名・部位・器具で検索" />
-            <div className="max-h-80 divide-y divide-line overflow-y-auto rounded-md border border-line bg-rice/40">
+            <div className="my-training-source-list">
               {sourceResults.map((exercise) => (
-                <button className="flex w-full items-center gap-3 px-3 py-3 text-left" key={exercise.id} onClick={() => selectSourceExercise(exercise)}>
+                <button className="my-training-source-row" key={exercise.id} onClick={() => selectSourceExercise(exercise)}>
                   <Pictogram {...getWorkoutPictogram(exercise.body_part, exercise.equipment_type)} />
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-sm font-bold">{exercise.name}</span>
-                    <span className="block truncate text-xs text-moss">{exercise.body_part} · {exercise.equipment_type}</span>
+                  <span className="my-training-source-content">
+                    <span className="my-training-source-title">{exercise.name}</span>
+                    <span className="my-training-source-meta">{exercise.body_part} · {exercise.equipment_type}</span>
                   </span>
-                  <ChevronRight size={17} />
+                  <ChevronRight className="my-training-source-chevron" size={17} />
                 </button>
               ))}
             </div>
