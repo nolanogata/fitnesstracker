@@ -356,6 +356,18 @@ function userMenuItemCloneFromMenuItem(item: MenuItem, timestamp: string): MenuI
 type PerfectFoodPlan = "meal" | "snack" | "protein" | "none";
 type PerfectFoodMode = "fit" | "improve";
 type RecommendedFoodFilter = "all" | string;
+type PersistedFoodSearchState = Partial<{
+  mode: FoodMode;
+  query: string;
+  brand: string;
+  chainCategory: string;
+  generalCategory: string;
+  recommendCategory: RecommendedFoodFilter;
+  showGeneralFoodsOnly: boolean;
+  hideOverGoalItems: boolean;
+  showFoodBalance: boolean;
+  sortFoodByFit: boolean;
+}>;
 type PerfectFoodSuggestionGroup = {
   label: string;
   items: MenuItem[];
@@ -739,6 +751,7 @@ function dateFromMonthDay(referenceDate: string, monthDay: string, startMonthDay
 const backupStorageKey = "phase-log-last-backup-at";
 const updateSeenStorageKey = "phase-log-seen-update-id";
 const foodFitFilterSeenStorageKey = "phase-log-food-fit-filter-seen-2026-06-14";
+const foodSearchStateStorageKey = "phase-log-food-search-state-2026-06-19";
 const foodMyMenuIntroSeenStorageKey = "phase-log-my-menu-unified-intro-seen-2026-06-17";
 const workoutWeightPresetStorageKey = "phase-log-workout-weight-presets";
 const cheatDayStorageKey = "phase-log-cheat-day-dates";
@@ -747,6 +760,33 @@ const staleAppPromptDelayMs = 6 * 60 * 60 * 1000;
 const weightStepOptions = [1, 2.5, 5, 10];
 const finisherPulseIntensity = "finisher_pulse";
 const finisherPulseNote = "仕上げパルス（部分可動域・素早く）";
+const persistedFoodModes = new Set<FoodMode>(["search", "favorite", "chain", "quick", "personal", "recommend"]);
+
+function readPersistedFoodSearchState(): PersistedFoodSearchState {
+  try {
+    const raw = localStorage.getItem(foodSearchStateStorageKey);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw) as PersistedFoodSearchState;
+    if (!parsed || typeof parsed !== "object") return {};
+    const mode = parsed.mode && persistedFoodModes.has(parsed.mode) ? parsed.mode : undefined;
+    const chainCategory = typeof parsed.chainCategory === "string" && chainCategories[parsed.chainCategory] ? parsed.chainCategory : undefined;
+    const brand = typeof parsed.brand === "string" ? parsed.brand : undefined;
+    return {
+      mode,
+      query: typeof parsed.query === "string" ? parsed.query : undefined,
+      brand: brand && (!chainCategory || chainCategories[chainCategory]?.includes(brand)) ? brand : undefined,
+      chainCategory,
+      generalCategory: typeof parsed.generalCategory === "string" && generalFoodCategoryLabels.includes(parsed.generalCategory) ? parsed.generalCategory : undefined,
+      recommendCategory: typeof parsed.recommendCategory === "string" ? parsed.recommendCategory : undefined,
+      showGeneralFoodsOnly: typeof parsed.showGeneralFoodsOnly === "boolean" ? parsed.showGeneralFoodsOnly : undefined,
+      hideOverGoalItems: typeof parsed.hideOverGoalItems === "boolean" ? parsed.hideOverGoalItems : undefined,
+      showFoodBalance: typeof parsed.showFoodBalance === "boolean" ? parsed.showFoodBalance : undefined,
+      sortFoodByFit: typeof parsed.sortFoodByFit === "boolean" ? parsed.sortFoodByFit : undefined,
+    };
+  } catch {
+    return {};
+  }
+}
 const achievementDefinitions: AchievementDefinition[] = [
   { id: "first_open", title: "はじめの一歩", description: "アプリを開いた", tone: "starter" },
   { id: "first_goal", title: "目標セット", description: "初めてゴールを設定した", tone: "starter" },
@@ -3883,8 +3923,10 @@ function FoodTab(props: {
   const genericSectionRef = useRef<HTMLElement | null>(null);
   const foodResultsRef = useRef<HTMLElement | null>(null);
   const todayLogRef = useRef<HTMLElement | null>(null);
-  const [mode, setMode] = useState<FoodMode>("search");
-  const [query, setQuery] = useState("");
+  const persistedFoodSearchState = useMemo(() => readPersistedFoodSearchState(), []);
+  const initialChainCategory = persistedFoodSearchState.chainCategory ?? "牛丼・丼";
+  const [mode, setMode] = useState<FoodMode>(persistedFoodSearchState.mode ?? "search");
+  const [query, setQuery] = useState(persistedFoodSearchState.query ?? "");
   const [selected, setSelected] = useState<MenuItem>();
   const [editingEntry, setEditingEntry] = useState<{ entry: FoodEntry; draft: FoodEntryEditDraft }>();
   const [mealType, setMealType] = useState<MealType>("lunch");
@@ -3906,14 +3948,14 @@ function FoodTab(props: {
   const [aiFoodImportError, setAiFoodImportError] = useState("");
   const [copiedAiFoodPrompt, setCopiedAiFoodPrompt] = useState(false);
   const [aiFoodMealType, setAiFoodMealType] = useState<MealType>("lunch");
-  const [chainCategory, setChainCategory] = useState("牛丼・丼");
-  const [brand, setBrand] = useState("松屋");
-  const [generalCategory, setGeneralCategory] = useState("ごはん・丼");
-  const [recommendCategory, setRecommendCategory] = useState<RecommendedFoodFilter>("all");
-  const [showGeneralFoodsOnly, setShowGeneralFoodsOnly] = useState(false);
-  const [hideOverGoalItems, setHideOverGoalItems] = useState(false);
-  const [showFoodBalance, setShowFoodBalance] = useState(false);
-  const [sortFoodByFit, setSortFoodByFit] = useState(false);
+  const [chainCategory, setChainCategory] = useState(initialChainCategory);
+  const [brand, setBrand] = useState(persistedFoodSearchState.brand ?? chainCategories[initialChainCategory]?.[0] ?? "松屋");
+  const [generalCategory, setGeneralCategory] = useState(persistedFoodSearchState.generalCategory ?? "ごはん・丼");
+  const [recommendCategory, setRecommendCategory] = useState<RecommendedFoodFilter>(persistedFoodSearchState.recommendCategory ?? "all");
+  const [showGeneralFoodsOnly, setShowGeneralFoodsOnly] = useState(!!persistedFoodSearchState.showGeneralFoodsOnly);
+  const [hideOverGoalItems, setHideOverGoalItems] = useState(!!persistedFoodSearchState.hideOverGoalItems);
+  const [showFoodBalance, setShowFoodBalance] = useState(!!persistedFoodSearchState.showFoodBalance);
+  const [sortFoodByFit, setSortFoodByFit] = useState(!!persistedFoodSearchState.sortFoodByFit);
   const [isFoodFilterOpen, setIsFoodFilterOpen] = useState(false);
   const [isFoodSearchHidden, setIsFoodSearchHidden] = useState(false);
   const [showFoodFilterIntro, setShowFoodFilterIntro] = useState(() => localStorage.getItem(foodFitFilterSeenStorageKey) !== "1");
@@ -3967,6 +4009,28 @@ function FoodTab(props: {
     setIsFoodFilterOpen((value) => !value);
     if (showFoodFilterIntro) dismissFoodFilterIntro();
   };
+  const resetFoodSearchFilters = () => {
+    setShowGeneralFoodsOnly(false);
+    setHideOverGoalItems(false);
+    setShowFoodBalance(false);
+    setSortFoodByFit(false);
+    props.showToast("検索フィルターをリセットしました");
+  };
+  useEffect(() => {
+    const persistedMode = persistedFoodModes.has(mode) ? mode : "search";
+    localStorage.setItem(foodSearchStateStorageKey, JSON.stringify({
+      mode: persistedMode,
+      query,
+      brand,
+      chainCategory,
+      generalCategory,
+      recommendCategory,
+      showGeneralFoodsOnly,
+      hideOverGoalItems,
+      showFoodBalance,
+      sortFoodByFit,
+    } satisfies PersistedFoodSearchState));
+  }, [mode, query, brand, chainCategory, generalCategory, recommendCategory, showGeneralFoodsOnly, hideOverGoalItems, showFoodBalance, sortFoodByFit]);
   useEffect(() => {
     const update = () => {
       const target = foodSearchFormRef.current;
@@ -4728,7 +4792,10 @@ function FoodTab(props: {
                   あと {Math.max(0, Math.round(remainingNutrition.calories))}kcal / P{round1(remainingNutrition.protein)} F{round1(remainingNutrition.fat)} C{round1(remainingNutrition.carbs)}
                 </p>
               </div>
-              <button className="icon-button h-8 w-8" aria-label="フィルターを閉じる" onClick={() => setIsFoodFilterOpen(false)}>×</button>
+              <div className="flex shrink-0 items-center gap-2">
+                <button className="secondary-button h-8 px-3 text-[11px]" type="button" onClick={resetFoodSearchFilters}>リセット</button>
+                <button className="icon-button h-8 w-8" aria-label="フィルターを閉じる" onClick={() => setIsFoodFilterOpen(false)}>×</button>
+              </div>
             </div>
             <div className="mt-3 space-y-2">
               <button
@@ -12740,6 +12807,17 @@ function inferRicePortionGrams(item: MenuItem, primaryText: string) {
   return undefined;
 }
 
+function inferNoodlePortionGrams(primaryText: string) {
+  return extractAnyPortionGrams(primaryText);
+}
+
+function isRiceAdjustableCurry(item: MenuItem, primaryText: string, tagText: string) {
+  if (!hasFoodToken(primaryText, ["カレー"])) return false;
+  const contextText = [primaryText, item.category, tagText].filter(Boolean).join(" ");
+  const isIndianCurry = hasFoodToken(contextText, ["インドカレー", "インド料理", "チキンティッカマサラ", "ダルカレー", "マトンカレー"]);
+  return !isIndianCurry || hasFoodToken(primaryText, ["カレーライス"]);
+}
+
 function makeStaplePortionConfig(kind: StaplePortionConfig["kind"], defaultGrams?: number): StaplePortionConfig {
   if (kind === "noodle") {
     return {
@@ -12811,8 +12889,8 @@ function getStaplePortionConfigs(item: MenuItem): StaplePortionConfig[] {
   const hasSteak = !hasChicken
     && (!hasHamburger || hasFoodToken(primaryText, ["コロコロステーキ", "カットステーキ", "ワイルドコンボ"]))
     && (hasMeatGram || hasFoodToken(primaryText, ["ステーキ", "ヒレ", "リブロース", "肩ロース", "ブレードミート", "ワイルドコンボ"]));
-  const hasCurryRice = !hasNoodle && (hasFoodToken(primaryText, ["カレー"]) || (!sideOnly && hasFoodToken(text, ["カレー"])));
   const tagText = item.tags.join(" ");
+  const hasCurryRice = !hasNoodle && !sideOnly && isRiceAdjustableCurry(item, primaryText, tagText);
   const hasRice = hasFoodToken(primaryText, riceTokens) || hasFoodToken(tagText, ["ごはん", "ご飯", "白米", "玄米", "ライス", "丼", "炊き込みご飯", "混ぜご飯"]) || hasCurryRice;
   const hasAdjustableInPrimaryText = hasFoodToken(primaryText, noodleTokens) || hasFoodToken(primaryText, riceTokens) || hasSteak || hasHamburger || hasChicken;
   if (!hasAdjustableInPrimaryText && hasFoodToken(text, sideOnlyTokens)) return [];
@@ -12824,7 +12902,7 @@ function getStaplePortionConfigs(item: MenuItem): StaplePortionConfig[] {
     ...(hasSteak ? [makeStaplePortionConfig("steak", extractPortionGrams(primaryText, ["ステーキ", "肉", "ヒレ", "リブロース", "肩ロース", "ブレードミート"]))] : []),
     ...(hasHamburger ? [makeStaplePortionConfig("hamburger", extractPortionGrams(primaryText, ["ハンバーグ", "バーグ"]))] : []),
     ...(hasChicken ? [makeStaplePortionConfig("chicken", extractPortionGrams(primaryText, ["チキン"]))] : []),
-    ...(hasNoodle ? [makeStaplePortionConfig("noodle")] : []),
+    ...(hasNoodle ? [makeStaplePortionConfig("noodle", inferNoodlePortionGrams(primaryText))] : []),
     ...((hasRice || isRiceComposite) ? [makeStaplePortionConfig("rice", inferRicePortionGrams(item, primaryText))] : []),
   ];
 }
