@@ -1,4 +1,4 @@
-import { estimated } from "../helpers";
+import { estimatedWithProfileTags, type NutritionEstimateProfile } from "../estimationProfiles";
 import type { MealType } from "../../../../types";
 
 const fetchedAt = "2026-06-16T00:00:00.000Z";
@@ -24,8 +24,18 @@ type SushiChainInput = {
   source_url?: string;
 };
 
+const inferProfile = (item: SushiChainInput): NutritionEstimateProfile => {
+  const text = `${item.name} ${(item.tags ?? []).join(" ")}`;
+  if (text.includes("ラーメン") || text.includes("うどん") || text.includes("担々麺")) return "sobaNoodle";
+  if (text.includes("みそ汁") || text.includes("味噌汁")) return "soup";
+  if (text.includes("ポテト") || text.includes("天ぷら")) return "friedSide";
+  if (text.includes("茶碗蒸し")) return "proteinTopping";
+  if (text.includes("いなり")) return "onigiri";
+  return "riceBowl";
+};
+
 const sushiChain = (item: SushiChainInput) =>
-  estimated({
+  estimatedWithProfileTags({
     brand: item.brand,
     name: item.name,
     category: "チェーン店",
@@ -47,6 +57,7 @@ const sushiChain = (item: SushiChainInput) =>
     default_meal_type: item.default_meal_type ?? "lunch",
     source_url: item.source_url ?? (item.brand === "はま寿司" ? sources.hamaAllergen : sources.sushiroAllergy),
     fetched_at: fetchedAt,
+    profile: inferProfile(item),
   });
 
 const sushiro = (item: Omit<SushiChainInput, "brand">) => sushiChain({ brand: "スシロー", ...item });

@@ -1,4 +1,4 @@
-import { estimated } from "../helpers";
+import { estimatedWithProfileTags, type NutritionEstimateProfile } from "../estimationProfiles";
 
 const brands = ["やよい軒"];
 const items = [
@@ -14,9 +14,19 @@ const items = [
   ["納豆朝食", 560, 24, 16, 82],
 ] as const;
 
+const inferProfile = (name: string): NutritionEstimateProfile => {
+  if (name.includes("魚") || name.includes("さば") || name.includes("鮭") || name.includes("ほっけ")) {
+    return "fishSetMeal";
+  }
+  if (name.includes("唐揚げ") || name.includes("チキン") || name.includes("生姜焼き") || name.includes("ハンバーグ") || name.includes("肉")) {
+    return "meatSetMeal";
+  }
+  return "riceSetMeal";
+};
+
 export const teishokuFoods = brands.flatMap((brand) =>
   items.map(([name, calories, protein_g, fat_g, carbs_g]) =>
-    estimated({
+    estimatedWithProfileTags({
       brand,
       name,
       category: "チェーン店",
@@ -26,6 +36,7 @@ export const teishokuFoods = brands.flatMap((brand) =>
       fat_g,
       carbs_g,
       serving_label: "1食",
+      profile: inferProfile(name),
     }),
   ),
 );

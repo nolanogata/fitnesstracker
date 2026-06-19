@@ -1,4 +1,4 @@
-import { estimated } from "../helpers";
+import { estimatedWithProfileTags, type NutritionEstimateProfile } from "../estimationProfiles";
 
 const brands = ["松屋", "すき家", "吉野家", "なか卯"];
 const common = [
@@ -12,9 +12,17 @@ const common = [
   ["豚汁", 190, 8, 11, 15],
 ] as const;
 
+const inferProfile = (name: string): NutritionEstimateProfile => {
+  if (name.includes("カレー")) return "curryRice";
+  if (name.includes("味噌汁") || name.includes("豚汁")) return "soup";
+  if (name.includes("サラダ")) return "salad";
+  if (name.includes("卵")) return "proteinTopping";
+  return "riceBowl";
+};
+
 export const gyudonFoods = brands.flatMap((brand) =>
   common.map(([name, calories, protein_g, fat_g, carbs_g]) =>
-    estimated({
+    estimatedWithProfileTags({
       brand,
       name,
       category: "チェーン店",
@@ -25,6 +33,7 @@ export const gyudonFoods = brands.flatMap((brand) =>
       carbs_g,
       serving_label: "1食",
       default_meal_type: "lunch",
+      profile: inferProfile(name),
     }),
   ),
 ).concat([

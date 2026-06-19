@@ -1,4 +1,4 @@
-import { estimated } from "../helpers";
+import { estimatedWithProfileTags, type NutritionEstimateProfile } from "../estimationProfiles";
 
 const brands = ["スターバックス", "ドトール", "タリーズ", "コメダ珈琲"];
 const items = [
@@ -10,9 +10,16 @@ const items = [
   ["軽食セット", 620, 22, 28, 70],
 ] as const;
 
+const inferProfile = (name: string): NutritionEstimateProfile => {
+  if (name.includes("コーヒー") || name.includes("ラテ")) return "drink";
+  if (name.includes("サンド") || name.includes("トースト")) return "bread";
+  if (name.includes("ケーキ")) return "dessert";
+  return "riceSetMeal";
+};
+
 export const cafeFoods = brands.flatMap((brand) =>
   items.map(([name, calories, protein_g, fat_g, carbs_g]) =>
-    estimated({
+    estimatedWithProfileTags({
       brand,
       name,
       category: "チェーン店",
@@ -22,6 +29,7 @@ export const cafeFoods = brands.flatMap((brand) =>
       fat_g,
       carbs_g,
       serving_label: "1品",
+      profile: inferProfile(name),
     }),
   ),
 );

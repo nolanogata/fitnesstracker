@@ -1,4 +1,4 @@
-import { estimated } from "../helpers";
+import { estimatedWithProfileTags, type NutritionEstimateProfile } from "../estimationProfiles";
 
 const fetchedAt = "2026-06-14T00:00:00.000Z";
 
@@ -22,8 +22,16 @@ type KonamonoChainInput = {
   source_url?: string;
 };
 
+const inferProfile = (item: KonamonoChainInput): NutritionEstimateProfile => {
+  const text = `${item.name} ${item.tags.join(" ")}`;
+  if (text.includes("焼きそば")) return "sobaNoodle";
+  if (text.includes("そば飯") || text.includes("多幸めし")) return "riceBowl";
+  if (text.includes("唐揚げ") || text.includes("揚げ")) return "friedSide";
+  return "konamono";
+};
+
 const chainKonamono = (item: KonamonoChainInput) =>
-  estimated({
+  estimatedWithProfileTags({
     brand: item.brand,
     name: item.name,
     category: "チェーン店",
@@ -37,6 +45,7 @@ const chainKonamono = (item: KonamonoChainInput) =>
     default_meal_type: "snack",
     source_url: item.source_url ?? sources[item.brand === "築地銀だこ" ? "gindaco" : item.brand === "たこ家道頓堀くくる" ? "kukuru" : "dohtonbori"],
     fetched_at: fetchedAt,
+    profile: inferProfile(item),
   });
 
 export const konamonoChainFoods = [
@@ -68,4 +77,3 @@ export const konamonoChainFoods = [
   chainKonamono({ brand: "道とん堀", name: "オムそば", calories: 780, protein_g: 28, fat_g: 34, carbs_g: 92, salt_g: 4.6, tags: ["焼きそば", "卵"], source_url: sources.dohtonboriCalorie }),
   chainKonamono({ brand: "道とん堀", name: "そば飯", calories: 760, protein_g: 24, fat_g: 26, carbs_g: 108, salt_g: 4.5, tags: ["そば飯", "焼きそば", "ごはん"], source_url: sources.dohtonboriCalorie }),
 ];
-

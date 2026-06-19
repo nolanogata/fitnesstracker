@@ -1,4 +1,4 @@
-import { estimated } from "../helpers";
+import { estimatedWithProfileTags, type NutritionEstimateProfile } from "../estimationProfiles";
 
 const fetchedAt = "2026-06-12T00:00:00.000Z";
 const sourceUrl = "https://www.skylark.co.jp/bamiyan/menu/";
@@ -15,8 +15,21 @@ type BamiyanInput = {
   default_meal_type?: "breakfast" | "lunch" | "dinner" | "snack";
 };
 
+const inferProfile = (input: BamiyanInput): NutritionEstimateProfile => {
+  const text = `${input.name} ${input.tags.join(" ")}`;
+  if (text.includes("ラーメン")) return "ramen";
+  if (text.includes("餃子") || text.includes("小籠包") || text.includes("焼売") || text.includes("点心")) return "gyoza";
+  if (text.includes("唐揚げ") || text.includes("からあげ") || text.includes("揚げ")) return "friedSide";
+  if (text.includes("チャーハン")) return "friedRice";
+  if (text.includes("ビーフン")) return "sobaNoodle";
+  if (text.includes("定食")) return "meatSetMeal";
+  if (text.includes("デザート") || text.includes("杏仁")) return "dessert";
+  if (text.includes("鶏") || text.includes("豚") || text.includes("海老") || text.includes("酢豚")) return "meatSetMeal";
+  return "riceSetMeal";
+};
+
 const bamiyan = (input: BamiyanInput) =>
-  estimated({
+  estimatedWithProfileTags({
     brand: "バーミヤン",
     name: input.name,
     category: "チェーン店",
@@ -30,6 +43,7 @@ const bamiyan = (input: BamiyanInput) =>
     default_meal_type: input.default_meal_type ?? "lunch",
     source_url: sourceUrl,
     fetched_at: fetchedAt,
+    profile: inferProfile(input),
   });
 
 export const bamiyanMenuFoods = [

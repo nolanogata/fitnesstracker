@@ -1,4 +1,4 @@
-import { estimated } from "../helpers";
+import { estimatedWithProfileTags, type NutritionEstimateProfile } from "../estimationProfiles";
 
 const fetchedAt = "2026-06-15T00:00:00.000Z";
 
@@ -24,8 +24,17 @@ type UdonSeedInput = {
   tags?: string[];
 };
 
+const inferProfile = (input: UdonSeedInput): NutritionEstimateProfile => {
+  const text = `${input.name} ${(input.tags ?? []).join(" ")}`;
+  if (text.includes("おむすび") || text.includes("いなり") || text.includes("ご飯")) return "onigiri";
+  if (text.includes("カツ") || text.includes("丼")) return "riceBowl";
+  if (text.includes("カレー")) return "curryRice";
+  if (text.includes("天") || text.includes("かき揚げ") || text.includes("唐揚げ")) return "friedSide";
+  return "sobaNoodle";
+};
+
 const chainEstimated = (input: UdonSeedInput) =>
-  estimated({
+  estimatedWithProfileTags({
     brand: input.brand,
     name: input.name,
     category: "チェーン店",
@@ -39,6 +48,7 @@ const chainEstimated = (input: UdonSeedInput) =>
     default_meal_type: "lunch",
     source_url: input.source_url,
     fetched_at: fetchedAt,
+    profile: inferProfile(input),
   });
 
 export const udonFoods = [

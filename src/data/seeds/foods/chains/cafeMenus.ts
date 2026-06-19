@@ -1,4 +1,5 @@
-import { estimated, official } from "../helpers";
+import { estimatedWithProfileTags, type NutritionEstimateProfile } from "../estimationProfiles";
+import { official } from "../helpers";
 
 const fetchedAt = "2026-06-12T00:00:00.000Z";
 
@@ -25,8 +26,17 @@ type OfficialCafeMenu = CafeMenu & {
   source_url: string;
 };
 
+const inferProfile = (input: CafeMenu): NutritionEstimateProfile => {
+  const text = `${input.name} ${input.tags.join(" ")}`;
+  if (text.includes("ドリンク") || text.includes("ジェリコ")) return "drink";
+  if (text.includes("パスタ") || text.includes("スパ")) return "pasta";
+  if (text.includes("カツ") || text.includes("サンド") || text.includes("パン") || text.includes("トースト")) return "bread";
+  if (text.includes("デザート") || text.includes("シロノワール")) return "dessert";
+  return "riceSetMeal";
+};
+
 const item = (input: CafeMenu) =>
-  estimated({
+  estimatedWithProfileTags({
     brand: input.brand,
     name: input.name,
     category: "チェーン店",
@@ -39,6 +49,7 @@ const item = (input: CafeMenu) =>
     default_meal_type: "snack",
     source_url: sources[input.brand],
     fetched_at: fetchedAt,
+    profile: inferProfile(input),
   });
 
 const officialItem = (input: OfficialCafeMenu) =>
