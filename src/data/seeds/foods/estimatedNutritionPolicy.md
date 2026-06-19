@@ -37,6 +37,7 @@ This gives future seed rows a traceable reason instead of silent hand-entered P/
 - Pizza, bread, and sides: `pizza`, `thinPizza`, `bread`, `gyoza`, `friedSide`, `fries`, `friedRice`, `salad`
 - Set meals and small items: `fishSetMeal`, `meatSetMeal`, `riceSetMeal`, `proteinTopping`, `soup`, `onigiri`
 - Other: `dessert`, `konamono`, `drink`
+- Generic-only support profiles: `plainRice`, `dairy`, `fruit`, `snack`, `alcohol`, `supplement`, `vegetableSide`
 
 ## Migration Status
 
@@ -53,12 +54,19 @@ Migrated to shared profiles:
 - `fastFood.ts`, `gyudon.ts`, `teishoku.ts`, `familyRestaurant.ts`, `cafe.ts`: broad chain fallback estimates now add profile evidence tags while preserving existing kcal/P/F/C values.
 - `konamonoChains.ts`, `monsoonCafeMenu.ts`, `udon.ts`, `sushiChains.ts`: official-name/manual-PFC chain estimates now add shared profile evidence by menu type.
 - `donutChains.ts`, `cafeMenus.ts`, `costcoFoodCourt.ts`, `dailyChainsOfficial.ts`, `shinpachiEstimated.ts`: remaining chain-scoped estimated rows now use shared profile evidence tags; official rows remain official.
+- `generic.ts`: generic fallback menu rows now keep their existing kcal/P/F/C values while adding inferred profile evidence tags by category, name, tags, and serving label.
+- `genericKonamono.ts`: generic powder/flour-based menu rows now add profile evidence tags while keeping existing kcal/P/F/C values.
 
 Needs later cleanup:
 
-- Generic food presets in `generic.ts` and `genericKonamono.ts`; these are practical defaults, so migration should be conservative.
 - Non-chain package, pantry, frozen, protein, and travel-food estimates that manually entered kcal/P/F/C without `推定方式:*` tags.
 - Store-scoped menus where rice size or side contents vary by location.
+
+## Generic Preset Rule
+
+Generic presets are practical logging defaults, not official nutrition.
+
+For these rows, avoid aggressive numeric rewrites. Prefer preserving the existing kcal/P/F/C and adding inference evidence via `genericEstimated` or a similar wrapper. This keeps search and AI-photo matching stable while making later cleanup possible by profile family.
 
 ## Rules For New Estimated Rows
 

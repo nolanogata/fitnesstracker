@@ -21,6 +21,7 @@ export type NutritionEstimateProfile =
   | "fries"
   | "bread"
   | "friedRice"
+  | "plainRice"
   | "riceBowl"
   | "sushiRiceBowl"
   | "sobaNoodle"
@@ -37,7 +38,13 @@ export type NutritionEstimateProfile =
   | "soup"
   | "onigiri"
   | "konamono"
-  | "drink";
+  | "drink"
+  | "dairy"
+  | "fruit"
+  | "snack"
+  | "alcohol"
+  | "supplement"
+  | "vegetableSide";
 
 type ProfileDefinition = {
   label: string;
@@ -59,6 +66,7 @@ export const nutritionEstimateProfiles: Record<NutritionEstimateProfile, Profile
   fries: { label: "フライドポテト", ratio: { protein: 0.05, fat: 0.44, carbs: 0.51 }, tolerancePct: 10 },
   bread: { label: "パン/サンド", ratio: { protein: 0.14, fat: 0.34, carbs: 0.52 }, tolerancePct: 10 },
   friedRice: { label: "チャーハン", ratio: { protein: 0.1, fat: 0.3, carbs: 0.6 }, tolerancePct: 8 },
+  plainRice: { label: "白米/主食ご飯", ratio: { protein: 0.06, fat: 0.02, carbs: 0.92 }, tolerancePct: 10 },
   riceBowl: { label: "丼/ごはんもの", ratio: { protein: 0.18, fat: 0.28, carbs: 0.54 }, tolerancePct: 10 },
   sushiRiceBowl: { label: "寿司/海鮮丼", ratio: { protein: 0.22, fat: 0.18, carbs: 0.6 }, tolerancePct: 10 },
   sobaNoodle: { label: "そば/和風麺", ratio: { protein: 0.14, fat: 0.12, carbs: 0.74 }, tolerancePct: 10 },
@@ -76,6 +84,12 @@ export const nutritionEstimateProfiles: Record<NutritionEstimateProfile, Profile
   onigiri: { label: "おむすび", ratio: { protein: 0.1, fat: 0.16, carbs: 0.74 }, tolerancePct: 10 },
   konamono: { label: "粉物", ratio: { protein: 0.16, fat: 0.36, carbs: 0.48 }, tolerancePct: 10 },
   drink: { label: "ドリンク", ratio: { protein: 0.08, fat: 0.18, carbs: 0.74 }, tolerancePct: 15 },
+  dairy: { label: "乳製品", ratio: { protein: 0.18, fat: 0.5, carbs: 0.32 }, tolerancePct: 12 },
+  fruit: { label: "果物", ratio: { protein: 0.03, fat: 0.03, carbs: 0.94 }, tolerancePct: 12 },
+  snack: { label: "菓子/スナック", ratio: { protein: 0.07, fat: 0.42, carbs: 0.51 }, tolerancePct: 12 },
+  alcohol: { label: "アルコール", ratio: { protein: 0.02, fat: 0.02, carbs: 0.96 }, tolerancePct: 20 },
+  supplement: { label: "サプリ", ratio: { protein: 0.95, fat: 0.02, carbs: 0.03 }, tolerancePct: 20 },
+  vegetableSide: { label: "野菜/副菜", ratio: { protein: 0.12, fat: 0.28, carbs: 0.6 }, tolerancePct: 15 },
 };
 
 type ProfiledEstimateInput = {
