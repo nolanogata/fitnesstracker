@@ -12726,6 +12726,20 @@ function extractPortionGrams(text: string, labels: string[]) {
   return generic ? Number(generic[1]) : undefined;
 }
 
+function extractAnyPortionGrams(text: string) {
+  const match = text.match(/(\d+(?:\.\d+)?)\s*g/i);
+  return match ? Number(match[1]) : undefined;
+}
+
+function inferRicePortionGrams(item: MenuItem, primaryText: string) {
+  const explicitGrams = extractAnyPortionGrams(primaryText);
+  if (explicitGrams) return explicitGrams;
+  const text = [primaryText, ...item.tags].filter(Boolean).join(" ");
+  if (hasFoodToken(text, ["茶碗1杯", "茶わん1杯", "ご飯茶碗", "ごはん茶碗"])) return 160;
+  if (hasFoodToken(text, ["小丼", "ミニ丼"])) return 160;
+  return undefined;
+}
+
 function makeStaplePortionConfig(kind: StaplePortionConfig["kind"], defaultGrams?: number): StaplePortionConfig {
   if (kind === "noodle") {
     return {
@@ -12787,7 +12801,7 @@ function getStaplePortionConfigs(item: MenuItem): StaplePortionConfig[] {
   const primaryText = [item.name, item.serving_label].filter(Boolean).join(" ");
   const text = [primaryText, item.category, ...item.tags].filter(Boolean).join(" ");
   const noodleTokens = ["麺", "ラーメン", "油そば", "うどん", "そば", "パスタ", "焼きそば", "フォー", "春雨"];
-  const riceTokens = ["ごはん", "ご飯", "白米", "ライス", "丼", "定食", "弁当", "プレート", "ディッシュ", "ガパオ", "チャーハン", "オムライス"];
+  const riceTokens = ["ごはん", "ご飯", "白米", "玄米", "ライス", "丼", "定食", "弁当", "プレート", "ディッシュ", "ガパオ", "チャーハン", "炒飯", "オムライス", "炊き込み", "混ぜご飯", "赤飯", "菜飯", "ビリヤニ"];
   const sideOnlyTokens = ["天ぷら", "かしわ天", "ちくわ天", "かき揚げ", "コロッケ", "唐揚げ", "から揚げ", "トッピング", "サイド", "単品"];
   const sideOnly = hasFoodToken(text, sideOnlyTokens);
   const hasNoodle = hasFoodToken(primaryText, noodleTokens) || (!sideOnly && hasFoodToken(text, noodleTokens));
@@ -12798,7 +12812,8 @@ function getStaplePortionConfigs(item: MenuItem): StaplePortionConfig[] {
     && (!hasHamburger || hasFoodToken(primaryText, ["コロコロステーキ", "カットステーキ", "ワイルドコンボ"]))
     && (hasMeatGram || hasFoodToken(primaryText, ["ステーキ", "ヒレ", "リブロース", "肩ロース", "ブレードミート", "ワイルドコンボ"]));
   const hasCurryRice = !hasNoodle && (hasFoodToken(primaryText, ["カレー"]) || (!sideOnly && hasFoodToken(text, ["カレー"])));
-  const hasRice = hasFoodToken(primaryText, riceTokens) || (!sideOnly && hasFoodToken(text, riceTokens)) || hasCurryRice;
+  const tagText = item.tags.join(" ");
+  const hasRice = hasFoodToken(primaryText, riceTokens) || hasFoodToken(tagText, ["ごはん", "ご飯", "白米", "玄米", "ライス", "丼", "炊き込みご飯", "混ぜご飯"]) || hasCurryRice;
   const hasAdjustableInPrimaryText = hasFoodToken(primaryText, noodleTokens) || hasFoodToken(primaryText, riceTokens) || hasSteak || hasHamburger || hasChicken;
   if (!hasAdjustableInPrimaryText && hasFoodToken(text, sideOnlyTokens)) return [];
   const compositeText = hasAdjustableInPrimaryText ? primaryText : text;
@@ -12810,7 +12825,7 @@ function getStaplePortionConfigs(item: MenuItem): StaplePortionConfig[] {
     ...(hasHamburger ? [makeStaplePortionConfig("hamburger", extractPortionGrams(primaryText, ["ハンバーグ", "バーグ"]))] : []),
     ...(hasChicken ? [makeStaplePortionConfig("chicken", extractPortionGrams(primaryText, ["チキン"]))] : []),
     ...(hasNoodle ? [makeStaplePortionConfig("noodle")] : []),
-    ...((hasRice || isRiceComposite) ? [makeStaplePortionConfig("rice")] : []),
+    ...((hasRice || isRiceComposite) ? [makeStaplePortionConfig("rice", inferRicePortionGrams(item, primaryText))] : []),
   ];
 }
 
