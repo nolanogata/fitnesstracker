@@ -1,4 +1,4 @@
-import { estimated } from "../helpers";
+import { estimatedWithProfileTags } from "../estimationProfiles";
 
 const fetchedAt = "2026-06-17T00:00:00.000Z";
 const sourceUrl = "https://order.naporitanpancho.com/takeout/stores/1e8322d0-eb97-4b9a-bbd2-75fc80238231/menus";
@@ -14,7 +14,7 @@ type PanchoMenuInput = {
 };
 
 const item = (input: PanchoMenuInput) =>
-  estimated({
+  estimatedWithProfileTags({
     brand: "パンチョ",
     name: input.name,
     category: "チェーン店",
@@ -28,6 +28,7 @@ const item = (input: PanchoMenuInput) =>
     default_meal_type: "lunch",
     source_url: sourceUrl,
     fetched_at: fetchedAt,
+    profile: "pasta",
   });
 
 export const panchoMenuFoods = [

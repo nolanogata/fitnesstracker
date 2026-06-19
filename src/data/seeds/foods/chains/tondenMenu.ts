@@ -1,4 +1,4 @@
-import { estimated } from "../helpers";
+import { estimatedWithProfileTags, type NutritionEstimateProfile } from "../estimationProfiles";
 
 const fetchedAt = "2026-06-14T00:00:00.000Z";
 
@@ -21,8 +21,20 @@ type TondenFoodInput = {
   source_url?: string;
 };
 
+const inferProfile = (item: TondenFoodInput): NutritionEstimateProfile => {
+  const text = `${item.name} ${item.tags.join(" ")}`;
+  if (text.includes("ソフト") || text.includes("あんみつ") || text.includes("デザート")) return "dessert";
+  if (text.includes("茶わんむし")) return "proteinTopping";
+  if (text.includes("そば")) return "sobaNoodle";
+  if (text.includes("寿司") || text.includes("刺身") || text.includes("海鮮") || text.includes("ねぎとろ")) return "sushiRiceBowl";
+  if (text.includes("魚") || text.includes("いわし") || text.includes("ほっけ") || text.includes("うなぎ")) return "fishSetMeal";
+  if (text.includes("鶏") || text.includes("豚") || text.includes("カツ")) return "meatSetMeal";
+  if (text.includes("天丼") || text.includes("丼") || text.includes("重")) return "riceBowl";
+  return "riceSetMeal";
+};
+
 const tonden = (item: TondenFoodInput) =>
-  estimated({
+  estimatedWithProfileTags({
     brand: "とんでん",
     name: item.name,
     category: "チェーン店",
@@ -36,6 +48,7 @@ const tonden = (item: TondenFoodInput) =>
     default_meal_type: item.default_meal_type ?? "lunch",
     source_url: item.source_url ?? sources.grand,
     fetched_at: fetchedAt,
+    profile: inferProfile(item),
   });
 
 export const tondenMenuFoods = [
@@ -62,4 +75,3 @@ export const tondenMenuFoods = [
   tonden({ name: "北海道ミルクソフト", calories: 240, protein_g: 6, fat_g: 9, carbs_g: 34, salt_g: 0.2, tags: ["デザート", "ソフトクリーム"], serving_label: "1個", default_meal_type: "snack" }),
   tonden({ name: "あんみつ", calories: 330, protein_g: 6, fat_g: 6, carbs_g: 66, salt_g: 0.3, tags: ["デザート", "甘味"], serving_label: "1品", default_meal_type: "snack" }),
 ];
-

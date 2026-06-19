@@ -1,4 +1,4 @@
-import { estimated } from "../helpers";
+import { estimatedWithProfileTags, type NutritionEstimateProfile } from "../estimationProfiles";
 
 const fetchedAt = "2026-06-14T00:00:00.000Z";
 
@@ -18,6 +18,16 @@ type KomerakuFood = {
   serving_label: string;
   tags: string[];
   source_url: string;
+};
+
+const inferProfile = (food: KomerakuFood): NutritionEstimateProfile => {
+  const text = `${food.name} ${food.tags.join(" ")}`;
+  if (text.includes("おむすび")) return "onigiri";
+  if (text.includes("スープ") || text.includes("汁")) return "soup";
+  if (text.includes("唐揚げ") || text.includes("フライ") || text.includes("油淋鶏") || text.includes("チキン南蛮")) return "meatSetMeal";
+  if (text.includes("海鮮") || text.includes("まぐろ") || text.includes("鮭") || text.includes("サーモン") || text.includes("鯛") || text.includes("鯖") || text.includes("ぶり") || text.includes("あじ")) return "sushiRiceBowl";
+  if (text.includes("牛") || text.includes("豚") || text.includes("鶏") || text.includes("ハンバーグ")) return "meatSetMeal";
+  return "riceBowl";
 };
 
 const komerakuFoods: KomerakuFood[] = [
@@ -114,7 +124,7 @@ const komerakuFoods: KomerakuFood[] = [
 ];
 
 export const komerakuMenuFoods = komerakuFoods.map((food) =>
-  estimated({
+  estimatedWithProfileTags({
     brand: "こめらく",
     name: food.name,
     category: "チェーン店",
@@ -128,5 +138,6 @@ export const komerakuMenuFoods = komerakuFoods.map((food) =>
     default_meal_type: "lunch",
     source_url: food.source_url,
     fetched_at: fetchedAt,
+    profile: inferProfile(food),
   }),
 );

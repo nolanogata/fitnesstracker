@@ -18,6 +18,9 @@ export type NutritionEstimateProfile =
   | "gyoza"
   | "friedSide"
   | "friedRice"
+  | "riceBowl"
+  | "sushiRiceBowl"
+  | "sobaNoodle"
   | "pasta"
   | "creamPasta"
   | "oilPasta"
@@ -26,7 +29,10 @@ export type NutritionEstimateProfile =
   | "salad"
   | "riceSetMeal"
   | "fishSetMeal"
-  | "meatSetMeal";
+  | "meatSetMeal"
+  | "dessert"
+  | "soup"
+  | "onigiri";
 
 type ProfileDefinition = {
   label: string;
@@ -45,6 +51,9 @@ export const nutritionEstimateProfiles: Record<NutritionEstimateProfile, Profile
   gyoza: { label: "餃子", ratio: { protein: 0.14, fat: 0.42, carbs: 0.44 }, tolerancePct: 8 },
   friedSide: { label: "揚げ物サイド", ratio: { protein: 0.23, fat: 0.55, carbs: 0.22 }, tolerancePct: 10 },
   friedRice: { label: "チャーハン", ratio: { protein: 0.1, fat: 0.3, carbs: 0.6 }, tolerancePct: 8 },
+  riceBowl: { label: "丼/ごはんもの", ratio: { protein: 0.18, fat: 0.28, carbs: 0.54 }, tolerancePct: 10 },
+  sushiRiceBowl: { label: "寿司/海鮮丼", ratio: { protein: 0.22, fat: 0.18, carbs: 0.6 }, tolerancePct: 10 },
+  sobaNoodle: { label: "そば/和風麺", ratio: { protein: 0.14, fat: 0.12, carbs: 0.74 }, tolerancePct: 10 },
   pasta: { label: "パスタ", ratio: { protein: 0.14, fat: 0.3, carbs: 0.56 }, tolerancePct: 8 },
   creamPasta: { label: "クリームパスタ", ratio: { protein: 0.14, fat: 0.38, carbs: 0.48 }, tolerancePct: 8 },
   oilPasta: { label: "オイルパスタ", ratio: { protein: 0.13, fat: 0.35, carbs: 0.52 }, tolerancePct: 8 },
@@ -54,6 +63,9 @@ export const nutritionEstimateProfiles: Record<NutritionEstimateProfile, Profile
   riceSetMeal: { label: "定食", ratio: { protein: 0.18, fat: 0.28, carbs: 0.54 }, tolerancePct: 10 },
   fishSetMeal: { label: "魚定食", ratio: { protein: 0.23, fat: 0.32, carbs: 0.45 }, tolerancePct: 10 },
   meatSetMeal: { label: "肉定食", ratio: { protein: 0.2, fat: 0.42, carbs: 0.38 }, tolerancePct: 10 },
+  dessert: { label: "デザート", ratio: { protein: 0.08, fat: 0.3, carbs: 0.62 }, tolerancePct: 12 },
+  soup: { label: "スープ", ratio: { protein: 0.18, fat: 0.28, carbs: 0.54 }, tolerancePct: 12 },
+  onigiri: { label: "おむすび", ratio: { protein: 0.1, fat: 0.16, carbs: 0.74 }, tolerancePct: 10 },
 };
 
 type ProfiledEstimateInput = {
@@ -68,6 +80,12 @@ type ProfiledEstimateInput = {
   source_url?: string;
   fetched_at?: string;
   profile: NutritionEstimateProfile;
+};
+
+type ManualProfiledEstimateInput = ProfiledEstimateInput & {
+  protein_g: number;
+  fat_g: number;
+  carbs_g: number;
 };
 
 const roundMacro = (value: number) => Math.round(value * 10) / 10;
@@ -95,6 +113,12 @@ export const estimateProfileTags = (profile: NutritionEstimateProfile, calories:
   return [`推定方式:${definition.label}`, `PFC比率推定`, `kcal整合:${deltaPct}%`];
 };
 
+export const manualEstimateProfileTags = (profile: NutritionEstimateProfile, calories: number, protein_g: number, fat_g: number, carbs_g: number) => {
+  const definition = nutritionEstimateProfiles[profile];
+  const deltaPct = macroCalorieDeltaPct(calories, protein_g, fat_g, carbs_g);
+  return [`推定方式:${definition.label}`, `手動PFC推定`, `kcal整合:${deltaPct}%`];
+};
+
 export const isWithinProfileTolerance = (profile: NutritionEstimateProfile, calories: number, macros: ReturnType<typeof estimateMacrosFromCalories>) => {
   const deltaPct = Math.abs(macroCalorieDeltaPct(calories, macros.protein_g, macros.fat_g, macros.carbs_g));
   return deltaPct <= nutritionEstimateProfiles[profile].tolerancePct;
@@ -116,3 +140,20 @@ export const profiledEstimated = (input: ProfiledEstimateInput) => {
     fetched_at: input.fetched_at,
   });
 };
+
+export const estimatedWithProfileTags = (input: ManualProfiledEstimateInput) =>
+  estimated({
+    brand: input.brand,
+    name: input.name,
+    category: input.category,
+    tags: [...input.tags, ...manualEstimateProfileTags(input.profile, input.calories, input.protein_g, input.fat_g, input.carbs_g)],
+    calories: input.calories,
+    protein_g: input.protein_g,
+    fat_g: input.fat_g,
+    carbs_g: input.carbs_g,
+    salt_g: input.salt_g,
+    serving_label: input.serving_label,
+    default_meal_type: input.default_meal_type,
+    source_url: input.source_url,
+    fetched_at: input.fetched_at,
+  });

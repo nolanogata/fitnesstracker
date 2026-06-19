@@ -42,10 +42,12 @@ This gives future seed rows a traceable reason instead of silent hand-entered P/
 Migrated to shared profiles:
 
 - `pepperLunchTsukemenMenus.ts`: Pepper Lunch, Sharin, Mita Seimen official-name rows.
-
-Already partially structured but still local to its file:
-
-- `italianRestaurantMenus.ts`: Popolamama has local kcal-to-P/F/C profile logic. Move this to shared profiles when that file is next edited.
+- `panchoMenu.ts`: official-name pasta rows now keep existing estimates and add shared profile evidence tags.
+- `bikkuriDonkeyMenu.ts`: existing additive estimate logic is preserved; rows now add shared profile evidence tags by menu type.
+- `familyRestaurantMenus.ts`: broad family-restaurant estimates now add shared profile evidence tags.
+- `italianRestaurantMenus.ts`: Popolamama local kcal-to-P/F/C logic now uses shared profiles; older manually estimated Italian rows add shared profile evidence tags.
+- `komerakuMenu.ts`: existing rice/seafood estimate values are preserved; rows now add shared profile evidence tags.
+- `tondenMenu.ts`: existing Japanese family-restaurant estimate values are preserved; rows now add shared profile evidence tags.
 
 Needs later cleanup:
 
@@ -69,4 +71,3 @@ Needs later cleanup:
 - Noodles, steak plates, and set meals can vary by 15-25% because oil, sauce, soup, rice, and noodle weights are rarely disclosed.
 - Estimated salt is especially approximate unless an official allergen/nutrition PDF provides it.
 - A later schema should separate kcal source quality from P/F/C source quality. Current `data_source` applies to the whole row, so mixed official-kcal/PFC-estimated rows must remain `estimated/medium`.
-
