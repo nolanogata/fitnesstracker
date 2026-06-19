@@ -1,4 +1,4 @@
-import { estimated } from "../helpers";
+import { estimatedWithProfileTags, type NutritionEstimateProfile } from "../estimationProfiles";
 
 const fetchedAt = "2026-06-12T00:00:00.000Z";
 
@@ -26,8 +26,26 @@ type FamilyRestaurantMenu = {
   serving_label?: string;
 };
 
+const inferProfile = (item: FamilyRestaurantMenu): NutritionEstimateProfile => {
+  const text = `${item.name} ${item.tags.join(" ")}`;
+  if (text.includes("パフェ") || text.includes("デザート") || text.includes("パンケーキ") || text.includes("トースト") || text.includes("甘味")) return "dessert";
+  if (text.includes("スープ")) return "soup";
+  if (text.includes("サラダ")) return "salad";
+  if (text.includes("冷麺") || text.includes("うどん")) return "sobaNoodle";
+  if (text.includes("パスタ")) return text.includes("クリーム") ? "creamPasta" : "pasta";
+  if (text.includes("ピザ") || text.includes("ピッツァ")) return "pizza";
+  if (text.includes("カレー")) return "curryRice";
+  if (text.includes("ドリア") || text.includes("オムライス") || text.includes("ピラフ") || text.includes("釜めし") || text.includes("天丼") || text.includes("うな重")) return "riceBowl";
+  if (text.includes("ちらし") || text.includes("刺身") || text.includes("海鮮")) return "sushiRiceBowl";
+  if (text.includes("ステーキ")) return "steakPlate";
+  if (text.includes("ハンバーグ")) return "hamburgerPlate";
+  if (text.includes("チキン") || text.includes("唐揚げ") || text.includes("フライ") || text.includes("かつ") || text.includes("カツ") || text.includes("しょうが焼き")) return "meatSetMeal";
+  if (text.includes("御膳") || text.includes("定食") || text.includes("弁当")) return "riceSetMeal";
+  return "riceSetMeal";
+};
+
 const menu = (item: FamilyRestaurantMenu) =>
-  estimated({
+  estimatedWithProfileTags({
     brand: item.brand,
     name: item.name,
     category: "チェーン店",
@@ -41,6 +59,7 @@ const menu = (item: FamilyRestaurantMenu) =>
     default_meal_type: "lunch",
     source_url: sources[item.brand],
     fetched_at: fetchedAt,
+    profile: inferProfile(item),
   });
 
 export const familyRestaurantMenuFoods = [

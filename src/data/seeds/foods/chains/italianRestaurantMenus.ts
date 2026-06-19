@@ -1,4 +1,4 @@
-import { estimated } from "../helpers";
+import { estimatedWithProfileTags, estimateMacrosFromCalories, type NutritionEstimateProfile } from "../estimationProfiles";
 
 const fetchedAt = "2026-06-12T00:00:00.000Z";
 
@@ -21,10 +21,25 @@ type ItalianRestaurantMenu = {
   serving_label?: string;
   source_url?: string;
   fetched_at?: string;
+  profile?: NutritionEstimateProfile;
+};
+
+const inferItalianProfile = (input: Pick<ItalianRestaurantMenu, "name" | "tags" | "brand">): NutritionEstimateProfile => {
+  const text = `${input.name} ${input.tags.join(" ")}`;
+  if (text.includes("サラダ")) return "salad";
+  if (text.includes("ピザ") || text.includes("ピッツァ")) return "pizza";
+  if (text.includes("クリーム") || text.includes("カルボナーラ")) return "creamPasta";
+  if (text.includes("ペペロンチーノ") || text.includes("オリーブ")) return "oilPasta";
+  if (text.includes("リゾット") || text.includes("オムライス")) return "riceBowl";
+  if (text.includes("スープ")) return "soup";
+  if (text.includes("デザート") || text.includes("タルト") || text.includes("アイス") || text.includes("クレープ")) return "dessert";
+  if (text.includes("揚げ") || text.includes("ナゲット") || text.includes("ポテト") || text.includes("トースト") || text.includes("アヒージョ")) return "friedSide";
+  if (text.includes("肉") || text.includes("チキン") || text.includes("ソーセージ")) return "meatSetMeal";
+  return "pasta";
 };
 
 const item = (input: ItalianRestaurantMenu) =>
-  estimated({
+  estimatedWithProfileTags({
     brand: input.brand,
     name: input.name,
     category: "チェーン店",
@@ -38,6 +53,7 @@ const item = (input: ItalianRestaurantMenu) =>
     default_meal_type: "lunch",
     source_url: input.source_url ?? sources[input.brand],
     fetched_at: input.fetched_at ?? fetchedAt,
+    profile: input.profile ?? inferItalianProfile(input),
   });
 
 type PopolamamaCategory = "pasta" | "pizza" | "side" | "salad";
@@ -48,7 +64,7 @@ type PopolamamaRow = {
   calories: number;
   salt_g: number;
 };
-type PopolamamaMacroProfile = "pasta" | "creamPasta" | "oilPasta" | "pizza" | "thinPizza" | "side" | "friedSide" | "meatSide" | "salad" | "omurice";
+type PopolamamaMacroProfile = NutritionEstimateProfile;
 
 const popolamamaFetchedAt = "2026-06-18T00:00:00.000Z";
 const popolamamaSources: Record<PopolamamaCategory, string> = {
@@ -63,37 +79,18 @@ const popolamamaCategoryTags: Record<PopolamamaCategory, string[]> = {
   side: ["サイド"],
   salad: ["サラダ"],
 };
-const popolamamaMacroRatios: Record<PopolamamaMacroProfile, { protein: number; fat: number; carbs: number }> = {
-  pasta: { protein: 0.14, fat: 0.3, carbs: 0.56 },
-  creamPasta: { protein: 0.14, fat: 0.38, carbs: 0.48 },
-  oilPasta: { protein: 0.13, fat: 0.35, carbs: 0.52 },
-  pizza: { protein: 0.17, fat: 0.36, carbs: 0.47 },
-  thinPizza: { protein: 0.17, fat: 0.38, carbs: 0.45 },
-  side: { protein: 0.18, fat: 0.42, carbs: 0.4 },
-  friedSide: { protein: 0.12, fat: 0.47, carbs: 0.41 },
-  meatSide: { protein: 0.28, fat: 0.55, carbs: 0.17 },
-  salad: { protein: 0.12, fat: 0.48, carbs: 0.4 },
-  omurice: { protein: 0.14, fat: 0.34, carbs: 0.52 },
-};
-
-const roundMacro = (value: number) => Math.round(value * 10) / 10;
 const estimatePopolamamaMacros = (calories: number, profile: PopolamamaMacroProfile) => {
-  const ratio = popolamamaMacroRatios[profile];
-  return {
-    protein_g: roundMacro((calories * ratio.protein) / 4),
-    fat_g: roundMacro((calories * ratio.fat) / 9),
-    carbs_g: roundMacro((calories * ratio.carbs) / 4),
-  };
+  return estimateMacrosFromCalories(calories, profile);
 };
 const inferPopolamamaProfile = (row: PopolamamaRow): PopolamamaMacroProfile => {
   const name = row.name;
   if (row.category === "salad") return "salad";
   if (row.category === "pizza") return name.includes("うすパリ") ? "thinPizza" : "pizza";
-  if (name.includes("オムライス")) return "omurice";
+  if (name.includes("オムライス")) return "riceBowl";
   if (row.category === "side") {
-    if (name.includes("ソーセージ") || name.includes("カマンベール") || name.includes("チキン")) return "meatSide";
+    if (name.includes("ソーセージ") || name.includes("カマンベール") || name.includes("チキン")) return "meatSetMeal";
     if (name.includes("ポテト") || name.includes("ナゲット") || name.includes("アヒージョ") || name.includes("トースト")) return "friedSide";
-    return "side";
+    return "friedSide";
   }
   if (row.section?.includes("クリーム") || name.includes("カルボナーラ") || name.includes("クリーム")) return "creamPasta";
   if (row.section?.includes("オリーブオイル") || name.includes("ペペロンチーノ") || name.includes("バター")) return "oilPasta";
@@ -201,6 +198,7 @@ const popolamamaMenuFoods = popolamamaRows.map((row) => {
     tags: buildPopolamamaTags(row),
     source_url: popolamamaSources[row.category],
     fetched_at: popolamamaFetchedAt,
+    profile: inferPopolamamaProfile(row),
     ...macros,
   });
 });

@@ -1,5 +1,5 @@
 import type { MealType } from "../../../../types";
-import { estimated } from "../helpers";
+import { estimatedWithProfileTags, type NutritionEstimateProfile } from "../estimationProfiles";
 
 const fetchedAt = "2026-06-17T00:00:00.000Z";
 const sourceUrl = "https://www.bikkuri-donkey.com/prefecture/tokyo/";
@@ -123,10 +123,22 @@ const inferMealType = (kinds: MenuKind[]): MealType => {
   return "lunch";
 };
 
+const inferProfile = ({ name, kinds }: BikkuriDonkeyMenuInput): NutritionEstimateProfile => {
+  if (name === "ライス") return "riceBowl";
+  if (name.includes("みそ汁") || name.includes("スープ")) return "soup";
+  if (kinds.includes("salad") || name.includes("サラダ")) return "salad";
+  if (name.includes("カリー") || name.includes("カレー")) return "curryRice";
+  if (name.includes("ポテト") || name.includes("ザンギ") || name.includes("フライ") || name.includes("メンチカツ")) return "friedSide";
+  if (name.includes("スパ") || name.includes("トースト") || name.includes("シナモンロール")) return "pasta";
+  if (kinds.includes("steak") || name.includes("ステーキ")) return "steakPlate";
+  if (kinds.includes("dish") || kinds.includes("lunch") || name.includes("ハンバーグ")) return "hamburgerPlate";
+  return "riceSetMeal";
+};
+
 const item = (input: BikkuriDonkeyMenuInput) => {
   const nutrition = inferNutrition(input);
 
-  return estimated({
+  return estimatedWithProfileTags({
     brand: "びっくりドンキー",
     name: input.name,
     category: "チェーン店",
@@ -136,6 +148,7 @@ const item = (input: BikkuriDonkeyMenuInput) => {
     default_meal_type: inferMealType(input.kinds),
     source_url: sourceUrl,
     fetched_at: fetchedAt,
+    profile: inferProfile(input),
   });
 };
 
