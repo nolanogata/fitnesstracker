@@ -12700,10 +12700,21 @@ function formatFoodQuantitySummary(label: string, quantity: number) {
   return `${normalized} × ${formatFoodAmountValue(safeQuantity)}回分`;
 }
 
-function menuItemServingGrams(item: Pick<MenuItem, "serving_label" | "weight_g">) {
+function menuItemServingGrams(item: Pick<MenuItem, "name" | "brand" | "category" | "serving_label" | "weight_g" | "tags">) {
   if (item.weight_g && item.weight_g > 0) return item.weight_g;
   const match = item.serving_label?.match(/(\d+(?:\.\d+)?)\s*g/i);
-  return match ? Number(match[1]) : undefined;
+  if (match) return Number(match[1]);
+  return inferDefaultServingGrams(item);
+}
+
+function inferDefaultServingGrams(item: Pick<MenuItem, "name" | "brand" | "category" | "serving_label" | "tags">) {
+  if (isSupplementLikeMenuItem(item)) return undefined;
+  const text = [item.name, item.brand, item.category, item.serving_label, ...item.tags].filter(Boolean).join(" ");
+  if (hasFoodToken(text, ["トッピング", "追加", "ソース", "ディップ"])) return 30;
+  if (hasFoodToken(text, ["ハンバーガー", "バーガー"])) return 120;
+  if (hasFoodToken(text, ["サンドイッチ", "フィローネ", "カンパーニュサンド", "サンド", "ラップ", "トースト"])) return 140;
+  if (hasFoodToken(text, ["スターバックス"]) && hasFoodToken(text, ["ケーキ", "ドーナツ", "スコーン", "キッシュ", "ヨーグルト", "グラノーラ"])) return 120;
+  return undefined;
 }
 
 function extractPortionGrams(text: string, labels: string[]) {
@@ -12889,6 +12900,15 @@ function getPortionOptions(item: MenuItem): PortionOption[] {
   if (staples.length > 1) return [{ label: "標準量", value: 1 }];
   if (staple) return getStaplePortionOptions(staple);
 
+  if (hasFoodToken(text, ["トッピング", "追加", "ソース", "ディップ"]) || servingLabel?.includes("トッピング")) {
+    return [
+      { label: "なし", value: 0 },
+      { label: "半分", value: 0.5 },
+      { label: standardLabel === "普通" ? "1トッピング" : standardLabel, value: 1 },
+      { label: doubleServingLabel(servingLabel, "2トッピング"), value: 2 },
+    ];
+  }
+
   if (hasFoodToken(text, ["ドリンク", "コーヒー", "カフェラテ", "牛乳", "豆乳", "ジュース", "炭酸", "アルコール"])) {
     return [
       { label: "S", value: 0.75 },
@@ -12905,7 +12925,7 @@ function getPortionOptions(item: MenuItem): PortionOption[] {
     ];
   }
 
-  if (hasFoodToken(text, ["おにぎり", "パン", "サンドイッチ", "トースト", "スイーツ", "和菓子", "果物", "卵"])) {
+  if (hasFoodToken(text, ["おにぎり", "パン", "サンドイッチ", "サンド", "フィローネ", "ラップ", "トースト", "ハンバーガー", "バーガー", "スイーツ", "和菓子", "果物", "卵"])) {
     return [
       { label: "半分", value: 0.5 },
       { label: standardLabel === "普通" ? "1個" : standardLabel, value: 1 },

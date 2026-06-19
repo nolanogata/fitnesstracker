@@ -1,8 +1,10 @@
 import type { MealType } from "../../../../types";
+import { official } from "../helpers";
 import { estimatedWithProfileTags, type NutritionEstimateProfile } from "../estimationProfiles";
 
-const fetchedAt = "2026-06-17T00:00:00.000Z";
+const fetchedAt = "2026-06-19T00:00:00.000Z";
 const sourceUrl = "https://www.bikkuri-donkey.com/prefecture/tokyo/";
+const nutritionSourceUrl = "https://www.bikkuri-donkey.com/control-panel/uploads/2026/06/2026_0610_nutrition.pdf";
 
 type MenuKind =
   | "alacarte"
@@ -169,6 +171,100 @@ const item = (input: BikkuriDonkeyMenuInput) => {
   });
 };
 
+type OfficialBikkuriDonkeyInput = Nutrition & {
+  name: string;
+  serving_label: string;
+  kinds: MenuKind[];
+  default_meal_type?: MealType;
+  tags?: string[];
+};
+
+const officialItem = (input: OfficialBikkuriDonkeyInput) =>
+  official({
+    brand: "びっくりドンキー",
+    name: input.name,
+    category: "チェーン店",
+    tags: ["ファミレス", "びっくりドンキー", "公式栄養", "公式メニュー確認", ...input.kinds.map((kind) => kindLabels[kind]), ...(input.tags ?? [])],
+    calories: input.calories,
+    protein_g: input.protein_g,
+    fat_g: input.fat_g,
+    carbs_g: input.carbs_g,
+    salt_g: input.salt_g,
+    serving_label: input.serving_label,
+    default_meal_type: input.default_meal_type ?? inferMealType(input.kinds),
+    source_url: nutritionSourceUrl,
+    fetched_at: fetchedAt,
+  });
+
+const sizedOfficial = (
+  name: string,
+  kind: MenuKind,
+  values: Array<[string, number, number, number, number, number]>,
+  tags: string[] = ["ハンバーグ"],
+) => values.map(([sizeLabel, calories, protein_g, fat_g, carbs_g, salt_g]) => officialItem({
+  name,
+  serving_label: `ハンバーグ${sizeLabel}`,
+  kinds: [kind],
+  calories,
+  protein_g,
+  fat_g,
+  carbs_g,
+  salt_g,
+  tags,
+}));
+
+const bikkuriDonkeyOfficialFoods = [
+  ...sizedOfficial("レギュラーバーグステーキ", "steak", [
+    ["150g", 316, 23.2, 15.7, 21.3, 2.5],
+    ["200g", 407, 30.3, 21.0, 25.2, 3.1],
+    ["300g", 582, 44.0, 31.0, 32.7, 4.1],
+  ]),
+  ...sizedOfficial("エッグバーグステーキ", "steak", [
+    ["150g", 399, 30.0, 21.4, 21.5, 2.8],
+    ["200g", 490, 37.1, 26.6, 25.4, 3.3],
+    ["300g", 665, 50.8, 36.6, 32.8, 4.3],
+  ], ["ハンバーグ", "エッグ"]),
+  ...sizedOfficial("チーズバーグステーキ", "steak", [
+    ["150g", 457, 31.5, 27.3, 22.1, 3.6],
+    ["200g", 548, 38.7, 32.5, 25.9, 4.1],
+    ["300g", 723, 52.4, 42.6, 33.4, 5.1],
+  ], ["ハンバーグ", "チーズ"]),
+  ...sizedOfficial("パインバーグステーキ", "steak", [
+    ["150g", 371, 23.4, 15.7, 34.8, 2.5],
+    ["200g", 462, 30.6, 21.0, 38.7, 3.1],
+    ["300g", 637, 44.3, 31.0, 46.2, 4.1],
+  ], ["ハンバーグ", "パイン"]),
+  ...sizedOfficial("おろしそバーグステーキ", "steak", [
+    ["150g", 323, 23.4, 15.8, 23.0, 2.5],
+    ["200g", 415, 30.5, 21.0, 26.9, 3.1],
+    ["300g", 589, 44.2, 31.0, 34.4, 4.1],
+  ], ["ハンバーグ", "おろしそ"]),
+  ...sizedOfficial("フォンデュ風チーズバーグステーキ", "steak", [
+    ["150g", 521, 32.7, 33.3, 23.5, 4.0],
+    ["200g", 612, 39.9, 38.5, 27.4, 4.5],
+    ["300g", 787, 53.6, 48.6, 34.8, 5.5],
+  ], ["ハンバーグ", "チーズ"]),
+  ...sizedOfficial("黒デミバーグステーキ", "steak", [
+    ["150g", 358, 25.3, 17.8, 24.8, 2.5],
+    ["200g", 450, 32.4, 23.1, 28.6, 3.0],
+    ["300g", 624, 46.1, 33.1, 36.1, 4.0],
+  ], ["ハンバーグ", "黒デミ"]),
+  ...sizedOfficial("ねぎポンおろしバーグステーキ", "steak", [
+    ["150g", 336, 22.9, 14.9, 28.9, 4.2],
+    ["200g", 427, 30.0, 20.2, 32.8, 4.7],
+    ["300g", 602, 43.7, 30.2, 40.3, 5.7],
+  ], ["ハンバーグ", "ねぎポン", "おろし"]),
+  officialItem({ name: "ライス", serving_label: "小ライス", kinds: ["rice_set"], calories: 252, protein_g: 3.8, fat_g: 0.5, carbs_g: 55.7, salt_g: 0.0, tags: ["ライス", "ご飯"] }),
+  officialItem({ name: "ライス", serving_label: "普通盛", kinds: ["rice_set"], calories: 336, protein_g: 5.0, fat_g: 0.6, carbs_g: 74.2, salt_g: 0.0, tags: ["ライス", "ご飯"] }),
+  officialItem({ name: "ライス", serving_label: "大盛り", kinds: ["rice_set"], calories: 554, protein_g: 8.3, fat_g: 1.0, carbs_g: 122.4, salt_g: 0.0, tags: ["ライス", "ご飯"] }),
+  officialItem({ name: "エッグ トッピング", serving_label: "1トッピング", kinds: ["side"], calories: 83, protein_g: 6.8, fat_g: 5.7, carbs_g: 0.2, salt_g: 0.2, tags: ["トッピング", "エッグ"] }),
+  officialItem({ name: "チーズ トッピング", serving_label: "1トッピング", kinds: ["side"], calories: 141, protein_g: 8.4, fat_g: 11.6, carbs_g: 0.7, salt_g: 1.0, tags: ["トッピング", "チーズ"] }),
+  officialItem({ name: "パイン トッピング", serving_label: "3枚", kinds: ["side"], calories: 55, protein_g: 0.3, fat_g: 0.0, carbs_g: 13.7, salt_g: 0.0, tags: ["トッピング", "パイン"] }),
+  officialItem({ name: "おろしそ トッピング", serving_label: "1トッピング", kinds: ["side"], calories: 8, protein_g: 0.2, fat_g: 0.0, carbs_g: 1.7, salt_g: 0.0, tags: ["トッピング", "おろしそ"] }),
+  officialItem({ name: "追加カリーソース", serving_label: "1皿", kinds: ["side"], calories: 147, protein_g: 5.2, fat_g: 9.8, carbs_g: 8.8, salt_g: 1.4, tags: ["トッピング", "カリーソース"] }),
+  officialItem({ name: "追加チーズソース", serving_label: "1皿", kinds: ["side"], calories: 157, protein_g: 6.3, fat_g: 13.8, carbs_g: 2.0, salt_g: 1.0, tags: ["トッピング", "チーズソース"] }),
+];
+
 const menus: BikkuriDonkeyMenuInput[] = [
   { name: "ハンバーグ&ビバ！ミートスパ", kinds: ["alacarte"] },
   { name: "ビバ！ミートスパ", kinds: ["alacarte"] },
@@ -299,4 +395,9 @@ const menus: BikkuriDonkeyMenuInput[] = [
   { name: "メンチカツ", kinds: ["takeout", "limited_time"] },
 ];
 
-export const bikkuriDonkeyMenuFoods = menus.map(item);
+const officialNames = new Set(bikkuriDonkeyOfficialFoods.map((food) => food.name));
+
+export const bikkuriDonkeyMenuFoods = [
+  ...bikkuriDonkeyOfficialFoods,
+  ...menus.filter((menu) => !officialNames.has(menu.name)).map(item),
+];
