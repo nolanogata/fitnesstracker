@@ -1,4 +1,5 @@
-import { estimated, official } from "../helpers";
+import { estimatedWithProfileTags, type NutritionEstimateProfile } from "../estimationProfiles";
+import { official } from "../helpers";
 
 const fetchedAt = "2026-06-12T00:00:00.000Z";
 
@@ -39,8 +40,20 @@ const chainOfficial = (input: OfficialChainInput) =>
     fetched_at: fetchedAt,
   });
 
+const inferOhshoProfile = (input: Omit<OfficialChainInput, "brand" | "source_url">): NutritionEstimateProfile => {
+  const text = `${input.name} ${(input.tags ?? []).join(" ")}`;
+  if (text.includes("ラーメン")) return "ramen";
+  if (text.includes("焼そば")) return "sobaNoodle";
+  if (text.includes("餃子")) return "gyoza";
+  if (text.includes("唐揚")) return "friedSide";
+  if (text.includes("炒飯")) return "friedRice";
+  if (text.includes("天津飯") || text.includes("中華飯") || text.includes("ライス")) return "riceBowl";
+  if (text.includes("炒め") || text.includes("回鍋肉") || text.includes("酢豚") || text.includes("麻婆")) return "meatSetMeal";
+  return "riceSetMeal";
+};
+
 const ohshoEstimated = (input: Omit<OfficialChainInput, "brand" | "source_url">) =>
-  estimated({
+  estimatedWithProfileTags({
     brand: "餃子の王将",
     name: input.name,
     category: "チェーン店",
@@ -54,6 +67,7 @@ const ohshoEstimated = (input: Omit<OfficialChainInput, "brand" | "source_url">)
     default_meal_type: "lunch",
     source_url: sources.ohsho,
     fetched_at: fetchedAt,
+    profile: inferOhshoProfile(input),
   });
 
 export const dailyChainOfficialFoods = [

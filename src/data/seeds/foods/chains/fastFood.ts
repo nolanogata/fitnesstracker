@@ -1,4 +1,4 @@
-import { estimated } from "../helpers";
+import { estimatedWithProfileTags, type NutritionEstimateProfile } from "../estimationProfiles";
 
 const brands = ["マクドナルド", "モスバーガー", "ケンタッキー", "バーガーキング", "サブウェイ"];
 const brandAliases: Record<string, string[]> = {
@@ -15,9 +15,18 @@ const items = [
   ["セット普通 estimate", 920, 30, 40, 110],
 ] as const;
 
+const inferProfile = (name: string): NutritionEstimateProfile => {
+  if (name.includes("バーガー")) return "burger";
+  if (name.includes("ポテト")) return "fries";
+  if (name.includes("ナゲット") || name.includes("チキン")) return "friedSide";
+  if (name.includes("サラダ")) return "salad";
+  if (name.includes("ラテ")) return "drink";
+  return "riceSetMeal";
+};
+
 export const fastFoodFoods = brands.flatMap((brand) =>
   items.map(([name, calories, protein_g, fat_g, carbs_g]) =>
-    estimated({
+    estimatedWithProfileTags({
       brand,
       name,
       category: "チェーン店",
@@ -27,6 +36,7 @@ export const fastFoodFoods = brands.flatMap((brand) =>
       fat_g,
       carbs_g,
       serving_label: "1食",
+      profile: inferProfile(name),
     }),
   ),
 );

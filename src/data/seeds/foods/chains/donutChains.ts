@@ -1,4 +1,5 @@
-import { estimated, official } from "../helpers";
+import { estimatedWithProfileTags } from "../estimationProfiles";
+import { official } from "../helpers";
 
 const misterDonutSourceUrl = "https://www.misterdonut.jp/m_menu/eiyou/eiyou.pdf";
 const krispyKremeSourceUrl = "https://krispykreme.jp/cms/wp-content/uploads/nutrition.pdf?20260430133558=";
@@ -112,7 +113,7 @@ export const donutChainFoods = [
     }),
   ),
   ...imDonutFoods.map((food) =>
-    estimated({
+    estimatedWithProfileTags({
       brand: "アイムドーナツ",
       name: food.name,
       category: "チェーン店",
@@ -126,6 +127,7 @@ export const donutChainFoods = [
       default_meal_type: "snack",
       source_url: imDonutSourceUrl,
       fetched_at: fetchedAt,
+      profile: "dessert",
     }),
   ),
 ];

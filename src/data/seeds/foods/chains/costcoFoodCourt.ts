@@ -1,4 +1,4 @@
-import { estimated } from "../helpers";
+import { estimatedWithProfileTags, type NutritionEstimateProfile } from "../estimationProfiles";
 
 const japanMenuSourceUrl = "https://www.foodandwine.com/costco-japan-food-court-11808570";
 const foodCourtSourceUrl = "https://en.wikipedia.org/wiki/Costco#Food_service";
@@ -16,6 +16,18 @@ type CostcoFoodCourtSeed = {
   default_meal_type: "lunch" | "dinner" | "snack";
   tags: string[];
   source_url: string;
+};
+
+const inferProfile = (food: CostcoFoodCourtSeed): NutritionEstimateProfile => {
+  const text = `${food.name} ${food.tags.join(" ")}`;
+  if (text.includes("ピザ")) return "pizza";
+  if (text.includes("ポテト")) return "fries";
+  if (text.includes("チキン")) return "friedSide";
+  if (text.includes("スープ") || text.includes("チャウダー")) return "soup";
+  if (text.includes("ソフトクリーム") || text.includes("サンデー")) return "dessert";
+  if (text.includes("スムージー") || text.includes("ラテ") || text.includes("ドリンク")) return "drink";
+  if (text.includes("ホットドッグ") || text.includes("ベイク") || text.includes("カルツォーネ") || text.includes("ロール")) return "bread";
+  return "riceSetMeal";
 };
 
 const foods: CostcoFoodCourtSeed[] = [
@@ -226,7 +238,7 @@ const foods: CostcoFoodCourtSeed[] = [
 ];
 
 export const costcoFoodCourtFoods = foods.map((food) =>
-  estimated({
+  estimatedWithProfileTags({
     brand: "コストコ",
     name: food.name,
     category: "チェーン店",
@@ -240,5 +252,6 @@ export const costcoFoodCourtFoods = foods.map((food) =>
     default_meal_type: food.default_meal_type,
     source_url: food.source_url,
     fetched_at: fetchedAt,
+    profile: inferProfile(food),
   }),
 );

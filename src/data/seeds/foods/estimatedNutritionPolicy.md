@@ -31,11 +31,12 @@ This gives future seed rows a traceable reason instead of silent hand-entered P/
 
 ## Current Profile Families
 
-- Rice and plate meals: `pepperRice`, `curryRice`, `riceSetMeal`
-- Meat plates: `steakPlate`, `hamburgerPlate`, `meatSetMeal`
-- Noodles: `tsukemen`, `ramen`, `pasta`, `creamPasta`, `oilPasta`
-- Pizza and sides: `pizza`, `thinPizza`, `gyoza`, `friedSide`, `friedRice`, `salad`
-- Set meals: `fishSetMeal`, `meatSetMeal`, `riceSetMeal`
+- Rice and plate meals: `pepperRice`, `curryRice`, `riceBowl`, `sushiRiceBowl`, `riceSetMeal`
+- Meat plates: `steakPlate`, `hamburgerPlate`, `burger`, `meatSetMeal`
+- Noodles: `tsukemen`, `ramen`, `sobaNoodle`, `pasta`, `creamPasta`, `oilPasta`
+- Pizza, bread, and sides: `pizza`, `thinPizza`, `bread`, `gyoza`, `friedSide`, `fries`, `friedRice`, `salad`
+- Set meals and small items: `fishSetMeal`, `meatSetMeal`, `riceSetMeal`, `proteinTopping`, `soup`, `onigiri`
+- Other: `dessert`, `konamono`, `drink`
 
 ## Migration Status
 
@@ -48,11 +49,15 @@ Migrated to shared profiles:
 - `italianRestaurantMenus.ts`: Popolamama local kcal-to-P/F/C logic now uses shared profiles; older manually estimated Italian rows add shared profile evidence tags.
 - `komerakuMenu.ts`: existing rice/seafood estimate values are preserved; rows now add shared profile evidence tags.
 - `tondenMenu.ts`: existing Japanese family-restaurant estimate values are preserved; rows now add shared profile evidence tags.
+- `bamiyanMenu.ts`: Chinese restaurant estimates now add profile evidence by ramen, dumpling, fried side, fried rice, dessert, or meat set type.
+- `fastFood.ts`, `gyudon.ts`, `teishoku.ts`, `familyRestaurant.ts`, `cafe.ts`: broad chain fallback estimates now add profile evidence tags while preserving existing kcal/P/F/C values.
+- `konamonoChains.ts`, `monsoonCafeMenu.ts`, `udon.ts`, `sushiChains.ts`: official-name/manual-PFC chain estimates now add shared profile evidence by menu type.
+- `donutChains.ts`, `cafeMenus.ts`, `costcoFoodCourt.ts`, `dailyChainsOfficial.ts`, `shinpachiEstimated.ts`: remaining chain-scoped estimated rows now use shared profile evidence tags; official rows remain official.
 
 Needs later cleanup:
 
-- Older broad chain estimates that manually entered kcal/P/F/C without `推定方式:*` tags.
 - Generic food presets in `generic.ts` and `genericKonamono.ts`; these are practical defaults, so migration should be conservative.
+- Non-chain package, pantry, frozen, protein, and travel-food estimates that manually entered kcal/P/F/C without `推定方式:*` tags.
 - Store-scoped menus where rice size or side contents vary by location.
 
 ## Rules For New Estimated Rows

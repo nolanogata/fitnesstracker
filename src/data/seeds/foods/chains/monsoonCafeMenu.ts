@@ -1,4 +1,4 @@
-import { estimated } from "../helpers";
+import { estimatedWithProfileTags, type NutritionEstimateProfile } from "../estimationProfiles";
 
 const fetchedAt = "2026-06-12T00:00:00.000Z";
 const sourceUrl = "https://monsoon-cafe.jp/wp-content/uploads/sites/17/2026/02/202602-grand-maihama.pdf";
@@ -14,8 +14,22 @@ type MonsoonCafeMenu = {
   serving_label?: string;
 };
 
+const inferProfile = (input: MonsoonCafeMenu): NutritionEstimateProfile => {
+  const text = `${input.name} ${input.tags.join(" ")}`;
+  if (text.includes("デザート") || text.includes("プリン") || text.includes("アイス") || text.includes("ぜんざい")) return "dessert";
+  if (text.includes("サラダ")) return "salad";
+  if (text.includes("スープ") || text.includes("トム・ヤム")) return "soup";
+  if (text.includes("フォー") || text.includes("ラーメン") || text.includes("麺") || text.includes("ビーフン") || text.includes("パッタイ")) return "sobaNoodle";
+  if (text.includes("炒飯") || text.includes("ナシゴレン")) return "friedRice";
+  if (text.includes("カレー")) return "curryRice";
+  if (text.includes("ガパオ") || text.includes("チキンライス") || text.includes("ごはん") || text.includes("タイ米") || text.includes("玄米")) return "riceBowl";
+  if (text.includes("ポテト") || text.includes("揚げ") || text.includes("トースト") || text.includes("春巻き")) return "friedSide";
+  if (text.includes("肉") || text.includes("鶏") || text.includes("海老") || text.includes("イカ") || text.includes("羊")) return "meatSetMeal";
+  return "riceSetMeal";
+};
+
 const item = (input: MonsoonCafeMenu) =>
-  estimated({
+  estimatedWithProfileTags({
     brand: "モンスーンカフェ",
     name: input.name,
     category: "チェーン店",
@@ -29,6 +43,7 @@ const item = (input: MonsoonCafeMenu) =>
     default_meal_type: "lunch",
     source_url: sourceUrl,
     fetched_at: fetchedAt,
+    profile: inferProfile(input),
   });
 
 export const monsoonCafeMenuFoods = [

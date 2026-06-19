@@ -17,6 +17,9 @@ export type NutritionEstimateProfile =
   | "proteinTopping"
   | "gyoza"
   | "friedSide"
+  | "burger"
+  | "fries"
+  | "bread"
   | "friedRice"
   | "riceBowl"
   | "sushiRiceBowl"
@@ -32,7 +35,9 @@ export type NutritionEstimateProfile =
   | "meatSetMeal"
   | "dessert"
   | "soup"
-  | "onigiri";
+  | "onigiri"
+  | "konamono"
+  | "drink";
 
 type ProfileDefinition = {
   label: string;
@@ -50,6 +55,9 @@ export const nutritionEstimateProfiles: Record<NutritionEstimateProfile, Profile
   proteinTopping: { label: "肉/卵系トッピング", ratio: { protein: 0.3, fat: 0.6, carbs: 0.1 }, tolerancePct: 10 },
   gyoza: { label: "餃子", ratio: { protein: 0.14, fat: 0.42, carbs: 0.44 }, tolerancePct: 8 },
   friedSide: { label: "揚げ物サイド", ratio: { protein: 0.23, fat: 0.55, carbs: 0.22 }, tolerancePct: 10 },
+  burger: { label: "バーガー", ratio: { protein: 0.18, fat: 0.42, carbs: 0.4 }, tolerancePct: 10 },
+  fries: { label: "フライドポテト", ratio: { protein: 0.05, fat: 0.44, carbs: 0.51 }, tolerancePct: 10 },
+  bread: { label: "パン/サンド", ratio: { protein: 0.14, fat: 0.34, carbs: 0.52 }, tolerancePct: 10 },
   friedRice: { label: "チャーハン", ratio: { protein: 0.1, fat: 0.3, carbs: 0.6 }, tolerancePct: 8 },
   riceBowl: { label: "丼/ごはんもの", ratio: { protein: 0.18, fat: 0.28, carbs: 0.54 }, tolerancePct: 10 },
   sushiRiceBowl: { label: "寿司/海鮮丼", ratio: { protein: 0.22, fat: 0.18, carbs: 0.6 }, tolerancePct: 10 },
@@ -66,6 +74,8 @@ export const nutritionEstimateProfiles: Record<NutritionEstimateProfile, Profile
   dessert: { label: "デザート", ratio: { protein: 0.08, fat: 0.3, carbs: 0.62 }, tolerancePct: 12 },
   soup: { label: "スープ", ratio: { protein: 0.18, fat: 0.28, carbs: 0.54 }, tolerancePct: 12 },
   onigiri: { label: "おむすび", ratio: { protein: 0.1, fat: 0.16, carbs: 0.74 }, tolerancePct: 10 },
+  konamono: { label: "粉物", ratio: { protein: 0.16, fat: 0.36, carbs: 0.48 }, tolerancePct: 10 },
+  drink: { label: "ドリンク", ratio: { protein: 0.08, fat: 0.18, carbs: 0.74 }, tolerancePct: 15 },
 };
 
 type ProfiledEstimateInput = {

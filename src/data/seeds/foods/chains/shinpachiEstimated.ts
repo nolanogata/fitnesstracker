@@ -1,9 +1,22 @@
-import { estimated } from "../helpers";
+import { estimatedWithProfileTags, type NutritionEstimateProfile } from "../estimationProfiles";
 
 // しんぱち食堂は公式メニュー名は公開されていますが、公式PFC/塩分表は確認できません。
-// そのため、ここでは公式掲載メニュー + 日本食品標準成分表ベースの低信頼推定値として estimated() のみを使います。
+// そのため、ここでは公式掲載メニュー + 日本食品標準成分表ベースの低信頼推定値として、共有プロファイルタグ付きの推定値を使います。
 const sourceUrl = "https://www.shinpachi-shokudo.com/";
 const fetchedAt = "2026-06-12T00:00:00.000Z";
+
+const inferProfile = (name: string, tags: string[], servingLabel: string): NutritionEstimateProfile => {
+  const text = `${name} ${tags.join(" ")} ${servingLabel}`;
+  if (text.includes("味噌汁")) return "soup";
+  if (text.includes("納豆") || text.includes("玉子") || text.includes("卵") || text.includes("冷奴") || text.includes("ネギトロ")) return "proteinTopping";
+  if (text.includes("ご飯") || text.includes("米")) return "onigiri";
+  if (text.includes("飲料") || text.includes("ビール")) return "drink";
+  if (text.includes("魚") || text.includes("鮭") || text.includes("さば") || text.includes("サバ") || text.includes("いわし") || text.includes("ほっけ") || text.includes("あじ")) {
+    return "fishSetMeal";
+  }
+  if (text.includes("肉") || text.includes("鶏") || text.includes("豚") || text.includes("牛")) return "meatSetMeal";
+  return "riceSetMeal";
+};
 
 const shinpachi = (
   name: string,
@@ -16,7 +29,7 @@ const shinpachi = (
   serving_label = "定食（白米180g・味噌汁・漬物/小鉢込み推定）",
   default_meal_type: "breakfast" | "lunch" | "dinner" | "snack" = "lunch",
 ) =>
-  estimated({
+  estimatedWithProfileTags({
     brand: "しんぱち食堂",
     name,
     category: "チェーン店",
@@ -30,6 +43,7 @@ const shinpachi = (
     default_meal_type,
     source_url: sourceUrl,
     fetched_at: fetchedAt,
+    profile: inferProfile(name, tags, serving_label),
   });
 
 export const shinpachiEstimatedFoods = [
@@ -85,7 +99,7 @@ const shinpachiSupplemental = (
   serving_label = "定食（白米180g・味噌汁・漬物/小鉢込み推定）",
   default_meal_type: "breakfast" | "lunch" | "dinner" | "snack" = "lunch",
 ) =>
-  estimated({
+  estimatedWithProfileTags({
     brand: "しんぱち食堂",
     name,
     category: "チェーン店",
@@ -99,6 +113,7 @@ const shinpachiSupplemental = (
     default_meal_type,
     source_url: supplementalSourceUrl,
     fetched_at: fetchedAt,
+    profile: inferProfile(name, tags, serving_label),
   });
 
 export const shinpachiSupplementalEstimatedFoods = [
