@@ -1080,6 +1080,96 @@ button {
   box-shadow: var(--glass-highlight);
 }
 
+.settings-record-list {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.settings-record-row {
+  display: flex;
+  min-height: 4.1rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  border: 1px solid color-mix(in srgb, var(--glass-border) 82%, transparent);
+  border-radius: 18px;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.42)),
+    var(--glass-bg-strong);
+  padding: 0.65rem 0.7rem;
+  box-shadow: 0 8px 18px rgba(44, 56, 48, 0.06), var(--glass-highlight);
+}
+
+.settings-record-content {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.settings-record-title {
+  overflow: hidden;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  font-weight: 900;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.settings-record-meta {
+  overflow: hidden;
+  margin-top: 0.22rem;
+  color: var(--text-secondary);
+  font-family: var(--rounded-number-font);
+  font-size: 0.76rem;
+  font-weight: 700;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.settings-record-action {
+  height: 2.25rem;
+  width: 2.25rem;
+  border-color: color-mix(in srgb, var(--glass-border) 78%, var(--accent-border));
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.68), rgba(255, 255, 255, 0.38)),
+    var(--glass-bg-strong);
+  color: var(--text-primary);
+  box-shadow: 0 8px 18px rgba(44, 56, 48, 0.08), var(--glass-highlight);
+}
+
+.settings-record-action-danger {
+  color: color-mix(in srgb, var(--danger-coral) 78%, var(--text-primary));
+}
+
+:root[data-theme="dark"] .settings-record-row {
+  border-color: rgba(255, 255, 255, 0.12);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.03)),
+    rgba(14, 17, 18, 0.78);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.24), var(--glass-highlight);
+}
+
+:root[data-theme="dark"] .settings-record-title {
+  color: #f5faf6;
+}
+
+:root[data-theme="dark"] .settings-record-meta {
+  color: #c7d0cb;
+}
+
+:root[data-theme="dark"] .settings-record-action {
+  border-color: rgba(255, 255, 255, 0.16);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.045)),
+    rgba(35, 40, 42, 0.86);
+  color: #eef5f0;
+}
+
+:root[data-theme="dark"] .settings-record-action-danger {
+  color: color-mix(in srgb, var(--danger-coral) 84%, #fff);
+}
+
 .theme-accent-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
