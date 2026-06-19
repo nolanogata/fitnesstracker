@@ -4215,14 +4215,25 @@ function FoodTab(props: {
   const defaultPortionOption = portionOptions.find((option) => option.value === 1) ?? portionOptions[0];
   const customPortionOptions = portionOptions.filter((option) => option.value !== defaultPortionOption?.value);
   const selectedPortionOptionLabel = portionOptions.find((option) => option.value === portionMultiplier)?.label;
+  const selectedExactSizeVariant = useMemo(
+    () => selected && selectedServingGrams && hasSelectedSizeVariants && !hasSelectedCompositeStaples
+      ? findExactMenuSizeVariantByGrams(selected, menuSizeVariantIndex, selectedServingGrams * portionMultiplier)
+      : undefined,
+    [selected?.id, selectedServingGrams, hasSelectedSizeVariants, hasSelectedCompositeStaples, portionMultiplier, menuSizeVariantIndex],
+  );
+  const selectedExactSizeVariantLabel = selectedExactSizeVariant ? menuSizeVariantIndex.variantsByItemId.get(selectedExactSizeVariant.id)?.label : undefined;
+  const selectedResolvedItem = selectedExactSizeVariant ?? selected;
   const selectedCompositePortionLabel = hasSelectedCompositeStaples
     ? selectedStapleConfigs.map((config) => formatStaplePortionLabel(config, staplePortionMultipliers[config.kind] ?? 1)).join(" / ")
     : undefined;
   const hasSelectedCustomPortion = hasSelectedCompositeStaples
     ? selectedStapleConfigs.some((config) => (staplePortionMultipliers[config.kind] ?? 1) !== 1)
-    : portionMultiplier !== (defaultPortionOption?.value ?? 1);
+    : selectedExactSizeVariant
+      ? false
+      : portionMultiplier !== (defaultPortionOption?.value ?? 1);
   const selectedPortionLabel = selected
-    ? (hasSelectedSizeVariants && portionMultiplier === 1 ? selectedSizeVariantLabel : undefined)
+    ? selectedExactSizeVariantLabel
+      ?? (hasSelectedSizeVariants && portionMultiplier === 1 ? selectedSizeVariantLabel : undefined)
       ?? selectedCompositePortionLabel
       ?? selectedPortionOptionLabel
       ?? (selectedStapleConfig && selectedServingGrams ? `${selectedStapleConfig.label}${formatControlValue(round1(selectedServingGrams * portionMultiplier))}g` : undefined)
@@ -4235,8 +4246,13 @@ function FoodTab(props: {
       forceSingleQuantity: hasSelectedCustomPortion,
     })
     : undefined;
-  const selectedNutrition = selected ? getAdjustedMenuNutrition(selected, portionMultiplier, portionQuantity, hasSelectedCompositeStaples ? staplePortionMultipliers : undefined) : undefined;
-  const selectedEntryPortionMultiplier = hasSelectedCompositeStaples ? Math.max(0, portionQuantity) : multiplier;
+  const selectedNutrition = selectedResolvedItem ? getAdjustedMenuNutrition(
+    selectedResolvedItem,
+    selectedExactSizeVariant ? 1 : portionMultiplier,
+    portionQuantity,
+    selectedExactSizeVariant ? undefined : hasSelectedCompositeStaples ? staplePortionMultipliers : undefined,
+  ) : undefined;
+  const selectedEntryPortionMultiplier = selectedExactSizeVariant || hasSelectedCompositeStaples ? Math.max(0, portionQuantity) : multiplier;
   const selectedCalories = selectedNutrition?.calories ?? 0;
   const selectedProtein = selectedNutrition?.protein_g ?? 0;
   const selectedFat = selectedNutrition?.fat_g ?? 0;
@@ -4330,10 +4346,15 @@ function FoodTab(props: {
   const shouldShowFoodResults = mode !== "ai" && (mode !== "search" || isGlobalSearch);
 
   const saveSelected = async () => {
-    if (!selected) return;
+    if (!selectedResolvedItem) return;
     const timestamp = nowIso();
-    const nutrition = getAdjustedMenuNutrition(selected, portionMultiplier, portionQuantity, hasSelectedCompositeStaples ? staplePortionMultipliers : undefined);
-    const loggedName = formatFoodLoggedName(selected.name, selectedPortionLogLabel);
+    const nutrition = getAdjustedMenuNutrition(
+      selectedResolvedItem,
+      selectedExactSizeVariant ? 1 : portionMultiplier,
+      portionQuantity,
+      selectedExactSizeVariant ? undefined : hasSelectedCompositeStaples ? staplePortionMultipliers : undefined,
+    );
+    const loggedName = formatFoodLoggedName(selectedResolvedItem.name, selectedPortionLogLabel);
     const portionNote = selectedPortionLogLabel ? `記録量: ${selectedPortionLogLabel}` : undefined;
     await db.food_entries.put({
       id: makeId("food"),
@@ -4341,16 +4362,16 @@ function FoodTab(props: {
       logged_at: timestamp,
       meal_type: mealType,
       name: loggedName,
-      brand: selected.brand,
+      brand: selectedResolvedItem.brand,
       calories: nutrition.calories,
       protein_g: nutrition.protein_g,
       fat_g: nutrition.fat_g,
       carbs_g: nutrition.carbs_g,
       salt_g: nutrition.salt_g,
       portion_multiplier: selectedEntryPortionMultiplier,
-      entry_source: selected.data_source,
-      confidence: selected.confidence,
-      menu_item_id: selected.id,
+      entry_source: selectedResolvedItem.data_source,
+      confidence: selectedResolvedItem.confidence,
+      menu_item_id: selectedResolvedItem.id,
       note: portionNote,
       created_at: timestamp,
       updated_at: timestamp,
@@ -12531,6 +12552,20 @@ function getMenuSizeVariants(selected: MenuItem, variantIndex: MenuSizeVariantIn
   if (!selectedVariant) return [];
   const variants = variantIndex.variantsByGroupKey.get(selectedVariant.groupKey) ?? [];
   return variants.length > 1 ? variants : [];
+}
+
+function findExactMenuSizeVariantByGrams(selected: MenuItem, variantIndex: MenuSizeVariantIndex, targetGrams: number) {
+  if (!Number.isFinite(targetGrams) || targetGrams <= 0) return undefined;
+  const roundedTarget = round1(targetGrams);
+  return getMenuSizeVariants(selected, variantIndex)
+    .map((variant) => {
+      const labelGrams = extractMenuSizeGrams(variant.label);
+      const configGrams = getStaplePortionConfigs(variant.item)[0]?.defaultGrams;
+      const grams = labelGrams ?? configGrams;
+      return grams === undefined ? undefined : { variant, grams: round1(grams) };
+    })
+    .filter((entry): entry is { variant: MenuSizeVariant; grams: number } => !!entry)
+    .find((entry) => Math.abs(entry.grams - roundedTarget) < 0.1)?.variant.item;
 }
 
 function getMenuDisplayName(item: MenuItem, variantIndex: MenuSizeVariantIndex) {
