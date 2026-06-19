@@ -2392,7 +2392,7 @@ function App() {
 
   return (
     <main className={`theme-${resolvedTheme} app-shell app-shell-${tab} mx-auto min-h-screen max-w-[430px] md:max-w-[760px] text-ink ${tab === "home" ? `home-shell home-shell-${homeTone}` : ""} ${isEditingPastDate ? "app-shell-past-editing" : ""}`} data-theme={resolvedTheme} data-accent={themeAccent}>
-      <header className={`safe-top app-header sticky top-0 z-20 px-4 pb-3 ${tab === "home" ? "home-header" : ""}`}>
+      <header className={`safe-top app-header sticky top-0 z-20 px-4 ${tab === "home" ? "home-header pb-2" : "pb-3"}`}>
         <div className="flex items-center justify-between">
           <div>
             <h1 className={`numeric-text ${tab === "home" ? "text-[2.08rem] font-semibold leading-tight tracking-normal" : "text-2xl font-bold tracking-normal"}`}>
@@ -2461,7 +2461,7 @@ function App() {
         </div>
       </header>
 
-      <section className={tab === "home" ? "px-4 pb-28 pt-2" : "px-4 pb-28 pt-4"}>
+      <section className={tab === "home" ? "px-4 pb-28 pt-1" : "px-4 pb-28 pt-4"}>
         {isEditingPastDate && (
           <div className="past-edit-banner mb-4">
             <div className="min-w-0 flex-1">
@@ -3242,8 +3242,6 @@ function HomeTab(props: {
   const [isPullRefreshing, setIsPullRefreshing] = useState(false);
   const pullStartYRef = useRef<number | undefined>(undefined);
   const pullThreshold = 64;
-  const remaining = (props.goal?.target_calories ?? 0) - props.dayTotals.calories;
-  const calorieState = getCalorieState(remaining, props.goal?.target_calories ?? 0);
   const average7 = movingAverage(props.weightLogs, 7);
   const developerProgressPercent = typeof props.developerProgressPercent === "number"
     ? Math.max(0, Math.min(110, Math.round(props.developerProgressPercent)))
@@ -3293,7 +3291,6 @@ function HomeTab(props: {
       : (isDeveloperProgressOver || (calorieDelta && calorieDelta > 0)) ? "home-progress-over" : "home-progress-normal";
   const calorieDisplayText = shouldMaskGoalProgress ? "-" : calorieDeltaText;
   const calorieMoodClass = props.isCheatDay ? "cheat" : props.activeSpecialMode ? "trip" : props.activePauseMode ? "cheat" : typeof calorieDelta === "number" ? (calorieDelta > 0 ? "over" : Math.abs(calorieDelta) <= 100 ? "on-track" : "left") : "neutral";
-  const calorieMoodLabel = props.isCheatDay ? "cheat day" : props.activeSpecialMode ? "travel mode" : props.activePauseMode ? "pause mode" : typeof calorieDelta === "number" ? (calorieDelta > 0 ? "over" : Math.abs(calorieDelta) <= 100 ? "on track" : "left") : calorieState.label;
   const heroStyle = {
     "--hero-progress-level": String(heroBackgroundProgress),
   } as CSSProperties & Record<"--hero-progress-level", string>;
@@ -3421,7 +3418,7 @@ function HomeTab(props: {
         <RotateCcw className={isPullRefreshing ? "home-pull-spin" : ""} size={17} />
         <span>{isPullRefreshing ? "更新中" : pullOffset >= pullThreshold ? "離して更新" : "更新"}</span>
       </div>
-      <div className="home-dashboard space-y-4" style={pullOffset > 0 ? { transform: `translateY(${Math.min(18, pullOffset * 0.16)}px)` } : undefined}>
+      <div className="home-dashboard" style={pullOffset > 0 ? { transform: `translateY(${Math.min(18, pullOffset * 0.16)}px)` } : undefined}>
         {props.latestUpdate && props.hasUnreadUpdate && (
         <button className="home-notice flex w-full items-center gap-3 px-4 py-3 text-left" onClick={props.openUpdateNotes}>
           <div className="min-w-0 flex-1">
@@ -3498,28 +3495,16 @@ function HomeTab(props: {
           {!props.isCheatDay && props.activeSpecialMode && <span className="home-cheat-badge home-trip-badge">{props.activeSpecialMode.label}</span>}
           {!props.isCheatDay && !props.activeSpecialMode && props.activePauseMode && <span className="home-cheat-badge">{props.activePauseMode.label}</span>}
         </div>
-        <div className="mt-6">
+        <div className="mt-5">
           <p className={`numeric-text text-[4.25rem] font-semibold leading-none tracking-normal ${calorieDelta && calorieDelta > 0 ? "text-clay" : "text-ink"}`}>
             {calorieDisplayText}<span className="ml-2 text-xl font-semibold">kcal</span>
           </p>
-          <p className="mt-2 text-sm font-semibold text-moss">{calorieMoodLabel}</p>
-          {props.isCheatDay && <p className="mt-1 text-sm font-bold text-ink">今日はチートデーです。</p>}
-          {!props.isCheatDay && props.activeSpecialMode && (
-            <p className="mt-1 text-sm font-bold text-ink">
-              {props.activeSpecialMode.label}中です。{props.activeSpecialMode.id === "hokkaido_trip" ? "北海道グルメを満喫！" : "記録優先で、評価は参考扱いです。"}
-            </p>
-          )}
-          {!props.isCheatDay && !props.activeSpecialMode && props.activePauseMode && (
-            <p className="mt-1 text-sm font-bold text-ink">
-              {props.activePauseMode.label}中です。復帰優先で、評価は参考扱いです。
-            </p>
-          )}
-          {!shouldMaskGoalProgress && <p className="numeric-text mt-1 text-sm text-moss">摂取 {props.dayTotals.calories} / 目標 {props.goal?.target_calories ?? "-"} kcal</p>}
-          <div className="home-progress-track mt-6 h-2 overflow-hidden rounded-full bg-white/55">
+          {!shouldMaskGoalProgress && <p className="numeric-text mt-2 text-sm text-moss">摂取 {props.dayTotals.calories} / 目標 {props.goal?.target_calories ?? "-"} kcal</p>}
+          <div className="home-progress-track mt-5 h-2 overflow-hidden rounded-full bg-white/55">
             <div className={`home-progress-fill h-full rounded-full ${heroProgressClass}`} style={{ width: `${heroProgressPercent}%` }} />
           </div>
         </div>
-        <div className="home-macro-row mt-5">
+        <div className="home-macro-row mt-4">
           {macroStats.map((macro) => (
             <button
               type="button"
@@ -3562,12 +3547,12 @@ function HomeTab(props: {
         <button className="px-2 py-1" onClick={props.openAiReport}>AIレポート</button>
       </div>
 
-      <button className="home-glass-card relative w-full p-5 text-left" onClick={() => setIsCheckInOpen(true)}>
+      <button className="home-glass-card home-checkin-card relative w-full p-4 text-left" onClick={() => setIsCheckInOpen(true)}>
         <span className="home-checkin-edit" aria-hidden="true"><Plus size={15} /></span>
         <div className="grid grid-cols-2 items-end gap-3">
           <div>
             <p className="text-sm font-bold">今日のチェックイン</p>
-            <p className="numeric-text mt-6 flex items-end gap-1 text-[2.6rem] font-semibold leading-none tracking-normal">
+            <p className="numeric-text mt-4 flex items-end gap-1 text-[2.45rem] font-semibold leading-none tracking-normal">
               <span>{round1(weight)}</span>
               <span className="mb-1 text-base font-semibold">kg</span>
               {average7Trend && (
@@ -3576,19 +3561,19 @@ function HomeTab(props: {
                 </span>
               )}
             </p>
-            <p className="numeric-text mt-2 text-xs text-moss">7日平均 {average7 ? `${average7}kg` : "-"}{typeof weightDelta === "number" ? ` / 前日比 ${weightDelta > 0 ? "+" : ""}${weightDelta}kg` : ""}</p>
+            <p className="numeric-text mt-1.5 text-xs text-moss">7日平均 {average7 ? `${average7}kg` : "-"}{typeof weightDelta === "number" ? ` / 前日比 ${weightDelta > 0 ? "+" : ""}${weightDelta}kg` : ""}</p>
           </div>
           <div className="text-right">
-            <p className="numeric-text text-[2.15rem] font-semibold leading-none tracking-normal">{round1(bodyFat)}<span className="ml-1 text-sm font-semibold">%</span></p>
-            <p className="mt-2 text-xs text-moss">体脂肪率</p>
+            <p className="numeric-text text-[2.05rem] font-semibold leading-none tracking-normal">{round1(bodyFat)}<span className="ml-1 text-sm font-semibold">%</span></p>
+            <p className="mt-1.5 text-xs text-moss">体脂肪率</p>
           </div>
         </div>
       </button>
 
       <div className="grid grid-cols-2 gap-3">
-        <section className="home-glass-card p-4">
+        <section className="home-glass-card home-mini-card p-4">
           <p className="text-sm font-bold">{props.isEditingPastDate ? "この日の記録" : "今日の記録"}</p>
-          <div className="mt-5 space-y-3">
+          <div className="mt-4 space-y-2">
             <button className="flex w-full items-center justify-between gap-2 rounded-2xl px-1 py-1 text-left transition active:scale-[0.98]" onClick={props.openTodayFoodLog}>
               <span className="text-sm text-moss">食事</span>
               <span className="numeric-text min-w-0 truncate text-right text-sm font-semibold">{foodSummary}</span>
@@ -3600,10 +3585,10 @@ function HomeTab(props: {
           </div>
         </section>
 
-        <section className="home-glass-card p-4">
+        <section className="home-glass-card home-mini-card p-4">
           <button className="w-full text-left" onClick={() => props.setTab("workout")}>
             <p className="text-sm font-bold">今週の運動</p>
-            <div className="mt-5 space-y-4">
+            <div className="mt-4 space-y-3">
               <WorkoutGoalProgress
                 label="筋トレ"
                 done={props.weeklyWorkoutStatus.strengthDone}
@@ -10948,47 +10933,6 @@ function perfectFoodScore(item: MenuItem, target: { calories: number; protein: n
     return improveScore + fitOverPenalty + usefulLoadBonus;
   }
   return improveScore;
-}
-
-function getCalorieState(remaining: number, target: number) {
-  if (target <= 0) {
-    return {
-      label: "未設定",
-      displayValue: "-",
-      subtitle: "目標kcalを設定すると状態を表示します",
-      cardClass: "calorie-card-neutral",
-      badgeClass: "bg-oat text-moss",
-      valueClass: "text-ink",
-    };
-  }
-  if (remaining < 0) {
-    return {
-      label: "超過",
-      displayValue: Math.abs(remaining),
-      subtitle: `${Math.abs(remaining)} kcal超過`,
-      cardClass: "calorie-card-over",
-      badgeClass: "bg-[#F3D8CE] text-clay",
-      valueClass: "text-clay",
-    };
-  }
-  if (remaining <= 100) {
-    return {
-      label: "適正",
-      displayValue: remaining,
-      subtitle: remaining === 0 ? "ぴったり目標" : `あと ${remaining} kcal`,
-      cardClass: "calorie-card-on-track",
-      badgeClass: "bg-leaf text-moss",
-      valueClass: "text-moss",
-    };
-  }
-  return {
-    label: "不足",
-    displayValue: remaining,
-    subtitle: `あと ${remaining} kcal`,
-    cardClass: "calorie-card-under",
-    badgeClass: "bg-[#F4E5C8] text-[#8A5D13]",
-    valueClass: "text-ink",
-  };
 }
 
 function formatHomeDateParts(dateString: string) {
