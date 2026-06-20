@@ -6524,7 +6524,7 @@ function RecordsTab(props: {
                 </button>
               </div>
               {selectedRecordDetail === "food" && (
-                <div className="mt-3 overflow-hidden rounded-md border border-line bg-rice/70">
+                <div className="mt-3 overflow-hidden rounded-md border border-line bg-rice">
                   <div className="flex items-center justify-between gap-3 px-3 py-2">
                     <div>
                       <p className="text-xs font-black">食事ログ</p>
@@ -6549,7 +6549,7 @@ function RecordsTab(props: {
                 </div>
               )}
               {selectedRecordDetail === "workout" && (
-                <div className="mt-3 overflow-hidden rounded-md border border-line bg-rice/70">
+                <div className="mt-3 overflow-hidden rounded-md border border-line bg-rice">
                   <div className="flex items-center justify-between gap-3 px-3 py-2">
                     <div>
                       <p className="text-xs font-black">筋トレログ</p>
