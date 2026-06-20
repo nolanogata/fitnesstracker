@@ -66,6 +66,7 @@ export function generateMarkdownReport(input: {
   const sweets = input.foodEntries.filter((entry) => /スイーツ|ケーキ|アイス|チョコ|プリン/.test(entry.name)).length;
   const drinking = input.foodEntries.filter((entry) => /飲み会|ビール|アルコール|ハイボール|サワー|日本酒|焼酎|ワイン|ウイスキー|梅酒|カクテル|マッコリ/.test(`${entry.name} ${entry.note ?? ""}`)).length;
   const estimatedFoodEntries = input.foodEntries.filter(isEstimatedFoodEntry);
+  const estimatedFoodRatio = formatEntryRatio(estimatedFoodEntries.length, input.foodEntries.length);
   const sessionIds = new Set(input.workoutSessions.map((session) => session.id));
   const scopedExercises = input.workoutExercises.filter((exercise) => sessionIds.has(exercise.session_id));
   const isDaily = input.periodStart === input.periodEnd;
@@ -245,9 +246,7 @@ ${formatTargetPeriodReferenceSection({
 - 一時停止モード: ${pauseModeDays.length ? `${pauseModeDays.length}日 (${pauseModeDays.map((day) => day.label).join(", ")})` : "なし"}
 - テストモード: ${testModeDays.length ? `${testModeDays.length}日` : "なし"}
 - 推定値を含む食事ログ: ${estimatedFoodEntries.length}件${estimatedFoodEntries.length ? "（該当ログは食事詳細に明記）" : ""}
-- 推定ログ比率: ${
-    Math.round((input.foodEntries.filter((entry) => entry.confidence !== "high").length / Math.max(input.foodEntries.length, 1)) * 100)
-  }%
+- 推定ログ比率: ${estimatedFoodRatio}
 
 ## 目標との差分
 
@@ -291,6 +290,14 @@ ${input.question || "ここに質問を追記してください。"}
 
 function isEstimatedFoodEntry(entry: FoodEntry) {
   return entry.entry_source === "estimated" || entry.entry_source === "quick_estimate" || entry.confidence !== "high";
+}
+
+function formatEntryRatio(count: number, total: number) {
+  if (!total) return "0%";
+  const ratio = (count / total) * 100;
+  if (ratio > 0 && ratio < 1) return "<1%";
+  const rounded = Math.round(ratio * 10) / 10;
+  return Number.isInteger(rounded) ? `${rounded}%` : `${rounded.toFixed(1)}%`;
 }
 
 function formatFoodEntrySourceNote(entry: FoodEntry) {
