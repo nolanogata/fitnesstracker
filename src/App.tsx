@@ -2636,6 +2636,7 @@ function App() {
             specialModeSettings={specialModeSettings}
             pauseModeSettings={pauseModeSettings}
             settings={settings}
+            menuItems={menuItems}
             foodEntries={foodEntries}
             weightLogs={weightLogs}
             workoutSessions={workoutSessions}
@@ -6283,6 +6284,7 @@ function RecordsTab(props: {
   goal?: Goal;
   appDate: string;
   cheatDayDates: string[];
+  menuItems: MenuItem[];
   foodEntries: FoodEntry[];
   weightLogs: WeightLog[];
   workoutSessions: WorkoutSession[];
@@ -6299,6 +6301,7 @@ function RecordsTab(props: {
   const [historyGrouping, setHistoryGrouping] = useState<HistoryGrouping>("day");
   const [reportMonth, setReportMonth] = useState(() => monthKey(props.appDate));
   const [selectedReportDate, setSelectedReportDate] = useState(props.appDate);
+  const [selectedRecordDetail, setSelectedRecordDetail] = useState<EditableRecordTab | undefined>();
   const [historyReport, setHistoryReport] = useState("");
   const [historyReportCopied, setHistoryReportCopied] = useState(false);
   const sortedWeightLogs = useMemo(() => [...props.weightLogs].sort((a, b) => a.logged_at.localeCompare(b.logged_at)), [props.weightLogs]);
@@ -6333,10 +6336,14 @@ function RecordsTab(props: {
   const selectedSummary = recordsByDate.get(selectedReportDate);
   const selectedFoodEntries = useMemo(() => selectedReportDate ? props.foodEntries.filter((entry) => entry.app_date === selectedReportDate) : [], [props.foodEntries, selectedReportDate]);
   const selectedFoodTotal = useMemo(() => sumFood(selectedFoodEntries), [selectedFoodEntries]);
+  const selectedWorkoutItems = useMemo(() => selectedReportDate ? workoutHistory.filter((session) => session.app_date === selectedReportDate) : [], [workoutHistory, selectedReportDate]);
   const selectedWeight = useMemo(() => selectedReportDate
     ? [...props.weightLogs].reverse().find((entry) => entry.app_date === selectedReportDate)
     : undefined, [props.weightLogs, selectedReportDate]);
   const selectedHasRecords = !!selectedSummary;
+  useEffect(() => {
+    setSelectedRecordDetail(undefined);
+  }, [selectedReportDate]);
   const generateHistoryDayReport = async () => {
     if (!selectedReportDate || !selectedHasRecords) return;
     const generatedAt = nowIso();
@@ -6503,13 +6510,82 @@ function RecordsTab(props: {
                 <FileText size={17} />この日の日別レポートを生成
               </button>
               <div className="mt-2 grid grid-cols-2 gap-2">
-                <button className="secondary-button justify-center" onClick={() => props.onEditRecordDate(selectedReportDate, "food")}>
-                  <Utensils size={16} />食事を修正
+                <button
+                  className={`secondary-button justify-center ${selectedRecordDetail === "food" ? "border-leaf bg-leaf/15 text-leaf" : ""}`}
+                  onClick={() => setSelectedRecordDetail((current) => current === "food" ? undefined : "food")}
+                >
+                  <Utensils size={16} />食事の表示
                 </button>
-                <button className="secondary-button justify-center" onClick={() => props.onEditRecordDate(selectedReportDate, "workout")}>
-                  <Dumbbell size={16} />筋トレを修正
+                <button
+                  className={`secondary-button justify-center ${selectedRecordDetail === "workout" ? "border-leaf bg-leaf/15 text-leaf" : ""}`}
+                  onClick={() => setSelectedRecordDetail((current) => current === "workout" ? undefined : "workout")}
+                >
+                  <Dumbbell size={16} />筋トレの表示
                 </button>
               </div>
+              {selectedRecordDetail === "food" && (
+                <div className="mt-3 overflow-hidden rounded-md border border-line bg-rice/70">
+                  <div className="flex items-center justify-between gap-3 px-3 py-2">
+                    <div>
+                      <p className="text-xs font-black">食事ログ</p>
+                      <p className="text-[11px] font-semibold text-moss">{selectedFoodEntries.length}件 · {Math.round(selectedFoodTotal.calories)}kcal</p>
+                    </div>
+                    <button className="secondary-button h-8 px-3 py-1 text-[11px]" onClick={() => props.onEditRecordDate(selectedReportDate, "food")}>
+                      Foodで編集
+                    </button>
+                  </div>
+                  <div className="divide-y divide-line">
+                    {selectedFoodEntries.map((entry) => (
+                      <FoodLogRow
+                        displayName={formatFoodEntryName(entry, props.menuItems)}
+                        entry={entry}
+                        key={entry.id}
+                        onEdit={() => props.onEditRecordDate(selectedReportDate, "food")}
+                        showSource
+                      />
+                    ))}
+                    {selectedFoodEntries.length === 0 && <EmptyLine text="この日の食事ログはありません" />}
+                  </div>
+                </div>
+              )}
+              {selectedRecordDetail === "workout" && (
+                <div className="mt-3 overflow-hidden rounded-md border border-line bg-rice/70">
+                  <div className="flex items-center justify-between gap-3 px-3 py-2">
+                    <div>
+                      <p className="text-xs font-black">筋トレログ</p>
+                      <p className="text-[11px] font-semibold text-moss">{selectedWorkoutItems.length}回</p>
+                    </div>
+                    <button className="secondary-button h-8 px-3 py-1 text-[11px]" onClick={() => props.onEditRecordDate(selectedReportDate, "workout")}>
+                      Workoutで編集
+                    </button>
+                  </div>
+                  <div className="divide-y divide-line">
+                    {selectedWorkoutItems.map((session) => (
+                      <div className="px-3 py-3" key={session.id}>
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-bold">{session.title}</p>
+                            <p className="text-xs text-moss">{session.exerciseCount}種目 · {session.setCount}セット</p>
+                          </div>
+                          {session.prs.length > 0 && <span className="shrink-0 rounded-full bg-sun/20 px-2 py-0.5 text-[11px] font-black text-[#8a5d13]">PR {session.prs.length}</span>}
+                        </div>
+                        <div className="mt-2 space-y-1">
+                          {session.lines.map((line, index) => (
+                            <div className="flex items-center justify-between gap-2 text-xs" key={`${session.id}-${line.exerciseName}-${index}`}>
+                              <span className="truncate font-semibold text-ink">{line.exerciseName}</span>
+                              <span className={line.isPr ? "shrink-0 font-black text-clay" : "shrink-0 text-moss"}>{line.isPr ? "PR " : ""}{line.label}</span>
+                            </div>
+                          ))}
+                        </div>
+                        <button className="secondary-button mt-3 h-8 w-full justify-center py-1 text-[11px]" onClick={() => props.onEditRecordDate(selectedReportDate, "workout")}>
+                          この日の筋トレを編集
+                        </button>
+                      </div>
+                    ))}
+                    {selectedWorkoutItems.length === 0 && <EmptyLine text="この日の筋トレログはありません" />}
+                  </div>
+                </div>
+              )}
             </>
           ) : (
             <p className="text-xs text-moss">印が付いた日を選ぶと生成ボタンが表示されます。</p>
