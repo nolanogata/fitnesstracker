@@ -7,6 +7,7 @@ const sources = {
   マンマパスタ: "https://www.giraud.co.jp/mamma",
   オリーブの丘: "https://www.olivenooka.jp/menu/index.html",
   ポポラマーマ: "https://www.popolamama.com/menu/",
+  すぱじろう: "https://spajiro.com/menu/",
 } as const;
 
 type ItalianRestaurantMenu = {
@@ -19,6 +20,7 @@ type ItalianRestaurantMenu = {
   salt_g?: number;
   tags: string[];
   serving_label?: string;
+  default_meal_type?: "breakfast" | "lunch" | "dinner" | "snack" | "gym_before" | "gym_after";
   source_url?: string;
   fetched_at?: string;
   profile?: NutritionEstimateProfile;
@@ -50,7 +52,7 @@ const item = (input: ItalianRestaurantMenu) =>
     carbs_g: input.carbs_g,
     salt_g: input.salt_g,
     serving_label: input.serving_label ?? "1品",
-    default_meal_type: "lunch",
+    default_meal_type: input.default_meal_type ?? "lunch",
     source_url: input.source_url ?? sources[input.brand],
     fetched_at: input.fetched_at ?? fetchedAt,
     profile: input.profile ?? inferItalianProfile(input),
@@ -203,6 +205,76 @@ const popolamamaMenuFoods = popolamamaRows.map((row) => {
   });
 });
 
+type SpajiroRow = {
+  name: string;
+  calories: number;
+  protein_g?: number;
+  fat_g?: number;
+  carbs_g?: number;
+  salt_g: number;
+  tags: string[];
+  profile: NutritionEstimateProfile;
+  serving_label?: string;
+  default_meal_type?: ItalianRestaurantMenu["default_meal_type"];
+};
+
+const spajiroFetchedAt = "2026-06-30T00:00:00.000Z";
+const spajiroRows: SpajiroRow[] = [
+  { name: "たらこのすぱ", calories: 520, salt_g: 4.2, profile: "pasta", tags: ["パスタ", "和風すぱ", "たらこ", "Mサイズ乾麺120g"], serving_label: "Mサイズ 乾麺120g" },
+  { name: "たらこといかのすぱ", calories: 600, salt_g: 4.8, profile: "pasta", tags: ["パスタ", "和風すぱ", "たらこ", "いか", "Mサイズ乾麺120g"], serving_label: "Mサイズ 乾麺120g" },
+  { name: "たらことサーモンとねぎのすぱ", calories: 660, salt_g: 5.0, profile: "pasta", tags: ["パスタ", "和風すぱ", "たらこ", "サーモン", "ねぎ", "Mサイズ乾麺120g"], serving_label: "Mサイズ 乾麺120g" },
+  { name: "明太子のすぱ", calories: 540, salt_g: 4.6, profile: "pasta", tags: ["パスタ", "和風すぱ", "明太子", "Mサイズ乾麺120g"], serving_label: "Mサイズ 乾麺120g" },
+  { name: "明太子とマヨネーズのすぱ", calories: 650, salt_g: 4.8, profile: "creamPasta", tags: ["パスタ", "和風すぱ", "明太子", "マヨネーズ", "Mサイズ乾麺120g"], serving_label: "Mサイズ 乾麺120g" },
+  { name: "ほうれん草とベーコンの和風すぱ", calories: 620, salt_g: 4.4, profile: "oilPasta", tags: ["パスタ", "和風すぱ", "ほうれん草", "ベーコン", "Mサイズ乾麺120g"], serving_label: "Mサイズ 乾麺120g" },
+  { name: "和風ボンゴレビアンコのすぱ", calories: 590, salt_g: 5.0, profile: "oilPasta", tags: ["パスタ", "和風すぱ", "ボンゴレ", "あさり", "Mサイズ乾麺120g"], serving_label: "Mサイズ 乾麺120g" },
+  { name: "完熟トマトとにんにくのアラビアータすぱ", calories: 620, salt_g: 4.3, profile: "pasta", tags: ["パスタ", "洋風すぱ", "トマト", "にんにく", "アラビアータ", "辛い", "Mサイズ乾麺120g"], serving_label: "Mサイズ 乾麺120g" },
+  { name: "なすと挽肉のペペロンチーノ", calories: 720, salt_g: 4.5, profile: "oilPasta", tags: ["パスタ", "洋風すぱ", "なす", "挽肉", "ペペロンチーノ", "Mサイズ乾麺120g"], serving_label: "Mサイズ 乾麺120g" },
+  { name: "ミートソースすぱ", calories: 690, salt_g: 4.3, profile: "pasta", tags: ["パスタ", "洋風すぱ", "ミートソース", "Mサイズ乾麺120g"], serving_label: "Mサイズ 乾麺120g" },
+  { name: "焼きチーズとなすのクリームミートすぱ", calories: 820, salt_g: 5.0, profile: "creamPasta", tags: ["パスタ", "洋風すぱ", "焼きチーズ", "なす", "ミートソース", "クリーム", "Mサイズ乾麺120g"], serving_label: "Mサイズ 乾麺120g" },
+  { name: "すぱじろう ペペロンチーノ", calories: 580, salt_g: 4.0, profile: "oilPasta", tags: ["パスタ", "洋風すぱ", "ペペロンチーノ", "Mサイズ乾麺120g"], serving_label: "Mサイズ 乾麺120g" },
+  { name: "カリカリベーコンのクリーミーカルボナーラ", calories: 860, salt_g: 4.9, profile: "creamPasta", tags: ["パスタ", "洋風すぱ", "カルボナーラ", "ベーコン", "クリーム", "Mサイズ乾麺120g"], serving_label: "Mサイズ 乾麺120g" },
+  { name: "すぱじろうのジェノベーゼ", calories: 760, salt_g: 4.7, profile: "creamPasta", tags: ["パスタ", "洋風すぱ", "ジェノベーゼ", "Mサイズ乾麺120g"], serving_label: "Mサイズ 乾麺120g" },
+  { name: "えびとベーコンとほうれん草のクリームスープすぱ", calories: 780, salt_g: 5.7, profile: "creamPasta", tags: ["パスタ", "洋風すぱ", "えび", "ベーコン", "ほうれん草", "クリームスープ", "Mサイズ乾麺120g"], serving_label: "Mサイズ 乾麺120g" },
+  { name: "ツナとベーコンのサラダ ハーフ", calories: 180, salt_g: 1.4, profile: "salad", tags: ["サラダ", "ツナ", "ベーコン", "ハーフ"], serving_label: "ハーフ" },
+  { name: "ツナとベーコンのサラダ レギュラー", calories: 360, salt_g: 2.6, profile: "salad", tags: ["サラダ", "ツナ", "ベーコン", "レギュラー"], serving_label: "レギュラー" },
+  { name: "すぱじろうからあげ ハーフ", calories: 280, salt_g: 1.6, profile: "friedSide", tags: ["サイド", "からあげ", "ハーフ"], serving_label: "ハーフ" },
+  { name: "すぱじろうからあげ レギュラー", calories: 560, salt_g: 3.0, profile: "friedSide", tags: ["サイド", "からあげ", "レギュラー"], serving_label: "レギュラー" },
+  { name: "たらこ トッピング", calories: 80, salt_g: 1.2, protein_g: 5, fat_g: 3, carbs_g: 4, profile: "proteinTopping", tags: ["トッピング", "たらこ"], serving_label: "1トッピング", default_meal_type: "snack" },
+  { name: "明太子 トッピング", calories: 70, salt_g: 1.3, protein_g: 4.5, fat_g: 2.5, carbs_g: 4, profile: "proteinTopping", tags: ["トッピング", "明太子"], serving_label: "1トッピング", default_meal_type: "snack" },
+  { name: "いか トッピング", calories: 40, salt_g: 0.4, protein_g: 8, fat_g: 0.5, carbs_g: 1, profile: "proteinTopping", tags: ["トッピング", "いか"], serving_label: "1トッピング", default_meal_type: "snack" },
+  { name: "サーモン トッピング", calories: 90, salt_g: 0.4, protein_g: 8, fat_g: 6, carbs_g: 0, profile: "proteinTopping", tags: ["トッピング", "サーモン"], serving_label: "1トッピング", default_meal_type: "snack" },
+  { name: "マヨネーズ トッピング", calories: 90, salt_g: 0.2, protein_g: 0.2, fat_g: 9.8, carbs_g: 0.4, profile: "oilPasta", tags: ["トッピング", "マヨネーズ"], serving_label: "1トッピング", default_meal_type: "snack" },
+  { name: "ほうれん草 トッピング", calories: 15, salt_g: 0.1, protein_g: 1.5, fat_g: 0.2, carbs_g: 2.5, profile: "vegetableSide", tags: ["トッピング", "ほうれん草"], serving_label: "1トッピング", default_meal_type: "snack" },
+  { name: "ベーコン トッピング", calories: 90, salt_g: 0.8, protein_g: 5, fat_g: 7, carbs_g: 1, profile: "proteinTopping", tags: ["トッピング", "ベーコン"], serving_label: "1トッピング", default_meal_type: "snack" },
+  { name: "あさり トッピング", calories: 45, salt_g: 0.8, protein_g: 7, fat_g: 1, carbs_g: 2, profile: "proteinTopping", tags: ["トッピング", "あさり"], serving_label: "1トッピング", default_meal_type: "snack" },
+  { name: "なす トッピング", calories: 80, salt_g: 0.2, protein_g: 1, fat_g: 6, carbs_g: 6, profile: "vegetableSide", tags: ["トッピング", "なす"], serving_label: "1トッピング", default_meal_type: "snack" },
+  { name: "挽肉 トッピング", calories: 130, salt_g: 0.7, protein_g: 8, fat_g: 10, carbs_g: 2, profile: "proteinTopping", tags: ["トッピング", "挽肉"], serving_label: "1トッピング", default_meal_type: "snack" },
+  { name: "焼きチーズ トッピング", calories: 120, salt_g: 0.8, protein_g: 7, fat_g: 9, carbs_g: 1, profile: "dairy", tags: ["トッピング", "焼きチーズ", "チーズ"], serving_label: "1トッピング", default_meal_type: "snack" },
+  { name: "にんにく トッピング", calories: 15, salt_g: 0.1, protein_g: 0.6, fat_g: 0.1, carbs_g: 3.0, profile: "vegetableSide", tags: ["トッピング", "にんにく"], serving_label: "1トッピング", default_meal_type: "snack" },
+  { name: "クリームチーズ トッピング", calories: 80, salt_g: 0.4, protein_g: 2, fat_g: 7.5, carbs_g: 1.2, profile: "dairy", tags: ["トッピング", "クリームチーズ", "チーズ"], serving_label: "1トッピング", default_meal_type: "snack" },
+  { name: "ジェノベーゼソース トッピング", calories: 110, salt_g: 0.7, protein_g: 2, fat_g: 10, carbs_g: 3, profile: "oilPasta", tags: ["トッピング", "ジェノベーゼ", "ソース"], serving_label: "1トッピング", default_meal_type: "snack" },
+  { name: "えび トッピング", calories: 45, salt_g: 0.4, protein_g: 9, fat_g: 0.4, carbs_g: 0.5, profile: "proteinTopping", tags: ["トッピング", "えび"], serving_label: "1トッピング", default_meal_type: "snack" },
+  { name: "コーン トッピング", calories: 45, salt_g: 0.1, protein_g: 1.5, fat_g: 0.6, carbs_g: 9, profile: "vegetableSide", tags: ["トッピング", "コーン"], serving_label: "1トッピング", default_meal_type: "snack" },
+];
+
+const spajiroMenuFoods = spajiroRows.map((row) => {
+  const macros = typeof row.protein_g === "number" && typeof row.fat_g === "number" && typeof row.carbs_g === "number"
+    ? { protein_g: row.protein_g, fat_g: row.fat_g, carbs_g: row.carbs_g }
+    : estimateMacrosFromCalories(row.calories, row.profile);
+  return item({
+    brand: "すぱじろう",
+    name: row.name,
+    calories: row.calories,
+    salt_g: row.salt_g,
+    tags: [...row.tags, "PFC推定"],
+    serving_label: row.serving_label,
+    default_meal_type: row.default_meal_type,
+    fetched_at: spajiroFetchedAt,
+    profile: row.profile,
+    ...macros,
+  });
+});
+
 export const italianRestaurantMenuFoods = [
   item({ brand: "カプリチョーザ", name: "トマトとニンニク", calories: 760, protein_g: 21, fat_g: 25, carbs_g: 111, salt_g: 3.4, tags: ["パスタ", "トマト"] }),
   item({ brand: "カプリチョーザ", name: "トマトとニンニク ダブルサイズ", calories: 1520, protein_g: 42, fat_g: 50, carbs_g: 222, salt_g: 6.8, tags: ["パスタ", "トマト", "大盛り"], serving_label: "2-3人前" }),
@@ -273,4 +345,5 @@ export const italianRestaurantMenuFoods = [
   item({ brand: "オリーブの丘", name: "ライス", calories: 330, protein_g: 5, fat_g: 1, carbs_g: 74, salt_g: 0.0, tags: ["ライス"], serving_label: "普通" }),
 
   ...popolamamaMenuFoods,
+  ...spajiroMenuFoods,
 ];

@@ -59,6 +59,7 @@ Size and amount changes are treated as nutrition-critical behavior:
   - Starbucks: official menu API/list pages were checked on 2026-06-12. Added selected official-menu-name entries as `estimated/medium`.
   - Doutor and Tully's: official menu pages were checked on 2026-06-12. Added selected official-menu-name entries as `estimated/medium`.
   - Komeda: official menu and menu-allergy APIs were checked on 2026-06-12. Kcal values are official, but P/F/C is estimated, so entries remain `estimated/medium`.
+- すぱじろう: official menu page was checked on 2026-06-30. Added listed pasta, salad, karaage, and app-side topping entries as `estimated/medium`; P/F/C values are not official. Official size guidance is S 100g / M 120g / L 170g / XL 240g dry pasta.
 - Protein bars/drinks:
   - Protein foods are separated into the `プロテイン` category rather than `サプリ`.
   - Asahi 一本満足バー and Meiji SAVAS product pages were checked on 2026-06-12. Added selected items as `official/high` when kcal/P/F/C/salt were directly shown as single values.
