@@ -54,7 +54,7 @@ Size and amount changes are treated as nutrition-critical behavior:
 - モンスーンカフェ: official site and store PDF menus were checked on 2026-06-12. Added representative official-menu-name entries from grand, weekday lunch, and takeout menus as `estimated/medium`; P/F/C values are not official.
 - ペッパーランチ: official all-menu page was checked on 2026-06-19. Added selected official-menu-name entries as `estimated/medium`; P/F/C values are not official.
 - 舎鈴: official おしながき page was checked on 2026-06-19. Added selected official-menu-name entries as `estimated/medium`; P/F/C values are not official.
-- 三田製麺所: official menu page was checked on 2026-06-19. Added selected official-menu-name entries as `estimated/medium`; P/F/C values are not official.
+- 三田製麺所: official menu and allergen pages were checked on 2026-06-30. Added selected official-menu-name entries, side items, rice items, and toppings as `estimated/medium`; P/F/C values are not official.
 - Cafe chains:
   - Starbucks: official menu API/list pages were checked on 2026-06-12. Added selected official-menu-name entries as `estimated/medium`.
   - Doutor and Tully's: official menu pages were checked on 2026-06-12. Added selected official-menu-name entries as `estimated/medium`.

@@ -1,11 +1,13 @@
 import { profiledEstimated, type NutritionEstimateProfile } from "../estimationProfiles";
 
 const fetchedAt = "2026-06-19T00:00:00.000Z";
+const mitaFetchedAt = "2026-06-30T00:00:00.000Z";
 
 const sources = {
   pepperLunch: "https://pepperlunch.com/menu/",
   sharin: "https://tsukemen-sharin.com/menu/",
   mitaSeimen: "https://mita-seimen.com/menu/",
+  mitaSeimenAllergen: "https://mita-seimen.com/allergen",
 };
 
 type ChainMenuInput = {
@@ -18,6 +20,7 @@ type ChainMenuInput = {
   profile: NutritionEstimateProfile;
   tags: string[];
   source_url: string;
+  fetched_at?: string;
 };
 
 const chainItem = (input: ChainMenuInput) =>
@@ -31,7 +34,7 @@ const chainItem = (input: ChainMenuInput) =>
     serving_label: input.serving_label ?? "1品",
     default_meal_type: input.default_meal_type ?? "lunch",
     source_url: input.source_url,
-    fetched_at: fetchedAt,
+    fetched_at: input.fetched_at ?? fetchedAt,
     profile: input.profile,
   });
 
@@ -57,8 +60,19 @@ const mitaItem = (input: Omit<ChainMenuInput, "brand" | "source_url">) =>
     ...input,
     brand: "三田製麺所",
     source_url: sources.mitaSeimen,
+    fetched_at: mitaFetchedAt,
     serving_label: input.serving_label ?? "1杯",
     tags: ["つけ麺", "ラーメン", ...input.tags],
+  });
+
+const mitaAllergenItem = (input: Omit<ChainMenuInput, "brand" | "source_url">) =>
+  chainItem({
+    ...input,
+    brand: "三田製麺所",
+    source_url: sources.mitaSeimenAllergen,
+    fetched_at: mitaFetchedAt,
+    serving_label: input.serving_label ?? "1品",
+    tags: ["アレルゲン表確認", ...input.tags],
   });
 
 export const pepperLunchTsukemenMenuFoods = [
@@ -98,6 +112,44 @@ export const pepperLunchTsukemenMenuFoods = [
   mitaItem({ name: "中華そば", calories: 760, salt_g: 6.3, profile: "ramen", tags: ["中華そば"] }),
   mitaItem({ name: "特製中華そば", calories: 930, salt_g: 7.1, profile: "ramen", tags: ["中華そば", "特製", "味玉", "チャーシュー"] }),
   mitaItem({ name: "鯛だし塩つけ麺", calories: 820, salt_g: 6.1, profile: "tsukemen", tags: ["鯛だし", "塩"] }),
+  mitaItem({ name: "油そば", calories: 830, salt_g: 5.8, profile: "ramen", tags: ["油そば"] }),
+  mitaItem({ name: "辛味噌油そば", calories: 900, salt_g: 6.3, profile: "ramen", tags: ["油そば", "辛味噌", "辛い"] }),
   mitaItem({ name: "唐揚げ", calories: 360, salt_g: 1.8, profile: "friedSide", tags: ["唐揚げ", "サイド"], serving_label: "1皿" }),
+  mitaItem({ name: "鶏皮串", calories: 180, salt_g: 1.0, profile: "friedSide", tags: ["鶏皮", "串", "サイド"], serving_label: "1本" }),
+  mitaItem({ name: "肉ねぎ飯", calories: 470, salt_g: 2.2, profile: "riceBowl", tags: ["ご飯物", "チャーシュー", "ねぎ"], serving_label: "1杯" }),
+  mitaItem({ name: "ねぎ飯", calories: 320, salt_g: 1.4, profile: "riceBowl", tags: ["ご飯物", "ねぎ"], serving_label: "1杯" }),
+  mitaItem({ name: "明太子飯", calories: 360, salt_g: 1.8, profile: "riceBowl", tags: ["ご飯物", "明太子"], serving_label: "1杯" }),
+  mitaItem({ name: "ライス", calories: 250, salt_g: 0.0, profile: "plainRice", tags: ["ご飯物", "白米"], serving_label: "1杯" }),
   mitaItem({ name: "黒チャーハン", calories: 560, salt_g: 3.0, profile: "friedRice", tags: ["チャーハン", "サイド"], serving_label: "1皿" }),
+  mitaAllergenItem({ name: "全部のせ", calories: 250, salt_g: 1.4, profile: "proteinTopping", tags: ["トッピング", "味玉", "チャーシュー", "メンマ", "のり"], serving_label: "1皿" }),
+  mitaAllergenItem({ name: "味付き玉子", calories: 80, salt_g: 0.5, profile: "proteinTopping", tags: ["トッピング", "味玉", "卵"], serving_label: "1個" }),
+  mitaAllergenItem({ name: "生玉子", calories: 76, salt_g: 0.2, profile: "proteinTopping", tags: ["トッピング", "卵"], serving_label: "1個" }),
+  mitaAllergenItem({ name: "ねぎ", calories: 20, salt_g: 0.1, profile: "vegetableSide", tags: ["トッピング", "ねぎ"], serving_label: "1皿" }),
+  mitaAllergenItem({ name: "野菜盛り", calories: 80, salt_g: 0.4, profile: "vegetableSide", tags: ["トッピング", "野菜"], serving_label: "1皿" }),
+  mitaAllergenItem({ name: "チャーシュー", calories: 160, salt_g: 1.0, profile: "proteinTopping", tags: ["トッピング", "チャーシュー"], serving_label: "1皿" }),
+  mitaAllergenItem({ name: "メンマ", calories: 35, salt_g: 0.8, profile: "vegetableSide", tags: ["トッピング", "メンマ"], serving_label: "1皿" }),
+  mitaAllergenItem({ name: "薬味ねぎ", calories: 10, salt_g: 0.1, profile: "vegetableSide", tags: ["トッピング", "ねぎ", "薬味"], serving_label: "1皿" }),
+  mitaAllergenItem({ name: "のり", calories: 10, salt_g: 0.1, profile: "vegetableSide", tags: ["トッピング", "海苔"], serving_label: "1皿" }),
+  mitaAllergenItem({ name: "バラのり", calories: 20, salt_g: 0.3, profile: "vegetableSide", tags: ["トッピング", "海苔"], serving_label: "1皿" }),
+  mitaAllergenItem({ name: "辛味増し", calories: 30, salt_g: 0.8, profile: "vegetableSide", tags: ["トッピング", "辛い"], serving_label: "1皿" }),
+  mitaAllergenItem({ name: "魚粉", calories: 25, salt_g: 0.4, profile: "proteinTopping", tags: ["トッピング", "魚粉"], serving_label: "1皿" }),
+  mitaAllergenItem({ name: "チャーマヨ飯", calories: 470, salt_g: 2.1, profile: "riceBowl", tags: ["ご飯物", "チャーシュー", "マヨ"], serving_label: "1杯" }),
+  mitaAllergenItem({ name: "炙りチャーマヨ飯", calories: 500, salt_g: 2.3, profile: "riceBowl", tags: ["ご飯物", "チャーシュー", "マヨ", "炙り"], serving_label: "1杯" }),
+  mitaAllergenItem({ name: "しらす飯", calories: 350, salt_g: 1.8, profile: "sushiRiceBowl", tags: ["ご飯物", "しらす"], serving_label: "1杯" }),
+  mitaAllergenItem({ name: "極み卵かけご飯", calories: 420, salt_g: 1.3, profile: "riceBowl", tags: ["ご飯物", "卵かけご飯", "卵"], serving_label: "1杯" }),
+  mitaAllergenItem({ name: "台湾飯", calories: 520, salt_g: 2.4, profile: "riceBowl", tags: ["ご飯物", "台湾", "ピリ辛"], serving_label: "1杯" }),
+  mitaAllergenItem({ name: "チキンカツ丼", calories: 780, salt_g: 3.2, profile: "riceBowl", tags: ["ご飯物", "チキンカツ", "丼"], serving_label: "1杯" }),
+  mitaAllergenItem({ name: "チキンカツ定食", calories: 980, salt_g: 4.0, profile: "meatSetMeal", tags: ["定食", "チキンカツ"], serving_label: "1食" }),
+  mitaAllergenItem({ name: "唐揚げ定食", calories: 920, salt_g: 3.8, profile: "meatSetMeal", tags: ["定食", "唐揚げ"], serving_label: "1食" }),
+  mitaAllergenItem({ name: "からポテ", calories: 520, salt_g: 2.4, profile: "friedSide", tags: ["一品", "唐揚げ", "ポテト"], serving_label: "1皿" }),
+  mitaAllergenItem({ name: "ポテト", calories: 320, salt_g: 1.2, profile: "fries", tags: ["一品", "ポテト"], serving_label: "1皿" }),
+  mitaAllergenItem({ name: "枝豆", calories: 130, salt_g: 0.6, profile: "vegetableSide", tags: ["一品", "枝豆", "おつまみ"], serving_label: "1皿" }),
+  mitaAllergenItem({ name: "玉子＆メンマ", calories: 120, salt_g: 1.1, profile: "proteinTopping", tags: ["一品", "卵", "メンマ"], serving_label: "1皿" }),
+  mitaAllergenItem({ name: "餃子", calories: 300, salt_g: 1.8, profile: "gyoza", tags: ["一品", "餃子"], serving_label: "1皿" }),
+  mitaAllergenItem({ name: "三田流餃子", calories: 330, salt_g: 2.0, profile: "gyoza", tags: ["一品", "餃子"], serving_label: "1皿" }),
+  mitaAllergenItem({ name: "おつまみ３点盛り", calories: 260, salt_g: 2.0, profile: "proteinTopping", tags: ["一品", "おつまみ"], serving_label: "1皿" }),
+  mitaAllergenItem({ name: "おつまみルーロー", calories: 280, salt_g: 1.8, profile: "proteinTopping", tags: ["一品", "ルーロー", "おつまみ"], serving_label: "1皿" }),
+  mitaAllergenItem({ name: "甘辛レバー揚げ", calories: 260, salt_g: 1.6, profile: "friedSide", tags: ["一品", "レバー", "揚げ物"], serving_label: "1皿" }),
+  mitaAllergenItem({ name: "たこ焼き", calories: 330, salt_g: 1.8, profile: "konamono", tags: ["一品", "たこ焼き"], serving_label: "1皿" }),
+  mitaAllergenItem({ name: "チョリソー", calories: 260, salt_g: 1.9, profile: "proteinTopping", tags: ["一品", "ソーセージ", "おつまみ"], serving_label: "1皿" }),
 ];
