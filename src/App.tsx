@@ -408,7 +408,7 @@ const chainCategories: Record<string, string[]> = {
   "うどん・そば": ["丸亀製麺", "はなまるうどん", "ウエスト", "資さんうどん"],
   ファストフード: ["マクドナルド", "モスバーガー", "ケンタッキー", "バーガーキング", "サブウェイ", "コストコ"],
   "カレー・弁当": ["CoCo壱番屋", "ほっともっと", "オリジン弁当"],
-  "中華・麺": ["リンガーハット", "餃子の王将", "大阪王将", "バーミヤン"],
+  "中華・麺": ["リンガーハット", "餃子の王将", "大阪王将", "バーミヤン", "三田製麺所", "舎鈴"],
   和食: ["スシロー", "はま寿司", "トリトン", "北々亭"],
   定食: ["大戸屋", "やよい軒", "しんぱち食堂", "とんでん"],
   ファミレス: ["びっくりドンキー", "ガスト", "ロイヤルホスト", "サイゼリヤ", "オリーブの丘", "デニーズ", "ジョイフル", "ジョナサン", "華屋与兵衛", "藍屋"],
@@ -5934,7 +5934,7 @@ function WorkoutTab(props: {
 
   const scrollToWorkoutTop = () => {
     setFocusedExerciseId(undefined);
-    setMode("search");
+    setMode("favorite");
     setFilter("");
     window.setTimeout(() => workoutTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 60);
   };
