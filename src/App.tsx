@@ -413,7 +413,7 @@ const chainCategories: Record<string, string[]> = {
   定食: ["大戸屋", "やよい軒", "しんぱち食堂", "とんでん"],
   ファミレス: ["びっくりドンキー", "ガスト", "ロイヤルホスト", "サイゼリヤ", "オリーブの丘", "デニーズ", "ジョイフル", "ジョナサン", "華屋与兵衛", "藍屋"],
   ステーキ: ["いきなりステーキ", "ペッパーランチ"],
-  イタリアン: ["パンチョ", "カプリチョーザ", "マンマパスタ", "ポポラマーマ"],
+  イタリアン: ["パンチョ", "カプリチョーザ", "マンマパスタ", "ポポラマーマ", "すぱじろう"],
   エスニック: ["モンスーンカフェ"],
   カフェ: ["スターバックス", "ドトール", "タリーズ", "コメダ珈琲"],
   ドーナツ: ["ミスタードーナツ", "クリスピークリーム", "アイムドーナツ"],
@@ -13236,6 +13236,15 @@ function getPortionOptions(item: MenuItem): PortionOption[] {
   const staple = staples[0];
 
   if (staples.length > 1) return [{ label: "標準量", value: 1 }];
+  if (item.brand === "すぱじろう" && staple?.kind === "noodle") {
+    const base = Math.max(1, staple.defaultGrams);
+    return [
+      { label: "S 乾麺100g", value: 100 / base },
+      { label: "M 乾麺120g", value: 120 / base },
+      { label: "L 乾麺170g", value: 170 / base },
+      { label: "XL 乾麺240g", value: 240 / base },
+    ];
+  }
   if (staple) return getStaplePortionOptions(staple);
 
   if (hasFoodToken(text, ["トッピング", "追加", "ソース", "ディップ"]) || servingLabel?.includes("トッピング")) {
