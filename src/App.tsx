@@ -3913,7 +3913,7 @@ function ChainComboModal({ brand, menuItems, remainingNutrition, foodEntries, in
                     <span className="recommendation-rank-badge">組み合わせ{index + 1}位</span>
                     <span className="mini-chip">{suggestion.reason}</span>
                   </div>
-                  <p className="mt-2 text-sm font-black">{suggestion.title}</p>
+                  <p className="chain-combo-title mt-2 text-sm font-black">{suggestion.title}</p>
                   <p className="numeric-text mt-1 text-xs font-semibold text-moss">
                     {suggestion.nutrition.calories}kcal · P{round1(suggestion.nutrition.protein_g)} F{round1(suggestion.nutrition.fat_g)} C{round1(suggestion.nutrition.carbs_g)}
                   </p>
@@ -3924,7 +3924,7 @@ function ChainComboModal({ brand, menuItems, remainingNutrition, foodEntries, in
                   <div className="chain-combo-action rounded-xl border border-line bg-surface/70 p-3" key={`${suggestion.id}-${candidate.item.id}-${candidate.portionLabel ?? "base"}`}>
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <p className="truncate text-sm font-bold">{formatMenuItemName(candidate.item)}</p>
+                        <p className="chain-combo-item-title text-sm font-bold">{formatMenuItemName(candidate.item)}</p>
                         <p className="numeric-text mt-1 text-xs text-moss">
                           {candidate.role === "main" ? "メイン" : "追加"}{candidate.portionLabel ? ` · ${candidate.portionLabel}` : ""} · {candidate.nutrition.calories}kcal
                         </p>
