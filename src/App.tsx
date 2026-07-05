@@ -3858,8 +3858,8 @@ function ChainComboModal({ brand, menuItems, remainingNutrition, foodEntries, in
   const remainingSummary = `あと ${Math.round(remainingNutrition.calories)}kcal / P${round1(remainingNutrition.protein)} F${round1(remainingNutrition.fat)} C${round1(remainingNutrition.carbs)}`;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end bg-ink/30 px-4 pb-4" onClick={onClose}>
-      <div className="chain-combo-sheet home-sheet max-h-[86vh] w-full overflow-y-auto p-5" onClick={(event) => event.stopPropagation()}>
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink/30 px-4 pb-4" onClick={onClose}>
+      <div className="chain-combo-sheet home-sheet max-h-[86vh] w-full max-w-[430px] overflow-x-hidden overflow-y-auto p-5" onClick={(event) => event.stopPropagation()}>
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <p className="text-lg font-bold">おすすめの組み合わせ</p>
@@ -3921,15 +3921,15 @@ function ChainComboModal({ brand, menuItems, remainingNutrition, foodEntries, in
               </div>
               <div className="mt-3 grid gap-2">
                 {suggestion.items.map((candidate) => (
-                  <div className="chain-combo-action rounded-xl border border-line bg-surface/70 p-3" key={`${suggestion.id}-${candidate.item.id}-${candidate.portionLabel ?? "base"}`}>
+                  <div className="chain-combo-action rounded-xl border border-line p-3" key={`${suggestion.id}-${candidate.item.id}-${candidate.portionLabel ?? "base"}`}>
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <p className="chain-combo-item-title text-sm font-bold">{formatMenuItemName(candidate.item)}</p>
+                        <p className="chain-combo-item-title text-sm font-bold">{formatChainComboCandidateDisplayName(candidate)}</p>
                         <p className="numeric-text mt-1 text-xs text-moss">
                           {candidate.role === "main" ? "メイン" : "追加"}{candidate.portionLabel ? ` · ${candidate.portionLabel}` : ""} · {candidate.nutrition.calories}kcal
                         </p>
                       </div>
-                      <button className="perfect-food-log-button secondary-button shrink-0 px-3 py-2 text-xs" onClick={() => onPick(candidate)}>記録</button>
+                      <button className="chain-combo-record-button shrink-0 px-3 py-2 text-xs" onClick={() => onPick(candidate)}>記録</button>
                     </div>
                   </div>
                 ))}
@@ -11414,7 +11414,7 @@ function buildChainComboSuggestions({ menuItems, remainingNutrition, usageMap, s
       const sizeHint = items.find((item) => item.portionLabel && !/普通|標準|1人前|1個|肉450g/.test(item.portionLabel));
       return {
         id,
-        title: items.map((item) => formatMenuItemName(item.item)).join(" + "),
+        title: items.map(formatChainComboCandidateDisplayName).join(" + "),
         reason: sizeHint ? `${sizeHint.portionLabel}が合いそう` : items.length >= 2 ? "メイン+追加" : "単品で近い",
         score,
         items,
@@ -11482,6 +11482,14 @@ function makeChainComboCandidate(item: MenuItem, role: ChainComboCandidate["role
     staplePortionMultipliers,
     nutrition: getAdjustedMenuNutrition(item, portionMultiplier, 1, staplePortionMultipliers),
   };
+}
+
+function formatChainComboCandidateDisplayName(candidate: ChainComboCandidate) {
+  const baseName = formatMenuItemName(candidate.item);
+  const label = candidate.portionLabel?.trim();
+  if (!label || /^(普通|標準量|普通量|1人前|1個|1トッピング|1回分)$/.test(label)) return baseName;
+  if (/（.*?）|\(.*?\)/.test(baseName)) return baseName.replace(/（.*?）|\(.*?\)/, `（${label}）`);
+  return `${baseName}（${label}）`;
 }
 
 function sumChainComboNutrition(items: ChainComboCandidate[]): NutritionSnapshot {
