@@ -2560,9 +2560,52 @@ button {
   color: #b85f4f;
 }
 
+.chain-combo-entry,
+.chain-combo-panel,
+.chain-combo-card,
+.chain-combo-action {
+  box-shadow: var(--glass-highlight);
+}
+
+.chain-combo-open-button {
+  min-height: 3rem;
+}
+
+.chain-combo-main-chip {
+  display: inline-flex;
+  min-width: 10.5rem;
+  max-width: 13rem;
+  flex-direction: column;
+  gap: 0.28rem;
+  border: 1px solid var(--glass-border);
+  border-radius: 18px;
+  background: var(--glass-bg-soft);
+  padding: 0.7rem 0.85rem;
+  text-align: left;
+  color: var(--ink);
+  box-shadow: var(--glass-highlight);
+}
+
+.chain-combo-main-chip-active {
+  border-color: var(--accent-border);
+  background: var(--accent-soft);
+  color: var(--accent-text);
+}
+
+.chain-combo-action {
+  transition: border-color 160ms ease, background 160ms ease, transform 160ms ease;
+}
+
+.chain-combo-action:active {
+  transform: scale(0.99);
+}
+
 :root:not([data-accent="classic"]) .perfect-food-item .text-moss,
 :root:not([data-accent="classic"]) .perfect-food-group .text-moss,
 :root:not([data-accent="classic"]) .perfect-food-panel .text-moss,
+main[data-accent]:not([data-accent="classic"]) .chain-combo-card .text-moss,
+main[data-accent]:not([data-accent="classic"]) .chain-combo-panel .text-moss,
+main[data-accent]:not([data-accent="classic"]) .chain-combo-entry .text-moss,
 main[data-accent]:not([data-accent="classic"]) .perfect-food-item .text-moss,
 main[data-accent]:not([data-accent="classic"]) .perfect-food-group .text-moss,
 main[data-accent]:not([data-accent="classic"]) .perfect-food-panel .text-moss {

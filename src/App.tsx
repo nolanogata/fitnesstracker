@@ -373,6 +373,24 @@ type PerfectFoodSuggestionGroup = {
   label: string;
   items: MenuItem[];
 };
+type ChainComboMode = "auto" | "main";
+type ChainComboCandidate = {
+  item: MenuItem;
+  role: "main" | "side";
+  portionLabel?: string;
+  portionMultiplier: number;
+  staplePortionMultipliers?: StaplePortionMultipliers;
+  nutrition: NutritionSnapshot;
+};
+type ChainComboSuggestion = {
+  id: string;
+  title: string;
+  reason: string;
+  score: number;
+  items: ChainComboCandidate[];
+  nutrition: NutritionSnapshot;
+  remainingAfter: { calories: number; protein: number; fat: number; carbs: number };
+};
 type SpecialModeDefinition = {
   id: string;
   label: string;
@@ -3811,6 +3829,133 @@ function PerfectFoodModal({ dayTotals, goal, menuItems, onClose, onLog }: {
   );
 }
 
+function ChainComboModal({ brand, menuItems, remainingNutrition, foodEntries, initialMainItem, onClose, onPick }: {
+  brand: string;
+  menuItems: MenuItem[];
+  remainingNutrition: { calories: number; protein: number; fat: number; carbs: number };
+  foodEntries: FoodEntry[];
+  initialMainItem?: MenuItem;
+  onClose: () => void;
+  onPick: (candidate: ChainComboCandidate) => void;
+}) {
+  const [mode, setMode] = useState<ChainComboMode>(initialMainItem ? "main" : "auto");
+  const [selectedMainId, setSelectedMainId] = useState(initialMainItem?.id);
+  const usageMap = useMemo(() => buildFoodUsageMap(foodEntries), [foodEntries]);
+  const mainCandidates = useMemo(() => (
+    menuItems
+      .filter(isChainComboMainItem)
+      .sort((a, b) => chainComboUsageBoost(b, usageMap) - chainComboUsageBoost(a, usageMap) || b.protein_g - a.protein_g || a.calories - b.calories)
+      .slice(0, 36)
+  ), [menuItems, usageMap]);
+  const selectedMain = mainCandidates.find((item) => item.id === selectedMainId) ?? (initialMainItem && isChainComboMainItem(initialMainItem) ? initialMainItem : undefined);
+  const suggestions = useMemo(() => buildChainComboSuggestions({
+    menuItems,
+    remainingNutrition,
+    usageMap,
+    selectedMain,
+  }), [menuItems, remainingNutrition.calories, remainingNutrition.protein, remainingNutrition.fat, remainingNutrition.carbs, usageMap, selectedMain?.id]);
+  const topSuggestions = suggestions.slice(0, 8);
+  const remainingSummary = `あと ${Math.round(remainingNutrition.calories)}kcal / P${round1(remainingNutrition.protein)} F${round1(remainingNutrition.fat)} C${round1(remainingNutrition.carbs)}`;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end bg-ink/30 px-4 pb-4" onClick={onClose}>
+      <div className="chain-combo-sheet home-sheet max-h-[86vh] w-full overflow-y-auto p-5" onClick={(event) => event.stopPropagation()}>
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-lg font-bold">おすすめの組み合わせ</p>
+            <p className="numeric-text mt-1 text-xs font-semibold text-moss">{brand} · {remainingSummary}</p>
+          </div>
+          <button className="icon-button h-9 w-9 shrink-0" aria-label="閉じる" onClick={onClose}>×</button>
+        </div>
+
+        <div className="mt-4 grid grid-cols-2 gap-2">
+          <button
+            className={`mini-chip ${mode === "auto" ? "mini-chip-active" : ""}`}
+            onClick={() => {
+              setMode("auto");
+              setSelectedMainId(undefined);
+            }}
+          >
+            自動で組む
+          </button>
+          <button className={`mini-chip ${mode === "main" ? "mini-chip-active" : ""}`} onClick={() => setMode("main")}>
+            メインを選ぶ
+          </button>
+        </div>
+
+        {mode === "main" && (
+          <section className="chain-combo-panel mt-4 rounded-md border border-line bg-rice/70 p-3">
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <p className="text-sm font-bold">先に食べたいメイン</p>
+              {selectedMain && <button className="text-xs font-black text-moss" onClick={() => setSelectedMainId(undefined)}>解除</button>}
+            </div>
+            <div className="chain-combo-main-scroll flex gap-2 overflow-x-auto pb-1">
+              {mainCandidates.slice(0, 18).map((item) => (
+                <button
+                  key={item.id}
+                  className={`chain-combo-main-chip ${selectedMainId === item.id ? "chain-combo-main-chip-active" : ""}`}
+                  onClick={() => setSelectedMainId(item.id)}
+                >
+                  <span className="truncate">{formatMenuItemName(item)}</span>
+                  <span className="numeric-text">{item.calories}kcal P{round1(item.protein_g)}</span>
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
+
+        <div className="mt-4 space-y-3">
+          {topSuggestions.length ? topSuggestions.map((suggestion, index) => (
+            <section className="chain-combo-card perfect-food-group rounded-md border border-line bg-rice/70 p-3" key={suggestion.id}>
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <span className="recommendation-rank-badge">組み合わせ{index + 1}位</span>
+                    <span className="mini-chip">{suggestion.reason}</span>
+                  </div>
+                  <p className="mt-2 text-sm font-black">{suggestion.title}</p>
+                  <p className="numeric-text mt-1 text-xs font-semibold text-moss">
+                    {suggestion.nutrition.calories}kcal · P{round1(suggestion.nutrition.protein_g)} F{round1(suggestion.nutrition.fat_g)} C{round1(suggestion.nutrition.carbs_g)}
+                  </p>
+                </div>
+              </div>
+              <div className="mt-3 grid gap-2">
+                {suggestion.items.map((candidate) => (
+                  <div className="chain-combo-action rounded-xl border border-line bg-surface/70 p-3" key={`${suggestion.id}-${candidate.item.id}-${candidate.portionLabel ?? "base"}`}>
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-bold">{formatMenuItemName(candidate.item)}</p>
+                        <p className="numeric-text mt-1 text-xs text-moss">
+                          {candidate.role === "main" ? "メイン" : "追加"}{candidate.portionLabel ? ` · ${candidate.portionLabel}` : ""} · {candidate.nutrition.calories}kcal
+                        </p>
+                      </div>
+                      <button className="perfect-food-log-button secondary-button shrink-0 px-3 py-2 text-xs" onClick={() => onPick(candidate)}>記録</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-3">
+                <p className="text-[11px] font-black text-moss">食後の残り枠</p>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {formatChainComboRemainingChips(suggestion.remainingAfter).map((chip) => (
+                    <span className={`perfect-food-detail-chip perfect-food-detail-${chip.tone}`} key={chip.label}>{chip.label}</span>
+                  ))}
+                </div>
+              </div>
+            </section>
+          )) : (
+            <p className="perfect-food-panel rounded-md bg-rice p-4 text-center text-sm font-semibold text-moss">
+              このチェーン内で組み合わせ候補を作れませんでした。
+            </p>
+          )}
+        </div>
+
+        <button className="secondary-button mt-4 w-full" onClick={onClose}>閉じる</button>
+      </div>
+    </div>
+  );
+}
+
 function getPerfectFoodFit(item: MenuItem, target: { calories: number; protein: number; fat: number; carbs: number }, mode: PerfectFoodMode = "improve") {
   const balance = getPerfectFoodBalance(item, target);
   const details: { label: string; tone: "protein" | "ok" | "warn" | "over" }[] = [];
@@ -3959,6 +4104,8 @@ function FoodTab(props: {
   const [brand, setBrand] = useState(persistedFoodSearchState.brand ?? chainCategories[initialChainCategory]?.[0] ?? "松屋");
   const [generalCategory, setGeneralCategory] = useState(persistedFoodSearchState.generalCategory ?? "ごはん・丼");
   const [recommendCategory, setRecommendCategory] = useState<RecommendedFoodFilter>(persistedFoodSearchState.recommendCategory ?? "all");
+  const [isChainComboOpen, setIsChainComboOpen] = useState(false);
+  const [chainComboSeedItem, setChainComboSeedItem] = useState<MenuItem>();
   const [showGeneralFoodsOnly, setShowGeneralFoodsOnly] = useState(!!persistedFoodSearchState.showGeneralFoodsOnly);
   const [hideOverGoalItems, setHideOverGoalItems] = useState(!!persistedFoodSearchState.hideOverGoalItems);
   const [showFoodBalance, setShowFoodBalance] = useState(!!persistedFoodSearchState.showFoodBalance);
@@ -3977,6 +4124,12 @@ function FoodTab(props: {
     () => [...props.foodEntries].sort((a, b) => b.logged_at.localeCompare(a.logged_at)).slice(0, 10),
     [props.foodEntries],
   );
+  const chainComboMenuItems = useMemo(() => (
+    mergeMenuSizeVariantItems(
+      mergeGenericDuplicateMenuItems(dedupeMenuItemsBySource(props.menuItems.filter((item) => item.brand === brand))),
+      menuSizeVariantIndex,
+    )
+  ), [props.menuItems, brand, menuSizeVariantIndex]);
   const aiFoodMatchCandidates = useMemo(
     () => aiFoodImportItems.map((item) => buildAiFoodImportCandidates(item, props.menuItems)),
     [aiFoodImportItems, props.menuItems],
@@ -4099,6 +4252,18 @@ function FoodTab(props: {
     setFoodAddStep("size");
     setSelected(item);
   };
+  const selectChainComboCandidate = (candidate: ChainComboCandidate) => {
+    setPortionMultiplier(candidate.portionMultiplier);
+    setPortionQuantity(1);
+    setStaplePortionMultipliers(candidate.staplePortionMultipliers ?? {});
+    setMealType(candidate.item.default_meal_type ?? mealType);
+    setFoodAddStep("size");
+    setSelected(candidate.item);
+  };
+  const openChainCombo = (seedItem?: MenuItem) => {
+    setChainComboSeedItem(seedItem);
+    setIsChainComboOpen(true);
+  };
   const selectMode = (nextMode: FoodMode) => {
     if (nextMode === "ai") {
       openAiFoodImport();
@@ -4109,6 +4274,8 @@ function FoodTab(props: {
     setIsMyMenuRegistrationOpen(false);
     setMyMenuRegistrationMethod(undefined);
     setMenuOverwriteTarget(undefined);
+    setIsChainComboOpen(false);
+    setChainComboSeedItem(undefined);
     if (nextMode !== "search") setQuery("");
     if (nextMode === "chain") {
       scrollToChainSection();
@@ -4966,6 +5133,20 @@ function FoodTab(props: {
             ))}
             {chainCategories[chainCategory].length === 0 && <p className="col-span-2 px-1 py-2 text-sm text-moss">該当するチェーンはまだ登録されていません。</p>}
           </div>
+          {brand && chainComboMenuItems.length > 0 && (
+            <div className="chain-combo-entry mt-3 rounded-md border border-line bg-rice/60 p-3">
+              <div className="flex items-start gap-3">
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-bold">チェーン内で組み合わせる</p>
+                  <p className="mt-1 text-xs font-semibold text-moss">{brand}のメイン・サイド・サイズ調整から、残り枠に近い食べ方を探します。</p>
+                </div>
+                <span className="mini-chip shrink-0">{chainComboMenuItems.length}件</span>
+              </div>
+              <button className="primary-button chain-combo-open-button mt-3 w-full" onClick={() => openChainCombo()}>
+                <Sparkles size={17} />おすすめの組み合わせ
+              </button>
+            </div>
+          )}
         </section>
       )}
 
@@ -5131,6 +5312,25 @@ function FoodTab(props: {
           <ArrowUp size={15} />
           <span>{floatingFoodSearchLabel}</span>
         </button>
+      )}
+
+      {isChainComboOpen && (
+        <ChainComboModal
+          brand={brand}
+          menuItems={chainComboMenuItems}
+          remainingNutrition={remainingNutrition}
+          foodEntries={props.foodEntries}
+          initialMainItem={chainComboSeedItem}
+          onClose={() => {
+            setIsChainComboOpen(false);
+            setChainComboSeedItem(undefined);
+          }}
+          onPick={(candidate) => {
+            setIsChainComboOpen(false);
+            setChainComboSeedItem(undefined);
+            selectChainComboCandidate(candidate);
+          }}
+        />
       )}
 
       {selected && (
@@ -5718,7 +5918,6 @@ function WorkoutTab(props: {
     );
     await props.refresh();
     setFocusedExerciseId(addedExerciseId);
-    props.showToast(`${exercise.name}を今日のワークアウトに追加しました`);
   };
 
   const maybeCelebratePr = (
@@ -11124,6 +11323,222 @@ function perfectFoodScore(item: MenuItem, target: { calories: number; protein: n
     return improveScore + fitOverPenalty + usefulLoadBonus;
   }
   return improveScore;
+}
+
+function buildFoodUsageMap(foodEntries: FoodEntry[]) {
+  const map = new Map<string, number>();
+  foodEntries.forEach((entry) => {
+    if (entry.menu_item_id) map.set(entry.menu_item_id, (map.get(entry.menu_item_id) ?? 0) + 1);
+    const textKey = foodUsageTextKey(entry.brand, entry.name);
+    map.set(textKey, (map.get(textKey) ?? 0) + 1);
+  });
+  return map;
+}
+
+function foodUsageTextKey(brand?: string, name?: string) {
+  return `${brand ?? ""}::${(name ?? "").replace(/（.*?）|\(.*?\)/g, "").trim()}`;
+}
+
+function chainComboUsageBoost(item: MenuItem, usageMap: Map<string, number>) {
+  const count = (usageMap.get(item.id) ?? 0) + (usageMap.get(foodUsageTextKey(item.brand, item.name)) ?? 0);
+  return Math.min(0.5, count * 0.08) + (item.is_favorite ? 0.22 : 0);
+}
+
+function isChainComboSideItem(item: MenuItem) {
+  const text = [item.name, item.category, item.serving_label, ...item.tags].filter(Boolean).join(" ");
+  const mainLike = /ステーキ|ハンバーグ|バーグ|丼|定食|弁当|カレー|ラーメン|油そば|うどん|そば|パスタ|つけ麺|焼きそば|ハンバーガー|バーガー|サンド|プレート|ディッシュ/.test(text);
+  const explicitSide = /ライス・スープセット|ライスセット|スープセット|サラダセット|セットドリンク|トッピング|追加|サイド|単品/.test(text);
+  if (mainLike && item.calories >= 380 && !explicitSide) return false;
+  if (/ライス・スープセット|ライスセット|スープセット|サラダセット|セットドリンク/.test(text)) return true;
+  if (/トッピング|追加|サイド|単品|ライス|ご飯|白米|スープ|味噌汁|みそ汁|サラダ|小鉢|味玉|玉子|卵|チーズ|ポテト|ナゲット|からあげ|唐揚げ|餃子|天ぷら|かしわ天|ちくわ天|かき揚げ|コロッケ|デザート|ドリンク|ソース/.test(text)) return true;
+  return item.calories > 0 && item.calories <= 220 && item.protein_g < 18;
+}
+
+function isChainComboMainItem(item: MenuItem) {
+  if (item.calories <= 0) return false;
+  if (isChainComboSideItem(item) && item.calories < 420) return false;
+  const text = [item.name, item.category, item.serving_label, ...item.tags].filter(Boolean).join(" ");
+  if (/ステーキ|ハンバーグ|バーグ|丼|定食|弁当|カレー|ラーメン|油そば|うどん|そば|パスタ|つけ麺|焼きそば|ハンバーガー|バーガー|サンド|プレート|ディッシュ|セット/.test(text)) return true;
+  return item.calories >= 320;
+}
+
+function buildChainComboSuggestions({ menuItems, remainingNutrition, usageMap, selectedMain }: {
+  menuItems: MenuItem[];
+  remainingNutrition: { calories: number; protein: number; fat: number; carbs: number };
+  usageMap: Map<string, number>;
+  selectedMain?: MenuItem;
+}): ChainComboSuggestion[] {
+  if (remainingNutrition.calories <= 0 && remainingNutrition.protein <= 0 && remainingNutrition.fat <= 0 && remainingNutrition.carbs <= 0) return [];
+  const mainItems = selectedMain
+    ? [selectedMain]
+    : menuItems
+      .filter(isChainComboMainItem)
+      .sort((a, b) => chainComboUsageBoost(b, usageMap) - chainComboUsageBoost(a, usageMap) || b.protein_g - a.protein_g || a.calories - b.calories)
+      .slice(0, 30);
+  const sideItems = menuItems
+    .filter((item) => item.id !== selectedMain?.id && isChainComboSideItem(item))
+    .sort((a, b) => chainComboSideScore(a, remainingNutrition, usageMap) - chainComboSideScore(b, remainingNutrition, usageMap))
+    .slice(0, 28);
+  const mainCandidates = mainItems.flatMap((item) => buildChainComboCandidateVariants(item, "main")).slice(0, selectedMain ? 6 : 72);
+  const sideCandidates = sideItems.flatMap((item) => buildChainComboCandidateVariants(item, "side")).filter((candidate) => candidate.nutrition.calories > 0).slice(0, 42);
+  const combos: ChainComboCandidate[][] = [];
+
+  mainCandidates.forEach((main) => {
+    combos.push([main]);
+    sideCandidates.slice(0, 24).forEach((side) => {
+      if (side.item.id !== main.item.id) combos.push([main, side]);
+    });
+    sideCandidates.slice(0, 12).forEach((first, firstIndex) => {
+      sideCandidates.slice(firstIndex + 1, firstIndex + 8).forEach((second) => {
+        if (first.item.id !== second.item.id && first.item.id !== main.item.id && second.item.id !== main.item.id) {
+          combos.push([main, first, second]);
+        }
+      });
+    });
+  });
+
+  const seen = new Set<string>();
+  const seenDisplay = new Set<string>();
+  const seenNutritionShape = new Set<string>();
+  return combos
+    .map((items) => {
+      const nutrition = sumChainComboNutrition(items);
+      const remainingAfter = {
+        calories: remainingNutrition.calories - nutrition.calories,
+        protein: remainingNutrition.protein - nutrition.protein_g,
+        fat: remainingNutrition.fat - nutrition.fat_g,
+        carbs: remainingNutrition.carbs - nutrition.carbs_g,
+      };
+      const id = items.map((item) => `${item.item.id}:${item.portionLabel ?? "base"}`).join("|");
+      const score = scoreChainCombo(items, nutrition, remainingAfter, remainingNutrition, usageMap, Boolean(selectedMain));
+      const sizeHint = items.find((item) => item.portionLabel && !/普通|標準|1人前|1個|肉450g/.test(item.portionLabel));
+      return {
+        id,
+        title: items.map((item) => formatMenuItemName(item.item)).join(" + "),
+        reason: sizeHint ? `${sizeHint.portionLabel}が合いそう` : items.length >= 2 ? "メイン+追加" : "単品で近い",
+        score,
+        items,
+        nutrition,
+        remainingAfter,
+      } satisfies ChainComboSuggestion;
+    })
+    .filter((suggestion) => {
+      if (seen.has(suggestion.id)) return false;
+      const displayKey = [
+        suggestion.items.map((item) => `${formatMenuItemName(item.item)}:${item.portionLabel ?? ""}`).join("|"),
+        suggestion.nutrition.calories,
+        round1(suggestion.nutrition.protein_g),
+        round1(suggestion.nutrition.fat_g),
+        round1(suggestion.nutrition.carbs_g),
+      ].join("::");
+      if (seenDisplay.has(displayKey)) return false;
+      const nutritionShapeKey = [
+        suggestion.items.map((item) => `${item.role}:${item.portionLabel ?? ""}:${item.nutrition.calories}:${round1(item.nutrition.protein_g)}:${round1(item.nutrition.fat_g)}:${round1(item.nutrition.carbs_g)}`).join("|"),
+        suggestion.nutrition.calories,
+        round1(suggestion.nutrition.protein_g),
+        round1(suggestion.nutrition.fat_g),
+        round1(suggestion.nutrition.carbs_g),
+      ].join("::");
+      if (seenNutritionShape.has(nutritionShapeKey)) return false;
+      seen.add(suggestion.id);
+      seenDisplay.add(displayKey);
+      seenNutritionShape.add(nutritionShapeKey);
+      return suggestion.nutrition.calories > 0;
+    })
+    .sort((a, b) => a.score - b.score)
+    .slice(0, 18);
+}
+
+function buildChainComboCandidateVariants(item: MenuItem, role: ChainComboCandidate["role"]): ChainComboCandidate[] {
+  const base = makeChainComboCandidate(item, role, 1, undefined, undefined);
+  if (role === "side") {
+    return [base];
+  }
+  const staples = getStaplePortionConfigs(item);
+  if (staples.length > 1) {
+    const variants = staples.flatMap((staple) => (
+      getStaplePortionOptions(staple)
+        .filter((option) => option.value > 0 && option.value !== 1)
+        .filter((option) => /少なめ|大盛|特盛|100g|150g|200g|300g|330g/.test(option.label))
+        .slice(0, 3)
+        .map((option) => makeChainComboCandidate(item, role, 1, { [staple.kind]: option.value }, option.label))
+    ));
+    return [base, ...variants].slice(0, 7);
+  }
+  const options = getPortionOptions(item)
+    .filter((option) => option.value > 0)
+    .filter((option) => option.value === 1 || /少なめ|普通|大盛|特盛|100g|150g|200g|300g|330g|450g|S|M|L/.test(option.label))
+    .slice(0, 5);
+  const variants = options.map((option) => makeChainComboCandidate(item, role, option.value, undefined, option.label));
+  return variants.length ? variants : [base];
+}
+
+function makeChainComboCandidate(item: MenuItem, role: ChainComboCandidate["role"], portionMultiplier: number, staplePortionMultipliers?: StaplePortionMultipliers, portionLabel?: string): ChainComboCandidate {
+  return {
+    item,
+    role,
+    portionLabel,
+    portionMultiplier,
+    staplePortionMultipliers,
+    nutrition: getAdjustedMenuNutrition(item, portionMultiplier, 1, staplePortionMultipliers),
+  };
+}
+
+function sumChainComboNutrition(items: ChainComboCandidate[]): NutritionSnapshot {
+  return items.reduce<NutritionSnapshot>((sum, item) => ({
+    calories: sum.calories + item.nutrition.calories,
+    protein_g: round1(sum.protein_g + item.nutrition.protein_g),
+    fat_g: round1(sum.fat_g + item.nutrition.fat_g),
+    carbs_g: round1(sum.carbs_g + item.nutrition.carbs_g),
+    salt_g: item.nutrition.salt_g === undefined && sum.salt_g === undefined ? undefined : round1((sum.salt_g ?? 0) + (item.nutrition.salt_g ?? 0)),
+  }), { calories: 0, protein_g: 0, fat_g: 0, carbs_g: 0, salt_g: undefined });
+}
+
+function chainComboSideScore(item: MenuItem, target: { calories: number; protein: number; fat: number; carbs: number }, usageMap: Map<string, number>) {
+  const proteinEfficiency = item.calories > 0 ? item.protein_g / item.calories : 0;
+  const fitScore = perfectFoodScore(item, target, "improve");
+  return fitScore - proteinEfficiency * 1.8 - chainComboUsageBoost(item, usageMap);
+}
+
+function scoreChainCombo(items: ChainComboCandidate[], nutrition: NutritionSnapshot, remainingAfter: { calories: number; protein: number; fat: number; carbs: number }, target: { calories: number; protein: number; fat: number; carbs: number }, usageMap: Map<string, number>, hasSelectedMain: boolean) {
+  const calorieTarget = Math.max(260, Math.min(target.calories || nutrition.calories, hasSelectedMain ? 980 : 1120));
+  const calorieScore = Math.abs(nutrition.calories - calorieTarget) / calorieTarget;
+  const proteinShortage = Math.max(0, remainingAfter.protein) / Math.max(18, target.protein || 18);
+  const proteinCoverageBonus = target.protein > 0 ? Math.min(nutrition.protein_g / target.protein, 1) * -0.58 : Math.min(nutrition.protein_g / 45, 1) * -0.28;
+  const calorieOver = Math.max(0, -remainingAfter.calories) / Math.max(140, target.calories * 0.14 || 220);
+  const fatOver = Math.max(0, -remainingAfter.fat) / Math.max(4, target.fat * 0.18 || 8);
+  const carbOver = Math.max(0, -remainingAfter.carbs) / Math.max(10, target.carbs * 0.18 || 24);
+  const comboBonus = items.length >= 2 ? -0.18 : hasSelectedMain ? 0.1 : 0.22;
+  const tooManySidesPenalty = items.length > 2 ? 0.12 : 0;
+  const usageBonus = items.reduce((sum, item) => sum + chainComboUsageBoost(item.item, usageMap), 0) * -0.18;
+  const sourcePenalty = items.reduce((sum, item) => sum + sourceRank(item.item.data_source) * 0.025, 0);
+  return calorieScore * 0.72
+    + proteinShortage * 0.62
+    + proteinCoverageBonus
+    + calorieOver * 2.2
+    + fatOver * 2.7
+    + carbOver * 2.2
+    + comboBonus
+    + tooManySidesPenalty
+    + usageBonus
+    + sourcePenalty;
+}
+
+function formatChainComboRemainingChips(remaining: { calories: number; protein: number; fat: number; carbs: number }) {
+  return [
+    remaining.calories < -25
+      ? { label: `kcal超過${Math.round(Math.abs(remaining.calories))}`, tone: "over" as const }
+      : { label: `残り${Math.max(0, Math.round(remaining.calories))}kcal`, tone: remaining.calories <= 100 ? "warn" as const : "ok" as const },
+    remaining.protein > 0.5
+      ? { label: `Pあと${round1(remaining.protein)}g`, tone: "protein" as const }
+      : { label: "P残り0g", tone: "ok" as const },
+    remaining.fat < -0.5
+      ? { label: `F超過${round1(Math.abs(remaining.fat))}g`, tone: "over" as const }
+      : { label: `F残り${round1(Math.max(0, remaining.fat))}g`, tone: remaining.fat <= 3 ? "warn" as const : "ok" as const },
+    remaining.carbs < -0.5
+      ? { label: `C超過${round1(Math.abs(remaining.carbs))}g`, tone: "over" as const }
+      : { label: `C残り${round1(Math.max(0, remaining.carbs))}g`, tone: remaining.carbs <= 10 ? "warn" as const : "ok" as const },
+  ];
 }
 
 function formatHomeDateParts(dateString: string) {
