@@ -3829,9 +3829,10 @@ function PerfectFoodModal({ dayTotals, goal, menuItems, onClose, onLog }: {
   );
 }
 
-function ChainComboModal({ brand, menuItems, remainingNutrition, foodEntries, initialMainItem, onClose, onPick }: {
+function ChainComboModal({ brand, menuItems, variantIndex, remainingNutrition, foodEntries, initialMainItem, onClose, onPick }: {
   brand: string;
   menuItems: MenuItem[];
+  variantIndex: MenuSizeVariantIndex;
   remainingNutrition: { calories: number; protein: number; fat: number; carbs: number };
   foodEntries: FoodEntry[];
   initialMainItem?: MenuItem;
@@ -3850,10 +3851,11 @@ function ChainComboModal({ brand, menuItems, remainingNutrition, foodEntries, in
   const selectedMain = mainCandidates.find((item) => item.id === selectedMainId) ?? (initialMainItem && isChainComboMainItem(initialMainItem) ? initialMainItem : undefined);
   const suggestions = useMemo(() => buildChainComboSuggestions({
     menuItems,
+    variantIndex,
     remainingNutrition,
     usageMap,
     selectedMain,
-  }), [menuItems, remainingNutrition.calories, remainingNutrition.protein, remainingNutrition.fat, remainingNutrition.carbs, usageMap, selectedMain?.id]);
+  }), [menuItems, variantIndex, remainingNutrition.calories, remainingNutrition.protein, remainingNutrition.fat, remainingNutrition.carbs, usageMap, selectedMain?.id]);
   const topSuggestions = suggestions.slice(0, 8);
   const remainingSummary = `あと ${Math.round(remainingNutrition.calories)}kcal / P${round1(remainingNutrition.protein)} F${round1(remainingNutrition.fat)} C${round1(remainingNutrition.carbs)}`;
 
@@ -5318,6 +5320,7 @@ function FoodTab(props: {
         <ChainComboModal
           brand={brand}
           menuItems={chainComboMenuItems}
+          variantIndex={menuSizeVariantIndex}
           remainingNutrition={remainingNutrition}
           foodEntries={props.foodEntries}
           initialMainItem={chainComboSeedItem}
@@ -11362,8 +11365,9 @@ function isChainComboMainItem(item: MenuItem) {
   return item.calories >= 320;
 }
 
-function buildChainComboSuggestions({ menuItems, remainingNutrition, usageMap, selectedMain }: {
+function buildChainComboSuggestions({ menuItems, variantIndex, remainingNutrition, usageMap, selectedMain }: {
   menuItems: MenuItem[];
+  variantIndex: MenuSizeVariantIndex;
   remainingNutrition: { calories: number; protein: number; fat: number; carbs: number };
   usageMap: Map<string, number>;
   selectedMain?: MenuItem;
@@ -11379,8 +11383,8 @@ function buildChainComboSuggestions({ menuItems, remainingNutrition, usageMap, s
     .filter((item) => item.id !== selectedMain?.id && isChainComboSideItem(item))
     .sort((a, b) => chainComboSideScore(a, remainingNutrition, usageMap) - chainComboSideScore(b, remainingNutrition, usageMap))
     .slice(0, 28);
-  const mainCandidates = mainItems.flatMap((item) => buildChainComboCandidateVariants(item, "main")).slice(0, selectedMain ? 6 : 72);
-  const sideCandidates = sideItems.flatMap((item) => buildChainComboCandidateVariants(item, "side")).filter((candidate) => candidate.nutrition.calories > 0).slice(0, 42);
+  const mainCandidates = mainItems.flatMap((item) => buildChainComboCandidateVariants(item, "main", variantIndex)).slice(0, selectedMain ? 8 : 84);
+  const sideCandidates = sideItems.flatMap((item) => buildChainComboCandidateVariants(item, "side", variantIndex)).filter((candidate) => candidate.nutrition.calories > 0).slice(0, 48);
   const combos: ChainComboCandidate[][] = [];
 
   mainCandidates.forEach((main) => {
@@ -11449,35 +11453,53 @@ function buildChainComboSuggestions({ menuItems, remainingNutrition, usageMap, s
     .slice(0, 18);
 }
 
-function buildChainComboCandidateVariants(item: MenuItem, role: ChainComboCandidate["role"]): ChainComboCandidate[] {
+function buildChainComboCandidateVariants(item: MenuItem, role: ChainComboCandidate["role"], variantIndex: MenuSizeVariantIndex): ChainComboCandidate[] {
   const base = makeChainComboCandidate(item, role, 1, undefined, undefined);
+  const exactSizeVariants = getExactChainComboSizeVariantCandidates(item, role, variantIndex);
+  if (exactSizeVariants.length > 1) {
+    return exactSizeVariants.slice(0, role === "main" ? 7 : 4);
+  }
   if (role === "side") {
     return [base];
   }
   const staples = getStaplePortionConfigs(item);
   if (staples.length > 1) {
     const variants = staples.flatMap((staple) => (
-      getStaplePortionOptions(staple)
+      getTrustedChainComboPortionOptions(item, staple)
         .filter((option) => option.value > 0 && option.value !== 1)
-        .filter((option) => isTrustedChainComboPortionOption(item, staple, option))
         .slice(0, 3)
         .map((option) => makeChainComboCandidate(item, role, 1, { [staple.kind]: option.value }, option.label))
     ));
     return [base, ...variants].slice(0, 7);
   }
-  const options = getPortionOptions(item)
-    .filter((option) => option.value > 0)
-    .filter((option) => option.value === 1 || staples.some((staple) => isTrustedChainComboPortionOption(item, staple, option)))
+  const options = staples.flatMap((staple) => getTrustedChainComboPortionOptions(item, staple))
+    .filter((option) => option.value > 0 && option.value !== 1)
     .slice(0, 5);
   const variants = options.map((option) => makeChainComboCandidate(item, role, option.value, undefined, option.label));
-  return variants.length ? variants : [base];
+  return [base, ...variants].slice(0, 6);
 }
 
-function isTrustedChainComboPortionOption(item: MenuItem, staple: StaplePortionConfig, option: PortionOption) {
-  const label = option.label.trim();
-  if (option.value === 1) return true;
-  if (item.brand === "すぱじろう" && staple.kind === "noodle" && /^(S|M|L|XL) 乾麺\d+g$/.test(label)) return true;
-  return false;
+function getExactChainComboSizeVariantCandidates(item: MenuItem, role: ChainComboCandidate["role"], variantIndex: MenuSizeVariantIndex) {
+  const selectedVariant = variantIndex.variantsByItemId.get(item.id);
+  if (!selectedVariant) return [];
+  const variants = variantIndex.variantsByGroupKey.get(selectedVariant.groupKey) ?? [];
+  if (variants.length <= 1) return [];
+  return sortMenuSizeVariants(variants)
+    .filter((variant) => variant.item.calories > 0)
+    .map((variant) => makeChainComboCandidate(variant.item, role, 1, undefined, variant.label));
+}
+
+function getTrustedChainComboPortionOptions(item: MenuItem, staple: StaplePortionConfig): PortionOption[] {
+  const base = Math.max(1, staple.defaultGrams);
+  if (item.brand === "すぱじろう" && staple.kind === "noodle") {
+    return [
+      { label: "S 乾麺100g", value: 100 / base },
+      { label: "M 乾麺120g", value: 120 / base },
+      { label: "L 乾麺170g", value: 170 / base },
+      { label: "XL 乾麺240g", value: 240 / base },
+    ];
+  }
+  return [];
 }
 
 function makeChainComboCandidate(item: MenuItem, role: ChainComboCandidate["role"], portionMultiplier: number, staplePortionMultipliers?: StaplePortionMultipliers, portionLabel?: string): ChainComboCandidate {
