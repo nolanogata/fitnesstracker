@@ -3,7 +3,7 @@ import { foodSeeds } from "./seeds/foods";
 import { exerciseSeeds, workoutTemplateSeeds } from "./seeds/workouts";
 import { nowIso } from "../lib/date";
 
-const DATA_SEED_VERSION = 2026061903;
+const DATA_SEED_VERSION = 2026070501;
 
 function menuSeedNaturalKey(item: { brand?: string; name: string; serving_label?: string; data_source: string }) {
   return [item.brand ?? "", item.name, item.serving_label ?? "", item.data_source]
@@ -87,7 +87,14 @@ export async function initializeSeeds() {
       "いきなりステーキ",
     ]);
     const fullFoodRefreshBrands = new Set([
+      "CoCo壱番屋",
       "いきなりステーキ",
+      "びっくりドンキー",
+      "パンチョ",
+      "ペッパーランチ",
+      "三田製麺所",
+      "舎鈴",
+      "すぱじろう",
     ]);
     const shouldRunCriticalFoodRefresh = (settings?.data_seed_version ?? 0) < DATA_SEED_VERSION;
     if (!settings) {
