@@ -11459,7 +11459,7 @@ function buildChainComboCandidateVariants(item: MenuItem, role: ChainComboCandid
     const variants = staples.flatMap((staple) => (
       getStaplePortionOptions(staple)
         .filter((option) => option.value > 0 && option.value !== 1)
-        .filter((option) => /少なめ|大盛|特盛|100g|150g|200g|300g|330g/.test(option.label))
+        .filter((option) => isTrustedChainComboPortionOption(item, staple, option))
         .slice(0, 3)
         .map((option) => makeChainComboCandidate(item, role, 1, { [staple.kind]: option.value }, option.label))
     ));
@@ -11467,10 +11467,17 @@ function buildChainComboCandidateVariants(item: MenuItem, role: ChainComboCandid
   }
   const options = getPortionOptions(item)
     .filter((option) => option.value > 0)
-    .filter((option) => option.value === 1 || /少なめ|普通|大盛|特盛|100g|150g|200g|300g|330g|450g|S|M|L/.test(option.label))
+    .filter((option) => option.value === 1 || staples.some((staple) => isTrustedChainComboPortionOption(item, staple, option)))
     .slice(0, 5);
   const variants = options.map((option) => makeChainComboCandidate(item, role, option.value, undefined, option.label));
   return variants.length ? variants : [base];
+}
+
+function isTrustedChainComboPortionOption(item: MenuItem, staple: StaplePortionConfig, option: PortionOption) {
+  const label = option.label.trim();
+  if (option.value === 1) return true;
+  if (item.brand === "すぱじろう" && staple.kind === "noodle" && /^(S|M|L|XL) 乾麺\d+g$/.test(label)) return true;
+  return false;
 }
 
 function makeChainComboCandidate(item: MenuItem, role: ChainComboCandidate["role"], portionMultiplier: number, staplePortionMultipliers?: StaplePortionMultipliers, portionLabel?: string): ChainComboCandidate {
