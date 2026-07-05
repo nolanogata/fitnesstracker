@@ -2600,6 +2600,23 @@ button {
   transform: scale(0.99);
 }
 
+.chain-combo-title,
+.chain-combo-item-title {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+}
+
+.chain-combo-title {
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+
+.chain-combo-item-title {
+  -webkit-line-clamp: 1;
+  line-clamp: 1;
+}
+
 :root:not([data-accent="classic"]) .perfect-food-item .text-moss,
 :root:not([data-accent="classic"]) .perfect-food-group .text-moss,
 :root:not([data-accent="classic"]) .perfect-food-panel .text-moss,
@@ -4387,6 +4404,51 @@ main[data-accent]:not([data-accent="classic"]):not([data-accent="graphite"]) .re
 
 .theme-dark [class*="hover:bg-rice"]:hover {
   background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.theme-dark .chain-combo-entry,
+:root[data-theme="dark"] .chain-combo-entry {
+  border-color: rgba(255, 255, 255, 0.14) !important;
+  background:
+    linear-gradient(135deg, rgba(34, 47, 39, 0.9), rgba(18, 27, 22, 0.82)),
+    rgba(255, 255, 255, 0.06) !important;
+  color: #f8fbf8;
+}
+
+.theme-dark .chain-combo-sheet,
+:root[data-theme="dark"] .chain-combo-sheet {
+  color: #f8fbf8;
+}
+
+.theme-dark .chain-combo-card,
+:root[data-theme="dark"] .chain-combo-card {
+  color: #f8fbf8;
+}
+
+.theme-dark .chain-combo-action,
+:root[data-theme="dark"] .chain-combo-action {
+  border-color: rgba(255, 255, 255, 0.13) !important;
+  background:
+    linear-gradient(135deg, rgba(30, 42, 35, 0.96), rgba(21, 30, 25, 0.9)),
+    rgba(255, 255, 255, 0.08) !important;
+  color: #f8fbf8;
+}
+
+.theme-dark .chain-combo-entry .text-moss,
+.theme-dark .chain-combo-sheet .text-moss,
+.theme-dark .chain-combo-action .text-moss,
+:root[data-theme="dark"] .chain-combo-entry .text-moss,
+:root[data-theme="dark"] .chain-combo-sheet .text-moss,
+:root[data-theme="dark"] .chain-combo-action .text-moss {
+  color: rgba(231, 240, 235, 0.78) !important;
+}
+
+.theme-dark .chain-combo-title,
+.theme-dark .chain-combo-item-title,
+:root[data-theme="dark"] .chain-combo-title,
+:root[data-theme="dark"] .chain-combo-item-title {
+  color: #ffffff !important;
+  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.24);
 }
 
 .theme-dark.app-shell-records svg[role="img"] {
