@@ -2564,7 +2564,15 @@ button {
 .chain-combo-panel,
 .chain-combo-card,
 .chain-combo-action {
+  box-sizing: border-box;
+  max-width: 100%;
   box-shadow: var(--glass-highlight);
+}
+
+.chain-combo-sheet {
+  box-sizing: border-box;
+  max-width: min(430px, calc(100vw - 2rem));
+  overflow-x: hidden;
 }
 
 .chain-combo-open-button {
@@ -2593,6 +2601,9 @@ button {
 }
 
 .chain-combo-action {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.62), rgba(255, 255, 255, 0.44)),
+    var(--glass-bg-soft);
   transition: border-color 160ms ease, background 160ms ease, transform 160ms ease;
 }
 
@@ -2605,6 +2616,8 @@ button {
   display: -webkit-box;
   overflow: hidden;
   -webkit-box-orient: vertical;
+  overflow-wrap: anywhere;
+  word-break: normal;
 }
 
 .chain-combo-title {
@@ -2615,6 +2628,20 @@ button {
 .chain-combo-item-title {
   -webkit-line-clamp: 1;
   line-clamp: 1;
+}
+
+.chain-combo-record-button {
+  display: inline-flex;
+  min-height: 2.7rem;
+  min-width: 2.7rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+  background: var(--glass-bg-soft);
+  color: var(--accent-text);
+  font-weight: 900;
+  box-shadow: var(--glass-highlight);
 }
 
 :root:not([data-accent="classic"]) .perfect-food-item .text-moss,
@@ -4406,6 +4433,7 @@ main[data-accent]:not([data-accent="classic"]):not([data-accent="graphite"]) .re
   background-color: rgba(255, 255, 255, 0.1) !important;
 }
 
+main.theme-dark .chain-combo-entry,
 .theme-dark .chain-combo-entry,
 :root[data-theme="dark"] .chain-combo-entry {
   border-color: rgba(255, 255, 255, 0.14) !important;
@@ -4415,16 +4443,20 @@ main[data-accent]:not([data-accent="classic"]):not([data-accent="graphite"]) .re
   color: #f8fbf8;
 }
 
+main.theme-dark .chain-combo-sheet,
 .theme-dark .chain-combo-sheet,
 :root[data-theme="dark"] .chain-combo-sheet {
   color: #f8fbf8;
 }
 
+main.theme-dark .chain-combo-card,
 .theme-dark .chain-combo-card,
 :root[data-theme="dark"] .chain-combo-card {
   color: #f8fbf8;
+  overflow: hidden;
 }
 
+main.theme-dark .chain-combo-action,
 .theme-dark .chain-combo-action,
 :root[data-theme="dark"] .chain-combo-action {
   border-color: rgba(255, 255, 255, 0.13) !important;
@@ -4434,8 +4466,49 @@ main[data-accent]:not([data-accent="classic"]):not([data-accent="graphite"]) .re
   color: #f8fbf8;
 }
 
+main.theme-dark .chain-combo-record-button,
+.theme-dark .chain-combo-record-button,
+:root[data-theme="dark"] .chain-combo-record-button {
+  border-color: rgba(221, 236, 182, 0.36);
+  background:
+    linear-gradient(135deg, rgba(156, 181, 56, 0.24), rgba(255, 255, 255, 0.08)),
+    rgba(255, 255, 255, 0.08);
+  color: #f3ffc4;
+}
+
+main.theme-dark .chain-combo-action .chain-combo-record-button,
+.theme-dark .chain-combo-action .chain-combo-record-button,
+:root[data-theme="dark"] .chain-combo-action .chain-combo-record-button {
+  background:
+    linear-gradient(135deg, rgba(156, 181, 56, 0.28), rgba(255, 255, 255, 0.08)),
+    rgba(255, 255, 255, 0.08) !important;
+}
+
+main.theme-dark .chain-combo-main-chip,
+.theme-dark .chain-combo-main-chip,
+:root[data-theme="dark"] .chain-combo-main-chip {
+  border-color: rgba(255, 255, 255, 0.13);
+  background:
+    linear-gradient(135deg, rgba(34, 42, 39, 0.9), rgba(23, 28, 28, 0.82)),
+    rgba(255, 255, 255, 0.06);
+  color: #f8fbf8;
+}
+
+main.theme-dark .chain-combo-main-chip-active,
+.theme-dark .chain-combo-main-chip-active,
+:root[data-theme="dark"] .chain-combo-main-chip-active {
+  border-color: rgba(221, 236, 182, 0.5);
+  background:
+    linear-gradient(135deg, rgba(112, 135, 24, 0.54), rgba(73, 91, 28, 0.42)),
+    rgba(255, 255, 255, 0.06);
+  color: #f6ffd4;
+}
+
+main.theme-dark .chain-combo-entry .text-moss,
 .theme-dark .chain-combo-entry .text-moss,
+main.theme-dark .chain-combo-sheet .text-moss,
 .theme-dark .chain-combo-sheet .text-moss,
+main.theme-dark .chain-combo-action .text-moss,
 .theme-dark .chain-combo-action .text-moss,
 :root[data-theme="dark"] .chain-combo-entry .text-moss,
 :root[data-theme="dark"] .chain-combo-sheet .text-moss,
@@ -4443,7 +4516,9 @@ main[data-accent]:not([data-accent="classic"]):not([data-accent="graphite"]) .re
   color: rgba(231, 240, 235, 0.78) !important;
 }
 
+main.theme-dark .chain-combo-title,
 .theme-dark .chain-combo-title,
+main.theme-dark .chain-combo-item-title,
 .theme-dark .chain-combo-item-title,
 :root[data-theme="dark"] .chain-combo-title,
 :root[data-theme="dark"] .chain-combo-item-title {
