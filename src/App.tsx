@@ -430,7 +430,7 @@ const chainCategories: Record<string, string[]> = {
   和食: ["スシロー", "はま寿司", "トリトン", "北々亭"],
   定食: ["大戸屋", "やよい軒", "しんぱち食堂", "とんでん"],
   ファミレス: ["びっくりドンキー", "ガスト", "ロイヤルホスト", "サイゼリヤ", "オリーブの丘", "デニーズ", "ジョイフル", "ジョナサン", "華屋与兵衛", "藍屋"],
-  ステーキ: ["いきなりステーキ", "ペッパーランチ"],
+  ステーキ: ["いきなりステーキ", "ペッパーランチ", "感動の肉と米"],
   イタリアン: ["パンチョ", "カプリチョーザ", "マンマパスタ", "ポポラマーマ", "すぱじろう"],
   エスニック: ["モンスーンカフェ"],
   カフェ: ["スターバックス", "ドトール", "タリーズ", "コメダ珈琲"],
@@ -4391,6 +4391,7 @@ function FoodTab(props: {
   const defaultPortionOption = portionOptions.find((option) => option.value === 1) ?? portionOptions[0];
   const customPortionOptions = portionOptions.filter((option) => option.value !== defaultPortionOption?.value);
   const selectedPortionOptionLabel = portionOptions.find((option) => option.value === portionMultiplier)?.label;
+  const canCustomizeSelectedPortion = hasSelectedCompositeStaples || !!selectedStapleConfig || customPortionOptions.length > 0 || !!selectedServingGrams;
   const selectedExactSizeVariant = useMemo(
     () => selected && selectedServingGrams && hasSelectedSizeVariants && !hasSelectedCompositeStaples
       ? findExactMenuSizeVariantByGrams(selected, menuSizeVariantIndex, selectedServingGrams * portionMultiplier)
@@ -5399,9 +5400,11 @@ function FoodTab(props: {
                         {hasSelectedCompositeStaples ? "標準量のまま" : defaultPortionOption.label}
                       </button>
                     )}
-                  <button className="food-add-choice" onClick={() => setFoodAddStep("customSize")}>
-                    {hasSelectedCompositeStaples ? `${selectedComponentPortionTitle}量をカスタム` : selectedStapleConfig ? `${selectedStapleConfig.label}量をカスタム` : "サイズをカスタム"}
-                  </button>
+                  {canCustomizeSelectedPortion && (
+                    <button className="food-add-choice" onClick={() => setFoodAddStep("customSize")}>
+                      {hasSelectedCompositeStaples ? `${selectedComponentPortionTitle}量をカスタム` : selectedStapleConfig ? `${selectedStapleConfig.label}量をカスタム` : "サイズをカスタム"}
+                    </button>
+                  )}
                 </div>
               </div>
             )}
@@ -13573,6 +13576,7 @@ function makeStaplePortionConfig(kind: StaplePortionConfig["kind"], defaultGrams
 
 function getStaplePortionConfigs(item: MenuItem): StaplePortionConfig[] {
   if (isSupplementLikeMenuItem(item)) return [];
+  if (usesOfficialFixedSizeOptions(item)) return [];
   const primaryText = [item.name, item.serving_label].filter(Boolean).join(" ");
   const text = [primaryText, item.category, ...item.tags].filter(Boolean).join(" ");
   const noodleTokens = ["麺", "ラーメン", "油そば", "うどん", "そば", "パスタ", "焼きそば", "フォー", "春雨"];
@@ -13684,6 +13688,9 @@ function getPortionOptions(item: MenuItem): PortionOption[] {
   const text = [item.name, item.category, item.serving_label, ...item.tags].filter(Boolean).join(" ");
   const servingLabel = item.serving_label?.trim();
   const standardLabel = servingLabel && !unhelpfulServingLabels.has(servingLabel) ? servingLabel : "普通";
+  if (usesOfficialFixedSizeOptions(item)) {
+    return [{ label: standardLabel === "普通" ? "1食" : standardLabel, value: 1 }];
+  }
   const staples = getStaplePortionConfigs(item);
   const staple = staples[0];
 
@@ -13754,6 +13761,10 @@ function hasFoodToken(text: string, tokens: string[]) {
 function isSupplementLikeMenuItem(item: Pick<MenuItem, "name" | "category" | "serving_label" | "tags">) {
   const text = [item.name, item.category, item.serving_label, ...item.tags].filter(Boolean).join(" ");
   return item.category === "サプリ" || hasFoodToken(text, ["サプリ", "クレアチン", "EAA", "BCAA", "グルタミン", "シトルリン", "プレワークアウト", "マルチビタミン", "ビタミン", "ミネラル"]);
+}
+
+function usesOfficialFixedSizeOptions(item: Pick<MenuItem, "tags">) {
+  return item.tags.includes("公式サイズのみ");
 }
 
 function doubleServingLabel(servingLabel: string | undefined, fallback: string) {
