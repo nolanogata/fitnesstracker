@@ -13106,7 +13106,7 @@ function findExactMenuSizeVariantByGrams(selected: MenuItem, variantIndex: MenuS
 }
 
 function getMenuSizeVariantGramEntries(selected: MenuItem, variantIndex: MenuSizeVariantIndex) {
-  return getMenuSizeVariants(selected, variantIndex)
+  const entries = getMenuSizeVariants(selected, variantIndex)
     .map((variant) => {
       const labelGrams = extractMenuSizeGrams(variant.label);
       const configGrams = getStaplePortionConfigs(variant.item)[0]?.defaultGrams;
@@ -13115,6 +13115,8 @@ function getMenuSizeVariantGramEntries(selected: MenuItem, variantIndex: MenuSiz
     })
     .filter((entry): entry is { variant: MenuSizeVariant; grams: number } => !!entry)
     .sort((a, b) => a.grams - b.grams);
+  const uniqueGramCount = new Set(entries.map((entry) => entry.grams)).size;
+  return uniqueGramCount > 1 ? entries : [];
 }
 
 function getSizeVariantNutritionForTargetGrams(selected: MenuItem, variantIndex: MenuSizeVariantIndex, targetGrams: number): NutritionSnapshot | undefined {
@@ -13306,6 +13308,8 @@ function extractMenuSizeLabel(value: string) {
 function matchMenuSizeLabel(value: string) {
   const normalized = value.trim();
   if (/^[小中大]$/.test(normalized)) return normalized;
+  const meatAmountLabel = normalized.match(/お肉(普通|大盛|特盛)/);
+  if (meatAmountLabel) return meatAmountLabel[1];
   return menuSizeVariantLabels
     .filter((label) => normalized.includes(label))
     .sort((a, b) => b.length - a.length)[0];
