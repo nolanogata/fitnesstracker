@@ -96,6 +96,7 @@ type SettingsFocus = "ai" | "backup" | "myMenu" | "goal" | undefined;
 type SettingsSection = "ai" | "backup" | "goal" | "records" | "myMenu" | "myTraining" | "general";
 type MyMenuSection = "list" | "method" | "new" | "edit";
 type MyTrainingSection = "list";
+type GoalSettingsSection = "guided" | "manual" | "custom";
 type HistoryGrouping = "day" | "week" | "month";
 type ExportSection = "backup" | "logs";
 type LogExportStep = "type" | "grouping" | "period" | "output";
@@ -6930,6 +6931,8 @@ function SettingsTab(props: {
 }) {
   const [activeSettingsSection, setActiveSettingsSection] = useState<SettingsSection | undefined>(() => props.focus);
   const [goalDraft, setGoalDraft] = useState(() => settingsGoalDraftFrom(props.activeGoal, props.profile));
+  const [activeGoalSettingsSection, setActiveGoalSettingsSection] = useState<GoalSettingsSection>();
+  const [goalWizardStep, setGoalWizardStep] = useState(0);
   const [presetDraft, setPresetDraft] = useState({ ...emptyManual, name: "", savePreset: true });
   const [editingUserMenuItemId, setEditingUserMenuItemId] = useState<string>();
   const [activeMyMenuSection, setActiveMyMenuSection] = useState<MyMenuSection | undefined>(() => props.focus === "myMenu" ? "method" : undefined);
@@ -6981,6 +6984,17 @@ function SettingsTab(props: {
     { value: "light", label: "ライト" },
     { value: "dark", label: "ダーク" },
   ];
+  const goalWizardSteps = [
+    { key: "phase", title: "目標", subtitle: "体重や筋肉の方向性を選びます。" },
+    { key: "activity", title: "運動量", subtitle: "日常活動も含めた消費量の補正です。" },
+    { key: "age", title: "年齢", subtitle: "消費カロリーの自動計算に使います。" },
+    { key: "targetWeight", title: "目標体重", subtitle: "PFCの基準にする体重です。" },
+    { key: "targetBodyFat", title: "目標体脂肪率", subtitle: "未定なら0のままでOKです。" },
+    { key: "targetDate", title: "目標達成日", subtitle: "期間から1日のカロリー補正を計算します。" },
+    { key: "workout", title: "筋トレ頻度", subtitle: "Homeの今週の運動カードに使います。" },
+    { key: "cardio", title: "有酸素頻度", subtitle: "歩く・バイク・ランなどの週目標です。" },
+    { key: "confirm", title: "確認", subtitle: "計算結果を確認して保存します。" },
+  ] as const;
 
   const updateThemeMode = async (theme_mode: ThemeMode) => {
     const timestamp = nowIso();
@@ -7049,6 +7063,10 @@ function SettingsTab(props: {
     if (props.focus === "backup") {
       setActiveExportSection("backup");
     }
+    if (props.focus === "goal") {
+      setActiveGoalSettingsSection(undefined);
+      setGoalWizardStep(0);
+    }
   }, [props.focus]);
 
   useEffect(() => {
@@ -7084,6 +7102,32 @@ function SettingsTab(props: {
     goalDraft.manual_fat_g ? `F ${goalDraft.manual_fat_g}g` : "",
     goalDraft.manual_carbs_g ? `C ${goalDraft.manual_carbs_g}g` : "",
   ].filter(Boolean).join(" / ") || "すべて自動";
+  const phaseDescriptions: Record<Phase, string> = {
+    weight_loss: "体重をしっかり落としたい時。カロリーはやや強めに抑えます。",
+    slow_cut: "無理なく少しずつ落としたい時。続けやすい赤字幅にします。",
+    maintenance: "今の体重を大きく変えず、食事と運動を安定させます。",
+    recomposition: "体重より見た目重視。脂肪を抑えつつ筋肉を残す配分にします。",
+    lean_bulk: "脂肪を増やしすぎず、筋肉を増やすために少しだけ多めに食べます。",
+    strength_focus: "筋力とトレーニング出力を優先し、エネルギーを少し厚めにします。",
+    custom: "自分でkcal/PFCを決めたい時。カスタムPFCで上書きできます。",
+  };
+  const activityDescriptions: Record<ActivityLevel, string> = {
+    low: "在宅や座り仕事が中心で、運動日以外はあまり歩かない。",
+    moderate: "日常でそこそこ歩く、または週2〜4回くらい運動する。",
+    high: "立ち仕事・よく歩く生活、または週4〜6回しっかり運動する。",
+    very_high: "肉体労働や競技練習など、毎日の消費がかなり多い。",
+  };
+  const goalCalculationSummary = (
+    <p className="mt-3 rounded-md bg-rice p-3 text-sm">
+      計算: {calculated?.target_calories ?? "-"} kcal / P{calculated?.target_protein_g ?? "-"} F{calculated?.target_fat_g ?? "-"} C{calculated?.target_carbs_g ?? "-"}
+      {typeof calculated?.target_daily_calorie_adjustment === "number" && <span className="block text-xs text-moss">期間補正: {calculated.target_daily_calorie_adjustment > 0 ? "+" : ""}{calculated.target_daily_calorie_adjustment} kcal/日</span>}
+      {typeof calculated?.target_fat_mass_kg === "number" && typeof calculated?.target_lean_mass_kg === "number" && (
+        <span className="block text-xs text-moss">
+          体組成: 脂肪 {calculated.target_fat_mass_kg}kg{typeof calculated.target_fat_mass_change_kg === "number" ? ` (${formatSignedNumber(calculated.target_fat_mass_change_kg)}kg)` : ""} / 除脂肪 {calculated.target_lean_mass_kg}kg{typeof calculated.target_lean_mass_change_kg === "number" ? ` (${formatSignedNumber(calculated.target_lean_mass_change_kg)}kg)` : ""}
+        </span>
+      )}
+    </p>
+  );
   const userMenuItems = useMemo(
     () => props.menuItems
       .filter((item) => item.is_user_created)
@@ -7507,6 +7551,8 @@ function SettingsTab(props: {
     });
     await db.goals.put(goal);
     await db.settings.update("local", { active_goal_id: goal.id, updated_at: timestamp });
+    setActiveGoalSettingsSection(undefined);
+    setGoalWizardStep(0);
     await props.refresh();
     props.showToast("ゴールを保存しました");
   };
@@ -7526,6 +7572,72 @@ function SettingsTab(props: {
     setCopiedLogExport(false);
     setLogExportStep("output");
     props.showToast("ログを出力しました");
+  };
+  const renderGoalWizardStep = () => {
+    const step = goalWizardSteps[goalWizardStep];
+    if (!step) return undefined;
+    if (step.key === "phase") {
+      return (
+        <div className="grid gap-2">
+          {(Object.keys(phaseLabels) as Phase[]).map((key) => (
+            <button
+              key={key}
+              className={`onboarding-choice ${goalDraft.phase === key ? "onboarding-choice-active" : ""}`}
+              onClick={() => setGoalDraft({ ...goalDraft, phase: key })}
+            >
+              <span>{phaseLabels[key]}</span>
+              <small>{phaseDescriptions[key]}</small>
+            </button>
+          ))}
+        </div>
+      );
+    }
+    if (step.key === "activity") {
+      return (
+        <div className="grid gap-2">
+          {(Object.keys(activityLabels) as ActivityLevel[]).map((key) => (
+            <button
+              key={key}
+              className={`onboarding-choice ${goalDraft.activity_level === key ? "onboarding-choice-active" : ""}`}
+              onClick={() => setGoalDraft({ ...goalDraft, activity_level: key })}
+            >
+              <span>{activityLabels[key]}</span>
+              <small>{activityDescriptions[key]}</small>
+            </button>
+          ))}
+        </div>
+      );
+    }
+    if (step.key === "age") return <NumberInput label="年齢" value={goalDraft.age} onChange={(value) => setGoalDraft({ ...goalDraft, age: value })} />;
+    if (step.key === "targetWeight") return <NumberInput label="目標体重 kg" value={goalDraft.target_weight_kg} step={0.1} onChange={(value) => setGoalDraft({ ...goalDraft, target_weight_kg: value })} />;
+    if (step.key === "targetBodyFat") return <NumberInput label="目標体脂肪 %" labelAction={<GoalHelpButton label="目標体脂肪率のヘルプ" onClick={() => setGoalHelpTopic("targetBodyFat")} />} value={goalDraft.target_body_fat_percentage} step={0.1} zeroDisplayLabel="自動" onChange={(value) => setGoalDraft({ ...goalDraft, target_body_fat_percentage: clampBodyFat(value) })} />;
+    if (step.key === "targetDate") {
+      return (
+        <label className="onboarding-field">
+          <span>目標達成日</span>
+          <input
+            type="date"
+            min={addDays(todayAppDate(), 1)}
+            value={goalDraft.target_date}
+            onChange={(event) => setGoalDraft({ ...goalDraft, target_date: event.target.value })}
+          />
+        </label>
+      );
+    }
+    if (step.key === "workout") return <NumberInput label="筋トレ / 週" value={goalDraft.target_workouts_per_week} onChange={(value) => setGoalDraft({ ...goalDraft, target_workouts_per_week: Math.max(0, Math.round(value)) })} />;
+    if (step.key === "cardio") return <NumberInput label="有酸素 / 週" value={goalDraft.target_cardio_sessions_per_week} onChange={(value) => setGoalDraft({ ...goalDraft, target_cardio_sessions_per_week: Math.max(0, Math.round(value)) })} />;
+    return (
+      <div className="space-y-3">
+        {goalCalculationSummary}
+        <div className="rounded-3xl border border-line bg-surface/60 p-3 text-xs leading-relaxed text-moss">
+          <p className="font-bold text-ink">保存内容</p>
+          <p className="mt-1">{phaseLabels[goalDraft.phase]} / {activityLabels[goalDraft.activity_level]}</p>
+          <p>目標体重 {goalDraft.target_weight_kg}kg / 目標体脂肪 {goalDraft.target_body_fat_percentage ? `${goalDraft.target_body_fat_percentage}%` : "自動"}</p>
+          <p>筋トレ {goalDraft.target_workouts_per_week}回/週 / 有酸素 {goalDraft.target_cardio_sessions_per_week}回/週</p>
+          <p>カスタムPFC: {macroOverrideSummary}</p>
+        </div>
+      </div>
+    );
   };
 
   const aiReportSection = (
@@ -7600,6 +7712,11 @@ function SettingsTab(props: {
   };
   const activeSectionTitle = activeSettingsSection ? sectionTitles[activeSettingsSection] : undefined;
   const goBackFromSettingsSection = () => {
+    if (activeSettingsSection === "goal" && activeGoalSettingsSection) {
+      setActiveGoalSettingsSection(undefined);
+      setGoalWizardStep(0);
+      return;
+    }
     if (activeSettingsSection === "myMenu" && activeMyMenuSection) {
       closeMyMenuSubsection();
       return;
@@ -7695,51 +7812,114 @@ function SettingsTab(props: {
         </div>
       </section>}
 
-      {activeSettingsSection === "goal" && <section className={`compact-card scroll-mt-24 p-4 ${props.focus === "goal" ? "border-2 border-leaf" : ""}`}>
-        <div className="flex items-center justify-between gap-3">
-          <h2 className="font-bold">ゴール設定</h2>
-          <button className="primary-button shrink-0 px-3 py-2 text-xs" onClick={saveGoalSettings}><Save size={15} />保存</button>
-        </div>
-        <div className="mt-3 grid grid-cols-2 gap-2">
-          <SelectField label="フェーズ" hint="体重・筋量をどう動かしたいか" labelAction={<GoalHelpButton label="フェーズのヘルプ" onClick={() => setGoalHelpTopic("phase")} />}>
-            <select value={goalDraft.phase} onChange={(event) => setGoalDraft({ ...goalDraft, phase: event.target.value as Phase })}>
-              {Object.entries(phaseLabels).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
-            </select>
-          </SelectField>
-          <SelectField label="運動強度" hint="日常活動込みの消費量補正" labelAction={<GoalHelpButton label="運動強度のヘルプ" onClick={() => setGoalHelpTopic("activity")} />}>
-            <select value={goalDraft.activity_level} onChange={(event) => setGoalDraft({ ...goalDraft, activity_level: event.target.value as ActivityLevel })}>
-              {Object.entries(activityLabels).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
-            </select>
-          </SelectField>
-          <NumberInput label="年齢" value={goalDraft.age} onChange={(value) => setGoalDraft({ ...goalDraft, age: value })} />
-          <NumberInput label="目標体重" value={goalDraft.target_weight_kg} step={0.1} onChange={(value) => setGoalDraft({ ...goalDraft, target_weight_kg: value })} />
-          <NumberInput label="目標体脂肪 %" labelAction={<GoalHelpButton label="目標体脂肪率のヘルプ" onClick={() => setGoalHelpTopic("targetBodyFat")} />} value={goalDraft.target_body_fat_percentage} step={0.1} zeroDisplayLabel="自動" onChange={(value) => setGoalDraft({ ...goalDraft, target_body_fat_percentage: clampBodyFat(value) })} />
-          <SelectField label="目標達成日" hint="体重差からkcal補正">
-            <input
-              type="date"
-              min={addDays(todayAppDate(), 1)}
-              value={goalDraft.target_date}
-              onChange={(event) => setGoalDraft({ ...goalDraft, target_date: event.target.value })}
-            />
-          </SelectField>
-          <NumberInput label="筋トレ/週" value={goalDraft.target_workouts_per_week} onChange={(value) => setGoalDraft({ ...goalDraft, target_workouts_per_week: value })} />
-          <NumberInput label="有酸素/週" value={goalDraft.target_cardio_sessions_per_week} onChange={(value) => setGoalDraft({ ...goalDraft, target_cardio_sessions_per_week: value })} />
-        </div>
-        <button className="secondary-button mt-3 w-full justify-between px-4" onClick={() => setIsMacroOverrideOpen(true)}>
-          <span>目標kcal/PFCを上書き</span>
-          <span className="mini-chip">{macroOverrideSummary}</span>
-        </button>
-        <p className="mt-3 rounded-md bg-rice p-3 text-sm">
-          計算: {calculated?.target_calories ?? "-"} kcal / P{calculated?.target_protein_g ?? "-"} F{calculated?.target_fat_g ?? "-"} C{calculated?.target_carbs_g ?? "-"}
-          {typeof calculated?.target_daily_calorie_adjustment === "number" && <span className="block text-xs text-moss">期間補正: {calculated.target_daily_calorie_adjustment > 0 ? "+" : ""}{calculated.target_daily_calorie_adjustment} kcal/日</span>}
-          {typeof calculated?.target_fat_mass_kg === "number" && typeof calculated?.target_lean_mass_kg === "number" && (
-            <span className="block text-xs text-moss">
-              体組成: 脂肪 {calculated.target_fat_mass_kg}kg{typeof calculated.target_fat_mass_change_kg === "number" ? ` (${formatSignedNumber(calculated.target_fat_mass_change_kg)}kg)` : ""} / 除脂肪 {calculated.target_lean_mass_kg}kg{typeof calculated.target_lean_mass_change_kg === "number" ? ` (${formatSignedNumber(calculated.target_lean_mass_change_kg)}kg)` : ""}
-            </span>
-          )}
-        </p>
-        <p className="mt-2 text-xs text-moss">自動計算は現在体重から消費カロリーを出し、目標体重・目標体脂肪率・目標達成日・フェーズ・運動強度・総カロリーからP/F/Cと体組成の目標差分を出します。kcal/P/F/Cを手動上書きしている場合、その値は保存時に上書きしません。</p>
-      </section>}
+      {activeSettingsSection === "goal" && !activeGoalSettingsSection && (
+        <section className={`compact-card divide-y divide-line overflow-hidden scroll-mt-24 ${props.focus === "goal" ? "border-2 border-leaf" : ""}`}>
+          <SettingsMenuRow title="再度質問に答える" description="初期セットアップのように1ページずつ答えて再計算" icon={<Sparkles size={18} />} onClick={() => {
+            setGoalWizardStep(0);
+            setActiveGoalSettingsSection("guided");
+          }} />
+          <SettingsMenuRow title="手動で入力する" description={`${phaseLabels[goalDraft.phase]} / ${calculated?.target_calories ?? "-"}kcal / ${macroOverrideSummary}`} icon={<SlidersHorizontal size={18} />} onClick={() => setActiveGoalSettingsSection("manual")} />
+          <SettingsMenuRow title="カスタムPFCを設定する" description={`目標kcal/PFCを上書き · ${macroOverrideSummary}`} icon={<BarChart3 size={18} />} onClick={() => setActiveGoalSettingsSection("custom")} />
+        </section>
+      )}
+
+      {activeSettingsSection === "goal" && activeGoalSettingsSection === "guided" && (
+        <section className={`compact-card scroll-mt-24 p-4 ${props.focus === "goal" ? "border-2 border-leaf" : ""}`}>
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-xs font-black text-moss">ゴール再設定</p>
+              <h2 className="mt-1 text-lg font-black">{goalWizardSteps[goalWizardStep]?.title}</h2>
+              <p className="mt-1 text-xs text-moss">{goalWizardSteps[goalWizardStep]?.subtitle}</p>
+            </div>
+            <span className="numeric-text mini-chip shrink-0">{goalWizardStep + 1}/{goalWizardSteps.length}</span>
+          </div>
+          <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-ink/5">
+            <div className="h-full rounded-full bg-leaf transition-all" style={{ width: `${((goalWizardStep + 1) / goalWizardSteps.length) * 100}%` }} />
+          </div>
+          <div className="mt-4">{renderGoalWizardStep()}</div>
+          {goalWizardStep < goalWizardSteps.length - 1 && goalCalculationSummary}
+          <div className="mt-4 grid grid-cols-2 gap-2">
+            <button className="secondary-button" onClick={() => {
+              if (goalWizardStep === 0) {
+                setActiveGoalSettingsSection(undefined);
+                return;
+              }
+              setGoalWizardStep((current) => Math.max(0, current - 1));
+            }}><ChevronLeft size={17} />戻る</button>
+            {goalWizardStep === goalWizardSteps.length - 1 ? (
+              <button className="primary-button" onClick={saveGoalSettings}><Save size={17} />保存</button>
+            ) : (
+              <button className="primary-button" onClick={() => setGoalWizardStep((current) => Math.min(goalWizardSteps.length - 1, current + 1))}>次へ<ChevronRight size={17} /></button>
+            )}
+          </div>
+        </section>
+      )}
+
+      {activeSettingsSection === "goal" && activeGoalSettingsSection === "manual" && (
+        <section className={`compact-card scroll-mt-24 p-4 ${props.focus === "goal" ? "border-2 border-leaf" : ""}`}>
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="font-bold">手動で入力する</h2>
+            <button className="primary-button shrink-0 px-3 py-2 text-xs" onClick={saveGoalSettings}><Save size={15} />保存</button>
+          </div>
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            <SelectField label="フェーズ" hint="体重・筋量をどう動かしたいか" labelAction={<GoalHelpButton label="フェーズのヘルプ" onClick={() => setGoalHelpTopic("phase")} />}>
+              <select value={goalDraft.phase} onChange={(event) => setGoalDraft({ ...goalDraft, phase: event.target.value as Phase })}>
+                {Object.entries(phaseLabels).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
+              </select>
+            </SelectField>
+            <SelectField label="運動強度" hint="日常活動込みの消費量補正" labelAction={<GoalHelpButton label="運動強度のヘルプ" onClick={() => setGoalHelpTopic("activity")} />}>
+              <select value={goalDraft.activity_level} onChange={(event) => setGoalDraft({ ...goalDraft, activity_level: event.target.value as ActivityLevel })}>
+                {Object.entries(activityLabels).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
+              </select>
+            </SelectField>
+            <NumberInput label="年齢" value={goalDraft.age} onChange={(value) => setGoalDraft({ ...goalDraft, age: value })} />
+            <NumberInput label="目標体重" value={goalDraft.target_weight_kg} step={0.1} onChange={(value) => setGoalDraft({ ...goalDraft, target_weight_kg: value })} />
+            <NumberInput label="目標体脂肪 %" labelAction={<GoalHelpButton label="目標体脂肪率のヘルプ" onClick={() => setGoalHelpTopic("targetBodyFat")} />} value={goalDraft.target_body_fat_percentage} step={0.1} zeroDisplayLabel="自動" onChange={(value) => setGoalDraft({ ...goalDraft, target_body_fat_percentage: clampBodyFat(value) })} />
+            <SelectField label="目標達成日" hint="体重差からkcal補正">
+              <input
+                type="date"
+                min={addDays(todayAppDate(), 1)}
+                value={goalDraft.target_date}
+                onChange={(event) => setGoalDraft({ ...goalDraft, target_date: event.target.value })}
+              />
+            </SelectField>
+            <NumberInput label="筋トレ/週" value={goalDraft.target_workouts_per_week} onChange={(value) => setGoalDraft({ ...goalDraft, target_workouts_per_week: value })} />
+            <NumberInput label="有酸素/週" value={goalDraft.target_cardio_sessions_per_week} onChange={(value) => setGoalDraft({ ...goalDraft, target_cardio_sessions_per_week: value })} />
+          </div>
+          <button className="secondary-button mt-3 w-full justify-between px-4" onClick={() => setActiveGoalSettingsSection("custom")}>
+            <span>カスタムPFCを設定する</span>
+            <span className="mini-chip">{macroOverrideSummary}</span>
+          </button>
+          {goalCalculationSummary}
+          <p className="mt-2 text-xs text-moss">自動計算は現在体重から消費カロリーを出し、目標体重・目標体脂肪率・目標達成日・フェーズ・運動強度・総カロリーからP/F/Cと体組成の目標差分を出します。</p>
+        </section>
+      )}
+
+      {activeSettingsSection === "goal" && activeGoalSettingsSection === "custom" && (
+        <section className={`compact-card scroll-mt-24 p-4 ${props.focus === "goal" ? "border-2 border-leaf" : ""}`}>
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h2 className="font-bold">カスタムPFCを設定する</h2>
+              <p className="mt-1 text-xs text-moss">0にすると自動計算に戻ります。保存するとAIレポートにもカスタム設定として入ります。</p>
+            </div>
+            <button className="primary-button shrink-0 px-3 py-2 text-xs" onClick={saveGoalSettings}><Save size={15} />保存</button>
+          </div>
+          <div className="mt-4 rounded-md bg-rice p-3 text-xs leading-relaxed text-moss">
+            <p className="font-bold text-ink">現在の自動計算</p>
+            <p className="mt-1">kcal {calculated?.target_calories ?? "-"} / P{calculated?.target_protein_g ?? "-"} F{calculated?.target_fat_g ?? "-"} C{calculated?.target_carbs_g ?? "-"}</p>
+          </div>
+          <div className="mt-4 grid gap-3">
+            <NumberInput label="目標kcal" labelAction={<AutoValueButton onClick={() => setGoalDraft({ ...goalDraft, manual_target_calories: 0 })} />} value={goalDraft.manual_target_calories} onChange={(value) => setGoalDraft({ ...goalDraft, manual_target_calories: value })} />
+            <NumberInput label="目標P" labelAction={<AutoValueButton onClick={() => setGoalDraft({ ...goalDraft, manual_protein_g: 0 })} />} value={goalDraft.manual_protein_g} onChange={(value) => setGoalDraft({ ...goalDraft, manual_protein_g: value })} />
+            <NumberInput label="目標F" labelAction={<AutoValueButton onClick={() => setGoalDraft({ ...goalDraft, manual_fat_g: 0 })} />} value={goalDraft.manual_fat_g} onChange={(value) => setGoalDraft({ ...goalDraft, manual_fat_g: value })} />
+            <NumberInput label="目標C" labelAction={<AutoValueButton onClick={() => setGoalDraft({ ...goalDraft, manual_carbs_g: 0 })} />} value={goalDraft.manual_carbs_g} onChange={(value) => setGoalDraft({ ...goalDraft, manual_carbs_g: value })} />
+          </div>
+          <button className="secondary-button mt-4 w-full justify-between px-4" onClick={() => setActiveGoalSettingsSection("manual")}>
+            <span>フェーズや目標体重も調整する</span>
+            <ChevronRight size={17} />
+          </button>
+        </section>
+      )}
 
       {activeSettingsSection === "myMenu" && !activeMyMenuSection && (
         <section className={`compact-card divide-y divide-line overflow-hidden scroll-mt-24 ${props.focus === "myMenu" ? "border-2 border-leaf" : ""}`}>
