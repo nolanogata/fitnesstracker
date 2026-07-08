@@ -57,6 +57,7 @@ import type {
   ExercisePreset,
   FoodEntry,
   Goal,
+  HomeBodyFatDisplay,
   MealType,
   MenuItem,
   Phase,
@@ -101,6 +102,11 @@ type LogExportStep = "type" | "grouping" | "period" | "output";
 type LogExportType = "food" | "workout" | "food_workout";
 type LogExportDateTarget = "start" | "end";
 type EditableRecordTab = "food" | "workout";
+const homeBodyFatDisplayLabels: Record<HomeBodyFatDisplay, string> = {
+  hidden: "非表示",
+  average7: "7日間平均",
+  today: "今日の数値",
+};
 const bottomTabs: Tab[] = ["home", "food", "workout", "records", "settings"];
 const themeAccentOptions: Array<{ value: ThemeAccent; label: string; colors: [string, string] }> = [
   { value: "classic", label: "クラシック", colors: ["#566e61", "#9fbea9"] },
@@ -2556,6 +2562,7 @@ function App() {
             isEditingPastDate={isEditingPastDate}
             latestWeight={latestWeight}
             weightLogs={weightLogs}
+            bodyFatDisplayMode={settings?.home_body_fat_display ?? "today"}
             backupInfo={backupInfo}
             recordReminder={recordReminder}
             needsGoalTargetPeriod={needsGoalTargetPeriod}
@@ -3279,6 +3286,7 @@ function HomeTab(props: {
   isEditingPastDate: boolean;
   latestWeight?: WeightLog;
   weightLogs: WeightLog[];
+  bodyFatDisplayMode: HomeBodyFatDisplay;
   backupInfo: BackupInfo;
   recordReminder?: RecordReminder;
   needsGoalTargetPeriod: boolean;
@@ -3309,6 +3317,9 @@ function HomeTab(props: {
   const pullStartYRef = useRef<number | undefined>(undefined);
   const pullThreshold = 64;
   const average7 = movingAverage(props.weightLogs, 7);
+  const bodyFatAverage7 = movingAverageValue(props.weightLogs, 7, (log) => log.body_fat_percentage);
+  const displayedBodyFat = props.bodyFatDisplayMode === "average7" ? bodyFatAverage7 : bodyFat;
+  const shouldShowBodyFat = props.bodyFatDisplayMode !== "hidden";
   const developerProgressPercent = typeof props.developerProgressPercent === "number"
     ? Math.max(0, Math.min(110, Math.round(props.developerProgressPercent)))
     : undefined;
@@ -3615,7 +3626,7 @@ function HomeTab(props: {
 
       <button className="home-glass-card home-checkin-card relative w-full p-4 text-left" onClick={() => setIsCheckInOpen(true)}>
         <span className="home-checkin-edit" aria-hidden="true"><Plus size={15} /></span>
-        <div className="grid grid-cols-2 items-end gap-3">
+        <div className={`grid items-end gap-3 ${shouldShowBodyFat ? "grid-cols-2" : "grid-cols-1"}`}>
           <div>
             <p className="text-sm font-bold">今日のチェックイン</p>
             <p className="numeric-text mt-4 flex items-end gap-1 text-[2.45rem] font-semibold leading-none tracking-normal">
@@ -3629,10 +3640,18 @@ function HomeTab(props: {
             </p>
             <p className="numeric-text mt-1.5 text-xs text-moss">7日平均 {average7 ? `${average7}kg` : "-"}{typeof weightDelta === "number" ? ` / 前日比 ${weightDelta > 0 ? "+" : ""}${weightDelta}kg` : ""}</p>
           </div>
-          <div className="text-right">
-            <p className="numeric-text text-[2.05rem] font-semibold leading-none tracking-normal">{round1(bodyFat)}<span className="ml-1 text-sm font-semibold">%</span></p>
-            <p className="mt-1.5 text-xs text-moss">体脂肪率</p>
-          </div>
+          {shouldShowBodyFat && (
+            <div className="text-right">
+              <p className="numeric-text text-[2.05rem] font-semibold leading-none tracking-normal">
+                {typeof displayedBodyFat === "number" ? (
+                  <>{round1(displayedBodyFat)}<span className="ml-1 text-sm font-semibold">%</span></>
+                ) : (
+                  "-"
+                )}
+              </p>
+              <p className="mt-1.5 text-xs text-moss">{props.bodyFatDisplayMode === "average7" ? "体脂肪率 7日平均" : "体脂肪率"}</p>
+            </div>
+          )}
         </div>
       </button>
 
@@ -7101,6 +7120,7 @@ function SettingsTab(props: {
   const developerTestOverlayEnabled = !!props.settings?.developer_test_overlay_enabled;
   const developerHokkaidoMode = props.specialModeSettings.find((mode) => mode.id === "hokkaido_trip");
   const isDeveloperHokkaidoModeEnabled = !!developerHokkaidoMode?.enabled;
+  const homeBodyFatDisplay = props.settings?.home_body_fat_display ?? "today";
 
   const resetSettingsAiFoodImport = () => {
     setSettingsAiFoodImportStep("prompt");
@@ -7655,6 +7675,22 @@ function SettingsTab(props: {
             ))}
           </div>
           <p className="mt-2 text-xs text-moss">カードはグラファイト基調のまま、主要ボタン、選択中のチップ、下部ナビに反映します。</p>
+        </div>
+        <div className="mt-5">
+          <p className="text-xs font-black text-moss">今日のチェックインの体脂肪率</p>
+          <div className="mt-2 grid grid-cols-3 gap-2">
+            {(Object.keys(homeBodyFatDisplayLabels) as HomeBodyFatDisplay[]).map((mode) => (
+              <button
+                className={`mode-button min-h-10 text-xs ${homeBodyFatDisplay === mode ? "mode-button-active" : ""}`}
+                key={mode}
+                aria-pressed={homeBodyFatDisplay === mode}
+                onClick={() => saveSettingsPatch({ home_body_fat_display: mode })}
+              >
+                {homeBodyFatDisplayLabels[mode]}
+              </button>
+            ))}
+          </div>
+          <p className="mt-2 text-xs text-moss">Homeのチェックインカードだけに反映します。チェックイン入力では体脂肪率をこれまで通り保存できます。</p>
         </div>
       </section>}
 
@@ -12087,9 +12123,16 @@ function formatSignedNumber(value: number) {
 }
 
 function movingAverage(logs: WeightLog[], count: number) {
-  const recent = logs.slice(-count);
+  return movingAverageValue(logs, count, (log) => log.weight_kg);
+}
+
+function movingAverageValue(logs: WeightLog[], count: number, getValue: (log: WeightLog) => number | undefined) {
+  const recent = logs
+    .map(getValue)
+    .filter((value): value is number => typeof value === "number")
+    .slice(-count);
   if (!recent.length) return undefined;
-  return round1(recent.reduce((sum, log) => sum + log.weight_kg, 0) / recent.length);
+  return round1(recent.reduce((sum, value) => sum + value, 0) / recent.length);
 }
 
 function weekKey(dateString: string) {
