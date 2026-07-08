@@ -189,6 +189,31 @@
   --official-badge-shadow: 0 0 12px rgba(223, 255, 0, 0.24), var(--glass-highlight);
 }
 
+:root[data-accent="vivid_neon"] {
+  --primary-tint: #008ad6;
+  --active-tint: #00e5ff;
+  --accent-primary: #008ad6;
+  --accent-secondary: #ff2bd6;
+  --accent-soft: rgba(211, 247, 255, 0.78);
+  --accent-faint: rgba(0, 229, 255, 0.17);
+  --accent-border: rgba(0, 229, 255, 0.52);
+  --accent-focus: rgba(255, 43, 214, 0.32);
+  --accent-text: #006d93;
+  --accent-readable: #0b1820;
+  --accent-button-bg: linear-gradient(135deg, rgba(0, 229, 255, 0.94), rgba(255, 43, 214, 0.82), rgba(223, 255, 0, 0.72));
+  --accent-button-text: #071016;
+  --accent-button-shadow: rgba(0, 170, 215, 0.24);
+  --accent-icon-shadow: rgba(0, 229, 255, 0.28);
+  --accent-progress-bg: linear-gradient(90deg, #00e5ff 0%, #44ffb5 34%, #ff2bd6 72%, #dfff00 100%);
+  --accent-progress-shadow: 0 0 12px rgba(0, 229, 255, 0.38), 0 0 24px rgba(255, 43, 214, 0.2);
+  --accent-pill-bg: linear-gradient(135deg, rgba(0, 229, 255, 0.16), rgba(255, 43, 214, 0.1));
+  --accent-pill-color: #006d93;
+  --accent-pill-dot: #00e5ff;
+  --official-badge-bg: linear-gradient(135deg, rgba(0, 229, 255, 0.78), rgba(255, 43, 214, 0.6));
+  --official-badge-color: #071016;
+  --official-badge-shadow: 0 0 12px rgba(0, 229, 255, 0.22), var(--glass-highlight);
+}
+
 :root[data-theme="dark"][data-accent="aqua"] {
   --primary-tint: #a8d8e2;
   --active-tint: #72bfd0;
@@ -284,6 +309,31 @@
   --official-badge-bg: linear-gradient(135deg, rgba(223, 255, 0, 0.88), rgba(124, 255, 212, 0.64));
   --official-badge-color: #111500;
   --official-badge-shadow: 0 0 14px rgba(223, 255, 0, 0.24), var(--glass-highlight);
+}
+
+:root[data-theme="dark"][data-accent="vivid_neon"] {
+  --primary-tint: #8ff6ff;
+  --active-tint: #00e5ff;
+  --accent-primary: #8ff6ff;
+  --accent-secondary: #ff8af1;
+  --accent-soft: rgba(0, 229, 255, 0.2);
+  --accent-faint: rgba(0, 229, 255, 0.15);
+  --accent-border: rgba(143, 246, 255, 0.4);
+  --accent-focus: rgba(255, 138, 241, 0.36);
+  --accent-text: #d4fbff;
+  --accent-readable: #f0feff;
+  --accent-button-bg: linear-gradient(135deg, rgba(0, 229, 255, 0.92), rgba(255, 43, 214, 0.82), rgba(223, 255, 0, 0.72));
+  --accent-button-text: #071016;
+  --accent-button-shadow: rgba(0, 229, 255, 0.24);
+  --accent-icon-shadow: rgba(0, 229, 255, 0.3);
+  --accent-progress-bg: linear-gradient(90deg, #00e5ff 0%, #44ffb5 34%, #ff2bd6 72%, #dfff00 100%);
+  --accent-progress-shadow: 0 0 14px rgba(0, 229, 255, 0.4), 0 0 26px rgba(255, 43, 214, 0.24);
+  --accent-pill-bg: linear-gradient(135deg, rgba(0, 229, 255, 0.18), rgba(255, 138, 241, 0.12));
+  --accent-pill-color: #d4fbff;
+  --accent-pill-dot: #8ff6ff;
+  --official-badge-bg: linear-gradient(135deg, rgba(0, 229, 255, 0.72), rgba(255, 43, 214, 0.62));
+  --official-badge-color: #071016;
+  --official-badge-shadow: 0 0 14px rgba(0, 229, 255, 0.24), var(--glass-highlight);
 }
 
 html,
@@ -1221,7 +1271,8 @@ button {
 }
 
 :root[data-accent="crazy_pink"] .theme-accent-option-active,
-:root[data-accent="crazy_yellow"] .theme-accent-option-active {
+:root[data-accent="crazy_yellow"] .theme-accent-option-active,
+:root[data-accent="vivid_neon"] .theme-accent-option-active {
   box-shadow:
     0 0 0 1px var(--accent-focus) inset,
     0 0 18px var(--accent-faint),
@@ -1230,7 +1281,8 @@ button {
 }
 
 :root[data-accent="crazy_pink"] .theme-accent-option-active .theme-accent-swatch,
-:root[data-accent="crazy_yellow"] .theme-accent-option-active .theme-accent-swatch {
+:root[data-accent="crazy_yellow"] .theme-accent-option-active .theme-accent-swatch,
+:root[data-accent="vivid_neon"] .theme-accent-option-active .theme-accent-swatch {
   box-shadow:
     0 0 0 1px rgba(255, 255, 255, 0.84) inset,
     0 0 16px color-mix(in srgb, var(--swatch-start) 48%, transparent),
@@ -4296,18 +4348,21 @@ main[data-accent]:not([data-accent="classic"]) .ai-report-section .text-moss {
 }
 
 :root[data-accent="crazy_pink"] .home-macro-pill,
-:root[data-accent="crazy_yellow"] .home-macro-pill {
+:root[data-accent="crazy_yellow"] .home-macro-pill,
+:root[data-accent="vivid_neon"] .home-macro-pill {
   box-shadow: 0 0 10px color-mix(in srgb, var(--accent-secondary) 10%, transparent), var(--glass-highlight);
 }
 
 :root[data-accent="crazy_pink"] .home-macro-low,
-:root[data-accent="crazy_yellow"] .home-macro-low {
+:root[data-accent="crazy_yellow"] .home-macro-low,
+:root[data-accent="vivid_neon"] .home-macro-low {
   color: var(--accent-pill-color);
   background: color-mix(in srgb, var(--accent-secondary) 14%, transparent);
 }
 
 :root[data-accent="crazy_pink"] .home-macro-low .home-macro-dot,
-:root[data-accent="crazy_yellow"] .home-macro-low .home-macro-dot {
+:root[data-accent="crazy_yellow"] .home-macro-low .home-macro-dot,
+:root[data-accent="vivid_neon"] .home-macro-low .home-macro-dot {
   background: var(--accent-pill-dot);
   box-shadow: 0 0 8px var(--accent-icon-shadow);
 }
@@ -4334,6 +4389,17 @@ main[data-accent]:not([data-accent="classic"]) .ai-report-section .text-moss {
   box-shadow: 0 0 8px rgba(255, 73, 91, 0.88), 0 0 14px rgba(244, 255, 0, 0.18);
 }
 
+:root[data-accent="vivid_neon"] .home-macro-over {
+  color: #9b203e;
+  background: linear-gradient(135deg, rgba(255, 73, 91, 0.17), rgba(0, 229, 255, 0.12), rgba(255, 43, 214, 0.1));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.56), 0 0 14px rgba(0, 229, 255, 0.1), var(--glass-highlight);
+}
+
+:root[data-accent="vivid_neon"] .home-macro-over .home-macro-dot {
+  background: #ff495b;
+  box-shadow: 0 0 8px rgba(255, 73, 91, 0.88), 0 0 14px rgba(0, 229, 255, 0.22);
+}
+
 :root[data-theme="dark"][data-accent="crazy_pink"] .home-macro-over {
   color: #ffd5f7;
   background: linear-gradient(135deg, rgba(255, 43, 214, 0.2), rgba(255, 72, 118, 0.16), rgba(138, 44, 255, 0.1));
@@ -4344,6 +4410,12 @@ main[data-accent]:not([data-accent="classic"]) .ai-report-section .text-moss {
   color: #ffe4b2;
   background: linear-gradient(135deg, rgba(255, 73, 91, 0.19), rgba(244, 255, 0, 0.12), rgba(0, 255, 168, 0.08));
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 0 14px rgba(255, 73, 91, 0.14), var(--glass-highlight);
+}
+
+:root[data-theme="dark"][data-accent="vivid_neon"] .home-macro-over {
+  color: #ffd7e0;
+  background: linear-gradient(135deg, rgba(255, 73, 91, 0.2), rgba(0, 229, 255, 0.12), rgba(255, 43, 214, 0.11));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 0 14px rgba(0, 229, 255, 0.14), var(--glass-highlight);
 }
 
 @media (prefers-reduced-motion: reduce) {
