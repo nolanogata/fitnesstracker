@@ -200,6 +200,13 @@ type AchievementProgress = {
   unit: string;
   repeatable: boolean;
 };
+type AchievementTarget = {
+  achievement: AchievementDefinition;
+  progress?: AchievementProgress;
+  remaining?: number;
+  ratio: number;
+  status: string;
+};
 type AchievementCelebration = {
   id: string;
   title: string;
@@ -970,6 +977,16 @@ const achievementProgressSpecs: Record<string, AchievementProgressSpec> = {
   streak_365: { metric: "streak", target: 365, unit: "日" },
 };
 const appUpdates: AppUpdate[] = [
+  {
+    id: "2026-07-10-trophy-guide",
+    title: "トロフィー攻略を追加",
+    date: "2026-07-10",
+    items: [
+      "トロフィー一覧に、次に狙えるトロフィーを表示する攻略セクションを追加しました。",
+      "各トロフィーをタップすると、条件、現在の進捗、あと何が必要かを確認できる詳細画面を開けるようにしました。",
+      "更新内容からすぐトロフィー攻略を開ける導線を追加しました。",
+    ],
+  },
   {
     id: "2026-06-18-my-training-achievements",
     title: "マイトレ登録とトロフィーを追加",
@@ -2707,7 +2724,13 @@ function App() {
         )}
       </section>
 
-      {isUpdateNotesOpen && <UpdateNotesModal updates={appUpdates} onClose={() => setIsUpdateNotesOpen(false)} />}
+      {isUpdateNotesOpen && (
+        <UpdateNotesModal
+          updates={appUpdates}
+          onClose={() => setIsUpdateNotesOpen(false)}
+          onOpenTrophies={() => void openTrophies()}
+        />
+      )}
       {isTrophyOpen && (
         <TrophyModal
           progress={achievementProgress}
@@ -2827,8 +2850,16 @@ function TrophyModal({ unlocks, progress, isDeveloperTestMode, onClose, onReplay
   onClose: () => void;
   onReplay: (achievement: AchievementDefinition) => void;
 }) {
+  const [selectedAchievementId, setSelectedAchievementId] = useState<string>();
   const unlockedById = new Map(unlocks.map((unlock) => [unlock.id, unlock]));
   const unlockedCount = achievementDefinitions.filter((achievement) => unlockedById.has(achievement.id)).length;
+  const nextTargets = buildAchievementTargets(unlockedById, progress);
+  const selectedAchievement = achievementDefinitions.find((achievement) => achievement.id === selectedAchievementId)
+    ?? nextTargets[0]?.achievement
+    ?? achievementDefinitions[0];
+  const selectedUnlock = selectedAchievement ? unlockedById.get(selectedAchievement.id) : undefined;
+  const selectedProgress = selectedAchievement ? progress[selectedAchievement.id] : undefined;
+  const selectedStatus = achievementStatusText(selectedUnlock, selectedProgress);
   return (
     <div className="fixed inset-0 z-[65] flex items-end bg-ink/35 px-4 pb-4" onClick={onClose}>
       <div className="trophy-sheet compact-card w-full p-4" onClick={(event) => event.stopPropagation()}>
@@ -2839,13 +2870,82 @@ function TrophyModal({ unlocks, progress, isDeveloperTestMode, onClose, onReplay
           </div>
           <button className="icon-button h-9 w-9" aria-label="閉じる" onClick={onClose}>×</button>
         </div>
+        {nextTargets.length > 0 && (
+          <section className="trophy-guide-panel mt-4">
+            <div className="flex items-center justify-between gap-2">
+              <div>
+                <p className="text-sm font-black">次に狙える</p>
+                <p className="mt-1 text-xs font-semibold text-moss">あと少しで取れるものを優先表示します。</p>
+              </div>
+              <span className="mini-chip shrink-0">攻略</span>
+            </div>
+            <div className="mt-3 grid gap-2">
+              {nextTargets.slice(0, 3).map((target) => (
+                <button
+                  className={`trophy-target-card ${selectedAchievement?.id === target.achievement.id ? "trophy-target-card-active" : ""}`}
+                  key={target.achievement.id}
+                  onClick={() => setSelectedAchievementId(target.achievement.id)}
+                >
+                  <span className={`trophy-target-icon trophy-target-icon-${target.achievement.tone}`}><Trophy size={16} /></span>
+                  <span className="min-w-0 flex-1 text-left">
+                    <span className="block truncate text-sm font-black">{target.achievement.title}</span>
+                    <span className="mt-0.5 block text-xs font-semibold text-moss">{target.status}</span>
+                  </span>
+                  <span className="numeric-text text-xs font-black text-moss">{Math.round(target.ratio * 100)}%</span>
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
+        {selectedAchievement && (
+          <section className={`trophy-detail-panel trophy-card-${selectedAchievement.tone} mt-3`}>
+            <div className="flex items-start gap-3">
+              <div className="trophy-card-icon shrink-0">
+                <Trophy size={20} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="text-sm font-black">{selectedAchievement.title}</p>
+                    <p className="mt-1 text-xs font-semibold text-moss">{selectedAchievement.description}</p>
+                  </div>
+                  <span className={`mini-chip shrink-0 ${selectedUnlock ? "" : "opacity-70"}`}>{selectedUnlock ? "獲得済み" : "攻略中"}</span>
+                </div>
+                <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                  <div className="rounded-2xl border border-line bg-surface/60 p-2">
+                    <p className="font-bold text-moss">進捗</p>
+                    <p className="numeric-text mt-1 font-black">{selectedStatus ?? (selectedUnlock ? "獲得済み" : "条件達成で獲得")}</p>
+                  </div>
+                  <div className="rounded-2xl border border-line bg-surface/60 p-2">
+                    <p className="font-bold text-moss">攻略メモ</p>
+                    <p className="mt-1 font-black">{achievementGuideText(selectedAchievement, selectedProgress, selectedUnlock)}</p>
+                  </div>
+                </div>
+                {selectedUnlock && (
+                  <p className="numeric-text mt-3 text-[11px] font-bold text-muted">
+                    {formatJapaneseDate(selectedUnlock.unlocked_at.slice(0, 10))} 獲得
+                  </p>
+                )}
+                {selectedUnlock && isDeveloperTestMode && (
+                  <button className="secondary-button mt-3 w-full py-2 text-xs" onClick={() => onReplay(selectedAchievement)}>
+                    演出を再生
+                  </button>
+                )}
+              </div>
+            </div>
+          </section>
+        )}
         <div className="mt-4 grid grid-cols-2 gap-2">
           {achievementDefinitions.map((achievement) => {
             const unlock = unlockedById.get(achievement.id);
             const progressItem = progress[achievement.id];
             const statusText = achievementStatusText(unlock, progressItem);
             return (
-              <div className={`trophy-card trophy-card-${achievement.tone} ${unlock ? "trophy-card-unlocked" : "trophy-card-locked"}`} key={achievement.id}>
+              <button
+                className={`trophy-card trophy-card-${achievement.tone} ${unlock ? "trophy-card-unlocked" : "trophy-card-locked"} ${selectedAchievement?.id === achievement.id ? "trophy-card-selected" : ""}`}
+                key={achievement.id}
+                onClick={() => setSelectedAchievementId(achievement.id)}
+              >
                 <div className="trophy-card-icon">
                   <Trophy size={20} />
                 </div>
@@ -2860,11 +2960,14 @@ function TrophyModal({ unlocks, progress, isDeveloperTestMode, onClose, onReplay
                   </p>
                 )}
                 {unlock && isDeveloperTestMode && (
-                  <button className="secondary-button mt-3 w-full py-2 text-xs" onClick={() => onReplay(achievement)}>
+                  <span className="secondary-button mt-3 w-full py-2 text-xs" onClick={(event) => {
+                    event.stopPropagation();
+                    onReplay(achievement);
+                  }}>
                     演出
-                  </button>
+                  </span>
                 )}
-              </div>
+              </button>
             );
           })}
         </div>
@@ -3267,6 +3370,63 @@ function achievementStatusText(unlock?: AchievementUnlock, progress?: Achievemen
   }
   const remaining = Math.max(0, progress.target - current);
   return `あと ${remaining}${progress.unit}`;
+}
+
+function buildAchievementTargets(unlockedById: Map<string, AchievementUnlock>, progress: Record<string, AchievementProgress>): AchievementTarget[] {
+  const targets = achievementDefinitions
+    .filter((achievement) => !achievement.hidden && !unlockedById.has(achievement.id))
+    .map((achievement) => {
+      const progressItem = progress[achievement.id];
+      if (!progressItem) {
+        return {
+          achievement,
+          ratio: 0,
+          status: "条件を満たすと獲得",
+        } satisfies AchievementTarget;
+      }
+      const current = Math.max(0, progressItem.current);
+      const target = Math.max(1, progressItem.target);
+      const remaining = Math.max(0, target - current);
+      return {
+        achievement,
+        progress: progressItem,
+        remaining,
+        ratio: Math.min(1, current / target),
+        status: remaining <= 0 ? "達成目前" : `あと ${remaining}${progressItem.unit}`,
+      } satisfies AchievementTarget;
+    });
+  return targets
+    .sort((a, b) => {
+      const aHasProgress = a.progress ? 1 : 0;
+      const bHasProgress = b.progress ? 1 : 0;
+      if (aHasProgress !== bHasProgress) return bHasProgress - aHasProgress;
+      const aRemaining = a.remaining ?? Number.MAX_SAFE_INTEGER;
+      const bRemaining = b.remaining ?? Number.MAX_SAFE_INTEGER;
+      const aNearlyThere = aRemaining <= 1 ? 1 : 0;
+      const bNearlyThere = bRemaining <= 1 ? 1 : 0;
+      if (aNearlyThere !== bNearlyThere) return bNearlyThere - aNearlyThere;
+      if (a.ratio !== b.ratio) return b.ratio - a.ratio;
+      return aRemaining - bRemaining;
+    })
+    .slice(0, 6);
+}
+
+function achievementGuideText(achievement: AchievementDefinition, progress?: AchievementProgress, unlock?: AchievementUnlock) {
+  if (unlock) return "獲得済み。テストモード中は演出も見返せます。";
+  if (!progress) return "この機能を使うと獲得できます。";
+  const remaining = Math.max(0, progress.target - progress.current);
+  if (remaining <= 0) return "条件は達成済みです。次の記録更新で反映されます。";
+  const action = progress.unit === "日"
+    ? "積み上げる"
+    : progress.unit === "件"
+      ? "追加する"
+      : progress.unit === "セット"
+        ? "積む"
+        : progress.unit === "種目"
+          ? "増やす"
+          : "進める";
+  if (achievement.tone === "streak") return `あと${remaining}${progress.unit}、記録を続けると獲得できます。`;
+  return `あと${remaining}${progress.unit}${action}と獲得できます。`;
 }
 
 function HomeTab(props: {
@@ -4022,7 +4182,16 @@ function PerfectFoodMetric({ label, value, suffix }: { label: string; value: num
   );
 }
 
-function UpdateNotesModal({ updates, onClose }: { updates: AppUpdate[]; onClose: () => void }) {
+function UpdateNotesModal({ updates, onClose, onOpenTrophies }: {
+  updates: AppUpdate[];
+  onClose: () => void;
+  onOpenTrophies?: () => void;
+}) {
+  const latestUpdate = updates[0];
+  const latestUpdateHasTrophy = !!latestUpdate && (
+    latestUpdate.title.includes("トロフィー") ||
+    latestUpdate.items.some((item) => item.includes("トロフィー"))
+  );
   return (
     <div className="fixed inset-0 z-50 flex items-end bg-ink/30 px-4 pb-4">
       <div className="compact-card max-h-[82vh] w-full overflow-y-auto p-4">
@@ -4033,6 +4202,14 @@ function UpdateNotesModal({ updates, onClose }: { updates: AppUpdate[]; onClose:
           </div>
           <button className="icon-button h-9 w-9" aria-label="閉じる" onClick={onClose}>×</button>
         </div>
+        {latestUpdateHasTrophy && onOpenTrophies && (
+          <button className="primary-button mt-4 w-full" onClick={() => {
+            onClose();
+            onOpenTrophies();
+          }}>
+            <Trophy size={17} />トロフィー攻略を見る
+          </button>
+        )}
         <div className="mt-4 space-y-3">
           {updates.map((update) => (
             <section className="rounded-md border border-line bg-rice p-3" key={update.id}>
