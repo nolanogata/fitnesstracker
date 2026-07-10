@@ -5015,12 +5015,16 @@ function FoodTab(props: {
   const selectedStapleConfigs = selected ? getStaplePortionConfigs(selected) : [];
   const hasSelectedCompositeStaples = selectedStapleConfigs.length > 1;
   const selectedStapleConfig = selectedStapleConfigs[0];
+  const hasSelectedPublishedPortionOptions = selected ? usesPublishedInlinePortionOptions(selected) : false;
   const selectedComponentPortionTitle = selectedStapleConfigs.map((config) => config.label).join("・");
   const selectedServingGrams = selected ? selectedStapleConfig?.defaultGrams ?? menuItemServingGrams(selected) : undefined;
   const defaultPortionOption = portionOptions.find((option) => option.value === 1) ?? portionOptions[0];
   const customPortionOptions = portionOptions.filter((option) => option.value !== defaultPortionOption?.value);
   const selectedPortionOptionLabel = portionOptions.find((option) => option.value === portionMultiplier)?.label;
-  const canCustomizeSelectedPortion = hasSelectedCompositeStaples || !!selectedStapleConfig || customPortionOptions.length > 0 || !!selectedServingGrams;
+  const canCustomizeSelectedPortion = !!selected
+    && !usesOfficialFixedSizeOptions(selected)
+    && !hasSelectedPublishedPortionOptions
+    && (hasSelectedCompositeStaples || !!selectedStapleConfig || customPortionOptions.length > 0 || !!selectedServingGrams);
   const selectedExactSizeVariant = useMemo(
     () => selected && selectedServingGrams && hasSelectedSizeVariants && !hasSelectedCompositeStaples
       ? findExactMenuSizeVariantByGrams(selected, menuSizeVariantIndex, selectedServingGrams * portionMultiplier)
@@ -6049,7 +6053,21 @@ function FoodTab(props: {
                         <span className="numeric-text text-xs font-bold text-moss">{variant.item.calories}kcal</span>
                       </button>
                     ))
-                    : defaultPortionOption && (
+                    : hasSelectedPublishedPortionOptions
+                      ? portionOptions.map((option) => (
+                        <button
+                          className={`food-add-choice min-h-[3.2rem] ${portionMultiplier === option.value ? "food-add-choice-active" : ""}`}
+                          key={option.label}
+                          onClick={() => {
+                            setPortionMultiplier(option.value);
+                            setStaplePortionMultipliers({});
+                            setFoodAddStep("quantity");
+                          }}
+                        >
+                          {option.label}
+                        </button>
+                      ))
+                      : defaultPortionOption && (
                       <button
                         className="food-add-choice food-add-choice-active min-h-[3.2rem]"
                         onClick={() => {
@@ -14292,6 +14310,12 @@ function pickMenuSizeVariantRepresentative(variants: MenuSizeVariant[]) {
 }
 
 function menuSizeRepresentativeRank(label: string) {
+  if (/^ライスM$/i.test(label)) return 0;
+  if (/^ライス(?:S|SS)$/i.test(label)) return 2;
+  if (/^ライス(?:L|XL)$/i.test(label)) return 3;
+  if (/(?:^|\s)(?:並|並盛|普通|普通量|レギュラー|M)(?:$|\s)/i.test(label)) return 0;
+  if (/(?:^|\s)(?:中|中盛)(?:$|\s)/.test(label)) return 1;
+  if (/(?:^|\s)(?:小|小盛|ミニ|少なめ|S|SS)(?:$|\s)/i.test(label)) return 2;
   const grams = extractMenuSizeGrams(label);
   if (grams !== undefined) {
     if (grams === 150 || grams === 200) return 0;
@@ -14299,9 +14323,7 @@ function menuSizeRepresentativeRank(label: string) {
     if (grams < 150) return 2;
     return 3;
   }
-  if (/並盛|普通|肉並盛/.test(label)) return 0;
-  if (/中盛/.test(label)) return 1;
-  if (/小盛|ミニ|少なめ/.test(label)) return 2;
+  if (/肉並盛/.test(label)) return 0;
   return 3;
 }
 
@@ -14331,6 +14353,10 @@ function getMenuSizeVariant(item: MenuItem): MenuSizeVariant | undefined {
 function extractMenuSizeLabel(value: string) {
   const normalized = value.trim();
   if (!normalized || /\d+\s*(?:個|貫|皿|本|杯|枚|切れ|袋|パック)/i.test(normalized)) return undefined;
+  const riceSize = normalized.match(/^ライス\s*(SS|XL|S|M|L)$/i)?.[1];
+  if (riceSize) return `ライス${riceSize.toUpperCase()}`;
+  if (/(?:茹で前|茹で上がり)\s*\d+(?:\.\d+)?\s*g/i.test(normalized)) return normalized;
+  if (/^(?:温|冷)\s*(?:並|大|得)$/.test(normalized)) return normalized;
   const meatGramLabel = normalized.match(/(?:肉|ステーキ|ハンバーグ|バーグ|チキン)\s*(\d+(?:\.\d+)?)\s*g/i);
   if (meatGramLabel) return meatGramLabel[0].replace(/\s+/g, "");
   const parenthetical = normalized.match(/[（(]([^（）()]+)[）)]/);
@@ -14341,7 +14367,11 @@ function extractMenuSizeLabel(value: string) {
 
 function matchMenuSizeLabel(value: string) {
   const normalized = value.trim();
-  if (/^[小中大]$/.test(normalized)) return normalized;
+  if (/^(?:小|並|中|大|得|特大)$/.test(normalized)) return normalized;
+  const latinSize = normalized.match(/(?:^|[\s（(])((?:SS|XL|S|M|L))(?:$|[\s（(）)])/i)
+    ?? normalized.match(/((?:SS|XL|S|M|L))$/i);
+  if (latinSize) return latinSize[1].toUpperCase();
+  if (/^(レギュラー|プラスハーフ|ダブル)$/.test(normalized)) return normalized;
   const meatAmountLabel = normalized.match(/お肉(普通|大盛|特盛)/);
   if (meatAmountLabel) return meatAmountLabel[1];
   return menuSizeVariantLabels
@@ -14354,6 +14384,8 @@ function stripMenuSizeLabel(name: string, label: string, servingLabel?: string) 
   const spacedEscaped = escapeRegExp(label.replace(/(\d+(?:\.\d+)?)g$/i, " $1g"));
   const servingPattern = servingLabel ? escapeRegExp(servingLabel) : "";
   let stripped = name
+    .replace(new RegExp(`^\\s*(?:${escaped}|${spacedEscaped})\\s+`, "g"), "")
+    .replace(new RegExp(`\\s+(?:${escaped}|${spacedEscaped})(?=\\s*[（(])`, "g"), "")
     .replace(new RegExp(`[（(]\\s*(?:${escaped}|${spacedEscaped})\\s*[）)]`, "g"), "")
     .replace(new RegExp(`\\s*(?:${escaped}|${spacedEscaped})\\s*$`, "g"), "")
     .replace(new RegExp(`[（(]\\s*${escaped}\\s*(?:\\d+(?:\\.\\d+)?\\s*g)?\\s*[）)]`, "g"), "")
@@ -14375,9 +14407,15 @@ function stripMenuSizeLabel(name: string, label: string, servingLabel?: string) 
 function menuSizeVariantRank(label: string) {
   const grams = extractMenuSizeGrams(label);
   if (grams !== undefined) return grams;
-  if (label === "小") return menuSizeVariantRanks.get(normalizeExactMenuKeyPart("小盛")) ?? 999;
-  if (label === "中") return menuSizeVariantRanks.get(normalizeExactMenuKeyPart("中盛")) ?? 999;
-  if (label === "大") return menuSizeVariantRanks.get(normalizeExactMenuKeyPart("大盛")) ?? 999;
+  const temperatureSize = label.match(/^(?:温|冷)\s*(並|大|得)$/)?.[1];
+  if (temperatureSize) return { 並: 0, 大: 1, 得: 2 }[temperatureSize] ?? 999;
+  const latinLabel = label.match(/^ライス(SS|XL|S|M|L)$/i)?.[1] ?? label;
+  const latinRank = { SS: 0, S: 1, M: 2, L: 3, XL: 4 }[latinLabel.toUpperCase()];
+  if (latinRank !== undefined) return 100 + latinRank;
+  const namedRank = { レギュラー: 0, プラスハーフ: 1, ダブル: 2 }[label];
+  if (namedRank !== undefined) return 200 + namedRank;
+  const shortRank = { 小: 0, 並: 1, 中: 2, 大: 3, 得: 4, 特大: 5 }[label];
+  if (shortRank !== undefined) return 300 + shortRank;
   return menuSizeVariantRanks.get(normalizeExactMenuKeyPart(label)) ?? 999;
 }
 
@@ -14621,16 +14659,19 @@ function getStaplePortionConfigs(item: MenuItem): StaplePortionConfig[] {
   const riceTokens = ["ごはん", "ご飯", "白米", "玄米", "ライス", "丼", "定食", "弁当", "プレート", "ディッシュ", "ガパオ", "チャーハン", "炒飯", "オムライス", "炊き込み", "混ぜご飯", "赤飯", "菜飯", "ビリヤニ"];
   const sideOnlyTokens = ["天ぷら", "かしわ天", "ちくわ天", "かき揚げ", "コロッケ", "唐揚げ", "から揚げ", "トッピング", "サイド", "単品"];
   const sideOnly = hasFoodToken(text, sideOnlyTokens);
-  const hasNoodle = hasFoodToken(primaryText, noodleTokens) || (!sideOnly && hasFoodToken(text, noodleTokens));
-  const hasHamburger = hasFoodToken(primaryText, ["ハンバーグ", "バーグ"]);
-  const hasChicken = hasFoodToken(primaryText, ["チキンステーキ", "グリルチキン"]);
+  const hasVerifiedNoodleSizes = !item.brand || item.tags.includes("麺量カスタム可") || ["マンマパスタ", "すぱじろう"].includes(item.brand);
+  const hasVerifiedMeatSizes = !item.brand || item.tags.includes("肉量カスタム可");
+  const hasVerifiedRiceSizes = !item.brand || item.tags.includes("ご飯量カスタム可");
+  const hasNoodle = hasVerifiedNoodleSizes && (hasFoodToken(primaryText, noodleTokens) || (!sideOnly && hasFoodToken(text, noodleTokens)));
+  const hasHamburger = hasVerifiedMeatSizes && hasFoodToken(primaryText, ["ハンバーグ", "バーグ"]);
+  const hasChicken = hasVerifiedMeatSizes && hasFoodToken(primaryText, ["チキンステーキ", "グリルチキン"]);
   const hasMeatGram = extractPortionGrams(primaryText, ["ステーキ", "肉", "ヒレ", "リブロース", "肩ロース", "ブレードミート"]) !== undefined;
   const hasSteak = !hasChicken
     && (!hasHamburger || hasFoodToken(primaryText, ["コロコロステーキ", "カットステーキ", "ワイルドコンボ"]))
     && (hasMeatGram || hasFoodToken(primaryText, ["ステーキ", "ヒレ", "リブロース", "肩ロース", "ブレードミート", "ワイルドコンボ"]));
   const tagText = item.tags.join(" ");
   const hasCurryRice = !hasNoodle && !sideOnly && isRiceAdjustableCurry(item, primaryText, tagText);
-  const hasRice = hasFoodToken(primaryText, riceTokens) || hasFoodToken(tagText, ["ごはん", "ご飯", "白米", "玄米", "ライス", "丼", "炊き込みご飯", "混ぜご飯"]) || hasCurryRice;
+  const hasRice = hasVerifiedRiceSizes && (hasFoodToken(primaryText, riceTokens) || hasFoodToken(tagText, ["ごはん", "ご飯", "白米", "玄米", "ライス", "丼", "炊き込みご飯", "混ぜご飯"]) || hasCurryRice);
   const hasAdjustableInPrimaryText = hasFoodToken(primaryText, noodleTokens) || hasFoodToken(primaryText, riceTokens) || hasSteak || hasHamburger || hasChicken;
   if (!hasAdjustableInPrimaryText && hasFoodToken(text, sideOnlyTokens)) return [];
   const compositeText = hasAdjustableInPrimaryText ? primaryText : text;
@@ -14742,6 +14783,12 @@ function getPortionOptions(item: MenuItem): PortionOption[] {
       { label: "XL 乾麺240g", value: 240 / base },
     ];
   }
+  if (item.brand === "マンマパスタ" && staple?.kind === "noodle") {
+    return [
+      { label: "標準 茹で上がり250g", value: 1 },
+      { label: "大盛り 茹で上がり375g", value: 1.5 },
+    ];
+  }
   if (staple) return getStaplePortionOptions(staple);
 
   if (hasFoodToken(text, ["トッピング", "追加", "ソース", "ディップ"]) || servingLabel?.includes("トッピング")) {
@@ -14803,6 +14850,10 @@ function isSupplementLikeMenuItem(item: Pick<MenuItem, "name" | "category" | "se
 
 function usesOfficialFixedSizeOptions(item: Pick<MenuItem, "tags">) {
   return item.tags.includes("公式サイズのみ");
+}
+
+function usesPublishedInlinePortionOptions(item: Pick<MenuItem, "brand">) {
+  return item.brand === "マンマパスタ" || item.brand === "すぱじろう";
 }
 
 function doubleServingLabel(servingLabel: string | undefined, fallback: string) {

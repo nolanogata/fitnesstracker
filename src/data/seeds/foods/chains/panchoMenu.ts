@@ -16,15 +16,19 @@ type PanchoMenuInput = {
 const item = (input: PanchoMenuInput) =>
   estimatedWithProfileTags({
     brand: "パンチョ",
-    name: input.name,
+    name: input.name.replace(/[（(](?:小|並|大|メガ)盛り[）)]$/, ""),
     category: "チェーン店",
-    tags: ["イタリアン", "パンチョ", "パスタ", "スパゲティ", "公式メニュー確認", "栄養推定", ...input.tags],
+    tags: ["イタリアン", "パンチョ", "パスタ", "スパゲティ", "公式メニュー確認", "公式サイズ確認", "公式サイズのみ", "栄養推定", ...input.tags],
     calories: input.calories,
     protein_g: input.protein_g,
     fat_g: input.fat_g,
     carbs_g: input.carbs_g,
     salt_g: input.salt_g,
-    serving_label: "1品",
+    serving_label: (() => {
+      const size = input.name.match(/[（(](小|並|大|メガ)盛り[）)]$/)?.[1];
+      const grams = size ? { 小: 300, 並: 400, 大: 500, メガ: 600 }[size] : undefined;
+      return size && grams ? `${size}盛り 茹で上がり${grams}g` : "1品";
+    })(),
     default_meal_type: "lunch",
     source_url: sourceUrl,
     fetched_at: fetchedAt,

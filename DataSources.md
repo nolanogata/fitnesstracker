@@ -23,10 +23,18 @@ Size and amount changes are treated as nutrition-critical behavior:
 
 - If the same branded menu has official size variants, exact size matches must use the official row directly.
 - If the user enters a custom gram amount between official size variants, interpolate from the neighboring official rows instead of subtracting a generic meat/rice/noodle coefficient.
-- Generic staple coefficients are only a fallback when there is no usable official size family.
+- Generic staple coefficients are only a fallback for brandless foods or a branded item explicitly marked as adjustable. A gram value in a restaurant item name is not enough to invent other sizes.
 - Set meals should not scale the whole meal unless the whole menu is actually ordered in multiple servings. Adjust realistic components only: rice, noodles, steak meat, hamburger patty, or chicken amount.
 - Fixed-count foods such as sushi pieces, nuggets, packaged units, and side items should remain count/quantity based, not size-family based.
 - Logged food entries are snapshots. Repair routines may update past official entries only when the stored portion text exactly maps to a known official size variant.
+
+Current verified restaurant size rules:
+
+- Mamma Pasta: standard cooked pasta 250g; large cooked pasta 375g. The sauce and toppings stay fixed.
+- Spajiro: dry pasta S 100g, M 120g, L 170g, XL 240g.
+- Pancho: cooked pasta 300g, 400g, 500g, 600g.
+- Sharin: pre-boil noodles 200g, 300g, 400g, 500g.
+- Mita Seimen: cooked noodles 240g, 320g, 480g, 640g, 800g.
 
 ## Priority Official Sources
 
@@ -49,8 +57,8 @@ Size and amount changes are treated as nutrition-critical behavior:
 - しんぱち食堂: official site menu lists fish set meals. Added selected official-menu-name entries as `estimated/medium` only; P/F/C values are not official.
 - Family restaurants:
   - ガスト, ジョナサン, 藍屋: official Skylark menu pages and embedded menu JSON were checked on 2026-06-12. Some kcal/salt values are present in JSON, but P/F/C is still estimated, so entries remain `estimated/medium`.
-  - デニーズ: official menu category pages were checked on 2026-06-12. Added selected official-menu-name entries as `estimated/medium`.
-  - ロイヤルホスト, ジョイフル, 華屋与兵衛, サイゼリヤ, オリーブの丘: official menu/category pages were checked on 2026-06-12. Added representative official-menu-name or official-category entries as `estimated/medium`; P/F/C values are not official.
+  - Denny's, Royal Host, Joyfull, Bikkuri Donkey, Olive no Oka, and Tonden now use their current official full nutrition PDFs and are `official/high`.
+  - Gusto, Bamiyan, Jonathan's, Aiya, Saizeriya, and Hanaya Yohei remain estimated where the official publication does not provide complete P/F/C.
 - モンスーンカフェ: official site and store PDF menus were checked on 2026-06-12. Added representative official-menu-name entries from grand, weekday lunch, and takeout menus as `estimated/medium`; P/F/C values are not official.
 - ペッパーランチ: official all-menu page was checked on 2026-06-19. Added selected official-menu-name entries as `estimated/medium`; P/F/C values are not official.
 - 舎鈴: official おしながき page was checked on 2026-06-19. Added selected official-menu-name entries as `estimated/medium`; P/F/C values are not official.
@@ -68,7 +76,7 @@ Size and amount changes are treated as nutrition-critical behavior:
   - Common home/general meal presets such as rice bowls, curry, noodles, bread, mains, side dishes, soups, desserts, and drinks are bundled as `estimated/medium` practical logging defaults. They are not official nutrition values and should be treated as editable estimates.
 - External nutrition fallback:
   - FatSecret Japan was checked on 2026-06-12. Added selected Starbucks, Komeda, Gusto, and Saizeriya rows as `unofficial/medium` only when menu name and serving unit matched closely enough. Non-exact matches were skipped.
-- 丸亀製麺: official menu and allergen pages were verified. Official P/F/C table was not found in the current pass.
+- 丸亀製麺: current official product pages expose size-specific P/F/C. The catalog contains 135 official rows and preserves published temperature and size variants.
 - ウエスト: official menu page is store-scoped. Official P/F/C table was not verified in the current pass.
 - 資さんうどん: official menu page is store-scoped. Official P/F/C table was not verified in the current pass.
 - Convenience stores: add only product pages with nutrition shown on official sites. Regional and limited items should include source date.

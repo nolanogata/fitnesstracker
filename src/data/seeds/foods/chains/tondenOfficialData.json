@@ -1,0 +1,5922 @@
+[
+  {
+    "brand": "とんでん",
+    "name": "CPえびマヨ巻き・北海道ざるそば",
+    "calories": 766,
+    "protein_g": 26.6,
+    "fat_g": 15.7,
+    "carbs_g": 124.9,
+    "salt_g": 4.3,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "特定店舗・期間限定"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "CPおこさま北海道ざるそばセット",
+    "calories": 549,
+    "protein_g": 14.0,
+    "fat_g": 8.9,
+    "carbs_g": 100.8,
+    "salt_g": 0.7,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "特定店舗・期間限定"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "CPミニ丼まんぷく膳ざるそば",
+    "calories": 990,
+    "protein_g": 33.2,
+    "fat_g": 21.2,
+    "carbs_g": 159.5,
+    "salt_g": 6.1,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "特定店舗・期間限定"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "CP持・うな重",
+    "calories": 847,
+    "protein_g": 35.3,
+    "fat_g": 26.0,
+    "carbs_g": 112.8,
+    "salt_g": 4.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "特定店舗・期間限定"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "CP持・とんでん特製豚丼の具",
+    "calories": 337,
+    "protein_g": 24.9,
+    "fat_g": 17.2,
+    "carbs_g": 20.5,
+    "salt_g": 2.8,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "特定店舗・期間限定"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "CP昭和プリン",
+    "calories": 355,
+    "protein_g": 7.6,
+    "fat_g": 22.5,
+    "carbs_g": 29.9,
+    "salt_g": 0.2,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "特定店舗・期間限定"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "DAIYAME(グラス)",
+    "calories": 84,
+    "protein_g": 0.0,
+    "fat_g": 0.0,
+    "carbs_g": 0.0,
+    "salt_g": 0.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "アルコール",
+      "アルコール"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "DAIYAME(ソーダ割り)",
+    "calories": 84,
+    "protein_g": 0.0,
+    "fat_g": 0.0,
+    "carbs_g": 0.0,
+    "salt_g": 0.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "アルコール",
+      "アルコール"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "DAIYAME(ボトル)",
+    "calories": 1008,
+    "protein_g": 0.0,
+    "fat_g": 0.0,
+    "carbs_g": 0.0,
+    "salt_g": 0.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "アルコール",
+      "アルコール"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "GINON レモン",
+    "calories": 60,
+    "protein_g": 0.0,
+    "fat_g": 0.0,
+    "carbs_g": 0.7,
+    "salt_g": 0.1,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "アルコール",
+      "アルコール"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "SLあじさい・ざるうどん",
+    "calories": 760,
+    "protein_g": 31.2,
+    "fat_g": 10.4,
+    "carbs_g": 131.9,
+    "salt_g": 4.3,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ランチメニュー- 土曜日ランチ"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "SLあじさい・ざるうどん・2枚",
+    "calories": 971,
+    "protein_g": 38.6,
+    "fat_g": 11.2,
+    "carbs_g": 175.4,
+    "salt_g": 4.9,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ランチメニュー- 土曜日ランチ"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "SLとり重・北海道ざるそば",
+    "calories": 1195,
+    "protein_g": 49.7,
+    "fat_g": 30.4,
+    "carbs_g": 170.6,
+    "salt_g": 5.8,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ランチメニュー- 土曜日ランチ"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "SLとり重・北海道ざるそば・2枚",
+    "calories": 1467,
+    "protein_g": 58.9,
+    "fat_g": 32.1,
+    "carbs_g": 223.1,
+    "salt_g": 5.8,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ランチメニュー- 土曜日ランチ"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "SL冷・大えび天と温玉うどん",
+    "calories": 438,
+    "protein_g": 24.8,
+    "fat_g": 13.7,
+    "carbs_g": 52.3,
+    "salt_g": 2.3,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ランチメニュー- 土曜日ランチ"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "SL冷・大えび天と温玉うどん・2枚",
+    "calories": 649,
+    "protein_g": 32.1,
+    "fat_g": 14.6,
+    "carbs_g": 95.6,
+    "salt_g": 2.9,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ランチメニュー- 土曜日ランチ"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "SL冷・大えび天と温玉うどん・2枚・いなり",
+    "calories": 898,
+    "protein_g": 41.2,
+    "fat_g": 20.3,
+    "carbs_g": 134.6,
+    "salt_g": 4.1,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ランチメニュー- 土曜日ランチ"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "SL冷・大えび天と温玉うどん・いなり",
+    "calories": 687,
+    "protein_g": 33.8,
+    "fat_g": 19.5,
+    "carbs_g": 91.2,
+    "salt_g": 3.5,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ランチメニュー- 土曜日ランチ"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "SL天せいろ北海道そば・2枚",
+    "calories": 853,
+    "protein_g": 27.9,
+    "fat_g": 27.5,
+    "carbs_g": 117.3,
+    "salt_g": 0.4,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ランチメニュー- 土曜日ランチ"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "Sランチ天せいろ・北海道ざるそば",
+    "calories": 581,
+    "protein_g": 18.7,
+    "fat_g": 25.8,
+    "carbs_g": 64.9,
+    "salt_g": 0.4,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ランチメニュー- 土曜日ランチ"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "TO醤油（小袋） 1袋",
+    "calories": 7,
+    "protein_g": 0.5,
+    "fat_g": 0.0,
+    "carbs_g": 1.0,
+    "salt_g": 1.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "お好み つけ汁・調味料他"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "〆のチョコパフェ",
+    "calories": 411,
+    "protein_g": 5.9,
+    "fat_g": 14.9,
+    "carbs_g": 63.0,
+    "salt_g": 0.4,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "喫茶メニュー"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "あじ・1個",
+    "calories": 45,
+    "protein_g": 2.8,
+    "fat_g": 0.5,
+    "carbs_g": 7.2,
+    "salt_g": 0.2,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "お好み鮨"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "いいちこ深薫 グラス",
+    "calories": 88,
+    "protein_g": 0.0,
+    "fat_g": 0.0,
+    "carbs_g": 0.0,
+    "salt_g": 0.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "アルコール",
+      "アルコール"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "いいちこ深薫 ボトル",
+    "calories": 1051,
+    "protein_g": 0.0,
+    "fat_g": 0.0,
+    "carbs_g": 0.0,
+    "salt_g": 0.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "アルコール",
+      "アルコール"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "いいちこ深薫（ソーダー割り）",
+    "calories": 88,
+    "protein_g": 0.0,
+    "fat_g": 0.0,
+    "carbs_g": 0.0,
+    "salt_g": 0.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "アルコール",
+      "アルコール"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "いかのわたみそ陶板焼き",
+    "calories": 93,
+    "protein_g": 12.3,
+    "fat_g": 2.1,
+    "carbs_g": 6.7,
+    "salt_g": 2.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "旬の逸品"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "いかの一夜干し",
+    "calories": 76,
+    "protein_g": 14.5,
+    "fat_g": 1.5,
+    "carbs_g": 0.3,
+    "salt_g": 0.7,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "旬の逸品"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "いか・１個",
+    "calories": 39,
+    "protein_g": 1.8,
+    "fat_g": 0.2,
+    "carbs_g": 7.2,
+    "salt_g": 0.3,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "お好み鮨"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "いか三昧",
+    "calories": 287,
+    "protein_g": 20.6,
+    "fat_g": 3.0,
+    "carbs_g": 43.0,
+    "salt_g": 3.2,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "旬の逸品"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "いくら・１個",
+    "calories": 59,
+    "protein_g": 3.7,
+    "fat_g": 1.6,
+    "carbs_g": 7.7,
+    "salt_g": 0.4,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "お好み鮨"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "いなり鮨・2個",
+    "calories": 242,
+    "protein_g": 9.0,
+    "fat_g": 5.8,
+    "carbs_g": 37.4,
+    "salt_g": 1.3,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "お好み鮨"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "うなきも焼き",
+    "calories": 113,
+    "protein_g": 11.5,
+    "fat_g": 3.0,
+    "carbs_g": 9.6,
+    "salt_g": 1.6,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "旬の逸品"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "うなぎ御膳（みそ汁）",
+    "calories": 984,
+    "protein_g": 52.7,
+    "fat_g": 44.1,
+    "carbs_g": 90.1,
+    "salt_g": 6.2,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "グランド"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "うなぎ御膳（肝吸い）",
+    "calories": 970,
+    "protein_g": 52.3,
+    "fat_g": 43.1,
+    "carbs_g": 89.4,
+    "salt_g": 5.8,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "グランド"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "うな重・北海道ざるそば（みそ汁）",
+    "calories": 1138,
+    "protein_g": 46.4,
+    "fat_g": 29.2,
+    "carbs_g": 164.8,
+    "salt_g": 5.1,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "グランド"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "うな重・北海道ざるそば（肝吸い）",
+    "calories": 1131,
+    "protein_g": 46.2,
+    "fat_g": 28.3,
+    "carbs_g": 165.4,
+    "salt_g": 4.9,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "グランド"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "うな重・茶わんむし（みそ汁）",
+    "calories": 942,
+    "protein_g": 42.4,
+    "fat_g": 30.4,
+    "carbs_g": 118.9,
+    "salt_g": 6.5,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "グランド"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "うな重・茶わんむし（肝吸い）",
+    "calories": 929,
+    "protein_g": 42.0,
+    "fat_g": 29.4,
+    "carbs_g": 118.2,
+    "salt_g": 6.1,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "グランド"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "うな重（みそ汁）",
+    "calories": 872,
+    "protein_g": 37.2,
+    "fat_g": 27.5,
+    "carbs_g": 113.5,
+    "salt_g": 5.3,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "グランド"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "うな重（肝吸い）",
+    "calories": 859,
+    "protein_g": 36.9,
+    "fat_g": 26.6,
+    "carbs_g": 112.8,
+    "salt_g": 4.9,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "グランド"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "えびとアボカドのサラダ",
+    "calories": 104,
+    "protein_g": 9.1,
+    "fat_g": 6.0,
+    "carbs_g": 5.0,
+    "salt_g": 0.7,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "旬の逸品"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "おこさま 冷たいうどん",
+    "calories": 105,
+    "protein_g": 3.6,
+    "fat_g": 0.4,
+    "carbs_g": 21.6,
+    "salt_g": 0.3,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "おこさまメニュー"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "おこさま 温かいうどん",
+    "calories": 131,
+    "protein_g": 5.4,
+    "fat_g": 0.7,
+    "carbs_g": 25.4,
+    "salt_g": 2.5,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "おこさまメニュー"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "おこさま 温かい北海道そば",
+    "calories": 176,
+    "protein_g": 8.2,
+    "fat_g": 2.3,
+    "carbs_g": 32.2,
+    "salt_g": 2.9,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "おこさまメニュー"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "おこさまうどん",
+    "calories": 105,
+    "protein_g": 3.6,
+    "fat_g": 0.4,
+    "carbs_g": 21.6,
+    "salt_g": 0.3,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "おこさまメニュー"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "おこさまうどんセット★・◆",
+    "calories": 387,
+    "protein_g": 8.6,
+    "fat_g": 7.6,
+    "carbs_g": 70.9,
+    "salt_g": 1.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "おこさまメニュー"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "おこさますし",
+    "calories": 305,
+    "protein_g": 10.7,
+    "fat_g": 4.2,
+    "carbs_g": 54.2,
+    "salt_g": 1.1,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "おこさまメニュー"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "おこさまなっとう",
+    "calories": 173,
+    "protein_g": 5.5,
+    "fat_g": 2.2,
+    "carbs_g": 32.1,
+    "salt_g": 0.6,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "おこさまメニュー"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "おこさまぶたどん",
+    "calories": 274,
+    "protein_g": 8.1,
+    "fat_g": 6.5,
+    "carbs_g": 43.9,
+    "salt_g": 1.1,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "おこさまメニュー"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "おこさまカルピス",
+    "calories": 55,
+    "protein_g": 0.0,
+    "fat_g": 0.0,
+    "carbs_g": 14.0,
+    "salt_g": 0.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "おこさまメニュー"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "おこさまコーンポタージュ",
+    "calories": 135,
+    "protein_g": 2.3,
+    "fat_g": 9.5,
+    "carbs_g": 10.4,
+    "salt_g": 0.9,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "おこさまメニュー"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "おこさまポテざんぎ",
+    "calories": 266,
+    "protein_g": 11.4,
+    "fat_g": 15.1,
+    "carbs_g": 21.5,
+    "salt_g": 1.5,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "おこさまメニュー"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "おこさまミニいくら丼",
+    "calories": 275,
+    "protein_g": 11.3,
+    "fat_g": 4.7,
+    "carbs_g": 45.2,
+    "salt_g": 1.3,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "おこさまメニュー"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "おこさまランチ★",
+    "calories": 548,
+    "protein_g": 14.8,
+    "fat_g": 28.2,
+    "carbs_g": 59.4,
+    "salt_g": 3.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "おこさまメニュー"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "おこさま天ぷら",
+    "calories": 220,
+    "protein_g": 3.9,
+    "fat_g": 17.3,
+    "carbs_g": 11.3,
+    "salt_g": 0.2,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "おこさまメニュー"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "おつまみセット",
+    "calories": 796,
+    "protein_g": 33.8,
+    "fat_g": 44.4,
+    "carbs_g": 66.8,
+    "salt_g": 8.1,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "旬の逸品"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "お出汁ミックスナッツ",
+    "calories": 127,
+    "protein_g": 3.7,
+    "fat_g": 10.7,
+    "carbs_g": 3.9,
+    "salt_g": 0.2,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "旬の逸品"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "綿雪あまおういちご",
+    "calories": 147,
+    "protein_g": 1.2,
+    "fat_g": 1.3,
+    "carbs_g": 34.6,
+    "salt_g": 0.1,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "特定店舗・期間限定"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "かえで（特選御膳）",
+    "calories": 997,
+    "protein_g": 46.5,
+    "fat_g": 29.9,
+    "carbs_g": 129.6,
+    "salt_g": 5.1,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ご予約特選御膳"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "かけうどん(揚げ玉・七味含まない）",
+    "calories": 250,
+    "protein_g": 9.9,
+    "fat_g": 1.2,
+    "carbs_g": 49.1,
+    "salt_g": 3.9,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "そば・うどん"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "かにめし重",
+    "calories": 553,
+    "protein_g": 23.5,
+    "fat_g": 3.1,
+    "carbs_g": 103.8,
+    "salt_g": 5.2,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "グランド"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "かにめし重・ざるうどん",
+    "calories": 751,
+    "protein_g": 30.7,
+    "fat_g": 3.9,
+    "carbs_g": 144.4,
+    "salt_g": 5.2,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "グランド"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "かにめし重・茶わんむし",
+    "calories": 623,
+    "protein_g": 28.6,
+    "fat_g": 6.0,
+    "carbs_g": 109.2,
+    "salt_g": 6.4,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "グランド"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "かに・１個",
+    "calories": 39,
+    "protein_g": 1.8,
+    "fat_g": 0.1,
+    "carbs_g": 7.2,
+    "salt_g": 0.3,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "お好み鮨"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "きなこわらびもちパフェ",
+    "calories": 268,
+    "protein_g": 4.4,
+    "fat_g": 4.1,
+    "carbs_g": 54.0,
+    "salt_g": 0.2,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "喫茶メニュー"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "さざんか・北海道ざるそば",
+    "calories": 815,
+    "protein_g": 32.9,
+    "fat_g": 22.9,
+    "carbs_g": 114.2,
+    "salt_g": 4.3,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "グランド"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "ざるうどん",
+    "calories": 212,
+    "protein_g": 7.5,
+    "fat_g": 0.8,
+    "carbs_g": 43.6,
+    "salt_g": 0.6,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "グランド"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "ざんぎ（鶏のから揚げ）3個",
+    "calories": 275,
+    "protein_g": 15.8,
+    "fat_g": 15.5,
+    "carbs_g": 17.8,
+    "salt_g": 1.6,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "旬の逸品"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "しらかば",
+    "calories": 592,
+    "protein_g": 28.3,
+    "fat_g": 12.2,
+    "carbs_g": 89.3,
+    "salt_g": 5.3,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "グランド"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "しらかば・北海道ざるそば",
+    "calories": 865,
+    "protein_g": 37.6,
+    "fat_g": 13.9,
+    "carbs_g": 141.9,
+    "salt_g": 5.3,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "グランド"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "しらすの雑炊（乳幼児メニュー）",
+    "calories": 34,
+    "protein_g": 1.0,
+    "fat_g": 0.2,
+    "carbs_g": 7.0,
+    "salt_g": 0.3,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "おこさまメニュー"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "そばの日 北海道そば食べ放題",
+    "calories": 545,
+    "protein_g": 18.7,
+    "fat_g": 3.5,
+    "carbs_g": 105.2,
+    "salt_g": 0.1,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "特定店舗・期間限定"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "おこさま 冷たい北海道そば",
+    "calories": 134,
+    "protein_g": 4.5,
+    "fat_g": 0.8,
+    "carbs_g": 25.8,
+    "salt_g": 0.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "おこさまメニュー"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "そば、うどんつけ汁 1人前/約60cc あたり",
+    "calories": 28,
+    "protein_g": 1.8,
+    "fat_g": 0.1,
+    "carbs_g": 4.9,
+    "salt_g": 2.1,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "お好み つけ汁・調味料他"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "そばの日 おかわりそば",
+    "calories": 268,
+    "protein_g": 9.2,
+    "fat_g": 1.7,
+    "carbs_g": 51.6,
+    "salt_g": 0.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "特定店舗・期間限定"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "そばの日 北海道そば食べ放題 天ぷらセット",
+    "calories": 854,
+    "protein_g": 28.0,
+    "fat_g": 27.5,
+    "carbs_g": 117.5,
+    "salt_g": 0.4,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "特定店舗・期間限定"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "そばの日 追加天ぷら",
+    "calories": 309,
+    "protein_g": 9.4,
+    "fat_g": 24.0,
+    "carbs_g": 12.2,
+    "salt_g": 0.4,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "特定店舗・期間限定"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "たこの唐揚げ",
+    "calories": 81,
+    "protein_g": 7.9,
+    "fat_g": 2.1,
+    "carbs_g": 7.5,
+    "salt_g": 1.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "旬の逸品"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "たこ・1個（H）",
+    "calories": 38,
+    "protein_g": 1.8,
+    "fat_g": 0.1,
+    "carbs_g": 7.3,
+    "salt_g": 0.3,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "お好み鮨"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "つばき・北海道ざるそば ミニソフト付き",
+    "calories": 823,
+    "protein_g": 27.2,
+    "fat_g": 22.6,
+    "carbs_g": 123.2,
+    "salt_g": 3.3,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "グランド"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "つばき・北海道ざるそば（北海道地区)",
+    "calories": 689,
+    "protein_g": 24.1,
+    "fat_g": 18.6,
+    "carbs_g": 101.8,
+    "salt_g": 3.1,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "グランド"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "つぶ・1個",
+    "calories": 41,
+    "protein_g": 2.3,
+    "fat_g": 0.1,
+    "carbs_g": 7.4,
+    "salt_g": 0.3,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "お好み鮨"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "フライドポテト",
+    "calories": 559,
+    "protein_g": 5.8,
+    "fat_g": 32.0,
+    "carbs_g": 65.0,
+    "salt_g": 3.2,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "旬の逸品"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "とびうお卵・１個",
+    "calories": 40,
+    "protein_g": 1.6,
+    "fat_g": 0.2,
+    "carbs_g": 8.0,
+    "salt_g": 0.4,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "お好み鮨"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "とんでんシュガー 1本",
+    "calories": 12,
+    "protein_g": 0.0,
+    "fat_g": 0.0,
+    "carbs_g": 3.0,
+    "salt_g": 0.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "お好み つけ汁・調味料他"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "とんでん・北海道ざるそば（北海道)",
+    "calories": 826,
+    "protein_g": 37.4,
+    "fat_g": 13.5,
+    "carbs_g": 133.5,
+    "salt_g": 5.2,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "グランド"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "とんでん・北海道ざるそば（関東)",
+    "calories": 832,
+    "protein_g": 38.3,
+    "fat_g": 13.9,
+    "carbs_g": 133.4,
+    "salt_g": 5.2,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "グランド"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "とんでん特製いか塩辛",
+    "calories": 47,
+    "protein_g": 6.1,
+    "fat_g": 1.4,
+    "carbs_g": 2.7,
+    "salt_g": 2.8,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "旬の逸品"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "とんでん（北海道)",
+    "calories": 553,
+    "protein_g": 28.0,
+    "fat_g": 11.8,
+    "carbs_g": 80.9,
+    "salt_g": 5.2,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "グランド"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "とんでん（関東)",
+    "calories": 560,
+    "protein_g": 29.0,
+    "fat_g": 12.2,
+    "carbs_g": 80.8,
+    "salt_g": 5.2,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "グランド"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "ねぎとろ巻",
+    "calories": 408,
+    "protein_g": 17.3,
+    "fat_g": 7.6,
+    "carbs_g": 65.9,
+    "salt_g": 3.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "グランド"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "ねぎとろ巻き・北海道ざるそば",
+    "calories": 680,
+    "protein_g": 26.6,
+    "fat_g": 9.3,
+    "carbs_g": 118.5,
+    "salt_g": 3.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "グランド"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "ねぎとろ巻ジャンボ茶わん蒸し",
+    "calories": 626,
+    "protein_g": 34.5,
+    "fat_g": 17.2,
+    "carbs_g": 78.3,
+    "salt_g": 7.6,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "グランド"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "はこだてワイン 白 グラス",
+    "calories": 88,
+    "protein_g": 0.1,
+    "fat_g": 0.0,
+    "carbs_g": 2.4,
+    "salt_g": 0.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "アルコール",
+      "アルコール"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "はこだてワイン 赤 グラス",
+    "calories": 88,
+    "protein_g": 0.2,
+    "fat_g": 0.0,
+    "carbs_g": 1.8,
+    "salt_g": 0.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "アルコール",
+      "アルコール"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "ひとくちわらびもち",
+    "calories": 124,
+    "protein_g": 0.6,
+    "fat_g": 1.1,
+    "carbs_g": 28.4,
+    "salt_g": 0.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "喫茶メニュー"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "ぼたん（特選御膳）",
+    "calories": 840,
+    "protein_g": 53.8,
+    "fat_g": 28.1,
+    "carbs_g": 82.5,
+    "salt_g": 6.7,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ご予約特選御膳"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "まぐろサーモンアボカド丼・北海道ざるそば",
+    "calories": 984,
+    "protein_g": 40.2,
+    "fat_g": 25.7,
+    "carbs_g": 144.3,
+    "salt_g": 3.9,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "グランド"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "まぐろサーモンアボカド丼・単品",
+    "calories": 711,
+    "protein_g": 30.9,
+    "fat_g": 23.9,
+    "carbs_g": 91.7,
+    "salt_g": 3.9,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "グランド"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "まぐろサーモンアボカド丼・茶わんむし",
+    "calories": 781,
+    "protein_g": 36.0,
+    "fat_g": 26.8,
+    "carbs_g": 97.1,
+    "salt_g": 5.1,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "グランド"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "まぐろ・１個",
+    "calories": 34,
+    "protein_g": 0.7,
+    "fat_g": 0.1,
+    "carbs_g": 7.2,
+    "salt_g": 0.2,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "お好み鮨"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "やわらか さざんか",
+    "calories": 774,
+    "protein_g": 28.0,
+    "fat_g": 23.1,
+    "carbs_g": 110.4,
+    "salt_g": 6.3,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ご予約特選御膳"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "アイスコーヒー",
+    "calories": 6,
+    "protein_g": 0.3,
+    "fat_g": 0.0,
+    "carbs_g": 1.1,
+    "salt_g": 0.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ソフトドリンク・ノンアルコール"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "アサヒ ゼロ",
+    "calories": 94,
+    "protein_g": 0.0,
+    "fat_g": 0.0,
+    "carbs_g": 23.0,
+    "salt_g": 0.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ソフトドリンク・ノンアルコール"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "アサヒスーパードライ 大瓶",
+    "calories": 266,
+    "protein_g": 1.3,
+    "fat_g": 0.0,
+    "carbs_g": 19.0,
+    "salt_g": 0.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "アルコール",
+      "アルコール"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "アサヒスーパードライ 樽生 グラス",
+    "calories": 113,
+    "protein_g": 0.5,
+    "fat_g": 0.0,
+    "carbs_g": 8.1,
+    "salt_g": 0.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "アルコール",
+      "アルコール"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "アサヒスーパードライ 樽生 中ジョッキ",
+    "calories": 134,
+    "protein_g": 0.6,
+    "fat_g": 0.0,
+    "carbs_g": 9.6,
+    "salt_g": 0.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "アルコール",
+      "アルコール"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "アサヒスーパードライ 樽生 大ジョッキ",
+    "calories": 202,
+    "protein_g": 1.0,
+    "fat_g": 0.0,
+    "carbs_g": 14.4,
+    "salt_g": 0.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "アルコール",
+      "アルコール"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "ウーロンハイ",
+    "calories": 91,
+    "protein_g": 0.0,
+    "fat_g": 0.0,
+    "carbs_g": 0.2,
+    "salt_g": 0.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "アルコール",
+      "アルコール"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "ウーロン茶",
+    "calories": 0,
+    "protein_g": 0.0,
+    "fat_g": 0.0,
+    "carbs_g": 0.2,
+    "salt_g": 0.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ソフトドリンク・ノンアルコール"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "オニオンサラダ",
+    "calories": 23,
+    "protein_g": 1.1,
+    "fat_g": 0.1,
+    "carbs_g": 4.9,
+    "salt_g": 0.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "旬の逸品"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "オホーツク丼",
+    "calories": 534,
+    "protein_g": 23.5,
+    "fat_g": 8.6,
+    "carbs_g": 87.3,
+    "salt_g": 4.7,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "グランド"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "オホーツク丼・ジャンボ茶わん蒸し",
+    "calories": 752,
+    "protein_g": 40.7,
+    "fat_g": 18.1,
+    "carbs_g": 99.7,
+    "salt_g": 9.3,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "グランド"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "オホーツク丼・北海道ざるそば",
+    "calories": 807,
+    "protein_g": 32.8,
+    "fat_g": 10.3,
+    "carbs_g": 140.0,
+    "salt_g": 4.8,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "グランド"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "オホーツク丼・茶わんむし",
+    "calories": 604,
+    "protein_g": 28.6,
+    "fat_g": 11.4,
+    "carbs_g": 92.7,
+    "salt_g": 6.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "グランド"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "オレンジ（果汁100％）",
+    "calories": 66,
+    "protein_g": 0.2,
+    "fat_g": 0.2,
+    "carbs_g": 16.1,
+    "salt_g": 0.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ソフトドリンク・ノンアルコール"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "カルピスウォーター",
+    "calories": 69,
+    "protein_g": 0.0,
+    "fat_g": 0.0,
+    "carbs_g": 17.6,
+    "salt_g": 0.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ソフトドリンク・ノンアルコール"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "ガムシロップ 1個",
+    "calories": 30,
+    "protein_g": 0.0,
+    "fat_g": 0.0,
+    "carbs_g": 7.6,
+    "salt_g": 0.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "お好み つけ汁・調味料他"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "コカ・コーラ",
+    "calories": 58,
+    "protein_g": 0.0,
+    "fat_g": 0.0,
+    "carbs_g": 14.9,
+    "salt_g": 0.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ソフトドリンク・ノンアルコール"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "サッカーボール★・◆",
+    "calories": 643,
+    "protein_g": 25.2,
+    "fat_g": 21.1,
+    "carbs_g": 86.5,
+    "salt_g": 2.9,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "おこさまメニュー"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "サーモン・１個",
+    "calories": 57,
+    "protein_g": 2.5,
+    "fat_g": 1.7,
+    "carbs_g": 7.2,
+    "salt_g": 0.2,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "お好み鮨"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "ズワイガニたっぷりグラタンコロッケ（カニ入り）1個",
+    "calories": 194,
+    "protein_g": 10.9,
+    "fat_g": 8.1,
+    "carbs_g": 18.7,
+    "salt_g": 0.8,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "旬の逸品"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "ズワイガニたっぷりグラタンコロッケ（カニ入り）2個",
+    "calories": 388,
+    "protein_g": 21.8,
+    "fat_g": 16.1,
+    "carbs_g": 37.4,
+    "salt_g": 1.6,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "旬の逸品"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "ソース（TOソース） 1人前/約20g あたり",
+    "calories": 25,
+    "protein_g": 0.2,
+    "fat_g": 0.1,
+    "carbs_g": 5.8,
+    "salt_g": 1.1,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "お好み つけ汁・調味料他"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "タルタルソース 1人前/約15g あたり",
+    "calories": 29,
+    "protein_g": 0.1,
+    "fat_g": 2.3,
+    "carbs_g": 1.8,
+    "salt_g": 0.4,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "お好み つけ汁・調味料他"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "デミグラスハンバーグ・単品",
+    "calories": 361,
+    "protein_g": 18.4,
+    "fat_g": 21.3,
+    "carbs_g": 24.4,
+    "salt_g": 2.4,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "グランド"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "デミグラスハンバーグ定食",
+    "calories": 702,
+    "protein_g": 25.3,
+    "fat_g": 24.9,
+    "carbs_g": 92.0,
+    "salt_g": 4.7,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "グランド"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "おこさまオレンジ",
+    "calories": 53,
+    "protein_g": 0.1,
+    "fat_g": 0.1,
+    "carbs_g": 12.8,
+    "salt_g": 0.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "おこさまメニュー"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "ドリンクバー 100％オレンジ",
+    "calories": 63,
+    "protein_g": 1.1,
+    "fat_g": 0.2,
+    "carbs_g": 16.1,
+    "salt_g": 0.0,
+    "serving_label": "1杯 約150ml",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ドリンクバー 杯約㏄当たり ※ドリンクバーは一部店舗で販売しております。"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "ドリンクバー 100％野菜果実",
+    "calories": 44,
+    "protein_g": 0.0,
+    "fat_g": 0.0,
+    "carbs_g": 10.8,
+    "salt_g": 0.2,
+    "serving_label": "1杯 約150ml",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ドリンクバー 杯約㏄当たり ※ドリンクバーは一部店舗で販売しております。"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "ドリンクバー そば茶",
+    "calories": 0,
+    "protein_g": 0.0,
+    "fat_g": 0.0,
+    "carbs_g": 0.0,
+    "salt_g": 0.0,
+    "serving_label": "1杯 約150ml",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ドリンクバー 杯約㏄当たり ※ドリンクバーは一部店舗で販売しております。"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "ドリンクバー アイスコーヒー",
+    "calories": 6,
+    "protein_g": 0.3,
+    "fat_g": 0.0,
+    "carbs_g": 1.1,
+    "salt_g": 0.0,
+    "serving_label": "1杯 約150ml",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ドリンクバー 杯約㏄当たり ※ドリンクバーは一部店舗で販売しております。"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "ドリンクバー アイスティー",
+    "calories": 11,
+    "protein_g": 0.3,
+    "fat_g": 0.0,
+    "carbs_g": 2.4,
+    "salt_g": 0.0,
+    "serving_label": "1杯 約150ml",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ドリンクバー 杯約㏄当たり ※ドリンクバーは一部店舗で販売しております。"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "ドリンクバー アップル",
+    "calories": 7,
+    "protein_g": 0.6,
+    "fat_g": 0.0,
+    "carbs_g": 1.6,
+    "salt_g": 0.0,
+    "serving_label": "1杯 約150ml",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ドリンクバー 杯約㏄当たり ※ドリンクバーは一部店舗で販売しております。"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "ドリンクバー アメリカンコーヒー（ホット・アイス）",
+    "calories": 6,
+    "protein_g": 0.3,
+    "fat_g": 0.0,
+    "carbs_g": 1.1,
+    "salt_g": 0.0,
+    "serving_label": "1杯 約150ml",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ドリンクバー 杯約㏄当たり ※ドリンクバーは一部店舗で販売しております。"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "ドリンクバー アールグレイ",
+    "calories": 7,
+    "protein_g": 0.6,
+    "fat_g": 0.0,
+    "carbs_g": 1.6,
+    "salt_g": 0.0,
+    "serving_label": "1杯 約150ml",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ドリンクバー 杯約㏄当たり ※ドリンクバーは一部店舗で販売しております。"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "ドリンクバー ウーロン茶",
+    "calories": 0,
+    "protein_g": 0.0,
+    "fat_g": 0.0,
+    "carbs_g": 0.2,
+    "salt_g": 0.0,
+    "serving_label": "1杯 約150ml",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ドリンクバー 杯約㏄当たり ※ドリンクバーは一部店舗で販売しております。"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "ドリンクバー カフェオレ（ホット・アイス）",
+    "calories": 60,
+    "protein_g": 0.8,
+    "fat_g": 3.3,
+    "carbs_g": 6.7,
+    "salt_g": 0.0,
+    "serving_label": "1杯 約150ml",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ドリンクバー 杯約㏄当たり ※ドリンクバーは一部店舗で販売しております。"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "ドリンクバー カルピス",
+    "calories": 65,
+    "protein_g": 0.3,
+    "fat_g": 0.0,
+    "carbs_g": 15.8,
+    "salt_g": 0.0,
+    "serving_label": "1杯 約150ml",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ドリンクバー 杯約㏄当たり ※ドリンクバーは一部店舗で販売しております。"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "ドリンクバー コカ・コーラ",
+    "calories": 65,
+    "protein_g": 0.0,
+    "fat_g": 0.0,
+    "carbs_g": 16.2,
+    "salt_g": 0.0,
+    "serving_label": "1杯 約150ml",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ドリンクバー 杯約㏄当たり ※ドリンクバーは一部店舗で販売しております。",
+      "公式資料表記補正"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "ドリンクバー ココア（ホット・アイス）",
+    "calories": 83,
+    "protein_g": 1.0,
+    "fat_g": 1.7,
+    "carbs_g": 16.3,
+    "salt_g": 0.3,
+    "serving_label": "1杯 約150ml",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ドリンクバー 杯約㏄当たり ※ドリンクバーは一部店舗で販売しております。"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "ドリンクバー コーヒー",
+    "calories": 6,
+    "protein_g": 0.3,
+    "fat_g": 0.0,
+    "carbs_g": 1.1,
+    "salt_g": 0.0,
+    "serving_label": "1杯 約150ml",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ドリンクバー 杯約㏄当たり ※ドリンクバーは一部店舗で販売しております。"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "ドリンクバー サービス用 煎茶",
+    "calories": 3,
+    "protein_g": 0.2,
+    "fat_g": 0.0,
+    "carbs_g": 0.5,
+    "salt_g": 0.0,
+    "serving_label": "1杯 約150ml",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ドリンクバー 杯約㏄当たり ※ドリンクバーは一部店舗で販売しております。"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "ドリンクバー ジャスミン",
+    "calories": 8,
+    "protein_g": 0.7,
+    "fat_g": 0.1,
+    "carbs_g": 1.5,
+    "salt_g": 0.0,
+    "serving_label": "1杯 約150ml",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ドリンクバー 杯約㏄当たり ※ドリンクバーは一部店舗で販売しております。"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "ドリンクバー ジンジャーエール",
+    "calories": 51,
+    "protein_g": 0.0,
+    "fat_g": 0.0,
+    "carbs_g": 12.5,
+    "salt_g": 0.0,
+    "serving_label": "1杯 約150ml",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ドリンクバー 杯約㏄当たり ※ドリンクバーは一部店舗で販売しております。"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "ドリンクバー ダージリン",
+    "calories": 7,
+    "protein_g": 0.6,
+    "fat_g": 0.0,
+    "carbs_g": 1.6,
+    "salt_g": 0.0,
+    "serving_label": "1杯 約150ml",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ドリンクバー 杯約㏄当たり ※ドリンクバーは一部店舗で販売しております。"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "ドリンクバー ファンタメロン",
+    "calories": 72,
+    "protein_g": 0.0,
+    "fat_g": 0.0,
+    "carbs_g": 18.0,
+    "salt_g": 0.0,
+    "serving_label": "1杯 約150ml",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ドリンクバー 杯約㏄当たり ※ドリンクバーは一部店舗で販売しております。"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "ドリンクバー ルイボス",
+    "calories": 0,
+    "protein_g": 0.0,
+    "fat_g": 0.0,
+    "carbs_g": 0.0,
+    "salt_g": 0.0,
+    "serving_label": "1杯 約150ml",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ドリンクバー 杯約㏄当たり ※ドリンクバーは一部店舗で販売しております。"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "ドリンクバー レモン",
+    "calories": 72,
+    "protein_g": 0.2,
+    "fat_g": 0.0,
+    "carbs_g": 18.0,
+    "salt_g": 0.0,
+    "serving_label": "1杯 約150ml",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ドリンクバー 杯約㏄当たり ※ドリンクバーは一部店舗で販売しております。"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "ドリンクバー 北海道牛乳・カフェオレ",
+    "calories": 54,
+    "protein_g": 2.6,
+    "fat_g": 3.0,
+    "carbs_g": 3.8,
+    "salt_g": 0.1,
+    "serving_label": "1杯 約150ml",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ドリンクバー 杯約㏄当たり ※ドリンクバーは一部店舗で販売しております。"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "ドリンクバー 山ぶどう",
+    "calories": 81,
+    "protein_g": 0.0,
+    "fat_g": 0.0,
+    "carbs_g": 20.4,
+    "salt_g": 0.0,
+    "serving_label": "1杯 約150ml",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ドリンクバー 杯約㏄当たり ※ドリンクバーは一部店舗で販売しております。"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "ドリンクバー 狭山茶",
+    "calories": 0,
+    "protein_g": 0.0,
+    "fat_g": 0.0,
+    "carbs_g": 0.0,
+    "salt_g": 0.0,
+    "serving_label": "1杯 約150ml",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ドリンクバー 杯約㏄当たり ※ドリンクバーは一部店舗で販売しております。"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "ドリンクバー 玄米茶",
+    "calories": 0,
+    "protein_g": 0.0,
+    "fat_g": 0.0,
+    "carbs_g": 0.0,
+    "salt_g": 0.0,
+    "serving_label": "1杯 約150ml",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ドリンクバー 杯約㏄当たり ※ドリンクバーは一部店舗で販売しております。"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "ドリンクバー 韃靼そば茶",
+    "calories": 0,
+    "protein_g": 0.0,
+    "fat_g": 0.0,
+    "carbs_g": 0.0,
+    "salt_g": 0.0,
+    "serving_label": "1杯 約150ml",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ドリンクバー 杯約㏄当たり ※ドリンクバーは一部店舗で販売しております。"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "ドリンクバー 黒ウーロン茶",
+    "calories": 0,
+    "protein_g": 0.0,
+    "fat_g": 0.0,
+    "carbs_g": 0.0,
+    "salt_g": 0.0,
+    "serving_label": "1杯 約150ml",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ドリンクバー 杯約㏄当たり ※ドリンクバーは一部店舗で販売しております。"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "ドレッシング・昆布 10gあたり",
+    "calories": 4,
+    "protein_g": 0.1,
+    "fat_g": 0.0,
+    "carbs_g": 0.9,
+    "salt_g": 0.2,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "お好み つけ汁・調味料他"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "ニッカプロンティア ハイボール",
+    "calories": 72,
+    "protein_g": 0.0,
+    "fat_g": 0.0,
+    "carbs_g": 0.0,
+    "salt_g": 0.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "アルコール",
+      "アルコール"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "ハレの日和膳（H)",
+    "calories": 426,
+    "protein_g": 23.2,
+    "fat_g": 11.4,
+    "carbs_g": 55.0,
+    "salt_g": 4.1,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "差し込みメニュー"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "ハレの日和膳・グラスビール付き（H)",
+    "calories": 540,
+    "protein_g": 23.8,
+    "fat_g": 11.4,
+    "carbs_g": 63.1,
+    "salt_g": 4.1,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "差し込みメニュー"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "ハレの日和膳・ミニソフト付き（H)",
+    "calories": 560,
+    "protein_g": 26.3,
+    "fat_g": 15.4,
+    "carbs_g": 76.4,
+    "salt_g": 4.3,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "差し込みメニュー"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "ハレの日和膳（DB付き）（H)",
+    "calories": 426,
+    "protein_g": 23.2,
+    "fat_g": 11.4,
+    "carbs_g": 55.0,
+    "salt_g": 4.1,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "差し込みメニュー"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "ハレの日和膳（ドリンク付き）（H)",
+    "calories": 426,
+    "protein_g": 23.2,
+    "fat_g": 11.4,
+    "carbs_g": 55.0,
+    "salt_g": 4.1,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "差し込みメニュー"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "フレーバーポテト（カレー）1袋/約3gあたり",
+    "calories": 8,
+    "protein_g": 0.3,
+    "fat_g": 0.1,
+    "carbs_g": 1.4,
+    "salt_g": 1.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "お好み つけ汁・調味料他"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "ブラックニッカハイボール",
+    "calories": 87,
+    "protein_g": 0.0,
+    "fat_g": 0.0,
+    "carbs_g": 0.0,
+    "salt_g": 0.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "アルコール",
+      "アルコール"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "ブラックニッカレモンハイボール",
+    "calories": 95,
+    "protein_g": 0.0,
+    "fat_g": 0.0,
+    "carbs_g": 2.0,
+    "salt_g": 0.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "アルコール",
+      "アルコール"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "ホットコーヒー",
+    "calories": 6,
+    "protein_g": 0.3,
+    "fat_g": 0.0,
+    "carbs_g": 1.1,
+    "salt_g": 0.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ソフトドリンク・ノンアルコール"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "ポテりこサラダ",
+    "calories": 323,
+    "protein_g": 2.7,
+    "fat_g": 18.6,
+    "carbs_g": 35.9,
+    "salt_g": 1.4,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "旬の逸品"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "ポン酢 1人前/約36CC あたり",
+    "calories": 24,
+    "protein_g": 1.6,
+    "fat_g": 0.0,
+    "carbs_g": 4.6,
+    "salt_g": 3.2,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "お好み つけ汁・調味料他"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "ポーションミルク 1個",
+    "calories": 8,
+    "protein_g": 0.1,
+    "fat_g": 0.8,
+    "carbs_g": 0.1,
+    "salt_g": 0.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "お好み つけ汁・調味料他"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "ミニうな丼",
+    "calories": 364,
+    "protein_g": 16.7,
+    "fat_g": 12.9,
+    "carbs_g": 43.1,
+    "salt_g": 1.4,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "グランド"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "ミニいくら丼・北海道ざるそば",
+    "calories": 705,
+    "protein_g": 28.9,
+    "fat_g": 12.5,
+    "carbs_g": 115.1,
+    "salt_g": 4.8,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "グランド"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "ミニうな丼・北海道ざるそば",
+    "calories": 795,
+    "protein_g": 34.3,
+    "fat_g": 20.7,
+    "carbs_g": 113.1,
+    "salt_g": 5.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "グランド"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "ミニかに丼",
+    "calories": 224,
+    "protein_g": 7.8,
+    "fat_g": 0.6,
+    "carbs_g": 44.8,
+    "salt_g": 1.2,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ランチメニュー-"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "ミニかに鉄火丼",
+    "calories": 250,
+    "protein_g": 12.8,
+    "fat_g": 0.9,
+    "carbs_g": 45.4,
+    "salt_g": 1.1,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "グランド"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "ミニねぎとろ丼",
+    "calories": 269,
+    "protein_g": 9.4,
+    "fat_g": 4.5,
+    "carbs_g": 45.8,
+    "salt_g": 1.1,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "グランド"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "ミニひれかつ丼",
+    "calories": 303,
+    "protein_g": 9.9,
+    "fat_g": 6.5,
+    "carbs_g": 49.9,
+    "salt_g": 0.3,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "グランド"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "ミニひれかつ丼・北海道ざるそば",
+    "calories": 734,
+    "protein_g": 27.5,
+    "fat_g": 14.2,
+    "carbs_g": 119.8,
+    "salt_g": 3.8,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "グランド"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "ミニ北海道牛乳ソフト ハスカップ",
+    "calories": 127,
+    "protein_g": 2.8,
+    "fat_g": 2.8,
+    "carbs_g": 23.2,
+    "salt_g": 0.2,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "喫茶メニュー"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "ミニ北海道牛乳ソフト 赤肉メロン",
+    "calories": 114,
+    "protein_g": 2.8,
+    "fat_g": 2.8,
+    "carbs_g": 19.3,
+    "salt_g": 0.2,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "喫茶メニュー"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "ミニ北海道牛乳ソフト 黒みつきなこ",
+    "calories": 128,
+    "protein_g": 3.0,
+    "fat_g": 2.9,
+    "carbs_g": 22.6,
+    "salt_g": 0.2,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "喫茶メニュー"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "ミニ北海道牛乳ソフトビスケット添え",
+    "calories": 134,
+    "protein_g": 3.1,
+    "fat_g": 4.0,
+    "carbs_g": 21.4,
+    "salt_g": 0.2,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "グランド"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "ミニ天丼",
+    "calories": 290,
+    "protein_g": 6.1,
+    "fat_g": 9.0,
+    "carbs_g": 43.8,
+    "salt_g": 1.5,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "グランド"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "メロンソーダ",
+    "calories": 71,
+    "protein_g": 0.0,
+    "fat_g": 0.0,
+    "carbs_g": 17.6,
+    "salt_g": 0.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ソフトドリンク・ノンアルコール"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "ランチ 旨いわし巴定食",
+    "calories": 581,
+    "protein_g": 21.5,
+    "fat_g": 17.9,
+    "carbs_g": 80.7,
+    "salt_g": 3.8,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ランチメニュー-"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "ランチいろどり膳・ざるうどん",
+    "calories": 713,
+    "protein_g": 28.7,
+    "fat_g": 21.6,
+    "carbs_g": 98.3,
+    "salt_g": 4.5,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ランチメニュー-"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "ランチかれいの黒酢あんかけ和膳",
+    "calories": 1280,
+    "protein_g": 135.1,
+    "fat_g": 30.8,
+    "carbs_g": 115.1,
+    "salt_g": 5.8,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ランチメニュー-"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "ランチにぎり鮨・ざるうどん",
+    "calories": 583,
+    "protein_g": 26.4,
+    "fat_g": 10.6,
+    "carbs_g": 93.7,
+    "salt_g": 4.9,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ランチメニュー-"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "ランチねぎとろ巻き・北海道ざるそば",
+    "calories": 680,
+    "protein_g": 26.6,
+    "fat_g": 9.3,
+    "carbs_g": 118.5,
+    "salt_g": 3.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ランチメニュー-"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "ランチねぎとろ巻・名物ジャンボ茶わんむし",
+    "calories": 626,
+    "protein_g": 34.5,
+    "fat_g": 17.2,
+    "carbs_g": 78.3,
+    "salt_g": 7.6,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ランチメニュー-"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "ランチまぐろサーモンアボガド丼",
+    "calories": 700,
+    "protein_g": 30.7,
+    "fat_g": 23.9,
+    "carbs_g": 89.1,
+    "salt_g": 3.5,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ランチメニュー-"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "ランチミニうな丼・北海道ざるそば",
+    "calories": 725,
+    "protein_g": 29.2,
+    "fat_g": 17.8,
+    "carbs_g": 107.7,
+    "salt_g": 3.8,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ランチメニュー-"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "ランチミニかに丼・北海道ざるそば",
+    "calories": 586,
+    "protein_g": 20.5,
+    "fat_g": 5.5,
+    "carbs_g": 109.5,
+    "salt_g": 3.6,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ランチメニュー-"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "ランチミニかに鉄火丼・北海道ざるそば",
+    "calories": 606,
+    "protein_g": 25.2,
+    "fat_g": 5.7,
+    "carbs_g": 109.1,
+    "salt_g": 3.4,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ランチメニュー-"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "ランチミニねぎとろ丼・北海道ざるそば",
+    "calories": 630,
+    "protein_g": 21.9,
+    "fat_g": 9.3,
+    "carbs_g": 110.3,
+    "salt_g": 3.4,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ランチメニュー-"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "ランチミニひれかつ丼・北海道ざるそば",
+    "calories": 664,
+    "protein_g": 22.4,
+    "fat_g": 11.3,
+    "carbs_g": 114.4,
+    "salt_g": 2.6,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ランチメニュー-"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "ランチ冷や汁うどんと鶏天",
+    "calories": 623,
+    "protein_g": 15.9,
+    "fat_g": 34.1,
+    "carbs_g": 62.0,
+    "salt_g": 2.2,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ランチメニュー-"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "ランチ冷や汁うどんと鶏天・いなり",
+    "calories": 872,
+    "protein_g": 24.9,
+    "fat_g": 39.9,
+    "carbs_g": 101.0,
+    "salt_g": 3.5,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ランチメニュー-"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "ランチ冷や汁北海道そば2枚盛りと鶏天・いなり",
+    "calories": 1196,
+    "protein_g": 35.8,
+    "fat_g": 42.4,
+    "carbs_g": 160.8,
+    "salt_g": 2.9,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ランチメニュー-"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "ランチ冷・大えび天温玉そば",
+    "calories": 498,
+    "protein_g": 26.6,
+    "fat_g": 14.6,
+    "carbs_g": 61.0,
+    "salt_g": 1.7,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ランチメニュー-"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "ランチ冷・大えび天温玉そば・いなり",
+    "calories": 746,
+    "protein_g": 35.7,
+    "fat_g": 20.4,
+    "carbs_g": 99.9,
+    "salt_g": 3.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ランチメニュー-"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "ランチ北海道産真ほっけフライ定食",
+    "calories": 751,
+    "protein_g": 30.2,
+    "fat_g": 29.0,
+    "carbs_g": 87.2,
+    "salt_g": 2.8,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ランチメニュー-"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "ランチ天せいろ北海道そば",
+    "calories": 581,
+    "protein_g": 18.7,
+    "fat_g": 25.8,
+    "carbs_g": 64.9,
+    "salt_g": 0.4,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ランチメニュー-"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "ランチ天せいろ北海道そば・いなり",
+    "calories": 829,
+    "protein_g": 27.7,
+    "fat_g": 31.5,
+    "carbs_g": 103.8,
+    "salt_g": 1.7,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ランチメニュー-"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "ランチ天丼・かけうどん",
+    "calories": 986,
+    "protein_g": 23.9,
+    "fat_g": 30.2,
+    "carbs_g": 149.1,
+    "salt_g": 7.3,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ランチメニュー-"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "ランチ松花堂和膳",
+    "calories": 652,
+    "protein_g": 29.8,
+    "fat_g": 24.6,
+    "carbs_g": 76.2,
+    "salt_g": 5.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ランチメニュー-"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "ランチ茶わんむし",
+    "calories": 70,
+    "protein_g": 5.1,
+    "fat_g": 2.9,
+    "carbs_g": 5.4,
+    "salt_g": 1.2,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ランチメニュー-"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "ランチ鰻ちらしうどんといか三昧",
+    "calories": 704,
+    "protein_g": 43.4,
+    "fat_g": 16.6,
+    "carbs_g": 94.1,
+    "salt_g": 5.5,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ランチメニュー-"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "CPうな重・関東（肝吸い）",
+    "calories": 859,
+    "protein_g": 36.9,
+    "fat_g": 26.6,
+    "carbs_g": 112.8,
+    "salt_g": 4.9,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "特定店舗・期間限定"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "レモンサワー",
+    "calories": 125,
+    "protein_g": 0.1,
+    "fat_g": 0.1,
+    "carbs_g": 8.4,
+    "salt_g": 0.1,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "アルコール",
+      "アルコール"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "一升餅 (1個あたり)",
+    "calories": 176,
+    "protein_g": 3.1,
+    "fat_g": 0.4,
+    "carbs_g": 40.6,
+    "salt_g": 0.1,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "おこさまメニュー"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "七味唐辛子 1g あたり",
+    "calories": 5,
+    "protein_g": 0.1,
+    "fat_g": 0.2,
+    "carbs_g": 0.6,
+    "salt_g": 0.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "お好み つけ汁・調味料他"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "中とろ・１個",
+    "calories": 74,
+    "protein_g": 2.9,
+    "fat_g": 3.4,
+    "carbs_g": 7.2,
+    "salt_g": 0.2,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "お好み鮨"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "二段うな重（肝吸い）",
+    "calories": 1295,
+    "protein_g": 65.7,
+    "fat_g": 51.9,
+    "carbs_g": 135.1,
+    "salt_g": 6.4,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "差し込みメニュー"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "二段うな重（肝吸い）・北海道ざるそば",
+    "calories": 1567,
+    "protein_g": 75.0,
+    "fat_g": 53.6,
+    "carbs_g": 187.7,
+    "salt_g": 6.5,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "差し込みメニュー"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "二段うな重（肝吸い）・茶わんむし",
+    "calories": 1365,
+    "protein_g": 70.8,
+    "fat_g": 54.8,
+    "carbs_g": 140.4,
+    "salt_g": 7.7,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "差し込みメニュー"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "低アレルゲンもちもち米粉パン",
+    "calories": 125,
+    "protein_g": 1.7,
+    "fat_g": 2.3,
+    "carbs_g": 24.3,
+    "salt_g": 0.6,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "おこさまメニュー"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "低アレルゲンカレー",
+    "calories": 469,
+    "protein_g": 8.1,
+    "fat_g": 16.7,
+    "carbs_g": 70.5,
+    "salt_g": 2.2,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "低アレルゲンメニュー"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "低アレルゲンカレー★",
+    "calories": 469,
+    "protein_g": 8.1,
+    "fat_g": 16.7,
+    "carbs_g": 70.5,
+    "salt_g": 2.2,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "おこさまメニュー"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "八海山（清酒）",
+    "calories": 300,
+    "protein_g": 0.9,
+    "fat_g": 0.0,
+    "carbs_g": 10.2,
+    "salt_g": 0.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "アルコール",
+      "アルコール"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "冷 七味うどん",
+    "calories": 365,
+    "protein_g": 17.3,
+    "fat_g": 6.2,
+    "carbs_g": 60.9,
+    "salt_g": 0.6,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "グランド"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "冷や汁",
+    "calories": 71,
+    "protein_g": 0.2,
+    "fat_g": 7.5,
+    "carbs_g": 0.4,
+    "salt_g": 0.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "差し込みメニュー"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "冷・三色北海道そば",
+    "calories": 682,
+    "protein_g": 24.4,
+    "fat_g": 9.2,
+    "carbs_g": 120.8,
+    "salt_g": 1.3,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "グランド"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "冷・大えび天温玉うどん",
+    "calories": 438,
+    "protein_g": 24.8,
+    "fat_g": 13.7,
+    "carbs_g": 52.3,
+    "salt_g": 2.3,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "グランド"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "刺身",
+    "calories": 89,
+    "protein_g": 13.0,
+    "fat_g": 3.1,
+    "carbs_g": 2.2,
+    "salt_g": 0.2,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "旬の逸品"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "刺身天ぷら膳",
+    "calories": 689,
+    "protein_g": 28.8,
+    "fat_g": 24.8,
+    "carbs_g": 83.7,
+    "salt_g": 3.9,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "グランド"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "北海さつま揚げ",
+    "calories": 117,
+    "protein_g": 9.2,
+    "fat_g": 2.4,
+    "carbs_g": 15.0,
+    "salt_g": 1.7,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "旬の逸品"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "北海道かけそば(揚げ玉・七味含まない）",
+    "calories": 335,
+    "protein_g": 14.8,
+    "fat_g": 3.9,
+    "carbs_g": 62.2,
+    "salt_g": 4.4,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "そば・うどん"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "北海道ざるそば",
+    "calories": 272,
+    "protein_g": 9.3,
+    "fat_g": 1.7,
+    "carbs_g": 52.6,
+    "salt_g": 0.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "グランド"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "北海道はこだてワイン・白",
+    "calories": 263,
+    "protein_g": 0.4,
+    "fat_g": 0.0,
+    "carbs_g": 7.2,
+    "salt_g": 0.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "アルコール",
+      "アルコール"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "北海道はこだてワイン・赤",
+    "calories": 263,
+    "protein_g": 0.7,
+    "fat_g": 0.0,
+    "carbs_g": 5.4,
+    "salt_g": 0.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "アルコール",
+      "アルコール"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "北海道ぶた丼・6枚",
+    "calories": 960,
+    "protein_g": 39.3,
+    "fat_g": 38.6,
+    "carbs_g": 110.3,
+    "salt_g": 7.5,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "グランド"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "北海道ぶた丼・6枚・北海道ざるそば",
+    "calories": 1220,
+    "protein_g": 48.4,
+    "fat_g": 40.3,
+    "carbs_g": 160.0,
+    "salt_g": 7.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "グランド"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "北海道ぶた丼・6枚・茶わんむし",
+    "calories": 1022,
+    "protein_g": 44.0,
+    "fat_g": 40.5,
+    "carbs_g": 116.3,
+    "salt_g": 8.8,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "グランド"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "北海道ぶた丼追加ロース肉（1枚）",
+    "calories": 92,
+    "protein_g": 5.2,
+    "fat_g": 6.1,
+    "carbs_g": 4.0,
+    "salt_g": 0.7,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "グランド"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "北海道クリームあんみつ",
+    "calories": 336,
+    "protein_g": 6.5,
+    "fat_g": 2.7,
+    "carbs_g": 71.3,
+    "salt_g": 0.2,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "喫茶メニュー"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "北海道十勝あずき白玉",
+    "calories": 271,
+    "protein_g": 5.7,
+    "fat_g": 2.5,
+    "carbs_g": 55.4,
+    "salt_g": 0.2,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "喫茶メニュー"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "北海道牛乳ソフト",
+    "calories": 239,
+    "protein_g": 5.3,
+    "fat_g": 5.9,
+    "carbs_g": 41.1,
+    "salt_g": 0.3,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "喫茶メニュー"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "北海道産真ほっけフライ",
+    "calories": 338,
+    "protein_g": 23.2,
+    "fat_g": 17.7,
+    "carbs_g": 19.6,
+    "salt_g": 0.5,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "旬の逸品"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "単品 縞ほっけ焼き",
+    "calories": 562,
+    "protein_g": 38.1,
+    "fat_g": 41.4,
+    "carbs_g": 3.0,
+    "salt_g": 3.7,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "グランド"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "単品 豚の生姜焼き（H)",
+    "calories": 350,
+    "protein_g": 20.3,
+    "fat_g": 21.8,
+    "carbs_g": 18.8,
+    "salt_g": 2.4,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "差し込みメニュー"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "単品 豚の生姜焼き（北海道)",
+    "calories": 350,
+    "protein_g": 20.3,
+    "fat_g": 21.8,
+    "carbs_g": 18.8,
+    "salt_g": 2.4,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "グランド"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "単品・富良野産ローストポーク",
+    "calories": 665,
+    "protein_g": 36.0,
+    "fat_g": 47.0,
+    "carbs_g": 19.0,
+    "salt_g": 1.7,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "グランド"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "吉乃川",
+    "calories": 327,
+    "protein_g": 1.2,
+    "fat_g": 0.0,
+    "carbs_g": 14.7,
+    "salt_g": 0.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "アルコール",
+      "アルコール"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "名物ジャンボ茶わんむし",
+    "calories": 217,
+    "protein_g": 17.2,
+    "fat_g": 9.5,
+    "carbs_g": 12.4,
+    "salt_g": 4.6,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "グランド"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "感謝 うな重",
+    "calories": 859,
+    "protein_g": 36.9,
+    "fat_g": 26.6,
+    "carbs_g": 112.8,
+    "salt_g": 4.9,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "特定店舗・期間限定"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "和菓子あんみつHCセット",
+    "calories": 111,
+    "protein_g": 1.6,
+    "fat_g": 0.9,
+    "carbs_g": 24.4,
+    "salt_g": 0.1,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "喫茶メニュー"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "和菓子ミニあんみつ",
+    "calories": 111,
+    "protein_g": 1.6,
+    "fat_g": 0.9,
+    "carbs_g": 24.4,
+    "salt_g": 0.1,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "喫茶メニュー"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "丸干しいわし焼き",
+    "calories": 25,
+    "protein_g": 1.8,
+    "fat_g": 1.5,
+    "carbs_g": 1.3,
+    "salt_g": 0.2,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "旬の逸品"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "夜とん あじの香味梅肉和え",
+    "calories": 45,
+    "protein_g": 5.0,
+    "fat_g": 1.0,
+    "carbs_g": 4.8,
+    "salt_g": 1.2,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "旬の逸品"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "大えび天せいろ北海道そば",
+    "calories": 608,
+    "protein_g": 25.0,
+    "fat_g": 25.8,
+    "carbs_g": 64.9,
+    "salt_g": 0.5,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "グランド"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "大えび天重",
+    "calories": 738,
+    "protein_g": 28.6,
+    "fat_g": 15.5,
+    "carbs_g": 114.7,
+    "salt_g": 7.3,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "グランド"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "大えび天重・北海道ざるそば",
+    "calories": 1010,
+    "protein_g": 37.9,
+    "fat_g": 17.2,
+    "carbs_g": 167.4,
+    "salt_g": 7.3,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "グランド"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "大えび天重・茶わんむし",
+    "calories": 808,
+    "protein_g": 33.7,
+    "fat_g": 18.4,
+    "carbs_g": 120.1,
+    "salt_g": 8.5,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "グランド"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "大漁鮨・北海道ざるそば（北海道)",
+    "calories": 1038,
+    "protein_g": 46.9,
+    "fat_g": 18.5,
+    "carbs_g": 164.5,
+    "salt_g": 5.9,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "グランド"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "大漁鮨・北海道ざるそば（関東)",
+    "calories": 1041,
+    "protein_g": 47.3,
+    "fat_g": 18.5,
+    "carbs_g": 164.6,
+    "salt_g": 6.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "グランド"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "大漁鮨（北海道)",
+    "calories": 766,
+    "protein_g": 37.5,
+    "fat_g": 16.8,
+    "carbs_g": 111.9,
+    "salt_g": 5.9,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "グランド"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "大漁鮨（関東)",
+    "calories": 768,
+    "protein_g": 38.0,
+    "fat_g": 16.7,
+    "carbs_g": 112.0,
+    "salt_g": 5.9,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "グランド"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "天つゆ 50cc あたり",
+    "calories": 23,
+    "protein_g": 0.8,
+    "fat_g": 0.0,
+    "carbs_g": 4.4,
+    "salt_g": 1.5,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "お好み つけ汁・調味料他"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "天丼",
+    "calories": 779,
+    "protein_g": 18.6,
+    "fat_g": 30.5,
+    "carbs_g": 102.7,
+    "salt_g": 4.8,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "グランド"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "天丼・北海道ざるそば",
+    "calories": 1052,
+    "protein_g": 27.9,
+    "fat_g": 32.2,
+    "carbs_g": 155.3,
+    "salt_g": 4.8,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "グランド"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "天丼・茶わんむし",
+    "calories": 849,
+    "protein_g": 23.7,
+    "fat_g": 33.4,
+    "carbs_g": 108.0,
+    "salt_g": 6.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "グランド"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "富乃宝山 グラス",
+    "calories": 61,
+    "protein_g": 0.0,
+    "fat_g": 0.0,
+    "carbs_g": 0.0,
+    "salt_g": 0.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "アルコール",
+      "アルコール"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "富乃宝山 ソーダ割り",
+    "calories": 61,
+    "protein_g": 0.0,
+    "fat_g": 0.0,
+    "carbs_g": 0.0,
+    "salt_g": 0.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "アルコール",
+      "アルコール"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "富乃宝山 ボトル",
+    "calories": 734,
+    "protein_g": 0.0,
+    "fat_g": 0.0,
+    "carbs_g": 0.0,
+    "salt_g": 0.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "アルコール",
+      "アルコール"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "富良野産ロースかつのひつまぶし",
+    "calories": 1095,
+    "protein_g": 46.9,
+    "fat_g": 46.9,
+    "carbs_g": 112.2,
+    "salt_g": 7.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "グランド"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "富良野産ロースかつカレー",
+    "calories": 1150,
+    "protein_g": 37.8,
+    "fat_g": 54.7,
+    "carbs_g": 118.9,
+    "salt_g": 3.3,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "グランド"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "富良野産ロースかつ定食",
+    "calories": 875,
+    "protein_g": 35.7,
+    "fat_g": 44.2,
+    "carbs_g": 76.8,
+    "salt_g": 2.7,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "グランド"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "富良野産ローストポーク定食",
+    "calories": 1005,
+    "protein_g": 43.0,
+    "fat_g": 50.6,
+    "carbs_g": 86.6,
+    "salt_g": 4.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "グランド"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "小田原吉匠監修 鯵の唐揚げ",
+    "calories": 228,
+    "protein_g": 16.9,
+    "fat_g": 13.4,
+    "carbs_g": 9.9,
+    "salt_g": 0.3,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "旬の逸品"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "小鉢・とろろ",
+    "calories": 49,
+    "protein_g": 1.8,
+    "fat_g": 0.1,
+    "carbs_g": 10.9,
+    "salt_g": 0.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "特定店舗・期間限定"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "小鉢・大根おろし",
+    "calories": 7,
+    "protein_g": 0.2,
+    "fat_g": 0.0,
+    "carbs_g": 1.6,
+    "salt_g": 0.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "特定店舗・期間限定"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "小鉢・納豆",
+    "calories": 80,
+    "protein_g": 6.6,
+    "fat_g": 4.0,
+    "carbs_g": 4.9,
+    "salt_g": 0.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "特定店舗・期間限定"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "感謝 とんでん",
+    "calories": 553,
+    "protein_g": 28.0,
+    "fat_g": 11.8,
+    "carbs_g": 80.9,
+    "salt_g": 5.2,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "特定店舗・期間限定"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "懐かしの昭和プリン",
+    "calories": 355,
+    "protein_g": 7.6,
+    "fat_g": 22.5,
+    "carbs_g": 29.9,
+    "salt_g": 0.2,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "喫茶メニュー"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "抹茶 抹茶ざるそば",
+    "calories": 279,
+    "protein_g": 10.0,
+    "fat_g": 1.8,
+    "carbs_g": 54.0,
+    "salt_g": 0.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "差し込みメニュー"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "抹茶かけそば",
+    "calories": 342,
+    "protein_g": 15.4,
+    "fat_g": 4.0,
+    "carbs_g": 63.5,
+    "salt_g": 4.4,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "差し込みメニュー"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "抹茶塩 2gあたり",
+    "calories": 4,
+    "protein_g": 0.2,
+    "fat_g": 0.0,
+    "carbs_g": 0.6,
+    "salt_g": 1.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "お好み つけ汁・調味料他"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "持 感謝 うな重",
+    "calories": 847,
+    "protein_g": 35.3,
+    "fat_g": 26.0,
+    "carbs_g": 112.8,
+    "salt_g": 4.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "特定店舗・期間限定"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "持 感謝 とんでん",
+    "calories": 451,
+    "protein_g": 20.8,
+    "fat_g": 7.4,
+    "carbs_g": 72.8,
+    "salt_g": 2.6,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "特定店舗・期間限定"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "揚げ玉 10g あたり",
+    "calories": 13,
+    "protein_g": 0.1,
+    "fat_g": 1.1,
+    "carbs_g": 0.5,
+    "salt_g": 0.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "お好み つけ汁・調味料他"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "数の子・1個",
+    "calories": 43,
+    "protein_g": 1.9,
+    "fat_g": 0.2,
+    "carbs_g": 8.2,
+    "salt_g": 0.5,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "お好み鮨"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "新漬盛合せ",
+    "calories": 45,
+    "protein_g": 1.3,
+    "fat_g": 0.6,
+    "carbs_g": 11.6,
+    "salt_g": 3.6,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "旬の逸品"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "日本酒（ひや）",
+    "calories": 294,
+    "protein_g": 1.1,
+    "fat_g": 0.0,
+    "carbs_g": 13.2,
+    "salt_g": 0.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "アルコール",
+      "アルコール"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "旨いわしお楽しみ膳",
+    "calories": 900,
+    "protein_g": 32.0,
+    "fat_g": 31.9,
+    "carbs_g": 115.6,
+    "salt_g": 7.3,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "グランド"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "旨いわしの刺身",
+    "calories": 88,
+    "protein_g": 5.9,
+    "fat_g": 5.8,
+    "carbs_g": 3.2,
+    "salt_g": 0.4,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "旬の逸品"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "旨いわし巴膳",
+    "calories": 735,
+    "protein_g": 29.9,
+    "fat_g": 27.9,
+    "carbs_g": 87.3,
+    "salt_g": 5.2,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "グランド"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "旨いわし汁",
+    "calories": 114,
+    "protein_g": 11.8,
+    "fat_g": 5.2,
+    "carbs_g": 4.4,
+    "salt_g": 1.7,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "グランド"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "旬の会席料理（6月～9月）わらびもち付き",
+    "calories": 1155,
+    "protein_g": 58.7,
+    "fat_g": 52.9,
+    "carbs_g": 104.7,
+    "salt_g": 6.4,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ご予約特選御膳"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "旬の会席料理（6月～9月）ミニソフト付き",
+    "calories": 1215,
+    "protein_g": 61.5,
+    "fat_g": 56.6,
+    "carbs_g": 108.3,
+    "salt_g": 6.7,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ご予約特選御膳"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "月見つくね",
+    "calories": 393,
+    "protein_g": 25.9,
+    "fat_g": 22.9,
+    "carbs_g": 19.3,
+    "salt_g": 3.7,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "旬の逸品"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "松花堂御膳",
+    "calories": 722,
+    "protein_g": 30.4,
+    "fat_g": 25.4,
+    "carbs_g": 89.9,
+    "salt_g": 5.5,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "グランド"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "枝豆",
+    "calories": 60,
+    "protein_g": 4.5,
+    "fat_g": 2.6,
+    "carbs_g": 4.8,
+    "salt_g": 2.4,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "旬の逸品"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "柚子切りそば・特選鮨",
+    "calories": 906,
+    "protein_g": 33.0,
+    "fat_g": 37.5,
+    "carbs_g": 103.1,
+    "salt_g": 3.5,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "差し込みメニュー"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "柚子切りそば・単品",
+    "calories": 272,
+    "protein_g": 9.2,
+    "fat_g": 1.7,
+    "carbs_g": 52.6,
+    "salt_g": 0.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "差し込みメニュー"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "柚子切りそば・穴子天重",
+    "calories": 1177,
+    "protein_g": 34.1,
+    "fat_g": 33.4,
+    "carbs_g": 176.1,
+    "salt_g": 7.3,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "差し込みメニュー"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "梅酒サワー",
+    "calories": 104,
+    "protein_g": 0.1,
+    "fat_g": 0.1,
+    "carbs_g": 16.0,
+    "salt_g": 0.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "アルコール",
+      "アルコール"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "活〆穴子と野菜天ぷら",
+    "calories": 295,
+    "protein_g": 8.6,
+    "fat_g": 23.2,
+    "carbs_g": 11.8,
+    "salt_g": 0.3,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "旬の逸品"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "海老・１個",
+    "calories": 40,
+    "protein_g": 2.1,
+    "fat_g": 0.2,
+    "carbs_g": 7.2,
+    "salt_g": 0.3,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "お好み鮨"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "海鮮丼",
+    "calories": 550,
+    "protein_g": 25.2,
+    "fat_g": 9.5,
+    "carbs_g": 86.5,
+    "salt_g": 3.7,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "グランド"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "海鮮丼・北海道ざるそば",
+    "calories": 822,
+    "protein_g": 34.5,
+    "fat_g": 11.3,
+    "carbs_g": 139.1,
+    "salt_g": 3.8,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "グランド"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "海鮮丼・茶わんむし",
+    "calories": 620,
+    "protein_g": 30.3,
+    "fat_g": 12.4,
+    "carbs_g": 91.9,
+    "salt_g": 5.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "グランド"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "温 北海道十勝ぜんざい",
+    "calories": 378,
+    "protein_g": 6.9,
+    "fat_g": 0.8,
+    "carbs_g": 84.3,
+    "salt_g": 0.2,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "喫茶メニュー"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "湯葉・1個",
+    "calories": 51,
+    "protein_g": 2.0,
+    "fat_g": 1.0,
+    "carbs_g": 8.2,
+    "salt_g": 0.2,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "お好み鮨"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "焼きとうきび",
+    "calories": 190,
+    "protein_g": 6.3,
+    "fat_g": 3.1,
+    "carbs_g": 35.6,
+    "salt_g": 0.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "旬の逸品"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "焼酎の梅割",
+    "calories": 106,
+    "protein_g": 0.1,
+    "fat_g": 0.0,
+    "carbs_g": 3.5,
+    "salt_g": 1.1,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "アルコール",
+      "アルコール"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "焼酎・お湯割",
+    "calories": 91,
+    "protein_g": 0.0,
+    "fat_g": 0.0,
+    "carbs_g": 0.0,
+    "salt_g": 0.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "アルコール",
+      "アルコール"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "焼酎・水割",
+    "calories": 91,
+    "protein_g": 0.0,
+    "fat_g": 0.0,
+    "carbs_g": 0.0,
+    "salt_g": 0.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "アルコール",
+      "アルコール"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "焼酎・酎ハイ",
+    "calories": 91,
+    "protein_g": 0.0,
+    "fat_g": 0.0,
+    "carbs_g": 0.0,
+    "salt_g": 0.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "アルコール",
+      "アルコール"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "焼酎増量",
+    "calories": 45,
+    "protein_g": 0.0,
+    "fat_g": 0.0,
+    "carbs_g": 0.0,
+    "salt_g": 0.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "アルコール",
+      "アルコール"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "特製大きな焼売",
+    "calories": 169,
+    "protein_g": 3.4,
+    "fat_g": 9.8,
+    "carbs_g": 13.9,
+    "salt_g": 0.7,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "旬の逸品"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "特選鮨・名物ジャンボ茶わんむし",
+    "calories": 569,
+    "protein_g": 34.8,
+    "fat_g": 20.3,
+    "carbs_g": 56.7,
+    "salt_g": 7.6,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "グランド"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "獺祭・純米大吟醸45",
+    "calories": 312,
+    "protein_g": 1.2,
+    "fat_g": 0.0,
+    "carbs_g": 11.7,
+    "salt_g": 0.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "アルコール",
+      "アルコール"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "豚の生姜焼き定食（H)",
+    "calories": 815,
+    "protein_g": 28.9,
+    "fat_g": 24.1,
+    "carbs_g": 117.2,
+    "salt_g": 4.4,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "差し込みメニュー"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "生搾りパイナップルサワー",
+    "calories": 137,
+    "protein_g": 1.1,
+    "fat_g": 0.2,
+    "carbs_g": 24.1,
+    "salt_g": 0.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "アルコール",
+      "アルコール"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "生搾りパイナップルジュース",
+    "calories": 92,
+    "protein_g": 1.1,
+    "fat_g": 0.2,
+    "carbs_g": 24.1,
+    "salt_g": 0.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "喫茶メニュー"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "生絞りパイナップルおかわり焼酎",
+    "calories": 45,
+    "protein_g": 0.0,
+    "fat_g": 0.0,
+    "carbs_g": 0.0,
+    "salt_g": 0.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "アルコール",
+      "アルコール"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "真鯛・1個",
+    "calories": 50,
+    "protein_g": 2.6,
+    "fat_g": 1.0,
+    "carbs_g": 7.2,
+    "salt_g": 0.2,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "お好み鮨"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "祝い鯛付お食い初め（女の子）",
+    "calories": 548,
+    "protein_g": 57.5,
+    "fat_g": 15.3,
+    "carbs_g": 41.2,
+    "salt_g": 33.7,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ご予約特選御膳"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "祝い鯛付お食い初め（男の子）",
+    "calories": 548,
+    "protein_g": 57.5,
+    "fat_g": 15.3,
+    "carbs_g": 41.2,
+    "salt_g": 33.7,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ご予約特選御膳"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "祝い鯛姿焼き",
+    "calories": 321,
+    "protein_g": 46.4,
+    "fat_g": 13.1,
+    "carbs_g": 0.7,
+    "salt_g": 30.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ご予約特選御膳"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "綿雪北海道赤肉メロン",
+    "calories": 166,
+    "protein_g": 1.2,
+    "fat_g": 1.2,
+    "carbs_g": 39.7,
+    "salt_g": 0.1,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "特定店舗・期間限定"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "綿雪十勝あずき抹茶",
+    "calories": 272,
+    "protein_g": 2.7,
+    "fat_g": 1.4,
+    "carbs_g": 64.8,
+    "salt_g": 0.1,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "特定店舗・期間限定"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "綿雪果肉入りマンゴー",
+    "calories": 98,
+    "protein_g": 1.3,
+    "fat_g": 1.3,
+    "carbs_g": 20.8,
+    "salt_g": 0.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "特定店舗・期間限定"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "緑茶ハイ",
+    "calories": 94,
+    "protein_g": 0.0,
+    "fat_g": 0.0,
+    "carbs_g": 0.7,
+    "salt_g": 0.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "アルコール",
+      "アルコール"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "美味しいごはんセット",
+    "calories": 297,
+    "protein_g": 6.1,
+    "fat_g": 2.0,
+    "carbs_g": 61.3,
+    "salt_g": 2.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "旬の逸品"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "翠ジンソーダ",
+    "calories": 68,
+    "protein_g": 0.0,
+    "fat_g": 0.0,
+    "carbs_g": 0.0,
+    "salt_g": 0.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "アルコール",
+      "アルコール"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "肝吸い",
+    "calories": 19,
+    "protein_g": 1.8,
+    "fat_g": 0.5,
+    "carbs_g": 1.9,
+    "salt_g": 1.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "グランド"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "自家製珈琲ゼリーソフト",
+    "calories": 131,
+    "protein_g": 2.6,
+    "fat_g": 3.3,
+    "carbs_g": 23.3,
+    "salt_g": 0.2,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "喫茶メニュー"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "至高の縞ほっけ焼き膳",
+    "calories": 1051,
+    "protein_g": 61.0,
+    "fat_g": 48.6,
+    "carbs_g": 82.0,
+    "salt_g": 8.6,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "グランド"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "若鶏の半身揚げ",
+    "calories": 462,
+    "protein_g": 59.9,
+    "fat_g": 32.8,
+    "carbs_g": 2.5,
+    "salt_g": 4.4,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "旬の逸品"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "茶わんむし",
+    "calories": 70,
+    "protein_g": 5.1,
+    "fat_g": 2.9,
+    "carbs_g": 5.4,
+    "salt_g": 1.2,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "グランド"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "蒸し鶏のサラダ",
+    "calories": 127,
+    "protein_g": 13.8,
+    "fat_g": 3.9,
+    "carbs_g": 9.9,
+    "salt_g": 0.6,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "旬の逸品"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "豚の生姜焼き定食（北海道)",
+    "calories": 815,
+    "protein_g": 28.9,
+    "fat_g": 24.1,
+    "carbs_g": 117.2,
+    "salt_g": 4.4,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "グランド"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "赤貝・1個",
+    "calories": 38,
+    "protein_g": 1.6,
+    "fat_g": 0.1,
+    "carbs_g": 7.5,
+    "salt_g": 0.3,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "お好み鮨"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "追加 鬼おろしポン酢",
+    "calories": 23,
+    "protein_g": 1.2,
+    "fat_g": 0.1,
+    "carbs_g": 4.7,
+    "salt_g": 1.8,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "グランド"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "ミニかに鉄火丼・北海道ざるそば",
+    "calories": 676,
+    "protein_g": 30.3,
+    "fat_g": 8.6,
+    "carbs_g": 114.5,
+    "salt_g": 4.6,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "グランド"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "ランチミニ天丼・北海道ざるそば",
+    "calories": 651,
+    "protein_g": 18.7,
+    "fat_g": 13.8,
+    "carbs_g": 108.3,
+    "salt_g": 3.8,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ランチメニュー-"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "醤油（密封ボトル） 10ml あたり",
+    "calories": 7,
+    "protein_g": 0.5,
+    "fat_g": 0.0,
+    "carbs_g": 1.0,
+    "salt_g": 1.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "お好み つけ汁・調味料他"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "金目鯛の姿煮膳",
+    "calories": 740,
+    "protein_g": 43.8,
+    "fat_g": 17.2,
+    "carbs_g": 91.3,
+    "salt_g": 6.6,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "グランド"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "金目鯛の姿煮（単品）",
+    "calories": 250,
+    "protein_g": 20.9,
+    "fat_g": 10.1,
+    "carbs_g": 12.2,
+    "salt_g": 1.7,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "グランド"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "鉄火巻",
+    "calories": 170,
+    "protein_g": 9.2,
+    "fat_g": 0.7,
+    "carbs_g": 30.7,
+    "salt_g": 0.8,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "旬の逸品"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "鰻のひつまぶし（みそ汁）",
+    "calories": 894,
+    "protein_g": 39.3,
+    "fat_g": 27.8,
+    "carbs_g": 116.6,
+    "salt_g": 7.3,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "グランド"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "ＴＯ みそ汁 1袋",
+    "calories": 26,
+    "protein_g": 2.0,
+    "fat_g": 0.6,
+    "carbs_g": 3.1,
+    "salt_g": 1.9,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "お好み つけ汁・調味料他"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "ﾄﾞﾚｯｼﾝｸﾞ･とうもろこし 10gあたり",
+    "calories": 4,
+    "protein_g": 0.0,
+    "fat_g": 0.0,
+    "carbs_g": 1.0,
+    "salt_g": 0.1,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "お好み つけ汁・調味料他"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "とんでん",
+    "name": "ﾄﾞﾚｯｼﾝｸﾞ･山わさび 10g あたり",
+    "calories": 17,
+    "protein_g": 0.1,
+    "fat_g": 1.0,
+    "carbs_g": 2.0,
+    "salt_g": 0.3,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "お好み つけ汁・調味料他"
+    ],
+    "source_url": "https://assets.tonden.co.jp/allergie_list/allergie_list.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  }
+]

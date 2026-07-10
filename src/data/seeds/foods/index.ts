@@ -9,7 +9,6 @@ import { quickEstimateFoods } from "./quickEstimates";
 import { snackDrinkFoods } from "./snacksDrinks";
 import { userMenuImportFoods } from "./userMenuImports";
 import { bamiyanMenuFoods } from "./chains/bamiyanMenu";
-import { bikkuriDonkeyMenuFoods } from "./chains/bikkuriDonkeyMenu";
 import { burgerKingMenuFoods } from "./chains/burgerkingMenu";
 import { gyudonFoods } from "./chains/gyudon";
 import { hanamaruOfficialFoods } from "./chains/hanamaruOfficial";
@@ -42,18 +41,49 @@ import { mosOfficialFoods } from "./chains/mosOfficial";
 import { nakauOfficialFoods } from "./chains/nakauOfficial";
 import { ootoyaMenuFoods } from "./chains/ootoyaMenu";
 import { originBentoOfficialFoods } from "./chains/originBentoOfficial";
+import { officialChainNutritionFoods } from "./chains/officialChainNutrition";
 import { panchoMenuFoods } from "./chains/panchoMenu";
 import { pepperLunchTsukemenMenuFoods } from "./chains/pepperLunchTsukemenMenus";
 import { shinpachiAllEstimatedFoods } from "./chains/shinpachiEstimated";
 import { subwayOfficialFoods } from "./chains/subwayOfficial";
 import { sukiyaOfficialFoods } from "./chains/sukiyaOfficial";
 import { sushiChainFoods } from "./chains/sushiChains";
-import { tondenMenuFoods } from "./chains/tondenMenu";
 import { tullysOfficialFoods } from "./chains/tullysOfficial";
 import { yayoikenOfficialFoods } from "./chains/yayoikenOfficial";
 import { yoshinoyaOfficialFoods } from "./chains/yoshinoyaOfficial";
 
-export const foodSeeds = [
+const officialChainReplacementBrands = new Set([
+  "びっくりドンキー",
+  "ポポラマーマ",
+  "ジョイフル",
+  "デニーズ",
+  "ロイヤルホスト",
+  "丸亀製麺",
+  "オリーブの丘",
+  "とんでん",
+]);
+
+const comprehensiveOfficialCoverageBrands = new Set([
+  "バーガーキング",
+  "スターバックス",
+  "ケンタッキー",
+  "モスバーガー",
+  "サブウェイ",
+  "マクドナルド",
+  "すき家",
+  "吉野家",
+  "松屋",
+  "なか卯",
+  "はなまるうどん",
+  "やよい軒",
+  "大戸屋",
+  "ドトール",
+  "タリーズ",
+  "CoCo壱番屋",
+  "いきなりステーキ",
+]);
+
+const legacyFoodSeeds = [
   ...genericFoods,
   ...genericKonamonoFoods,
   ...hokkaidoTravelFoods,
@@ -94,13 +124,11 @@ export const foodSeeds = [
   ...sushiChainFoods,
   ...fastFoodFoods,
   ...bamiyanMenuFoods,
-  ...bikkuriDonkeyMenuFoods,
   ...italianRestaurantMenuFoods,
   ...panchoMenuFoods,
   ...ikinariSteakOfficialFoods,
   ...kandoNikuKomeMenuFoods,
   ...pepperLunchTsukemenMenuFoods,
-  ...tondenMenuFoods,
   ...monsoonCafeMenuFoods,
   ...externalNutritionFoods,
   ...familyRestaurantMenuFoods,
@@ -108,4 +136,14 @@ export const foodSeeds = [
   ...cafeMenuFoods,
   ...cafeFoods,
   ...convenienceFoods,
+];
+
+export const foodSeeds = [
+  ...legacyFoodSeeds.filter((item) => {
+    const brand = item.brand ?? "";
+    if (officialChainReplacementBrands.has(brand)) return false;
+    if (comprehensiveOfficialCoverageBrands.has(brand) && item.data_source !== "official") return false;
+    return true;
+  }),
+  ...officialChainNutritionFoods,
 ];

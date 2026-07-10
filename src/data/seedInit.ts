@@ -3,7 +3,7 @@ import { foodSeeds } from "./seeds/foods";
 import { exerciseSeeds, workoutTemplateSeeds } from "./seeds/workouts";
 import { nowIso } from "../lib/date";
 
-const DATA_SEED_VERSION = 2026070502;
+const DATA_SEED_VERSION = 2026071003;
 
 function menuSeedNaturalKey(item: { brand?: string; name: string; serving_label?: string; data_source: string }) {
   return [item.brand ?? "", item.name, item.serving_label ?? "", item.data_source]
@@ -96,6 +96,29 @@ export async function initializeSeeds() {
       "三田製麺所",
       "舎鈴",
       "すぱじろう",
+      "マンマパスタ",
+      "ポポラマーマ",
+      "ジョイフル",
+      "デニーズ",
+      "ロイヤルホスト",
+      "丸亀製麺",
+      "オリーブの丘",
+      "とんでん",
+      "バーガーキング",
+      "スターバックス",
+      "ケンタッキー",
+      "モスバーガー",
+      "サブウェイ",
+      "マクドナルド",
+      "すき家",
+      "吉野家",
+      "松屋",
+      "なか卯",
+      "はなまるうどん",
+      "やよい軒",
+      "大戸屋",
+      "ドトール",
+      "タリーズ",
     ]);
     const shouldRunCriticalFoodRefresh = (settings?.data_seed_version ?? 0) < DATA_SEED_VERSION;
     if (!settings) {

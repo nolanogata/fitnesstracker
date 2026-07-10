@@ -21,7 +21,7 @@ const item = (input: IkinariSteakInput) =>
     brand: "いきなりステーキ",
     name: input.name,
     category: "チェーン店",
-    tags: ["いきなりステーキ", "公式栄養", "公式メニュー確認", ...input.tags],
+    tags: ["いきなりステーキ", "公式栄養", "公式メニュー確認", "公式サイズのみ", ...input.tags],
     calories: input.calories,
     protein_g: input.protein_g,
     fat_g: input.fat_g,
