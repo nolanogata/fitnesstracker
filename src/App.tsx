@@ -93,7 +93,7 @@ type WorkoutMode = "favorite" | "preset" | "body" | "equipment" | "my" | "search
 type FoodFocus = "todayLog" | "specialMode" | "favorite" | undefined;
 type FoodAddStep = "size" | "customSize" | "quantity" | "timing" | "confirm";
 type ManualFoodWizardStep = "basic" | "unit" | "purpose" | "category" | "nutrition" | "confirm";
-type AiFoodImportStep = "prompt" | "paste" | "match" | "timing" | "confirm";
+type AiFoodImportStep = "prompt" | "paste" | "read" | "match" | "timing" | "confirm";
 type WorkoutFocus = "dateLog" | undefined;
 type MyTrainingWizardStep = "method" | "source" | "basic" | "defaults" | "presets" | "confirm";
 type SettingsFocus = "ai" | "backup" | "myMenu" | "goal" | undefined;
@@ -987,6 +987,16 @@ const achievementProgressSpecs: Record<string, AchievementProgressSpec> = {
   streak_365: { metric: "streak", target: 365, unit: "日" },
 };
 const appUpdates: AppUpdate[] = [
+  {
+    id: "2026-07-10-ai-photo-review-flow",
+    title: "AI写真登録の確認手順を改善",
+    date: "2026-07-10",
+    items: [
+      "AIのコードを読み取った後に、品目数と読み取ったメニューを最初に確認できるようにしました。",
+      "品目ごとに登録済みメニューの候補を確認し、候補にない場合だけ記録方法を選ぶ流れに変更しました。",
+      "未確認の候補が自動で選ばれないようにし、複数品目を1件ずつ確認してから保存するようにしました。",
+    ],
+  },
   {
     id: "2026-07-10-home-guidance",
     title: "Homeの表示と案内を改善",
@@ -4820,21 +4830,11 @@ function FoodTab(props: {
       setAiFoodImportError(result.error || "取り込める食品データが見つかりませんでした。");
       return;
     }
-    const nextCandidates = result.items.map((item) => buildAiFoodImportCandidates(item, props.menuItems));
     setAiFoodImportItems(result.items);
-    const nextSelections: Array<[number, AiFoodImportSelection]> = [];
-    nextCandidates.forEach((candidateGroup, index) => {
-      if (aiFoodImportIntent === "menu") {
-        nextSelections.push([index, { source: "ai_menu_only" }]);
-        return;
-      }
-      const top = candidateGroup[0];
-      if (top && top.score >= 36) nextSelections.push([index, { source: "menu", menuItemId: top.item.id }]);
-    });
-    setAiFoodImportSelections(Object.fromEntries(nextSelections));
+    setAiFoodImportSelections({});
     setAiFoodMealType(inferAiFoodMealType(result.items));
     setAiFoodImportError("");
-    setAiFoodImportStep("match");
+    setAiFoodImportStep("read");
   };
   const logRecentFoodEntry = async (entry: FoodEntry) => {
     const timestamp = nowIso();
@@ -5082,7 +5082,7 @@ function FoodTab(props: {
     let menuSavedCount = 0;
     for (let index = 0; index < aiFoodImportItems.length; index += 1) {
       const aiItem = aiFoodImportItems[index];
-      const selection = aiFoodImportSelections[index] ?? { source: "ai_once" };
+      const selection = aiFoodImportSelections[index] ?? { source: "skip" };
       if (selection.source === "skip") continue;
       const matchedItem = selection.source === "menu" && selection.menuItemId ? menuItemsById.get(selection.menuItemId) : undefined;
       if (matchedItem) {
@@ -7688,10 +7688,10 @@ function SettingsTab(props: {
       return;
     }
     setSettingsAiFoodImportItems(result.items);
-    setSettingsAiFoodImportSelections(Object.fromEntries(result.items.map((_, index) => [index, { source: "ai_menu_only" } satisfies AiFoodImportSelection])));
+    setSettingsAiFoodImportSelections({});
     setSettingsAiFoodMealType(inferAiFoodMealType(result.items));
     setSettingsAiFoodImportError("");
-    setSettingsAiFoodImportStep("match");
+    setSettingsAiFoodImportStep("read");
   };
   const saveSettingsAiFoodImport = async () => {
     const timestamp = nowIso();
@@ -7699,7 +7699,7 @@ function SettingsTab(props: {
     let savedCount = 0;
     for (let index = 0; index < settingsAiFoodImportItems.length; index += 1) {
       const aiItem = settingsAiFoodImportItems[index];
-      const selection = settingsAiFoodImportSelections[index] ?? { source: "ai_menu_only" };
+      const selection = settingsAiFoodImportSelections[index] ?? { source: "skip" };
       if (selection.source === "skip") continue;
       const matchedItem = selection.source === "menu" && selection.menuItemId ? menuItemsById.get(selection.menuItemId) : undefined;
       await db.menu_items.put(matchedItem ? userMenuItemCloneFromMenuItem(matchedItem, timestamp) : menuItemFromAiFoodImportItem(aiItem, timestamp, settingsAiFoodMealType));
@@ -9655,19 +9655,21 @@ function AiFoodImportModal({ intent = "log", step, setStep, text, setText, items
   onClose: () => void;
 }) {
   const selectionCreatesFoodLog = (selection: AiFoodImportSelection | undefined) => {
-    if (intent !== "log") return false;
-    const source = selection?.source ?? "ai_once";
+    if (intent !== "log" || !selection) return false;
+    const source = selection.source;
     return source !== "skip" && source !== "ai_menu_only";
   };
   const hasLoggableSelections = (nextSelections = selections) => items.some((_, index) => selectionCreatesFoodLog(nextSelections[index]));
   const stepUsesTiming = intent === "log" && (step !== "confirm" || hasLoggableSelections());
-  const aiFoodSteps: AiFoodImportStep[] = stepUsesTiming ? ["prompt", "paste", "match", "timing", "confirm"] : ["prompt", "paste", "match", "confirm"];
+  const aiFoodSteps: AiFoodImportStep[] = stepUsesTiming ? ["prompt", "paste", "read", "match", "timing", "confirm"] : ["prompt", "paste", "read", "match", "confirm"];
   const stepIndex = aiFoodSteps.indexOf(step);
   const [matchIndex, setMatchIndex] = useState(0);
+  const [matchStage, setMatchStage] = useState<"candidate" | "usage">("candidate");
   const [isManualSearchOpen, setIsManualSearchOpen] = useState(false);
   const [manualSearchQuery, setManualSearchQuery] = useState("");
   const menuItemsById = useMemo(() => new Map(menuItems.map((item) => [item.id, item])), [menuItems]);
   const goToNextMatchItem = (index: number, nextSelections = selections) => {
+    setMatchStage("candidate");
     setIsManualSearchOpen(false);
     setManualSearchQuery("");
     if (index < items.length - 1) {
@@ -9688,11 +9690,12 @@ function AiFoodImportModal({ intent = "log", step, setStep, text, setText, items
   }, [items.length, matchIndex]);
   useEffect(() => {
     if (step === "match") return;
+    setMatchStage("candidate");
     setIsManualSearchOpen(false);
     setManualSearchQuery("");
   }, [step]);
   const selectedSummary = items.map((item, index) => {
-    const selection = selections[index] ?? { source: "ai_once" };
+    const selection = selections[index] ?? { source: "skip" };
     const matched = selection.source === "menu" && selection.menuItemId ? menuItemsById.get(selection.menuItemId) : undefined;
     return { item, selection, matched };
   });
@@ -9702,6 +9705,14 @@ function AiFoodImportModal({ intent = "log", step, setStep, text, setText, items
   const currentItem = items[currentMatchIndex];
   const currentCandidates = candidates[currentMatchIndex] ?? [];
   const currentSelection = selections[currentMatchIndex];
+  const currentDisplayName = currentItem?.possible_menu_name || currentItem?.observed_name || "読み取った品目";
+  const beginItemReview = () => {
+    setMatchIndex(0);
+    setMatchStage("candidate");
+    setIsManualSearchOpen(false);
+    setManualSearchQuery("");
+    setStep("match");
+  };
   const manualSearchResults = useMemo(() => {
     const query = manualSearchQuery.trim();
     if (!query) return [];
@@ -9725,15 +9736,15 @@ function AiFoodImportModal({ intent = "log", step, setStep, text, setText, items
       .slice(0, 8);
   }, [manualSearchQuery, menuItems]);
   return (
-    <div className="fixed inset-0 z-40 flex items-end bg-ink/30 px-4 pb-4" onClick={onClose}>
-      <div className="ai-food-import-sheet compact-card max-h-[86vh] w-full overflow-y-auto p-4" onClick={(event) => event.stopPropagation()}>
+    <div className="fixed inset-0 z-40 flex items-end justify-center bg-ink/30 px-4 pb-4" onClick={onClose}>
+      <div className="ai-food-import-sheet compact-card max-h-[86vh] w-full max-w-[430px] overflow-y-auto p-4" onClick={(event) => event.stopPropagation()}>
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <div className="flex items-center gap-2">
               <span className="ai-food-import-icon"><Sparkles size={17} /></span>
               <p className="text-lg font-black">AI写真登録</p>
             </div>
-            <p className="mt-1 text-xs font-semibold text-moss">{intent === "menu" ? "AIの出力を受け取って、マイメニューとして保存します。" : "AIの出力を受け取って、既存メニューと照合してから記録します。"}</p>
+            <p className="mt-1 text-xs font-semibold text-moss">写真から読み取った品目を、1件ずつ確認して登録します。</p>
           </div>
           <button className="icon-button h-9 w-9 shrink-0" aria-label="閉じる" onClick={onClose}>×</button>
         </div>
@@ -9743,7 +9754,7 @@ function AiFoodImportModal({ intent = "log", step, setStep, text, setText, items
           ))}
         </div>
         <p className="mt-2 text-xs font-bold text-moss">
-          {step === "prompt" ? "1. プロンプトをコピー" : step === "paste" ? "2. AI出力を貼り付け" : step === "match" ? "3. 既存メニューと照合" : step === "timing" ? "4. 記録タイミングを選択" : `${aiFoodSteps.length}. ${intent === "menu" ? "保存内容を確認" : "記録内容を確認"}`}
+          {step === "prompt" ? "1. プロンプトをコピー" : step === "paste" ? "2. AI出力を貼り付け" : step === "read" ? "3. 読み取り結果" : step === "match" ? `4. ${currentMatchIndex + 1}件目を確認` : step === "timing" ? `${aiFoodSteps.length - 1}. 記録タイミングを選択` : `${aiFoodSteps.length}. ${intent === "menu" ? "保存内容を確認" : "記録内容を確認"}`}
         </p>
 
         {step === "prompt" && (
@@ -9772,144 +9783,180 @@ function AiFoodImportModal({ intent = "log", step, setStep, text, setText, items
           </div>
         )}
 
-        {step === "match" && (
+        {step === "read" && (
           <div className="mt-4 space-y-3">
-            {currentItem && (
-              <>
-                <div className="ai-food-match-pager">
-                  <button className="secondary-button h-9 px-3 text-xs" disabled={currentMatchIndex === 0} onClick={() => setMatchIndex((index) => Math.max(0, index - 1))}>
-                    <ChevronLeft size={15} />前の品目
-                  </button>
-                  <span className="numeric-text">{currentMatchIndex + 1}/{items.length}</span>
-                  <button className="secondary-button h-9 px-3 text-xs" disabled={currentMatchIndex >= items.length - 1} onClick={() => setMatchIndex((index) => Math.min(items.length - 1, index + 1))}>
-                    次の品目<ChevronRight size={15} />
-                  </button>
-                </div>
-                <p className="ai-food-section-label text-right">選ぶと次の品目へ進みます</p>
-              </>
-            )}
-            {currentItem && (
-              <div className="ai-food-panel" key={`${currentItem.observed_name}-${currentMatchIndex}`}>
-                <div className="flex items-start justify-between gap-3">
+            <div className="ai-food-read-result">
+              <span className="ai-food-read-count numeric-text">{items.length}</span>
+              <div>
+                <p className="text-lg font-black">{items.length}件読み取りました</p>
+                <p className="mt-1 text-xs font-semibold text-moss">内容を1件ずつ確認します。</p>
+              </div>
+            </div>
+            <div className="ai-food-read-list">
+              {items.map((item, index) => (
+                <div className="ai-food-read-item" key={`${item.observed_name}-${index}`}>
+                  <span className="numeric-text">{index + 1}</span>
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-black">{currentItem.possible_menu_name || currentItem.observed_name}</p>
-                    <p className="numeric-text mt-1 text-xs font-bold text-moss">{currentItem.possible_brand || "ブランド不明"} · {currentItem.nutrition_estimate.calories}kcal · P{currentItem.nutrition_estimate.protein_g} F{currentItem.nutrition_estimate.fat_g} C{currentItem.nutrition_estimate.carbs_g}</p>
+                    <p className="break-words text-sm font-black">{item.possible_menu_name || item.observed_name}</p>
+                    <p className="mt-1 text-xs font-semibold text-moss">{item.possible_brand || item.food_type || "ブランド不明"} · {item.nutrition_estimate.calories}kcal</p>
                   </div>
-                  <span className="mini-chip shrink-0">{confidenceLabel(currentItem.confidence)}</span>
                 </div>
-                {currentItem.needs_confirmation.length > 0 && (
-                  <p className="ai-food-note mt-2">確認: {currentItem.needs_confirmation.join(" / ")}</p>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {step === "match" && currentItem && (
+          <div className="mt-4 space-y-3">
+            <div className="ai-food-match-pager">
+              <button
+                className="secondary-button h-9 px-3 text-xs"
+                disabled={currentMatchIndex === 0}
+                onClick={() => {
+                  setMatchIndex((index) => Math.max(0, index - 1));
+                  setMatchStage("candidate");
+                  setIsManualSearchOpen(false);
+                }}
+              >
+                <ChevronLeft size={15} />前の品目
+              </button>
+              <span className="numeric-text">{currentMatchIndex + 1}件目 / {items.length}件</span>
+              <button
+                className="secondary-button h-9 px-3 text-xs"
+                disabled={!currentSelection || currentMatchIndex >= items.length - 1}
+                onClick={() => {
+                  setMatchIndex((index) => Math.min(items.length - 1, index + 1));
+                  setMatchStage("candidate");
+                  setIsManualSearchOpen(false);
+                }}
+              >
+                次の品目<ChevronRight size={15} />
+              </button>
+            </div>
+
+            <section className="ai-food-read-item-hero" key={`${currentItem.observed_name}-${currentMatchIndex}`}>
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="ai-food-section-label">AIが読み取った品目</p>
+                  <h3 className="break-words text-xl font-black leading-snug">{currentDisplayName}</h3>
+                  {currentItem.possible_menu_name && currentItem.possible_menu_name !== currentItem.observed_name && (
+                    <p className="mt-1 break-words text-xs font-semibold text-moss">写真上の品目: {currentItem.observed_name}</p>
+                  )}
+                  <p className="mt-2 text-xs font-bold text-moss">
+                    {[currentItem.possible_brand || "ブランド不明", currentItem.quantity].filter(Boolean).join(" · ")}
+                  </p>
+                </div>
+                <span className="mini-chip shrink-0">{confidenceLabel(currentItem.confidence)}</span>
+              </div>
+              <div className="ai-food-read-nutrition mt-3">
+                <div><span>kcal</span><strong>{currentItem.nutrition_estimate.calories}</strong></div>
+                <div><span>P</span><strong>{currentItem.nutrition_estimate.protein_g}g</strong></div>
+                <div><span>F</span><strong>{currentItem.nutrition_estimate.fat_g}g</strong></div>
+                <div><span>C</span><strong>{currentItem.nutrition_estimate.carbs_g}g</strong></div>
+              </div>
+              {currentItem.needs_confirmation.length > 0 && (
+                <p className="ai-food-note mt-3">確認したいこと: {currentItem.needs_confirmation.join(" / ")}</p>
+              )}
+            </section>
+
+            {matchStage === "candidate" ? (
+              <section className="ai-food-choice-screen">
+                <div>
+                  <h3 className="text-base font-black">この中に登録したいメニューはありますか？</h3>
+                  <p className="mt-1 text-xs font-semibold text-moss">同じメニューがあれば、登録済みの栄養値を使います。</p>
+                </div>
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  <button className="ai-food-none-button" onClick={() => setMatchStage("usage")}>リストにありません</button>
+                  <button
+                    className={`secondary-button min-h-12 px-3 text-xs ${isManualSearchOpen ? "mode-button-active" : ""}`}
+                    onClick={() => {
+                      setManualSearchQuery(currentDisplayName);
+                      setIsManualSearchOpen((open) => !open);
+                    }}
+                  >
+                    <Search size={15} />ほかを検索
+                  </button>
+                </div>
+                {isManualSearchOpen && (
+                  <div className="ai-food-manual-search mt-3">
+                    <label className="block text-xs font-bold text-moss">
+                      登録済みメニューを検索
+                      <input
+                        className="mt-2 w-full"
+                        value={manualSearchQuery}
+                        onChange={(event) => setManualSearchQuery(event.target.value)}
+                        placeholder="メニュー名・ブランド名"
+                      />
+                    </label>
+                    <div className="mt-2 space-y-2">
+                      {manualSearchResults.map(({ item }) => (
+                        <button
+                          className={`food-filter-option ai-food-candidate-option ${currentSelection?.source === "menu" && currentSelection.menuItemId === item.id ? "food-filter-option-active" : ""}`}
+                          key={item.id}
+                          onClick={() => chooseCurrentSelection({ source: "menu", menuItemId: item.id })}
+                        >
+                          <span className="min-w-0">
+                            <span className="block break-words text-sm font-bold">{formatMenuItemName(item)}</span>
+                            <span className="numeric-text mt-1 block text-xs text-moss">{item.brand ?? item.category} · {item.calories}kcal · P{item.protein_g} F{item.fat_g} C{item.carbs_g}</span>
+                          </span>
+                          <span className="mini-chip shrink-0">選択</span>
+                        </button>
+                      ))}
+                      {manualSearchQuery.trim() && manualSearchResults.length === 0 && (
+                        <p className="ai-food-note">登録済みメニューに見つかりませんでした。</p>
+                      )}
+                    </div>
+                  </div>
                 )}
+                {!isManualSearchOpen && (
+                  <div className="mt-3 space-y-2">
+                    <p className="ai-food-section-label">近い登録済みメニュー</p>
+                    {currentCandidates.length ? currentCandidates.slice(0, 3).map((candidate) => (
+                      <button
+                        className={`food-filter-option ai-food-candidate-option ${currentSelection?.source === "menu" && currentSelection.menuItemId === candidate.item.id ? "food-filter-option-active" : ""}`}
+                        key={candidate.item.id}
+                        onClick={() => chooseCurrentSelection({ source: "menu", menuItemId: candidate.item.id })}
+                      >
+                        <span className="min-w-0">
+                          <span className="block break-words text-sm font-bold">{formatMenuItemName(candidate.item)}</span>
+                          <span className="numeric-text mt-1 block text-xs text-moss">{candidate.item.brand ?? candidate.item.category} · {candidate.item.calories}kcal · P{candidate.item.protein_g} F{candidate.item.fat_g} C{candidate.item.carbs_g}</span>
+                        </span>
+                        <span className="mini-chip shrink-0">選択</span>
+                      </button>
+                    )) : <p className="ai-food-note">近い登録済みメニューは見つかりませんでした。</p>}
+                  </div>
+                )}
+              </section>
+            ) : (
+              <section className="ai-food-choice-screen">
+                <div>
+                  <h3 className="text-base font-black">読み取った内容をどう使いますか？</h3>
+                  <p className="mt-1 text-xs font-semibold text-moss">「{currentDisplayName}」の登録方法を選んでください。</p>
+                </div>
                 <div className="mt-3 space-y-2">
-                  {currentCandidates.length > 0 && (
-                    <p className="ai-food-section-label">照合候補</p>
-                  )}
-                  {currentCandidates.slice(0, 4).map((candidate) => (
-                    <button
-                      className={`food-filter-option ai-food-candidate-option ${currentSelection?.source === "menu" && currentSelection.menuItemId === candidate.item.id ? "food-filter-option-active" : ""}`}
-                      key={candidate.item.id}
-                      onClick={() => chooseCurrentSelection({ source: "menu", menuItemId: candidate.item.id })}
-                    >
-                      <span className="min-w-0">
-                        <span className="block truncate text-sm font-bold">{formatMenuItemName(candidate.item)}</span>
-                        <span className="numeric-text mt-1 block truncate text-xs text-moss">{candidate.item.brand ?? candidate.item.category} · {candidate.item.calories}kcal · {candidate.reason}</span>
-                      </span>
-                      <span className="mini-chip shrink-0">候補</span>
-                    </button>
-                  ))}
-                  <div className="ai-food-action-group">
-                    <p className="ai-food-section-label">このメニューの扱い</p>
-                    <button
-                      className={`food-filter-option ai-food-action-option ai-food-action-search ${isManualSearchOpen ? "ai-food-action-active" : ""}`}
-                      onClick={() => {
-                        setManualSearchQuery(currentItem.possible_menu_name || currentItem.observed_name);
-                        setIsManualSearchOpen((open) => !open);
-                      }}
-                    >
-                      <span>
-                        <span className="block text-sm font-bold">自分でメニューから探す</span>
-                        <span className="mt-1 block text-xs text-moss">候補にない時、登録済みメニューから選びます。</span>
-                      </span>
-                      <span className="mini-chip shrink-0">検索</span>
-                    </button>
-                    {isManualSearchOpen && (
-                      <div className="ai-food-manual-search">
-                        <label className="block text-xs font-bold text-moss">
-                          メニュー検索
-                          <input
-                            className="mt-2 w-full"
-                            value={manualSearchQuery}
-                            onChange={(event) => setManualSearchQuery(event.target.value)}
-                            placeholder="メニュー名・ブランド名"
-                          />
-                        </label>
-                        <div className="mt-2 space-y-2">
-                          {manualSearchResults.map(({ item }) => (
-                            <button
-                              className={`food-filter-option ai-food-candidate-option ${currentSelection?.source === "menu" && currentSelection.menuItemId === item.id ? "food-filter-option-active" : ""}`}
-                              key={item.id}
-                              onClick={() => chooseCurrentSelection({ source: "menu", menuItemId: item.id })}
-                            >
-                              <span className="min-w-0">
-                                <span className="block truncate text-sm font-bold">{formatMenuItemName(item)}</span>
-                                <span className="numeric-text mt-1 block truncate text-xs text-moss">{item.brand ?? item.category} · {item.calories}kcal · P{item.protein_g} F{item.fat_g} C{item.carbs_g}</span>
-                              </span>
-                              <span className="mini-chip shrink-0">選択</span>
-                            </button>
-                          ))}
-                          {manualSearchQuery.trim() && manualSearchResults.length === 0 && (
-                            <p className="ai-food-note">該当する登録済みメニューが見つかりません。</p>
-                          )}
-                        </div>
-                      </div>
-                    )}
                   {intent === "log" && (
-                    <button
-                      className={`food-filter-option ai-food-action-option ai-food-action-once ${currentSelection?.source === "ai_once" ? "ai-food-action-active" : ""}`}
-                      onClick={() => chooseCurrentSelection({ source: "ai_once" })}
-                    >
-                      <span>
-                        <span className="block text-sm font-bold">AI推定値で今回だけ記録</span>
-                        <span className="mt-1 block text-xs text-moss">今回の食事にだけ記録し、マイメニューには保存しません。</span>
-                      </span>
-                      <span className="mini-chip shrink-0">今回</span>
+                    <button className="food-filter-option ai-food-action-option ai-food-action-once" onClick={() => chooseCurrentSelection({ source: "ai_once" })}>
+                      <span><span className="block text-sm font-bold">今回の食事だけに記録</span><span className="mt-1 block text-xs text-moss">マイメニューには保存しません。</span></span>
+                      <span className="mini-chip shrink-0">記録のみ</span>
                     </button>
                   )}
                   {intent === "log" && (
-                    <button
-                      className={`food-filter-option ai-food-action-option ai-food-action-save ${currentSelection?.source === "ai_menu" ? "ai-food-action-active" : ""}`}
-                      onClick={() => chooseCurrentSelection({ source: "ai_menu" })}
-                    >
-                      <span>
-                        <span className="block text-sm font-bold">AI推定値を保存して記録</span>
-                        <span className="mt-1 block text-xs text-moss">次回も呼び出せるメニューとして保存し、この食事ログも作成します。</span>
-                      </span>
+                    <button className="food-filter-option ai-food-action-option ai-food-action-save" onClick={() => chooseCurrentSelection({ source: "ai_menu" })}>
+                      <span><span className="block text-sm font-bold">マイメニューに保存して記録</span><span className="mt-1 block text-xs text-moss">今回記録し、次回からも呼び出せます。</span></span>
                       <span className="mini-chip shrink-0">保存+記録</span>
                     </button>
                   )}
-                  <button
-                    className={`food-filter-option ai-food-action-option ai-food-action-save ${currentSelection?.source === "ai_menu_only" ? "ai-food-action-active" : ""}`}
-                    onClick={() => chooseCurrentSelection({ source: "ai_menu_only" })}
-                  >
-                    <span>
-                      <span className="block text-sm font-bold">マイメニューに登録だけする</span>
-                      <span className="mt-1 block text-xs text-moss">食事ログには追加せず、次回呼び出せるメニューとして保存します。</span>
-                    </span>
+                  <button className="food-filter-option ai-food-action-option ai-food-action-save" onClick={() => chooseCurrentSelection({ source: "ai_menu_only" })}>
+                    <span><span className="block text-sm font-bold">マイメニューに保存だけ</span><span className="mt-1 block text-xs text-moss">今回は食事記録に追加しません。</span></span>
                     <span className="mini-chip shrink-0">保存のみ</span>
                   </button>
-                  <button
-                    className={`food-filter-option ai-food-action-option ai-food-action-skip ${currentSelection?.source === "skip" ? "ai-food-action-active" : ""}`}
-                    onClick={() => chooseCurrentSelection({ source: "skip" })}
-                  >
-                    <span>
-                      <span className="block text-sm font-bold">この項目はスキップ</span>
-                      <span className="mt-1 block text-xs text-moss">このメニューは食事ログに登録しません。</span>
-                    </span>
+                  <button className="food-filter-option ai-food-action-option ai-food-action-skip" onClick={() => chooseCurrentSelection({ source: "skip" })}>
+                    <span><span className="block text-sm font-bold">この品目は登録しない</span><span className="mt-1 block text-xs text-moss">読み取り結果から除外します。</span></span>
                     <span className="mini-chip shrink-0">除外</span>
                   </button>
-                  </div>
                 </div>
-              </div>
+                <button className="secondary-button mt-3 w-full" onClick={() => setMatchStage("candidate")}><ChevronLeft size={16} />候補一覧に戻る</button>
+              </section>
             )}
           </div>
         )}
@@ -9984,25 +10031,42 @@ function AiFoodImportModal({ intent = "log", step, setStep, text, setText, items
           </div>
         )}
 
-        <div className="mt-5 grid grid-cols-2 gap-2">
+        {step !== "match" && (
+          <div className="mt-5 grid grid-cols-2 gap-2">
+            <button
+              className="secondary-button"
+              onClick={() => {
+                if (step === "prompt") {
+                  onClose();
+                  return;
+                }
+                setStep(step === "paste" ? "prompt" : step === "read" ? "paste" : step === "timing" ? "match" : hasLoggableSelections() ? "timing" : "match");
+              }}
+            >
+              {step === "prompt" ? "閉じる" : <><ChevronLeft size={17} />戻る</>}
+            </button>
+            {step === "prompt" && <button className="primary-button" onClick={() => setStep("paste")}>貼り付けへ<ChevronRight size={17} /></button>}
+            {step === "paste" && <button className="primary-button" onClick={onParse}>読み取る<ChevronRight size={17} /></button>}
+            {step === "read" && <button className="primary-button" disabled={!items.length} onClick={beginItemReview}>1件目を確認<ChevronRight size={17} /></button>}
+            {step === "timing" && <button className="primary-button" disabled={!activeSummary.length} onClick={() => setStep("confirm")}>確認へ<ChevronRight size={17} /></button>}
+            {step === "confirm" && <button className="primary-button" disabled={!items.length} onClick={onSave}><Check size={17} />{!activeSummary.length ? "完了" : hasLoggableSelections() ? "記録" : "保存"}</button>}
+          </div>
+        )}
+        {step === "match" && matchStage === "candidate" && (
           <button
-            className="secondary-button"
+            className="secondary-button mt-5 w-full"
             onClick={() => {
-              if (step === "prompt") {
-                onClose();
+              if (currentMatchIndex === 0) {
+                setStep("read");
                 return;
               }
-              setStep(step === "paste" ? "prompt" : step === "match" ? "paste" : step === "timing" ? "match" : hasLoggableSelections() ? "timing" : "match");
+              setMatchIndex((index) => Math.max(0, index - 1));
+              setIsManualSearchOpen(false);
             }}
           >
-            {step === "prompt" ? "閉じる" : <><ChevronLeft size={17} />戻る</>}
+            <ChevronLeft size={17} />{currentMatchIndex === 0 ? "読み取り結果に戻る" : "前の品目に戻る"}
           </button>
-          {step === "prompt" && <button className="primary-button" onClick={() => setStep("paste")}>貼り付けへ<ChevronRight size={17} /></button>}
-          {step === "paste" && <button className="primary-button" onClick={onParse}>照合へ<ChevronRight size={17} /></button>}
-          {step === "match" && <button className="primary-button" disabled={!items.length} onClick={() => setStep(hasLoggableSelections() ? "timing" : "confirm")}>{hasLoggableSelections() ? "タイミングへ" : "確認へ"}<ChevronRight size={17} /></button>}
-          {step === "timing" && <button className="primary-button" disabled={!activeSummary.length} onClick={() => setStep("confirm")}>確認へ<ChevronRight size={17} /></button>}
-          {step === "confirm" && <button className="primary-button" disabled={!activeSummary.length} onClick={onSave}><Check size={17} />{hasLoggableSelections() ? "記録" : "保存"}</button>}
-        </div>
+        )}
         {step !== "prompt" && (
           <button className="secondary-button mt-2 w-full" onClick={onReset}><RotateCcw size={17} />最初からやり直す</button>
         )}

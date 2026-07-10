@@ -2446,6 +2446,126 @@ button {
   line-height: 1.65;
 }
 
+.ai-food-read-result {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 0.9rem;
+  border: 1px solid var(--accent-border);
+  border-radius: 18px;
+  background: var(--accent-faint);
+}
+
+.ai-food-read-count {
+  display: inline-flex;
+  width: 3rem;
+  height: 3rem;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent-readable);
+  font-size: 1.35rem;
+  font-weight: 950;
+}
+
+.ai-food-read-list {
+  max-height: 15rem;
+  overflow-y: auto;
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  background: var(--glass-bg);
+}
+
+.ai-food-read-item {
+  display: grid;
+  grid-template-columns: 1.7rem minmax(0, 1fr);
+  gap: 0.65rem;
+  align-items: start;
+  padding: 0.8rem;
+}
+
+.ai-food-read-item + .ai-food-read-item {
+  border-top: 1px solid var(--glass-border);
+}
+
+.ai-food-read-item > span {
+  display: inline-flex;
+  width: 1.65rem;
+  height: 1.65rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--accent-faint);
+  color: var(--accent-text);
+  font-size: 0.7rem;
+  font-weight: 950;
+}
+
+.ai-food-read-item-hero {
+  border: 1px solid var(--accent-border);
+  border-radius: 18px;
+  padding: 0.9rem;
+  background: var(--glass-bg);
+  box-shadow: var(--glass-highlight);
+}
+
+.ai-food-read-nutrition {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.4rem;
+}
+
+.ai-food-read-nutrition div {
+  min-width: 0;
+  border-radius: 10px;
+  padding: 0.55rem 0.3rem;
+  background: var(--accent-faint);
+  text-align: center;
+}
+
+.ai-food-read-nutrition span,
+.ai-food-read-nutrition strong {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ai-food-read-nutrition span {
+  color: var(--text-secondary);
+  font-size: 0.62rem;
+  font-weight: 850;
+}
+
+.ai-food-read-nutrition strong {
+  margin-top: 0.2rem;
+  color: var(--text-primary);
+  font-size: 0.78rem;
+  font-weight: 950;
+}
+
+.ai-food-choice-screen {
+  padding-top: 0.25rem;
+}
+
+.ai-food-none-button {
+  display: inline-flex;
+  min-height: 3rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--accent-border);
+  border-radius: 999px;
+  padding: 0.65rem 0.8rem;
+  background: var(--accent-soft);
+  color: var(--accent-readable);
+  font-size: 0.75rem;
+  font-weight: 900;
+  text-align: center;
+  box-shadow: 0 8px 18px var(--accent-faint), var(--glass-highlight);
+}
+
 .ai-food-panel,
 .ai-food-summary-card {
   padding: 0.78rem;
