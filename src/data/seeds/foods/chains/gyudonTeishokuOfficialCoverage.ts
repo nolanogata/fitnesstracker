@@ -2509,7 +2509,10 @@ export const gyudonTeishokuOfficialCoverageFoods = rows.map((row) =>
     brand: row.brand,
     category: "チェーン店",
     name: row.name,
-    tags: row.tags ?? [],
+    tags: [
+      ...(row.tags ?? []),
+      ...(row.brand === "やよい軒" && /定食|丼/.test(row.name) ? ["味噌汁カスタム可"] : []),
+    ],
     calories: row.calories,
     protein_g: row.protein_g,
     fat_g: row.fat_g,

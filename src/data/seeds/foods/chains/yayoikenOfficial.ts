@@ -2,6 +2,8 @@ import { official } from "../helpers";
 
 const sourceUrl = "https://www.yayoiken.com/menu_list/info/13";
 const fetchedAt = "2026-06-01T00:00:00.000Z";
+const soupSourceUrl = "https://www.yayoiken.com/menu_list/view/40/765";
+const soupFetchedAt = "2026-07-10T00:00:00.000Z";
 
 const yayoiken = (
   name: string,
@@ -17,7 +19,7 @@ const yayoiken = (
     brand: "やよい軒",
     name,
     category: "チェーン店",
-    tags: ["定食", "やよい軒", "公式", ...tags],
+    tags: ["定食", "やよい軒", "公式", "味噌汁カスタム可", ...tags],
     calories,
     protein_g,
     fat_g,
@@ -29,7 +31,34 @@ const yayoiken = (
     fetched_at: fetchedAt,
   });
 
+const yayoikenSoup = (
+  name: string,
+  calories: number,
+  protein_g: number,
+  fat_g: number,
+  carbs_g: number,
+  salt_g: number,
+  tags: string[] = [],
+) =>
+  official({
+    brand: "やよい軒",
+    name,
+    category: "スープ",
+    tags: ["やよい軒", "公式", "スープ", ...tags],
+    calories,
+    protein_g,
+    fat_g,
+    carbs_g,
+    salt_g,
+    serving_label: "1杯",
+    default_meal_type: "lunch",
+    source_url: name === "豚汁" ? soupSourceUrl : "https://www.yayoiken.com/menu_list/view/11/79",
+    fetched_at: soupFetchedAt,
+  });
+
 export const yayoikenOfficialFoods = [
+  yayoikenSoup("みそ汁", 21, 2.0, 0.7, 2.0, 1.9, ["味噌汁"]),
+  yayoikenSoup("豚汁", 102, 7.3, 4.5, 9.2, 2.5, ["豚肉", "味噌汁変更"]),
   yayoiken("しょうが焼定食", 717, 26.2, 37.1, 72.9, 5.0, ["生姜焼き"]),
   yayoiken("肉野菜炒め定食", 545, 26.4, 18.6, 71.4, 5.0, ["野菜炒め"]),
   yayoiken("チキン南蛮定食", 843, 27.6, 37.7, 100.7, 6.3, ["チキン南蛮"]),
