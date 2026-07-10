@@ -11,6 +11,31 @@ export type Sex = "male" | "female" | "unspecified";
 export type ActivityLevel = "low" | "moderate" | "high" | "very_high";
 export type DataSource = "official" | "unofficial" | "estimated" | "quick_estimate" | "user";
 export type Confidence = "high" | "medium" | "low";
+export type NutritionOrigin =
+  | "official_website"
+  | "package_label"
+  | "user_measured"
+  | "user_entered"
+  | "brand_match"
+  | "ai_photo_estimate"
+  | "manual_estimate"
+  | "derived_calculation"
+  | "unknown";
+export type NutritionEstimationPolicy = "exact" | "neutral" | "safe_high";
+export type NutritionUncertainty = {
+  calories?: number;
+  protein_g?: number;
+  fat_g?: number;
+  carbs_g?: number;
+};
+export type NutritionMeta = {
+  origin: NutritionOrigin;
+  estimation_policy: NutritionEstimationPolicy;
+  uncertainty?: NutritionUncertainty;
+  evidence_note?: string;
+  explicit_uncertainty?: boolean;
+  import_group_id?: string;
+};
 export type MealType = "breakfast" | "lunch" | "dinner" | "snack" | "gym_before" | "gym_after";
 export type ThemeMode = "system" | "light" | "dark";
 export type ThemeAccent = "classic" | "orange" | "aqua" | "graphite" | "crazy_pink" | "crazy_yellow" | "vivid_neon";
@@ -120,6 +145,7 @@ export type MenuItem = {
   default_meal_type?: MealType;
   data_source: DataSource;
   confidence: Confidence;
+  nutrition_meta?: NutritionMeta;
   source_url?: string;
   fetched_at?: string;
   is_public_preset: boolean;
@@ -144,6 +170,7 @@ export type FoodEntry = {
   portion_multiplier: number;
   entry_source: DataSource;
   confidence: Confidence;
+  nutrition_meta?: NutritionMeta;
   menu_item_id?: string;
   note?: string;
   created_at: string;

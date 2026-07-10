@@ -8,7 +8,7 @@
 - No account, no cloud, no user switching.
 - IndexedDB owns all user data. LocalStorage only stores small UI preferences.
 - Food logging favors search, favorites, personal menus, recommendations, chain search, recent-history reuse, and quick general estimates before manual entry.
-- Food AI photo logging is a bridge workflow: the app copies a prompt for the user's AI tool, accepts only JSON-like code output, normalizes and bounds the data, matches against existing menus, then lets the user choose whether each item is logged, saved to My Menu, or skipped.
+- Food AI photo logging is a bridge workflow: the app copies a prompt for the user's AI tool, accepts only JSON-like code output, normalizes and bounds the data, matches against existing menus, then lets the user choose whether each item is logged, saved to My Menu, or skipped. Bridge v2 keeps the adopted kcal/P/F/C as one fixed value and separately carries origin, estimation policy, evidence, and uncertainty; v1 remains import-compatible.
 - Workout logging favors templates, favorites, My Training, body-part drilldown, equipment drilldown, and stepper controls.
 - My Training is the workout equivalent of My Menu: user-created exercises can be registered from an existing exercise or from scratch, saved with defaults and weight presets, edited in place, deleted without touching past logs, and reused from Workout or Settings.
 - Settings always exposes JSON backup/import and reminds the user to back up local data.
@@ -24,6 +24,10 @@
 ## Interaction Principles
 
 - Every logged item is a snapshot.
+- Adopted nutrition and interpretation are separate layers. The app never changes a saved kcal/P/F/C value because it is estimated; uncertainty only affects status language and the safe amount suggested for additional food.
+- User ownership and nutrition provenance are separate. An AI-created My Menu item remains user-owned but keeps `estimated` provenance and copies its nutrition metadata into every new food-log snapshot.
+- Home stays compact: current-day deficits are treated as remaining room, while past days receive final interpretation. Estimate share and safe kcal/fat remaining live behind a small detail control, and special-mode visuals take precedence.
+- Recommendation surfaces use adopted remaining P/C and safety-adjusted kcal/fat. AI reports use calorie-weighted estimate share rather than entry-count share.
 - Missing food days are displayed as missing, never counted as zero.
 - Goal changes update targets going forward without mutating old entries.
 - Manual entry exists, but quick logging is the default path.
