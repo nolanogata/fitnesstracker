@@ -59,6 +59,48 @@ import titanHighBackground from "./assets/theme-characters/titan-high.jpg";
 import titanHomeBackground from "./assets/theme-characters/titan-home.jpg";
 import titanLowBackground from "./assets/theme-characters/titan-low.jpg";
 import titanTravelBackground from "./assets/theme-characters/titan-travel.jpg";
+import sageCheatBackground from "./assets/theme-characters/sage-cheat.jpg";
+import sageFailBackground from "./assets/theme-characters/sage-fail.jpg";
+import sageHighBackground from "./assets/theme-characters/sage-high.jpg";
+import sageLowBackground from "./assets/theme-characters/sage-low.jpg";
+import sageMidBackground from "./assets/theme-characters/sage-mid.jpg";
+import sageTravelBackground from "./assets/theme-characters/sage-travel.jpg";
+import voltCheatBackground from "./assets/theme-characters/volt-cheat.jpg";
+import voltFailBackground from "./assets/theme-characters/volt-fail.jpg";
+import voltHighBackground from "./assets/theme-characters/volt-high.jpg";
+import voltLowBackground from "./assets/theme-characters/volt-low.jpg";
+import voltMidBackground from "./assets/theme-characters/volt-mid.jpg";
+import voltTravelBackground from "./assets/theme-characters/volt-travel.jpg";
+import novaCheatBackground from "./assets/theme-characters/nova-cheat.jpg";
+import novaFailBackground from "./assets/theme-characters/nova-fail.jpg";
+import novaHighBackground from "./assets/theme-characters/nova-high.jpg";
+import novaLowBackground from "./assets/theme-characters/nova-low.jpg";
+import novaMidBackground from "./assets/theme-characters/nova-mid.jpg";
+import novaTravelBackground from "./assets/theme-characters/nova-travel.jpg";
+import gritCheatBackground from "./assets/theme-characters/grit-cheat.jpg";
+import gritFailBackground from "./assets/theme-characters/grit-fail.jpg";
+import gritHighBackground from "./assets/theme-characters/grit-high.jpg";
+import gritLowBackground from "./assets/theme-characters/grit-low.jpg";
+import gritMidBackground from "./assets/theme-characters/grit-mid.jpg";
+import gritTravelBackground from "./assets/theme-characters/grit-travel.jpg";
+import aegisCheatBackground from "./assets/theme-characters/aegis-cheat.jpg";
+import aegisFailBackground from "./assets/theme-characters/aegis-fail.jpg";
+import aegisHighBackground from "./assets/theme-characters/aegis-high.jpg";
+import aegisLowBackground from "./assets/theme-characters/aegis-low.jpg";
+import aegisMidBackground from "./assets/theme-characters/aegis-mid.jpg";
+import aegisTravelBackground from "./assets/theme-characters/aegis-travel.jpg";
+import kitsuneCheatBackground from "./assets/theme-characters/kitsune-cheat.jpg";
+import kitsuneFailBackground from "./assets/theme-characters/kitsune-fail.jpg";
+import kitsuneHighBackground from "./assets/theme-characters/kitsune-high.jpg";
+import kitsuneLowBackground from "./assets/theme-characters/kitsune-low.jpg";
+import kitsuneMidBackground from "./assets/theme-characters/kitsune-mid.jpg";
+import kitsuneTravelBackground from "./assets/theme-characters/kitsune-travel.jpg";
+import kairoCheatBackground from "./assets/theme-characters/kairo-cheat.jpg";
+import kairoFailBackground from "./assets/theme-characters/kairo-fail.jpg";
+import kairoHighBackground from "./assets/theme-characters/kairo-high.jpg";
+import kairoLowBackground from "./assets/theme-characters/kairo-low.jpg";
+import kairoMidBackground from "./assets/theme-characters/kairo-mid.jpg";
+import kairoTravelBackground from "./assets/theme-characters/kairo-travel.jpg";
 import type {
   AchievementUnlock,
   ActivityLevel,
@@ -122,6 +164,8 @@ type LogExportType = "food" | "workout" | "food_workout";
 type LogExportDateTarget = "start" | "end";
 type EditableRecordTab = "food" | "workout";
 type ThemeCharacterStage = "low" | "mid" | "high" | "fail" | "cheat" | "travel";
+type ThemeCharacterImageSet = Record<ThemeCharacterStage, string>;
+type ThemeCharacterImageVariants = { default: ThemeCharacterImageSet };
 const homeBodyFatDisplayLabels: Record<HomeBodyFatDisplay, string> = {
   hidden: "非表示",
   average7: "7日間平均",
@@ -154,24 +198,87 @@ const themeCharacterOptions: Array<{ value: ThemeCharacter; label: string; image
   { value: "none", label: "なし" },
   { value: "titan", label: "TITAN", image: titanHomeBackground },
   { value: "flash", label: "FLASH", image: flashHomeBackground },
+  { value: "sage", label: "SAGE", image: sageMidBackground },
+  { value: "volt", label: "VOLT", image: voltMidBackground },
+  { value: "nova", label: "NOVA", image: novaMidBackground },
+  { value: "grit", label: "GRIT", image: gritMidBackground },
+  { value: "aegis", label: "AEGIS", image: aegisMidBackground },
+  { value: "kitsune", label: "KITSUNE", image: kitsuneMidBackground },
+  { value: "kairo", label: "KAIRO", image: kairoMidBackground },
 ];
-const themeCharacterImages: Record<Exclude<ThemeCharacter, "none">, Record<ThemeCharacterStage, string>> = {
-  titan: {
+const themeCharacterImageVariants: Record<Exclude<ThemeCharacter, "none">, ThemeCharacterImageVariants> = {
+  titan: { default: {
     low: titanLowBackground,
     mid: titanHomeBackground,
     high: titanHighBackground,
     fail: titanFailBackground,
     cheat: titanCheatBackground,
     travel: titanTravelBackground,
-  },
-  flash: {
+  } },
+  flash: { default: {
     low: flashLowBackground,
     mid: flashHomeBackground,
     high: flashHighBackground,
     fail: flashFailBackground,
     cheat: flashCheatBackground,
     travel: flashTravelBackground,
-  },
+  } },
+  sage: { default: {
+    low: sageLowBackground,
+    mid: sageMidBackground,
+    high: sageHighBackground,
+    fail: sageFailBackground,
+    cheat: sageCheatBackground,
+    travel: sageTravelBackground,
+  } },
+  volt: { default: {
+    low: voltLowBackground,
+    mid: voltMidBackground,
+    high: voltHighBackground,
+    fail: voltFailBackground,
+    cheat: voltCheatBackground,
+    travel: voltTravelBackground,
+  } },
+  nova: { default: {
+    low: novaLowBackground,
+    mid: novaMidBackground,
+    high: novaHighBackground,
+    fail: novaFailBackground,
+    cheat: novaCheatBackground,
+    travel: novaTravelBackground,
+  } },
+  grit: { default: {
+    low: gritLowBackground,
+    mid: gritMidBackground,
+    high: gritHighBackground,
+    fail: gritFailBackground,
+    cheat: gritCheatBackground,
+    travel: gritTravelBackground,
+  } },
+  aegis: { default: {
+    low: aegisLowBackground,
+    mid: aegisMidBackground,
+    high: aegisHighBackground,
+    fail: aegisFailBackground,
+    cheat: aegisCheatBackground,
+    travel: aegisTravelBackground,
+  } },
+  kitsune: { default: {
+    low: kitsuneLowBackground,
+    mid: kitsuneMidBackground,
+    high: kitsuneHighBackground,
+    fail: kitsuneFailBackground,
+    cheat: kitsuneCheatBackground,
+    travel: kitsuneTravelBackground,
+  } },
+  kairo: { default: {
+    low: kairoLowBackground,
+    mid: kairoMidBackground,
+    high: kairoHighBackground,
+    fail: kairoFailBackground,
+    cheat: kairoCheatBackground,
+    travel: kairoTravelBackground,
+  } },
 };
 const themeCharacterLabels = Object.fromEntries(themeCharacterOptions.map((option) => [option.value, option.label])) as Record<ThemeCharacter, string>;
 function normalizeThemeCharacter(value: unknown): ThemeCharacter {
@@ -2265,7 +2372,7 @@ function App() {
 
   useEffect(() => {
     if (themeCharacter === "none") return;
-    Object.values(themeCharacterImages[themeCharacter]).forEach((src) => {
+    Object.values(themeCharacterImageVariants[themeCharacter].default).forEach((src) => {
       const image = new Image();
       image.decoding = "async";
       image.src = src;
@@ -2330,7 +2437,7 @@ function App() {
       ))
         ? "fail"
         : themeCharacterStageFromProgress(homeCharacterProgress);
-  const themeCharacterImage = themeCharacter === "none" || !isThemeCharacterVisible ? undefined : themeCharacterImages[themeCharacter][themeCharacterStage];
+  const themeCharacterImage = themeCharacter === "none" || !isThemeCharacterVisible ? undefined : themeCharacterImageVariants[themeCharacter].default[themeCharacterStage];
   const unseenAchievementCount = useMemo(() => {
     const viewedAt = settings?.achievements_viewed_at ?? "";
     return (settings?.achievements ?? []).filter((achievement) => (
