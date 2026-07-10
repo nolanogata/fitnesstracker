@@ -58,6 +58,7 @@ import type {
   FoodEntry,
   Goal,
   HomeBodyFatDisplay,
+  HomeNutritionRemainingDisplay,
   HomeWeightDisplay,
   MealType,
   MenuItem,
@@ -115,6 +116,10 @@ const homeBodyFatDisplayLabels: Record<HomeBodyFatDisplay, string> = {
 const homeWeightDisplayLabels: Record<HomeWeightDisplay, string> = {
   average7: "7日平均",
   today: "今日の数値",
+};
+const homeNutritionRemainingDisplayLabels: Record<HomeNutritionRemainingDisplay, string> = {
+  recorded: "記録上の残り",
+  safe: "余裕をみた残り",
 };
 const bottomTabs: Tab[] = ["home", "food", "workout", "records", "settings"];
 const themeAccentOptions: Array<{ value: ThemeAccent; label: string; colors: [string, string] }> = [
@@ -987,6 +992,16 @@ const achievementProgressSpecs: Record<string, AchievementProgressSpec> = {
   streak_365: { metric: "streak", target: 365, unit: "日" },
 };
 const appUpdates: AppUpdate[] = [
+  {
+    id: "2026-07-10-home-remaining-display",
+    title: "Homeの残り表示を選択可能に",
+    date: "2026-07-10",
+    items: [
+      "ヒーローカードのギアから、記録上の残りと、推定値の幅を差し引いた残りを選べるようにしました。",
+      "選んだ残りに合わせて、ヒーローカードのkcal、進捗バー、背景の進み具合を揃えました。",
+      "Pは不足を注意・達成以上を良好、FとCは超過を注意としてPFCピルの色分けを戻しました。",
+    ],
+  },
   {
     id: "2026-07-10-ai-photo-review-flow",
     title: "AI写真登録の確認手順を改善",
@@ -2623,6 +2638,7 @@ function App() {
             weightLogs={weightLogs}
             bodyFatDisplayMode={settings?.home_body_fat_display ?? "today"}
             weightDisplayMode={settings?.home_weight_display ?? "today"}
+            nutritionRemainingDisplayMode={settings?.home_nutrition_remaining_display ?? "recorded"}
             backupInfo={backupInfo}
             recordReminder={recordReminder}
             needsGoalTargetPeriod={needsGoalTargetPeriod}
@@ -3491,6 +3507,7 @@ function HomeTab(props: {
   weightLogs: WeightLog[];
   bodyFatDisplayMode: HomeBodyFatDisplay;
   weightDisplayMode: HomeWeightDisplay;
+  nutritionRemainingDisplayMode: HomeNutritionRemainingDisplay;
   backupInfo: BackupInfo;
   recordReminder?: RecordReminder;
   needsGoalTargetPeriod: boolean;
@@ -3531,7 +3548,6 @@ function HomeTab(props: {
   const developerProgressPercent = typeof props.developerProgressPercent === "number"
     ? Math.max(0, Math.min(110, Math.round(props.developerProgressPercent)))
     : undefined;
-  const caloriePercent = props.goal?.target_calories ? Math.min(100, Math.round((props.dayTotals.calories / props.goal.target_calories) * 100)) : 0;
   const backupTitle = props.backupInfo.level === "danger" ? "バックアップ推奨" : "そろそろバックアップ";
   const todayWorkoutCalories = useMemo(() => {
     const sessionIds = new Set(props.todayWorkouts.map((session) => session.id));
@@ -3556,16 +3572,24 @@ function HomeTab(props: {
     () => getDailyNutritionEstimate(props.todayEntries, props.dayTotals, props.goal, props.menuItems),
     [props.todayEntries, props.dayTotals.calories, props.dayTotals.protein, props.dayTotals.fat, props.dayTotals.carbs, props.goal, props.menuItems],
   );
-  const isCalorieOverWithinEstimate = typeof calorieDelta === "number" && calorieDelta > 0 && calorieDelta <= dailyEstimate.uncertainty.calories;
-  const calorieDeltaText = typeof calorieDelta === "number" ? `${calorieDelta > 0 ? "+" : ""}${Math.round(calorieDelta)}` : "-";
+  const displayedRemaining = props.nutritionRemainingDisplayMode === "safe" ? dailyEstimate.safeRemaining : dailyEstimate.adoptedRemaining;
+  const heroCalorieDelta = props.goal?.target_calories ? -displayedRemaining.calories : undefined;
+  const heroCaloriePercent = props.goal?.target_calories
+    ? Math.max(0, Math.min(100, Math.round(((props.goal.target_calories - displayedRemaining.calories) / props.goal.target_calories) * 100)))
+    : 0;
+  const isCalorieOverWithinEstimate = props.nutritionRemainingDisplayMode === "recorded"
+    && typeof calorieDelta === "number"
+    && calorieDelta > 0
+    && calorieDelta <= dailyEstimate.uncertainty.calories;
+  const calorieDeltaText = typeof heroCalorieDelta === "number" ? `${heroCalorieDelta > 0 ? "+" : ""}${Math.round(heroCalorieDelta)}` : "-";
   const shouldMaskGoalProgress = props.isExceptionDay;
   const shouldShowRainbowProgress = props.isCheatDay || !!props.activeSpecialMode;
   const shouldShowPausedProgress = !shouldShowRainbowProgress && !!props.activePauseMode;
-  const heroProgressPercent = shouldMaskGoalProgress ? 100 : Math.min(100, developerProgressPercent ?? caloriePercent);
+  const heroProgressPercent = shouldMaskGoalProgress ? 100 : Math.min(100, developerProgressPercent ?? heroCaloriePercent);
   const heroGlowPercent = shouldMaskGoalProgress ? 100 : developerProgressPercent ?? heroProgressPercent;
   const heroBackgroundProgress = Math.max(0, Math.min(100, heroGlowPercent));
   const isDeveloperProgressOver = typeof developerProgressPercent === "number" && developerProgressPercent > 100;
-  const shouldUseThemeHeroFrame = !shouldShowRainbowProgress && !shouldShowPausedProgress && !isDeveloperProgressOver && !(calorieDelta && calorieDelta > 0);
+  const shouldUseThemeHeroFrame = !shouldShowRainbowProgress && !shouldShowPausedProgress && !isDeveloperProgressOver && !(heroCalorieDelta && heroCalorieDelta > 0);
   const heroThemeGlowClass = !shouldUseThemeHeroFrame
     ? ""
     : heroGlowPercent >= 90
@@ -3581,9 +3605,9 @@ function HomeTab(props: {
     ? "home-progress-rainbow"
     : shouldShowPausedProgress
       ? "home-progress-paused"
-      : isCalorieOverWithinEstimate ? "home-progress-estimate" : (isDeveloperProgressOver || (calorieDelta && calorieDelta > 0)) ? "home-progress-over" : "home-progress-normal";
+      : isCalorieOverWithinEstimate ? "home-progress-estimate" : (isDeveloperProgressOver || (heroCalorieDelta && heroCalorieDelta > 0)) ? "home-progress-over" : "home-progress-normal";
   const calorieDisplayText = shouldMaskGoalProgress ? "-" : calorieDeltaText;
-  const calorieMoodClass = props.isCheatDay ? "cheat" : props.activeSpecialMode ? "trip" : props.activePauseMode ? "cheat" : typeof calorieDelta === "number" ? (calorieDelta > 0 ? (isCalorieOverWithinEstimate ? "estimate" : "over") : Math.abs(calorieDelta) <= 100 ? "on-track" : "left") : "neutral";
+  const calorieMoodClass = props.isCheatDay ? "cheat" : props.activeSpecialMode ? "trip" : props.activePauseMode ? "cheat" : typeof heroCalorieDelta === "number" ? (heroCalorieDelta > 0 ? (isCalorieOverWithinEstimate ? "estimate" : "over") : Math.abs(heroCalorieDelta) <= 100 ? "on-track" : "left") : "neutral";
   const heroStyle = {
     "--hero-progress-level": String(heroBackgroundProgress),
   } as CSSProperties & Record<"--hero-progress-level", string>;
@@ -3603,8 +3627,8 @@ function HomeTab(props: {
       : typeof percent !== "number"
       ? "neutral"
       : macro.label === "P"
-        ? percent < 80 ? (props.isEditingPastDate ? "low" : "neutral") : "safe"
-        : isWithinEstimate ? "estimate" : percent > 110 ? "over" : percent >= 80 ? "safe" : (props.isEditingPastDate ? "low" : "neutral");
+        ? percent < 80 ? "over" : "safe"
+        : isWithinEstimate ? "estimate" : percent > 110 ? "over" : percent >= 80 ? "safe" : "low";
     return { ...macro, percent, remaining, tone };
   });
   const saveCheckIn = async () => {
@@ -3628,6 +3652,10 @@ function HomeTab(props: {
   };
   const saveCheckInDisplay = async (patch: Partial<Pick<AppSettings, "home_weight_display" | "home_body_fat_display">>) => {
     await db.settings.update("local", { ...patch, updated_at: nowIso() });
+    await props.refresh();
+  };
+  const saveNutritionRemainingDisplay = async (mode: HomeNutritionRemainingDisplay) => {
+    await db.settings.update("local", { home_nutrition_remaining_display: mode, updated_at: nowIso() });
     await props.refresh();
   };
   const logPerfectFood = async (item: MenuItem) => {
@@ -3806,7 +3834,7 @@ function HomeTab(props: {
             )}
         </div>
         <div className="mt-5">
-          <p className={`numeric-text text-[4.25rem] font-semibold leading-none tracking-normal ${calorieDelta && calorieDelta > 0 ? (isCalorieOverWithinEstimate ? "text-estimate" : "text-clay") : "text-ink"}`}>
+          <p className={`numeric-text text-[4.25rem] font-semibold leading-none tracking-normal ${heroCalorieDelta && heroCalorieDelta > 0 ? (isCalorieOverWithinEstimate ? "text-estimate" : "text-clay") : "text-ink"}`}>
             {calorieDisplayText}<span className="ml-2 text-xl font-semibold">kcal</span>
           </p>
           {!shouldMaskGoalProgress && <p className="numeric-text mt-2 text-sm text-moss">摂取 {props.dayTotals.calories} / 目標 {props.goal?.target_calories ?? "-"} kcal</p>}
@@ -3992,6 +4020,8 @@ function HomeTab(props: {
           estimate={dailyEstimate}
           isPastDate={props.isEditingPastDate}
           calorieDelta={calorieDelta}
+          remainingDisplayMode={props.nutritionRemainingDisplayMode}
+          onRemainingDisplayChange={saveNutritionRemainingDisplay}
           onClose={() => setIsEstimateDetailOpen(false)}
         />
       )}
@@ -4058,10 +4088,12 @@ function GoalSummarySheet({ goal, onClose, onEdit }: { goal?: Goal; onClose: () 
   );
 }
 
-function NutritionEstimateDetailSheet({ estimate, isPastDate, calorieDelta, onClose }: {
+function NutritionEstimateDetailSheet({ estimate, isPastDate, calorieDelta, remainingDisplayMode, onRemainingDisplayChange, onClose }: {
   estimate: ReturnType<typeof getDailyNutritionEstimate>;
   isPastDate: boolean;
   calorieDelta?: number;
+  remainingDisplayMode: HomeNutritionRemainingDisplay;
+  onRemainingDisplayChange: (mode: HomeNutritionRemainingDisplay) => void | Promise<void>;
   onClose: () => void;
 }) {
   const status = isPastDate ? getDailyEstimateStatus(calorieDelta, estimate.uncertainty.calories) : "記録中";
@@ -4083,9 +4115,26 @@ function NutritionEstimateDetailSheet({ estimate, isPastDate, calorieDelta, onCl
             : "推定値なし"}</strong>
         </div>
 
+        <section className="nutrition-display-setting mt-3">
+          <p className="text-sm font-bold">ヒーローカードに表示する残り</p>
+          <p className="mt-1 text-xs leading-relaxed text-moss">推定値の幅を差し引くか選べます。推定値がない日は、どちらも同じ表示です。</p>
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            {(Object.keys(homeNutritionRemainingDisplayLabels) as HomeNutritionRemainingDisplay[]).map((mode) => (
+              <button
+                className={`mode-button min-h-11 px-2 text-xs ${remainingDisplayMode === mode ? "mode-button-active" : ""}`}
+                key={mode}
+                aria-pressed={remainingDisplayMode === mode}
+                onClick={() => void onRemainingDisplayChange(mode)}
+              >
+                {homeNutritionRemainingDisplayLabels[mode]}
+              </button>
+            ))}
+          </div>
+        </section>
+
         <div className="mt-3 grid grid-cols-2 gap-2">
-          <NutritionRemainingCard title="記録上の残り" calories={estimate.adoptedRemaining.calories} fat={estimate.adoptedRemaining.fat} />
-          <NutritionRemainingCard title="余裕をみた残り" calories={estimate.safeRemaining.calories} fat={estimate.safeRemaining.fat} safe />
+          <NutritionRemainingCard title="記録上の残り" calories={estimate.adoptedRemaining.calories} fat={estimate.adoptedRemaining.fat} selected={remainingDisplayMode === "recorded"} />
+          <NutritionRemainingCard title="余裕をみた残り" calories={estimate.safeRemaining.calories} fat={estimate.safeRemaining.fat} safe selected={remainingDisplayMode === "safe"} />
         </div>
 
         {estimate.estimatedEntryCount > 0 ? (
@@ -4121,10 +4170,13 @@ function NutritionEstimateDetailSheet({ estimate, isPastDate, calorieDelta, onCl
   );
 }
 
-function NutritionRemainingCard({ title, calories, fat, safe = false }: { title: string; calories: number; fat: number; safe?: boolean }) {
+function NutritionRemainingCard({ title, calories, fat, safe = false, selected = false }: { title: string; calories: number; fat: number; safe?: boolean; selected?: boolean }) {
   return (
-    <div className={`nutrition-remaining-card ${safe ? "nutrition-remaining-card-safe" : ""}`}>
-      <p>{title}</p>
+    <div className={`nutrition-remaining-card ${safe ? "nutrition-remaining-card-safe" : ""} ${selected ? "nutrition-remaining-card-selected" : ""}`}>
+      <div className="flex items-center justify-between gap-2">
+        <p>{title}</p>
+        {selected && <span className="nutrition-remaining-selected-label">表示中</span>}
+      </div>
       <strong>{formatSignedRemaining(calories, "kcal")}</strong>
       <span>{formatSignedRemaining(fat, "g", "F")}</span>
     </div>
