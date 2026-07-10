@@ -27,6 +27,7 @@ import {
   Heart,
   Home,
   Minus,
+  Palette,
   Pencil,
   Plus,
   RotateCcw,
@@ -95,12 +96,30 @@ import kitsuneHighBackground from "./assets/theme-characters/kitsune-high.jpg";
 import kitsuneLowBackground from "./assets/theme-characters/kitsune-low.jpg";
 import kitsuneMidBackground from "./assets/theme-characters/kitsune-mid.jpg";
 import kitsuneTravelBackground from "./assets/theme-characters/kitsune-travel.jpg";
-import kairoCheatBackground from "./assets/theme-characters/kairo-cheat.jpg";
-import kairoFailBackground from "./assets/theme-characters/kairo-fail.jpg";
-import kairoHighBackground from "./assets/theme-characters/kairo-high.jpg";
-import kairoLowBackground from "./assets/theme-characters/kairo-low.jpg";
-import kairoMidBackground from "./assets/theme-characters/kairo-mid.jpg";
-import kairoTravelBackground from "./assets/theme-characters/kairo-travel.jpg";
+import lumenCheatBackground from "./assets/theme-characters/lumen-cheat.jpg";
+import lumenFailBackground from "./assets/theme-characters/lumen-fail.jpg";
+import lumenHighBackground from "./assets/theme-characters/lumen-high.jpg";
+import lumenLowBackground from "./assets/theme-characters/lumen-low.jpg";
+import lumenMidBackground from "./assets/theme-characters/lumen-mid.jpg";
+import lumenTravelBackground from "./assets/theme-characters/lumen-travel.jpg";
+import koruCheatBackground from "./assets/theme-characters/koru-cheat.jpg";
+import koruFailBackground from "./assets/theme-characters/koru-fail.jpg";
+import koruHighBackground from "./assets/theme-characters/koru-high.jpg";
+import koruLowBackground from "./assets/theme-characters/koru-low.jpg";
+import koruMidBackground from "./assets/theme-characters/koru-mid.jpg";
+import koruTravelBackground from "./assets/theme-characters/koru-travel.jpg";
+import vitoCheatBackground from "./assets/theme-characters/vito-cheat.jpg";
+import vitoFailBackground from "./assets/theme-characters/vito-fail.jpg";
+import vitoHighBackground from "./assets/theme-characters/vito-high.jpg";
+import vitoLowBackground from "./assets/theme-characters/vito-low.jpg";
+import vitoMidBackground from "./assets/theme-characters/vito-mid.jpg";
+import vitoTravelBackground from "./assets/theme-characters/vito-travel.jpg";
+import ariaCheatBackground from "./assets/theme-characters/aria-cheat.jpg";
+import ariaFailBackground from "./assets/theme-characters/aria-fail.jpg";
+import ariaHighBackground from "./assets/theme-characters/aria-high.jpg";
+import ariaLowBackground from "./assets/theme-characters/aria-low.jpg";
+import ariaMidBackground from "./assets/theme-characters/aria-mid.jpg";
+import ariaTravelBackground from "./assets/theme-characters/aria-travel.jpg";
 import type {
   AchievementUnlock,
   ActivityLevel,
@@ -125,6 +144,8 @@ import type {
   TemplateExercise,
   ThemeAccent,
   ThemeCharacter,
+  ThemeCharacterProgress,
+  ThemeCharacterProgressStage,
   ThemeMode,
   WeightLog,
   WorkoutLoadType,
@@ -153,7 +174,7 @@ type AiFoodImportStep = "prompt" | "paste" | "read" | "match" | "timing" | "conf
 type WorkoutFocus = "dateLog" | undefined;
 type MyTrainingWizardStep = "method" | "source" | "basic" | "defaults" | "presets" | "confirm";
 type SettingsFocus = "ai" | "backup" | "myMenu" | "goal" | undefined;
-type SettingsSection = "ai" | "backup" | "goal" | "records" | "myMenu" | "myTraining" | "general";
+type SettingsSection = "ai" | "backup" | "goal" | "theme" | "records" | "myMenu" | "myTraining" | "general";
 type MyMenuSection = "list" | "method" | "new" | "edit";
 type MyTrainingSection = "list";
 type GoalSettingsSection = "guided" | "manual" | "custom";
@@ -163,9 +184,10 @@ type LogExportStep = "type" | "grouping" | "period" | "output";
 type LogExportType = "food" | "workout" | "food_workout";
 type LogExportDateTarget = "start" | "end";
 type EditableRecordTab = "food" | "workout";
-type ThemeCharacterStage = "low" | "mid" | "high" | "fail" | "cheat" | "travel";
+type ThemeCharacterStage = ThemeCharacterProgressStage | "fail" | "cheat" | "travel";
 type ThemeCharacterImageSet = Record<ThemeCharacterStage, string>;
-type ThemeCharacterImageVariants = { default: ThemeCharacterImageSet };
+type ThemeCharacterImageVariants = Record<string, ThemeCharacterImageSet>;
+type ThemeCharacterGroup = "female" | "male" | "other";
 const homeBodyFatDisplayLabels: Record<HomeBodyFatDisplay, string> = {
   hidden: "非表示",
   average7: "7日間平均",
@@ -194,17 +216,20 @@ function normalizeThemeAccent(value: unknown): ThemeAccent {
   if (value === "ruby") return "orange";
   return themeAccentOptions.some((option) => option.value === value) ? value as ThemeAccent : "classic";
 }
-const themeCharacterOptions: Array<{ value: ThemeCharacter; label: string; image?: string }> = [
+const themeCharacterOptions: Array<{ value: ThemeCharacter; label: string; image?: string; group?: ThemeCharacterGroup }> = [
   { value: "none", label: "なし" },
-  { value: "titan", label: "TITAN", image: titanHomeBackground },
-  { value: "flash", label: "FLASH", image: flashHomeBackground },
-  { value: "sage", label: "SAGE", image: sageMidBackground },
-  { value: "volt", label: "VOLT", image: voltMidBackground },
-  { value: "nova", label: "NOVA", image: novaMidBackground },
-  { value: "grit", label: "GRIT", image: gritMidBackground },
-  { value: "aegis", label: "AEGIS", image: aegisMidBackground },
-  { value: "kitsune", label: "KITSUNE", image: kitsuneMidBackground },
-  { value: "kairo", label: "KAIRO", image: kairoMidBackground },
+  { value: "sage", label: "SAGE", image: sageMidBackground, group: "female" },
+  { value: "volt", label: "VOLT", image: voltMidBackground, group: "female" },
+  { value: "nova", label: "NOVA", image: novaMidBackground, group: "female" },
+  { value: "aria", label: "ARIA", image: ariaMidBackground, group: "female" },
+  { value: "titan", label: "TITAN", image: titanHomeBackground, group: "male" },
+  { value: "flash", label: "FLASH", image: flashHomeBackground, group: "male" },
+  { value: "grit", label: "GRIT", image: gritMidBackground, group: "male" },
+  { value: "aegis", label: "AEGIS", image: aegisMidBackground, group: "male" },
+  { value: "lumen", label: "LUMEN", image: lumenMidBackground, group: "male" },
+  { value: "koru", label: "KORU", image: koruMidBackground, group: "male" },
+  { value: "vito", label: "VITO", image: vitoMidBackground, group: "male" },
+  { value: "kitsune", label: "KITSUNE", image: kitsuneMidBackground, group: "other" },
 ];
 const themeCharacterImageVariants: Record<Exclude<ThemeCharacter, "none">, ThemeCharacterImageVariants> = {
   titan: { default: {
@@ -271,23 +296,61 @@ const themeCharacterImageVariants: Record<Exclude<ThemeCharacter, "none">, Theme
     cheat: kitsuneCheatBackground,
     travel: kitsuneTravelBackground,
   } },
-  kairo: { default: {
-    low: kairoLowBackground,
-    mid: kairoMidBackground,
-    high: kairoHighBackground,
-    fail: kairoFailBackground,
-    cheat: kairoCheatBackground,
-    travel: kairoTravelBackground,
+  lumen: { default: {
+    low: lumenLowBackground,
+    mid: lumenMidBackground,
+    high: lumenHighBackground,
+    fail: lumenFailBackground,
+    cheat: lumenCheatBackground,
+    travel: lumenTravelBackground,
+  } },
+  koru: { default: {
+    low: koruLowBackground,
+    mid: koruMidBackground,
+    high: koruHighBackground,
+    fail: koruFailBackground,
+    cheat: koruCheatBackground,
+    travel: koruTravelBackground,
+  } },
+  vito: { default: {
+    low: vitoLowBackground,
+    mid: vitoMidBackground,
+    high: vitoHighBackground,
+    fail: vitoFailBackground,
+    cheat: vitoCheatBackground,
+    travel: vitoTravelBackground,
+  } },
+  aria: { default: {
+    low: ariaLowBackground,
+    mid: ariaMidBackground,
+    high: ariaHighBackground,
+    fail: ariaFailBackground,
+    cheat: ariaCheatBackground,
+    travel: ariaTravelBackground,
   } },
 };
 const themeCharacterLabels = Object.fromEntries(themeCharacterOptions.map((option) => [option.value, option.label])) as Record<ThemeCharacter, string>;
 function normalizeThemeCharacter(value: unknown): ThemeCharacter {
   return themeCharacterOptions.some((option) => option.value === value) ? value as ThemeCharacter : "none";
 }
-function themeCharacterStageFromProgress(progress: number): ThemeCharacterStage {
+function themeCharacterStageFromProgress(progress: number): ThemeCharacterProgressStage {
   if (progress >= 85) return "high";
   if (progress >= 40) return "mid";
   return "low";
+}
+const themeCharacterProgressStages: ThemeCharacterProgressStage[] = ["low", "mid", "high"];
+const themeCharacterStageLabels: Record<ThemeCharacterProgressStage, string> = {
+  low: "フェーズ 1",
+  mid: "フェーズ 2",
+  high: "フェーズ 3",
+};
+const themeCharacterGroupLabels: Record<ThemeCharacterGroup, string> = {
+  female: "女性",
+  male: "男性",
+  other: "それ以外",
+};
+function themeCharacterProgressStageIndex(stage: ThemeCharacterProgressStage) {
+  return themeCharacterProgressStages.indexOf(stage);
 }
 type BackupInfo = {
   lastBackupAt?: string;
@@ -2171,6 +2234,8 @@ function App() {
   const [currentTime, setCurrentTime] = useState(() => new Date());
   const [selectedAppDate, setSelectedAppDate] = useState<string>();
   const [isThemeCharacterVisible, setIsThemeCharacterVisible] = useState(true);
+  const [themePowerTapCount, setThemePowerTapCount] = useState(0);
+  const [isThemePowerFlash, setIsThemePowerFlash] = useState(false);
   const [toast, setToast] = useState<{ id: string; text: string }>();
   const [prCelebration, setPrCelebration] = useState<WorkoutPrCelebration>();
   const [achievementCelebration, setAchievementCelebration] = useState<AchievementCelebration>();
@@ -2197,6 +2262,10 @@ function App() {
   const themeMode = settings?.theme_mode ?? "system";
   const themeAccent = normalizeThemeAccent(settings?.theme_accent);
   const themeCharacter = normalizeThemeCharacter(settings?.theme_character);
+  const themeCharacterVariant = settings?.theme_character_variant ?? "default";
+  const activeThemeCharacterImages = themeCharacter === "none"
+    ? undefined
+    : themeCharacterImageVariants[themeCharacter][themeCharacterVariant] ?? themeCharacterImageVariants[themeCharacter].default;
   const resolvedTheme: "light" | "dark" = themeMode === "system" ? (prefersDarkTheme ? "dark" : "light") : themeMode;
   const shellTheme = themeCharacter !== "none" ? "dark" : resolvedTheme;
   const specialModeSettings = useMemo(() => getSpecialModeSettings(settings), [settings]);
@@ -2371,13 +2440,13 @@ function App() {
   }, [themeCharacter]);
 
   useEffect(() => {
-    if (themeCharacter === "none") return;
-    Object.values(themeCharacterImageVariants[themeCharacter].default).forEach((src) => {
+    if (!activeThemeCharacterImages) return;
+    Object.values(activeThemeCharacterImages).forEach((src) => {
       const image = new Image();
       image.decoding = "async";
       image.src = src;
     });
-  }, [themeCharacter]);
+  }, [activeThemeCharacterImages]);
 
   useEffect(() => {
     const refreshCurrentTime = () => setCurrentTime(new Date());
@@ -2427,17 +2496,46 @@ function App() {
       : target?.target_calories
         ? Math.max(0, Math.min(100, Math.round(((target.target_calories - homeCharacterRemaining.calories) / target.target_calories) * 100)))
         : 0;
+  const normalThemeCharacterStage = themeCharacterStageFromProgress(homeCharacterProgress);
+  const isThemeCharacterFailure = !isExceptionDay && (
+    (typeof developerProgressPercent === "number" && developerProgressPercent > 100)
+    || (!!target?.target_calories && dayTotals.calories > target.target_calories)
+  );
+  const storedThemeCharacterStage = themeCharacter !== "none" && settings?.theme_character_progress?.app_date === appDate
+    ? settings.theme_character_progress.unlocked_stages?.[themeCharacter]
+    : undefined;
+  const unlockedThemeCharacterStage = storedThemeCharacterStage && themeCharacterProgressStages.includes(storedThemeCharacterStage)
+    ? storedThemeCharacterStage
+    : "low";
+  const displayedThemeCharacterProgressStage = isEditingPastDate
+    ? normalThemeCharacterStage
+    : themeCharacterProgressStages[Math.min(
+      themeCharacterProgressStageIndex(unlockedThemeCharacterStage),
+      themeCharacterProgressStageIndex(normalThemeCharacterStage),
+    )];
+  const hasThemePowerUnlock = themeCharacter !== "none"
+    && isThemeCharacterVisible
+    && !isEditingPastDate
+    && !isExceptionDay
+    && !isThemeCharacterFailure
+    && themeCharacterProgressStageIndex(normalThemeCharacterStage) > themeCharacterProgressStageIndex(displayedThemeCharacterProgressStage);
+  const nextThemeCharacterStage = hasThemePowerUnlock
+    ? themeCharacterProgressStages[themeCharacterProgressStageIndex(displayedThemeCharacterProgressStage) + 1]
+    : undefined;
   const themeCharacterStage: ThemeCharacterStage = isCheatDay
     ? "cheat"
     : activeSpecialMode
       ? "travel"
-      : (!isExceptionDay && (
-        (typeof developerProgressPercent === "number" && developerProgressPercent > 100)
-        || (!!target?.target_calories && dayTotals.calories > target.target_calories)
-      ))
+      : isThemeCharacterFailure
         ? "fail"
-        : themeCharacterStageFromProgress(homeCharacterProgress);
-  const themeCharacterImage = themeCharacter === "none" || !isThemeCharacterVisible ? undefined : themeCharacterImageVariants[themeCharacter].default[themeCharacterStage];
+        : displayedThemeCharacterProgressStage;
+  const themeCharacterImage = themeCharacter === "none" || !isThemeCharacterVisible
+    ? undefined
+    : activeThemeCharacterImages?.[themeCharacterStage];
+  useEffect(() => {
+    setThemePowerTapCount(0);
+    setIsThemePowerFlash(false);
+  }, [appDate, hasThemePowerUnlock, normalThemeCharacterStage, themeCharacter]);
   const unseenAchievementCount = useMemo(() => {
     const viewedAt = settings?.achievements_viewed_at ?? "";
     return (settings?.achievements ?? []).filter((achievement) => (
@@ -2740,6 +2838,36 @@ function App() {
       return next;
     });
   };
+  const unlockNextThemeCharacterStage = async () => {
+    if (!settings || themeCharacter === "none" || !nextThemeCharacterStage) return;
+    const currentProgress: ThemeCharacterProgress = settings.theme_character_progress?.app_date === appDate
+      ? settings.theme_character_progress
+      : { app_date: appDate, unlocked_stages: {} };
+    const nextProgress: ThemeCharacterProgress = {
+      app_date: appDate,
+      unlocked_stages: {
+        ...(currentProgress.unlocked_stages ?? {}),
+        [themeCharacter]: nextThemeCharacterStage,
+      },
+    };
+    const updatedAt = nowIso();
+    await db.settings.update("local", { theme_character_progress: nextProgress, updated_at: updatedAt });
+    setSettings({ ...settings, theme_character_progress: nextProgress, updated_at: updatedAt });
+    showToast(`${themeCharacterStageLabels[nextThemeCharacterStage]}をアンロックしました`);
+  };
+  const handleThemePowerTap = () => {
+    if (!hasThemePowerUnlock || isThemePowerFlash) return;
+    const nextTapCount = themePowerTapCount + 1;
+    setThemePowerTapCount(nextTapCount);
+    if (nextTapCount < 10) return;
+    setIsThemePowerFlash(true);
+    window.setTimeout(() => {
+      void unlockNextThemeCharacterStage().finally(() => {
+        setThemePowerTapCount(0);
+        setIsThemePowerFlash(false);
+      });
+    }, 520);
+  };
 
   if (settings && !settings.onboarding_completed) {
     return <Onboarding refresh={refresh} />;
@@ -2877,6 +3005,12 @@ function App() {
             bodyFatDisplayMode={settings?.home_body_fat_display ?? "today"}
             weightDisplayMode={settings?.home_weight_display ?? "today"}
             nutritionRemainingDisplayMode={settings?.home_nutrition_remaining_display ?? "recorded"}
+            themePowerUnlock={hasThemePowerUnlock && nextThemeCharacterStage ? {
+              taps: themePowerTapCount,
+              nextStage: nextThemeCharacterStage,
+              isFlashing: isThemePowerFlash,
+              onTap: handleThemePowerTap,
+            } : undefined}
             backupInfo={backupInfo}
             recordReminder={recordReminder}
             needsGoalTargetPeriod={needsGoalTargetPeriod}
@@ -3009,6 +3143,7 @@ function App() {
             themeMode={themeMode}
             themeAccent={themeAccent}
             themeCharacter={themeCharacter}
+            themeCharacterVariant={themeCharacterVariant}
             resolvedTheme={resolvedTheme}
             markBackupNow={markBackupNow}
             openUpdateNotes={openUpdateNotes}
@@ -3747,6 +3882,12 @@ function HomeTab(props: {
   bodyFatDisplayMode: HomeBodyFatDisplay;
   weightDisplayMode: HomeWeightDisplay;
   nutritionRemainingDisplayMode: HomeNutritionRemainingDisplay;
+  themePowerUnlock?: {
+    taps: number;
+    nextStage: ThemeCharacterProgressStage;
+    isFlashing: boolean;
+    onTap: () => void;
+  };
   backupInfo: BackupInfo;
   recordReminder?: RecordReminder;
   needsGoalTargetPeriod: boolean;
@@ -4109,6 +4250,23 @@ function HomeTab(props: {
             </button>
           ))}
         </div>
+        {props.themePowerUnlock && (
+          <div className={`theme-power-overlay ${props.themePowerUnlock.isFlashing ? "theme-power-overlay-flash" : ""}`}>
+            {props.themePowerUnlock.isFlashing ? (
+              <span className="theme-power-flash-mark">UNLOCK</span>
+            ) : (
+              <>
+                <span className="theme-power-kicker">次のフェーズをアンロック</span>
+                <strong>{themeCharacterStageLabels[props.themePowerUnlock.nextStage]}</strong>
+                <button className="theme-power-button" type="button" onClick={props.themePowerUnlock.onTap}>
+                  パワーを送る
+                </button>
+                <span className="theme-power-count">ボタンを連打！ {props.themePowerUnlock.taps}/10</span>
+                <span className="theme-power-track" aria-hidden="true"><span style={{ width: `${props.themePowerUnlock.taps * 10}%` }} /></span>
+              </>
+            )}
+          </div>
+        )}
       </section>
 
       <div className="home-action-row">
@@ -7733,6 +7891,7 @@ function SettingsTab(props: {
   themeMode: ThemeMode;
   themeAccent: ThemeAccent;
   themeCharacter: ThemeCharacter;
+  themeCharacterVariant: string;
   resolvedTheme: "light" | "dark";
   markBackupNow: () => void;
   openUpdateNotes: () => void;
@@ -7748,6 +7907,7 @@ function SettingsTab(props: {
   };
 }) {
   const [activeSettingsSection, setActiveSettingsSection] = useState<SettingsSection | undefined>(() => props.focus);
+  const [themeCharacterCandidate, setThemeCharacterCandidate] = useState<Exclude<ThemeCharacter, "none">>();
   const [goalDraft, setGoalDraft] = useState(() => settingsGoalDraftFrom(props.activeGoal, props.profile));
   const [activeGoalSettingsSection, setActiveGoalSettingsSection] = useState<GoalSettingsSection>();
   const [goalWizardStep, setGoalWizardStep] = useState(0);
@@ -7868,8 +8028,9 @@ function SettingsTab(props: {
     }
     await props.refresh();
   };
-  const updateThemeCharacter = async (theme_character: ThemeCharacter) => {
-    await saveSettingsPatch({ theme_character });
+  const updateThemeCharacter = async (theme_character: ThemeCharacter, theme_character_variant = "default") => {
+    await saveSettingsPatch({ theme_character, theme_character_variant });
+    setThemeCharacterCandidate(undefined);
     props.showToast(theme_character === "none" ? "テーマキャラをオフにしました" : `${themeCharacterLabels[theme_character]}をHomeに表示します`);
   };
 
@@ -8529,13 +8690,18 @@ function SettingsTab(props: {
     ai: { title: "AI相談レポート", subtitle: "AIに渡す相談材料を生成します。" },
     backup: { title: "エクスポート", subtitle: "バックアップ保存とログ出力を管理します。" },
     goal: { title: "ゴール設定", subtitle: "目標体重、PFC、運動目標を調整します。" },
+    theme: { title: "テーマ設定", subtitle: "表示モード、テーマカラー、テーマキャラクターを選びます。" },
     records: { title: "記録設定", subtitle: "旅行や休養など、通常評価と分けたい期間を管理します。" },
     myMenu: { title: "マイメニュー", subtitle: "自分用の食事メニューを登録・編集します。" },
     myTraining: { title: "マイトレ", subtitle: "自分用のワークアウト種目を登録・編集します。" },
-    general: { title: "一般", subtitle: "表示、ユーザー名、更新履歴、開発者モードを管理します。" },
+    general: { title: "一般", subtitle: "チェックイン表示、ユーザー名、更新履歴、開発者モードを管理します。" },
   };
   const activeSectionTitle = activeSettingsSection ? sectionTitles[activeSettingsSection] : undefined;
   const goBackFromSettingsSection = () => {
+    if (activeSettingsSection === "theme" && themeCharacterCandidate) {
+      setThemeCharacterCandidate(undefined);
+      return;
+    }
     if (activeSettingsSection === "goal" && activeGoalSettingsSection) {
       setActiveGoalSettingsSection(undefined);
       setGoalWizardStep(0);
@@ -8564,12 +8730,13 @@ function SettingsTab(props: {
             <SettingsMenuRow title="AI相談レポート" description="AIにコピーする日別・週別・月別レポート" icon={<FileText size={18} />} onClick={() => setActiveSettingsSection("ai")} />
             <SettingsMenuRow title="エクスポート" description="バックアップ保存 / 食事・ワークアウトのログ出力" icon={<Archive size={18} />} onClick={() => setActiveSettingsSection("backup")} />
             <SettingsMenuRow title="ゴール設定" description={`${phaseLabels[goalDraft.phase]} / ${calculated?.target_calories ?? "-"}kcal`} icon={<SlidersHorizontal size={18} />} onClick={() => setActiveSettingsSection("goal")} />
+            <SettingsMenuRow title="テーマ設定" description={`${props.resolvedTheme === "dark" ? "ダーク" : "ライト"} / ${themeAccentLabels[props.themeAccent]} / ${themeCharacterLabels[props.themeCharacter]}`} icon={<Palette size={18} />} onClick={() => setActiveSettingsSection("theme")} />
           </section>
           <section className="compact-card divide-y divide-line overflow-hidden">
             <SettingsMenuRow title="記録設定" description={`旅行 ${isTravelModeEnabled ? "ON" : "OFF"} / 一時停止 ${isPauseModeEnabled ? "ON" : "OFF"}`} icon={<CalendarDays size={18} />} onClick={() => setActiveSettingsSection("records")} />
             <SettingsMenuRow title="マイメニュー" description={`登録済み ${userMenuItems.length}件`} icon={<Store size={18} />} onClick={() => setActiveSettingsSection("myMenu")} />
             <SettingsMenuRow title="マイトレ" description={`登録済み ${myTrainingExercises.length}件`} icon={<Dumbbell size={18} />} onClick={() => setActiveSettingsSection("myTraining")} />
-            <SettingsMenuRow title="一般" description={`表示 ${props.resolvedTheme === "dark" ? "ダーク" : "ライト"} / ${themeAccentLabels[props.themeAccent]} / ${themeCharacterLabels[props.themeCharacter]} / ${props.profile?.name || "未設定"}`} icon={<Settings size={18} />} onClick={() => setActiveSettingsSection("general")} />
+            <SettingsMenuRow title="一般" description={props.profile?.name || "ユーザー名 未設定"} icon={<Settings size={18} />} onClick={() => setActiveSettingsSection("general")} />
           </section>
         </>
       )}
@@ -8584,16 +8751,16 @@ function SettingsTab(props: {
         </section>
       )}
 
-      {activeSettingsSection === "general" && <section className="compact-card p-4">
+      {activeSettingsSection === "theme" && !themeCharacterCandidate && <section className="compact-card p-4">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <h2 className="font-bold">表示設定</h2>
-            <p className="mt-1 text-xs text-moss">現在は{props.resolvedTheme === "dark" ? "ダーク" : "ライト"} / {themeAccentLabels[props.themeAccent]} / {themeCharacterLabels[props.themeCharacter]}で表示中です。</p>
+            <h2 className="font-bold">表示モード</h2>
+            <p className="mt-1 text-xs text-moss">端末に合わせる、ライト、ダークから選べます。</p>
           </div>
           <select
             className="min-w-[9.5rem] text-sm font-bold"
             value={props.themeMode}
-            aria-label="表示設定"
+            aria-label="表示モード"
             onChange={(event) => updateThemeMode(event.target.value as ThemeMode)}
           >
             {themeOptions.map((option) => (
@@ -8601,7 +8768,7 @@ function SettingsTab(props: {
             ))}
           </select>
         </div>
-        <div className="mt-4">
+        <div className="mt-5">
           <p className="text-xs font-black text-moss">テーマカラー</p>
           <div className="theme-accent-grid mt-2">
             {themeAccentOptions.map((option) => (
@@ -8619,25 +8786,67 @@ function SettingsTab(props: {
         </div>
         <div className="mt-5">
           <p className="text-xs font-black text-moss">テーマキャラ</p>
-          <p className="mt-1 text-xs text-moss">Homeの背景が変わり、今日の達成状況に合わせてキャラクターも変化します。</p>
-          <div className="theme-character-grid mt-2">
-            {themeCharacterOptions.map((option) => (
+          <p className="mt-1 text-xs text-moss">Homeの背景に表示するキャラクターを選びます。達成状況や特別モードに合わせて姿が変化します。</p>
+          <div className="theme-character-grid theme-character-grid-none mt-2">
+            {themeCharacterOptions.filter((option) => option.value === "none").map((option) => (
               <button
                 className={`theme-character-option ${props.themeCharacter === option.value ? "theme-character-option-active" : ""}`}
                 key={option.value}
                 aria-pressed={props.themeCharacter === option.value}
-                onClick={() => updateThemeCharacter(option.value)}
+                onClick={() => void updateThemeCharacter("none")}
               >
-                <span
-                  className={`theme-character-preview theme-character-preview-${option.value}`}
-                  style={option.image ? { backgroundImage: `url(${option.image})` } : undefined}
-                />
+                <span className="theme-character-preview theme-character-preview-none" />
                 <span>{option.label}</span>
               </button>
             ))}
           </div>
+          {(["female", "male", "other"] as ThemeCharacterGroup[]).map((group) => {
+            const options = themeCharacterOptions.filter((option) => option.group === group);
+            if (!options.length) return undefined;
+            return (
+              <div className="theme-character-group" key={group}>
+                <p className="theme-character-group-title">{themeCharacterGroupLabels[group]}</p>
+                <div className="theme-character-grid mt-2">
+                  {options.map((option) => (
+                    <button
+                      className={`theme-character-option ${props.themeCharacter === option.value ? "theme-character-option-active" : ""}`}
+                      key={option.value}
+                      aria-pressed={props.themeCharacter === option.value}
+                      onClick={() => setThemeCharacterCandidate(option.value as Exclude<ThemeCharacter, "none">)}
+                    >
+                      <span className="theme-character-preview" style={{ backgroundImage: `url(${option.image})` }} />
+                      <span>{option.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
         </div>
-        <div className="mt-5">
+      </section>}
+
+      {activeSettingsSection === "theme" && themeCharacterCandidate && <section className="compact-card p-4">
+        <p className="text-xs font-black text-moss">テーマキャラ</p>
+        <h3 className="mt-1 text-xl font-black">{themeCharacterLabels[themeCharacterCandidate]}</h3>
+        <p className="mt-1 text-xs text-moss">スタイルを選んでHomeに適用します。衣装や獲得条件つきのスタイルはここに追加されます。</p>
+        <div className="theme-character-grid mt-4">
+          {(Object.entries(themeCharacterImageVariants[themeCharacterCandidate]) as Array<[string, ThemeCharacterImageSet]>).map(([variant, images]) => (
+            <button
+              className={`theme-character-option ${props.themeCharacter === themeCharacterCandidate && props.themeCharacterVariant === variant ? "theme-character-option-active" : ""}`}
+              key={variant}
+              aria-pressed={props.themeCharacter === themeCharacterCandidate && props.themeCharacterVariant === variant}
+              onClick={() => void updateThemeCharacter(themeCharacterCandidate, variant)}
+            >
+              <span className="theme-character-preview" style={{ backgroundImage: `url(${images.mid})` }} />
+              <span>基本スタイル</span>
+            </button>
+          ))}
+        </div>
+        <button className="secondary-button mt-4 w-full" onClick={() => setThemeCharacterCandidate(undefined)}><ChevronLeft size={17} />キャラクターを選び直す</button>
+      </section>}
+
+      {activeSettingsSection === "general" && <section className="compact-card p-4">
+        <div>
           <p className="text-sm font-black">Homeのチェックイン</p>
           <p className="mt-1 text-xs text-moss">Homeに大きく表示する数値を選べます。記録内容は変わりません。</p>
           <p className="mt-3 text-xs font-black text-moss">体重</p>

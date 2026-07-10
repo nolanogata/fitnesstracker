@@ -39,7 +39,25 @@ export type NutritionMeta = {
 export type MealType = "breakfast" | "lunch" | "dinner" | "snack" | "gym_before" | "gym_after";
 export type ThemeMode = "system" | "light" | "dark";
 export type ThemeAccent = "classic" | "orange" | "aqua" | "graphite" | "crazy_pink" | "crazy_yellow" | "vivid_neon";
-export type ThemeCharacter = "none" | "titan" | "flash" | "sage" | "volt" | "nova" | "grit" | "aegis" | "kitsune" | "kairo";
+export type ThemeCharacter =
+  | "none"
+  | "titan"
+  | "flash"
+  | "sage"
+  | "volt"
+  | "nova"
+  | "grit"
+  | "aegis"
+  | "kitsune"
+  | "lumen"
+  | "koru"
+  | "vito"
+  | "aria";
+export type ThemeCharacterProgressStage = "low" | "mid" | "high";
+export type ThemeCharacterProgress = {
+  app_date: string;
+  unlocked_stages?: Partial<Record<Exclude<ThemeCharacter, "none">, ThemeCharacterProgressStage>>;
+};
 export type HomeBodyFatDisplay = "hidden" | "average7" | "today";
 export type HomeWeightDisplay = "average7" | "today";
 export type HomeNutritionRemainingDisplay = "recorded" | "safe";
@@ -72,6 +90,8 @@ export type Settings = {
   theme_mode?: ThemeMode;
   theme_accent?: ThemeAccent;
   theme_character?: ThemeCharacter;
+  theme_character_variant?: string;
+  theme_character_progress?: ThemeCharacterProgress;
   home_body_fat_display?: HomeBodyFatDisplay;
   home_weight_display?: HomeWeightDisplay;
   home_nutrition_remaining_display?: HomeNutritionRemainingDisplay;
