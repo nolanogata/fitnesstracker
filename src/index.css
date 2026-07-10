@@ -531,6 +531,60 @@ button {
   background: var(--page-bg);
 }
 
+.app-shell-home[data-character]:not([data-character="none"]) {
+  --glass-bg: rgba(18, 21, 23, 0.72);
+  --glass-bg-strong: rgba(19, 23, 25, 0.86);
+  --glass-bg-soft: rgba(255, 255, 255, 0.09);
+  --glass-border: rgba(255, 255, 255, 0.18);
+  --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.13);
+  --text-primary: #f4f7f5;
+  --text-secondary: #d0d8d3;
+  --text-muted: #98a39d;
+  color: #edf4ee;
+  background: #000;
+}
+
+.app-shell-home[data-character]:not([data-character="none"])::before {
+  position: fixed;
+  inset: 0 auto 0 50%;
+  z-index: 0;
+  width: min(100vw, 760px);
+  max-width: 760px;
+  height: 100dvh;
+  margin: 0;
+  background-color: #000;
+  background-image:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.08) 0%, rgba(0, 0, 0, 0.18) 28%, rgba(0, 0, 0, 0.78) 68%, #000 100%),
+    var(--theme-character-image);
+  background-position: center top;
+  background-repeat: no-repeat;
+  background-size: cover;
+  content: "";
+  pointer-events: none;
+  transform: translateX(-50%);
+}
+
+.app-shell-home[data-character="flash"]::before {
+  background-image:
+    linear-gradient(180deg, rgba(0, 8, 25, 0.18) 0%, rgba(0, 10, 30, 0.34) 30%, rgba(0, 8, 24, 0.84) 66%, #000 100%),
+    var(--theme-character-image);
+}
+
+.app-shell-home[data-character]:not([data-character="none"]) > * {
+  position: relative;
+  z-index: 1;
+}
+
+.app-shell-home[data-character]:not([data-character="none"]) .home-header {
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.52), rgba(0, 0, 0, 0.06));
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.app-shell-home[data-character]:not([data-character="none"]) .home-dashboard {
+  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.16);
+}
+
 .home-shell-over {
   --card-glow: 0 18px 44px rgba(217, 122, 104, 0.14), 0 12px 32px rgba(201, 214, 235, 0.11), 0 2px 8px rgba(44, 56, 48, 0.05);
   --card-glow-strong: 0 24px 58px rgba(217, 122, 104, 0.2), 0 16px 38px rgba(201, 214, 235, 0.14), 0 4px 12px rgba(44, 56, 48, 0.06);
@@ -1326,6 +1380,56 @@ button {
   border-radius: 999px;
   background: linear-gradient(135deg, var(--swatch-start), var(--swatch-end));
   box-shadow: 0 6px 14px color-mix(in srgb, var(--swatch-start) 28%, transparent), var(--glass-highlight);
+}
+
+.theme-character-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.55rem;
+}
+
+.theme-character-option {
+  display: grid;
+  min-width: 0;
+  gap: 0.45rem;
+  border: 1px solid var(--glass-border);
+  border-radius: 18px;
+  background: var(--glass-bg);
+  padding: 0.45rem;
+  color: var(--text-primary);
+  font-size: 0.72rem;
+  font-weight: 900;
+  box-shadow: 0 8px 18px rgba(44, 56, 48, 0.06), var(--glass-highlight);
+  transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
+}
+
+.theme-character-option:active {
+  transform: scale(0.985);
+}
+
+.theme-character-option-active {
+  border-color: var(--accent-border);
+  background: var(--accent-soft);
+  box-shadow: 0 0 0 1px var(--accent-focus) inset, 0 10px 22px var(--accent-faint), var(--glass-highlight);
+}
+
+.theme-character-preview {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1.45;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--glass-border) 72%, transparent);
+  border-radius: 12px;
+  background-color: color-mix(in srgb, var(--glass-bg-strong) 82%, var(--accent-soft));
+  background-position: center 18%;
+  background-size: cover;
+  box-shadow: var(--glass-highlight);
+}
+
+.theme-character-preview-none {
+  background:
+    radial-gradient(circle at 50% 50%, var(--accent-soft) 0 26%, transparent 28%),
+    linear-gradient(135deg, var(--glass-bg-strong), var(--glass-bg-soft));
 }
 
 :root[data-accent="crazy_pink"] .theme-accent-option-active,

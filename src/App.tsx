@@ -47,6 +47,8 @@ import {
 } from "lucide-react";
 import { db } from "./db";
 import { initializeSeeds } from "./data/seedInit";
+import flashHomeBackground from "./assets/theme-characters/flash-home.jpg";
+import titanHomeBackground from "./assets/theme-characters/titan-home.jpg";
 import type {
   AchievementUnlock,
   ActivityLevel,
@@ -70,6 +72,7 @@ import type {
   SpecialModeSettings,
   TemplateExercise,
   ThemeAccent,
+  ThemeCharacter,
   ThemeMode,
   WeightLog,
   WorkoutLoadType,
@@ -135,6 +138,15 @@ const themeAccentLabels = Object.fromEntries(themeAccentOptions.map((option) => 
 function normalizeThemeAccent(value: unknown): ThemeAccent {
   if (value === "ruby") return "orange";
   return themeAccentOptions.some((option) => option.value === value) ? value as ThemeAccent : "classic";
+}
+const themeCharacterOptions: Array<{ value: ThemeCharacter; label: string; image?: string }> = [
+  { value: "none", label: "なし" },
+  { value: "titan", label: "TITAN", image: titanHomeBackground },
+  { value: "flash", label: "FLASH", image: flashHomeBackground },
+];
+const themeCharacterLabels = Object.fromEntries(themeCharacterOptions.map((option) => [option.value, option.label])) as Record<ThemeCharacter, string>;
+function normalizeThemeCharacter(value: unknown): ThemeCharacter {
+  return themeCharacterOptions.some((option) => option.value === value) ? value as ThemeCharacter : "none";
 }
 type BackupInfo = {
   lastBackupAt?: string;
@@ -2040,7 +2052,9 @@ function App() {
   const latestUpdate = appUpdates[0];
   const themeMode = settings?.theme_mode ?? "system";
   const themeAccent = normalizeThemeAccent(settings?.theme_accent);
+  const themeCharacter = normalizeThemeCharacter(settings?.theme_character);
   const resolvedTheme: "light" | "dark" = themeMode === "system" ? (prefersDarkTheme ? "dark" : "light") : themeMode;
+  const shellTheme = tab === "home" && themeCharacter !== "none" ? "dark" : resolvedTheme;
   const specialModeSettings = useMemo(() => getSpecialModeSettings(settings), [settings]);
   const pauseModeSettings = useMemo(() => getPauseModeSettings(settings), [settings]);
   const activeSpecialMode = useMemo(() => getActiveSpecialMode(appDate, specialModeSettings), [appDate, specialModeSettings]);
@@ -2536,7 +2550,13 @@ function App() {
   }
 
   return (
-    <main className={`theme-${resolvedTheme} app-shell app-shell-${tab} mx-auto min-h-screen max-w-[430px] md:max-w-[760px] text-ink ${tab === "home" ? `home-shell home-shell-${homeTone}` : ""} ${isEditingPastDate ? "app-shell-past-editing" : ""}`} data-theme={resolvedTheme} data-accent={themeAccent}>
+    <main
+      className={`theme-${shellTheme} app-shell app-shell-${tab} mx-auto min-h-screen max-w-[430px] md:max-w-[760px] text-ink ${tab === "home" ? `home-shell home-shell-${homeTone}` : ""} ${isEditingPastDate ? "app-shell-past-editing" : ""}`}
+      data-theme={shellTheme}
+      data-accent={themeAccent}
+      data-character={themeCharacter}
+      style={themeCharacter !== "none" ? { "--theme-character-image": `url(${themeCharacterOptions.find((option) => option.value === themeCharacter)?.image})` } as CSSProperties : undefined}
+    >
       <header className={`safe-top app-header sticky top-0 z-20 px-4 ${tab === "home" ? "home-header pb-2" : "pb-3"}`}>
         <div className="flex items-center justify-between">
           <div>
@@ -2770,6 +2790,7 @@ function App() {
             settings={settings}
             themeMode={themeMode}
             themeAccent={themeAccent}
+            themeCharacter={themeCharacter}
             resolvedTheme={resolvedTheme}
             markBackupNow={markBackupNow}
             openUpdateNotes={openUpdateNotes}
@@ -7466,6 +7487,7 @@ function SettingsTab(props: {
   settings?: AppSettings;
   themeMode: ThemeMode;
   themeAccent: ThemeAccent;
+  themeCharacter: ThemeCharacter;
   resolvedTheme: "light" | "dark";
   markBackupNow: () => void;
   openUpdateNotes: () => void;
@@ -7600,6 +7622,10 @@ function SettingsTab(props: {
       });
     }
     await props.refresh();
+  };
+  const updateThemeCharacter = async (theme_character: ThemeCharacter) => {
+    await saveSettingsPatch({ theme_character });
+    props.showToast(theme_character === "none" ? "テーマキャラをオフにしました" : `${themeCharacterLabels[theme_character]}をHomeに表示します`);
   };
 
   useEffect(() => {
@@ -8298,7 +8324,7 @@ function SettingsTab(props: {
             <SettingsMenuRow title="記録設定" description={`旅行 ${isTravelModeEnabled ? "ON" : "OFF"} / 一時停止 ${isPauseModeEnabled ? "ON" : "OFF"}`} icon={<CalendarDays size={18} />} onClick={() => setActiveSettingsSection("records")} />
             <SettingsMenuRow title="マイメニュー" description={`登録済み ${userMenuItems.length}件`} icon={<Store size={18} />} onClick={() => setActiveSettingsSection("myMenu")} />
             <SettingsMenuRow title="マイトレ" description={`登録済み ${myTrainingExercises.length}件`} icon={<Dumbbell size={18} />} onClick={() => setActiveSettingsSection("myTraining")} />
-            <SettingsMenuRow title="一般" description={`表示 ${props.resolvedTheme === "dark" ? "ダーク" : "ライト"} / ${themeAccentLabels[props.themeAccent]} / ${props.profile?.name || "未設定"}`} icon={<Settings size={18} />} onClick={() => setActiveSettingsSection("general")} />
+            <SettingsMenuRow title="一般" description={`表示 ${props.resolvedTheme === "dark" ? "ダーク" : "ライト"} / ${themeAccentLabels[props.themeAccent]} / ${themeCharacterLabels[props.themeCharacter]} / ${props.profile?.name || "未設定"}`} icon={<Settings size={18} />} onClick={() => setActiveSettingsSection("general")} />
           </section>
         </>
       )}
@@ -8317,7 +8343,7 @@ function SettingsTab(props: {
         <div className="flex items-start justify-between gap-3">
           <div>
             <h2 className="font-bold">表示設定</h2>
-            <p className="mt-1 text-xs text-moss">現在は{props.resolvedTheme === "dark" ? "ダーク" : "ライト"} / {themeAccentLabels[props.themeAccent]}で表示中です。</p>
+            <p className="mt-1 text-xs text-moss">現在は{props.resolvedTheme === "dark" ? "ダーク" : "ライト"} / {themeAccentLabels[props.themeAccent]} / {themeCharacterLabels[props.themeCharacter]}で表示中です。</p>
           </div>
           <select
             className="min-w-[9.5rem] text-sm font-bold"
@@ -8341,6 +8367,26 @@ function SettingsTab(props: {
                 onClick={() => updateThemeAccent(option.value)}
               >
                 <span className="theme-accent-swatch" style={{ "--swatch-start": option.colors[0], "--swatch-end": option.colors[1] } as CSSProperties} />
+                <span>{option.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="mt-5">
+          <p className="text-xs font-black text-moss">テーマキャラ</p>
+          <p className="mt-1 text-xs text-moss">Homeの背景をキャラクターテーマに切り替えます。</p>
+          <div className="theme-character-grid mt-2">
+            {themeCharacterOptions.map((option) => (
+              <button
+                className={`theme-character-option ${props.themeCharacter === option.value ? "theme-character-option-active" : ""}`}
+                key={option.value}
+                aria-pressed={props.themeCharacter === option.value}
+                onClick={() => updateThemeCharacter(option.value)}
+              >
+                <span
+                  className={`theme-character-preview theme-character-preview-${option.value}`}
+                  style={option.image ? { backgroundImage: `url(${option.image})` } : undefined}
+                />
                 <span>{option.label}</span>
               </button>
             ))}

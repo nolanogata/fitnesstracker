@@ -17,6 +17,7 @@
 
 - Mobile utility app, not marketing.
 - Restrained off-white base, ink text, green status accents, clay warnings/actions.
+- Display Settings offers optional TITAN and FLASH character backgrounds for Home. The default remains no character; selecting one changes only Home to a dark glass presentation and can be reversed without changing logs or the saved accent color.
 - Compact cards with 8px radius or less.
 - Segmented tabs, chips, steppers, and icon buttons for common actions.
 - Japanese-first labels because the preset database and daily flow are Japanese.
