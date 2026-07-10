@@ -1701,6 +1701,86 @@ button {
   line-height: 1.65;
 }
 
+.checkin-display-settings {
+  border: 1px solid var(--glass-border);
+  border-radius: 14px;
+  padding: 0.9rem;
+  background: var(--glass-bg);
+}
+
+.goal-summary-calories,
+.goal-summary-macro,
+.goal-summary-details {
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg);
+}
+
+.goal-summary-calories {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border-radius: 14px;
+  padding: 1rem;
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.goal-summary-calories strong {
+  color: var(--text-primary);
+  font-size: 1.15rem;
+}
+
+.goal-summary-macro {
+  min-width: 0;
+  border-radius: 12px;
+  padding: 0.75rem 0.5rem;
+  text-align: center;
+}
+
+.goal-summary-macro span,
+.goal-summary-details span {
+  color: var(--text-secondary);
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
+.goal-summary-macro strong {
+  display: block;
+  margin-top: 0.3rem;
+  overflow: hidden;
+  color: var(--text-primary);
+  font-size: 0.88rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.goal-summary-details {
+  overflow: hidden;
+  border-radius: 14px;
+}
+
+.goal-summary-details div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  min-height: 2.7rem;
+  padding: 0.65rem 0.85rem;
+}
+
+.goal-summary-details div + div {
+  border-top: 1px solid var(--glass-border);
+}
+
+.goal-summary-details strong {
+  min-width: 0;
+  color: var(--text-primary);
+  font-size: 0.78rem;
+  text-align: right;
+}
+
 .home-macro-low {
   color: #7c622b;
   background: rgba(246, 235, 221, 0.72);
