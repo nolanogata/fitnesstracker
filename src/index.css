@@ -469,6 +469,36 @@ button {
   -webkit-backdrop-filter: blur(28px) saturate(145%);
 }
 
+.home-date-toggle,
+.app-date-toggle {
+  appearance: none;
+  border: 0;
+  border-radius: 0.7rem;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  padding: 0;
+  text-align: left;
+  transition: opacity 160ms ease, transform 160ms ease;
+}
+
+.home-date-toggle:not(:disabled),
+.app-date-toggle {
+  cursor: pointer;
+}
+
+.home-date-toggle:not(:disabled):active,
+.app-date-toggle:active {
+  opacity: 0.72;
+  transform: scale(0.98);
+}
+
+.home-date-toggle:focus-visible,
+.app-date-toggle:focus-visible {
+  outline: 2px solid var(--accent-focus);
+  outline-offset: 4px;
+}
+
 .app-status-pill {
   display: inline-flex;
   align-items: center;
