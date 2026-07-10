@@ -3795,10 +3795,13 @@ function HomeTab(props: {
             : props.activeSpecialMode ? <span className="home-cheat-badge home-trip-badge">{props.activeSpecialMode.label}</span>
             : props.activePauseMode ? <span className="home-cheat-badge">{props.activePauseMode.label}</span>
             : (
-              <button className={`home-estimate-badge ${dailyEstimate.estimatedEntryCount ? "home-estimate-badge-active" : ""}`} onClick={() => setIsEstimateDetailOpen(true)}>
-                {props.isEditingPastDate
-                  ? `${getDailyEstimateStatus(calorieDelta, dailyEstimate.uncertainty.calories)}${dailyEstimate.estimatedEntryCount ? " · 一部見積もり" : ""}`
-                  : dailyEstimate.estimatedEntryCount ? "一部は見積もり" : "記録した値で計算"}
+              <button
+                className={`home-estimate-badge ${dailyEstimate.estimatedEntryCount ? "home-estimate-badge-active" : ""}`}
+                aria-label={`${dailyEstimate.estimatedEntryCount ? "推定値あり" : "推定値なし"}。栄養値の詳細を開く`}
+                onClick={() => setIsEstimateDetailOpen(true)}
+              >
+                <span>{dailyEstimate.estimatedEntryCount ? "推定値あり" : "推定値なし"}</span>
+                <Settings size={12} strokeWidth={2.4} />
               </button>
             )}
         </div>
