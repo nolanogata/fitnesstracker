@@ -852,6 +852,7 @@ const foodMyMenuIntroSeenStorageKey = "phase-log-my-menu-unified-intro-seen-2026
 const workoutWeightPresetStorageKey = "phase-log-workout-weight-presets";
 const cheatDayStorageKey = "phase-log-cheat-day-dates";
 const dismissedRecordReminderStorageKey = "phase-log-dismissed-record-reminders";
+const themeCharacterVisibilityStorageKey = "phase-log-theme-character-visible";
 const staleAppPromptDelayMs = 6 * 60 * 60 * 1000;
 const weightStepOptions = [1, 2.5, 5, 10];
 const finisherPulseIntensity = "finisher_pulse";
@@ -2062,6 +2063,7 @@ function App() {
   const [isHeaderReloading, setIsHeaderReloading] = useState(false);
   const [currentTime, setCurrentTime] = useState(() => new Date());
   const [selectedAppDate, setSelectedAppDate] = useState<string>();
+  const [isThemeCharacterVisible, setIsThemeCharacterVisible] = useState(true);
   const [toast, setToast] = useState<{ id: string; text: string }>();
   const [prCelebration, setPrCelebration] = useState<WorkoutPrCelebration>();
   const [achievementCelebration, setAchievementCelebration] = useState<AchievementCelebration>();
@@ -2254,6 +2256,14 @@ function App() {
   }, [resolvedTheme, themeAccent]);
 
   useEffect(() => {
+    if (themeCharacter === "none") {
+      setIsThemeCharacterVisible(true);
+      return;
+    }
+    setIsThemeCharacterVisible(localStorage.getItem(`${themeCharacterVisibilityStorageKey}-${themeCharacter}`) !== "0");
+  }, [themeCharacter]);
+
+  useEffect(() => {
     if (themeCharacter === "none") return;
     Object.values(themeCharacterImages[themeCharacter]).forEach((src) => {
       const image = new Image();
@@ -2320,7 +2330,7 @@ function App() {
       ))
         ? "fail"
         : themeCharacterStageFromProgress(homeCharacterProgress);
-  const themeCharacterImage = themeCharacter === "none" ? undefined : themeCharacterImages[themeCharacter][themeCharacterStage];
+  const themeCharacterImage = themeCharacter === "none" || !isThemeCharacterVisible ? undefined : themeCharacterImages[themeCharacter][themeCharacterStage];
   const unseenAchievementCount = useMemo(() => {
     const viewedAt = settings?.achievements_viewed_at ?? "";
     return (settings?.achievements ?? []).filter((achievement) => (
@@ -2581,6 +2591,8 @@ function App() {
   }, []);
 
   const homeDateTitle = formatHomeDateParts(appDate);
+  const canToggleThemeCharacter = themeCharacter !== "none";
+  const themeCharacterToggleLabel = isThemeCharacterVisible ? "テーマキャラを非表示" : "テーマキャラを表示";
   const headerTitle = {
     home: "",
     food: "Food",
@@ -2613,6 +2625,14 @@ function App() {
   const handleBottomTabClick = (nextTab: Tab) => {
     selectBottomTab(nextTab);
   };
+  const toggleThemeCharacterVisibility = () => {
+    if (!canToggleThemeCharacter) return;
+    setIsThemeCharacterVisible((current) => {
+      const next = !current;
+      localStorage.setItem(`${themeCharacterVisibilityStorageKey}-${themeCharacter}`, next ? "1" : "0");
+      return next;
+    });
+  };
 
   if (settings && !settings.onboarding_completed) {
     return <Onboarding refresh={refresh} />;
@@ -2632,13 +2652,34 @@ function App() {
           <div>
             <h1 className={`numeric-text ${tab === "home" ? "text-[2.08rem] font-semibold leading-tight tracking-normal" : "text-2xl font-bold tracking-normal"}`}>
               {tab === "home" ? (
-                <>
+                <button
+                  className="home-date-toggle"
+                  type="button"
+                  aria-pressed={canToggleThemeCharacter ? isThemeCharacterVisible : undefined}
+                  aria-label={canToggleThemeCharacter ? `${homeDateTitle.date} ${homeDateTitle.weekday}。${themeCharacterToggleLabel}` : `${homeDateTitle.date} ${homeDateTitle.weekday}`}
+                  disabled={!canToggleThemeCharacter}
+                  onClick={toggleThemeCharacterVisibility}
+                  title={canToggleThemeCharacter ? themeCharacterToggleLabel : undefined}
+                >
                   {homeDateTitle.date}
                   <span className="ml-1 align-baseline text-[0.58em] font-medium text-moss">{homeDateTitle.weekday}</span>
-                </>
+                </button>
               ) : headerTitle}
             </h1>
-            <p className="mt-1 text-xs font-normal text-moss">{isEditingPastDate ? "過去の記録を編集中" : headerSubtext}</p>
+            <p className="mt-1 text-xs font-normal text-moss">
+              {isEditingPastDate || tab === "home" || !canToggleThemeCharacter ? headerSubtext : (
+                <button
+                  className="app-date-toggle"
+                  type="button"
+                  aria-pressed={isThemeCharacterVisible}
+                  aria-label={`${headerSubtext}。${themeCharacterToggleLabel}`}
+                  onClick={toggleThemeCharacterVisibility}
+                  title={themeCharacterToggleLabel}
+                >
+                  {headerSubtext}
+                </button>
+              )}
+            </p>
           </div>
           {tab === "home" ? (
             <div className="flex items-center gap-2">
