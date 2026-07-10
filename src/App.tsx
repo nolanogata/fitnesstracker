@@ -288,13 +288,14 @@ type MenuSizeVariantIndex = {
   variantsByGroupKey: Map<string, MenuSizeVariant[]>;
 };
 type StaplePortionConfig = {
-  kind: "rice" | "noodle" | "steak" | "hamburger" | "chicken";
+  kind: "rice" | "noodle" | "steak" | "hamburger" | "chicken" | "soup";
   label: string;
   defaultGrams: number;
   caloriesPer100g: number;
   proteinPer100g: number;
   fatPer100g: number;
   carbsPer100g: number;
+  saltPer100g?: number;
 };
 type StaplePortionMultipliers = Partial<Record<StaplePortionConfig["kind"], number>>;
 type NutritionSnapshot = Pick<MenuItem, "calories" | "protein_g" | "fat_g" | "carbs_g" | "salt_g">;
@@ -4886,7 +4887,7 @@ function FoodTab(props: {
     return () => window.clearTimeout(timer);
   }, [props.focus, props.activeSpecialMode?.id]);
   const selectFoodItem = (item: MenuItem) => {
-    setPortionMultiplier(1);
+    setPortionMultiplier(isMisoSoupSwitchItem(item) ? 0 : 1);
     setPortionQuantity(1);
     setStaplePortionMultipliers({});
     setMealType(item.default_meal_type ?? mealType);
@@ -5015,15 +5016,18 @@ function FoodTab(props: {
   const selectedStapleConfigs = selected ? getStaplePortionConfigs(selected) : [];
   const hasSelectedCompositeStaples = selectedStapleConfigs.length > 1;
   const selectedStapleConfig = selectedStapleConfigs[0];
+  const hasSelectedSoupOptions = selectedStapleConfig?.kind === "soup";
   const hasSelectedPublishedPortionOptions = selected ? usesPublishedInlinePortionOptions(selected) : false;
   const selectedComponentPortionTitle = selectedStapleConfigs.map((config) => config.label).join("・");
   const selectedServingGrams = selected ? selectedStapleConfig?.defaultGrams ?? menuItemServingGrams(selected) : undefined;
-  const defaultPortionOption = portionOptions.find((option) => option.value === 1) ?? portionOptions[0];
+  const defaultPortionValue = hasSelectedSoupOptions ? 0 : 1;
+  const defaultPortionOption = portionOptions.find((option) => option.value === defaultPortionValue) ?? portionOptions[0];
   const customPortionOptions = portionOptions.filter((option) => option.value !== defaultPortionOption?.value);
   const selectedPortionOptionLabel = portionOptions.find((option) => option.value === portionMultiplier)?.label;
   const canCustomizeSelectedPortion = !!selected
     && !usesOfficialFixedSizeOptions(selected)
     && !hasSelectedPublishedPortionOptions
+    && !hasSelectedSoupOptions
     && (hasSelectedCompositeStaples || !!selectedStapleConfig || customPortionOptions.length > 0 || !!selectedServingGrams);
   const selectedExactSizeVariant = useMemo(
     () => selected && selectedServingGrams && hasSelectedSizeVariants && !hasSelectedCompositeStaples
@@ -5081,7 +5085,11 @@ function FoodTab(props: {
         selectedExactSizeVariant ? undefined : hasSelectedCompositeStaples ? staplePortionMultipliers : undefined,
       )
     : undefined;
-  const selectedEntryPortionMultiplier = selectedExactSizeVariant || selectedSizeVariantNutrition || hasSelectedCompositeStaples ? Math.max(0, portionQuantity) : multiplier;
+  const selectedEntryPortionMultiplier = hasSelectedSoupOptions
+    ? Math.max(1, portionQuantity)
+    : selectedExactSizeVariant || selectedSizeVariantNutrition || hasSelectedCompositeStaples
+      ? Math.max(0, portionQuantity)
+      : multiplier;
   const selectedCalories = selectedNutrition?.calories ?? 0;
   const selectedProtein = selectedNutrition?.protein_g ?? 0;
   const selectedFat = selectedNutrition?.fat_g ?? 0;
@@ -6026,9 +6034,11 @@ function FoodTab(props: {
 
             {foodAddStep === "size" && (
               <div className="mt-4">
-                <p className="text-sm font-black text-ink">{hasSelectedSizeVariants ? "サイズを選択" : hasSelectedCompositeStaples ? "麺・ご飯の量を選択" : selectedStapleConfig ? `${selectedStapleConfig.label}の量を選択` : "サイズを選択"}</p>
+                <p className="text-sm font-black text-ink">{hasSelectedSoupOptions ? "汁物を選択" : hasSelectedSizeVariants ? "サイズを選択" : hasSelectedCompositeStaples ? "麺・ご飯の量を選択" : selectedStapleConfig ? `${selectedStapleConfig.label}の量を選択` : "サイズを選択"}</p>
                 <p className="mt-1 text-xs font-semibold text-moss">
-                  {hasSelectedSizeVariants
+                  {hasSelectedSoupOptions
+                    ? "みそ汁のままにするか、豚汁に変更するかを選びます。"
+                    : hasSelectedSizeVariants
                     ? "登録済みのサイズ違いから選びます。公式値や推定値がある場合はその値を使います。"
                     : hasSelectedCompositeStaples
                       ? "丼+麺セットは、麺量とご飯量を別々に調整できます。"
@@ -6053,7 +6063,7 @@ function FoodTab(props: {
                         <span className="numeric-text text-xs font-bold text-moss">{variant.item.calories}kcal</span>
                       </button>
                     ))
-                    : hasSelectedPublishedPortionOptions
+                    : hasSelectedPublishedPortionOptions || hasSelectedSoupOptions
                       ? portionOptions.map((option) => (
                         <button
                           className={`food-add-choice min-h-[3.2rem] ${portionMultiplier === option.value ? "food-add-choice-active" : ""}`}
@@ -12485,13 +12495,14 @@ function getTrustedChainComboPortionOptions(item: MenuItem, staple: StaplePortio
 }
 
 function makeChainComboCandidate(item: MenuItem, role: ChainComboCandidate["role"], portionMultiplier: number, staplePortionMultipliers?: StaplePortionMultipliers, portionLabel?: string): ChainComboCandidate {
+  const effectivePortionMultiplier = isMisoSoupSwitchItem(item) && !staplePortionMultipliers ? 0 : portionMultiplier;
   return {
     item,
     role,
     portionLabel,
-    portionMultiplier,
+    portionMultiplier: effectivePortionMultiplier,
     staplePortionMultipliers,
-    nutrition: getAdjustedMenuNutrition(item, portionMultiplier, 1, staplePortionMultipliers),
+    nutrition: getAdjustedMenuNutrition(item, effectivePortionMultiplier, 1, staplePortionMultipliers),
   };
 }
 
@@ -14595,6 +14606,18 @@ function isRiceAdjustableCurry(item: MenuItem, primaryText: string, tagText: str
 }
 
 function makeStaplePortionConfig(kind: StaplePortionConfig["kind"], defaultGrams?: number): StaplePortionConfig {
+  if (kind === "soup") {
+    return {
+      kind: "soup",
+      label: "汁物",
+      defaultGrams: defaultGrams ?? 1,
+      caloriesPer100g: 8100,
+      proteinPer100g: 530,
+      fatPer100g: 380,
+      carbsPer100g: 720,
+      saltPer100g: 60,
+    };
+  }
   if (kind === "noodle") {
     return {
       kind: "noodle",
@@ -14655,6 +14678,7 @@ function getStaplePortionConfigs(item: MenuItem): StaplePortionConfig[] {
   if (usesOfficialFixedSizeOptions(item)) return [];
   const primaryText = [item.name, item.serving_label].filter(Boolean).join(" ");
   const text = [primaryText, item.category, ...item.tags].filter(Boolean).join(" ");
+  if (isMisoSoupSwitchItem(item)) return [makeStaplePortionConfig("soup")];
   const noodleTokens = ["麺", "ラーメン", "油そば", "うどん", "そば", "パスタ", "焼きそば", "フォー", "春雨"];
   const riceTokens = ["ごはん", "ご飯", "白米", "玄米", "ライス", "丼", "定食", "弁当", "プレート", "ディッシュ", "ガパオ", "チャーハン", "炒飯", "オムライス", "炊き込み", "混ぜご飯", "赤飯", "菜飯", "ビリヤニ"];
   const sideOnlyTokens = ["天ぷら", "かしわ天", "ちくわ天", "かき揚げ", "コロッケ", "唐揚げ", "から揚げ", "トッピング", "サイド", "単品"];
@@ -14706,13 +14730,15 @@ function getAdjustedMenuNutrition(item: MenuItem, portionMultiplier: number, por
   const base = staples.reduce(
     (current, staple) => {
       const selectedMultiplier = Math.max(0, staplePortionMultipliers?.[staple.kind] ?? portionMultiplier);
-      const stapleDeltaGrams = staple.defaultGrams * (selectedMultiplier - 1);
+      const stapleDeltaGrams = staple.defaultGrams * (staple.kind === "soup" ? selectedMultiplier : selectedMultiplier - 1);
       return {
         calories: current.calories + (staple.caloriesPer100g * stapleDeltaGrams) / 100,
         protein_g: current.protein_g + (staple.proteinPer100g * stapleDeltaGrams) / 100,
         fat_g: current.fat_g + (staple.fatPer100g * stapleDeltaGrams) / 100,
         carbs_g: current.carbs_g + (staple.carbsPer100g * stapleDeltaGrams) / 100,
-        salt_g: current.salt_g,
+        salt_g: current.salt_g === undefined && staple.saltPer100g === undefined
+          ? undefined
+          : (current.salt_g ?? 0) + ((staple.saltPer100g ?? 0) * stapleDeltaGrams) / 100,
       };
     },
     { calories: item.calories, protein_g: item.protein_g, fat_g: item.fat_g, carbs_g: item.carbs_g, salt_g: item.salt_g },
@@ -14728,6 +14754,12 @@ function getAdjustedMenuNutrition(item: MenuItem, portionMultiplier: number, por
 }
 
 function getStaplePortionOptions(staple: StaplePortionConfig): PortionOption[] {
+  if (staple.kind === "soup") {
+    return [
+      { label: "みそ汁", value: 0 },
+      { label: "豚汁に変更", value: 1 },
+    ];
+  }
   if (staple.kind === "rice") {
     return [
       { label: "ご飯なし", value: 0 },
@@ -14774,6 +14806,7 @@ function getPortionOptions(item: MenuItem): PortionOption[] {
   const staple = staples[0];
 
   if (staples.length > 1) return [{ label: "標準量", value: 1 }];
+  if (staple?.kind === "soup") return getStaplePortionOptions(staple);
   if (item.brand === "すぱじろう" && staple?.kind === "noodle") {
     const base = Math.max(1, staple.defaultGrams);
     return [
@@ -14854,6 +14887,10 @@ function usesOfficialFixedSizeOptions(item: Pick<MenuItem, "tags">) {
 
 function usesPublishedInlinePortionOptions(item: Pick<MenuItem, "brand">) {
   return item.brand === "マンマパスタ" || item.brand === "すぱじろう";
+}
+
+function isMisoSoupSwitchItem(item: Pick<MenuItem, "brand" | "tags">) {
+  return item.brand === "やよい軒" && item.tags.includes("味噌汁カスタム可");
 }
 
 function doubleServingLabel(servingLabel: string | undefined, fallback: string) {
