@@ -45,11 +45,11 @@ Migrated to shared profiles:
 
 - `pepperLunchTsukemenMenus.ts`: Pepper Lunch, Sharin, Mita Seimen official-name rows.
 - `panchoMenu.ts`: official-name pasta rows now keep existing estimates and add shared profile evidence tags.
-- `bikkuriDonkeyMenu.ts`: existing additive estimate logic is preserved; rows now add shared profile evidence tags by menu type.
+- Bikkuri Donkey, Popolamama, Joyfull, Denny's, Royal Host, Marugame Seimen, Olive no Oka, and Tonden now use full official-source replacements instead of their older estimated seed rows.
 - `familyRestaurantMenus.ts`: broad family-restaurant estimates now add shared profile evidence tags.
 - `italianRestaurantMenus.ts`: Popolamama local kcal-to-P/F/C logic now uses shared profiles; older manually estimated Italian rows add shared profile evidence tags.
 - `komerakuMenu.ts`: existing rice/seafood estimate values are preserved; rows now add shared profile evidence tags.
-- `tondenMenu.ts`: existing Japanese family-restaurant estimate values are preserved; rows now add shared profile evidence tags.
+- Older Tonden estimates remain only as source history and are not loaded into the catalog.
 - `bamiyanMenu.ts`: Chinese restaurant estimates now add profile evidence by ramen, dumpling, fried side, fried rice, dessert, or meat set type.
 - `fastFood.ts`, `gyudon.ts`, `teishoku.ts`, `familyRestaurant.ts`, `cafe.ts`: broad chain fallback estimates now add profile evidence tags while preserving existing kcal/P/F/C values.
 - `konamonoChains.ts`, `monsoonCafeMenu.ts`, `udon.ts`, `sushiChains.ts`: official-name/manual-PFC chain estimates now add shared profile evidence by menu type.
@@ -62,6 +62,11 @@ Needs later cleanup:
 
 - Store-scoped menus where rice size or side contents vary by location.
 - Mixed staple sets should keep editable staple components explicit, for example noodle amount and rice/bowl amount on the same item.
+- Brands without full official PFC must remain estimated even when official menu names, kcal, salt, or sizes are available.
+
+## Branded size rule
+
+Do not infer a restaurant size range from a food name alone. Branded noodle, rice, and meat adjustments require an explicit verified tag or separate published size rows. `公式サイズのみ` rows must never expose generic 75%, 135%, 100g, or 300g choices that the restaurant does not sell.
 
 ## Generic Preset Rule
 

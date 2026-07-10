@@ -1,0 +1,3317 @@
+[
+  {
+    "brand": "オリーブの丘",
+    "name": "2種ジェラート～チョコレート＆いちご～",
+    "calories": 140,
+    "protein_g": 1.8,
+    "fat_g": 4.7,
+    "carbs_g": 22.6,
+    "salt_g": 0.1,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "デザート"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "2種ジェラート～バニラ＆いちご～",
+    "calories": 148,
+    "protein_g": 1.7,
+    "fat_g": 6.8,
+    "carbs_g": 20.1,
+    "salt_g": 0.1,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "デザート"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "2種ジェラート～バニラ＆チョコレート～",
+    "calories": 187,
+    "protein_g": 2.9,
+    "fat_g": 10.1,
+    "carbs_g": 21.3,
+    "salt_g": 0.1,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "デザート"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "【シェア】えびとたまごのアイオリサラダ(大)",
+    "calories": 446,
+    "protein_g": 14.4,
+    "fat_g": 39.8,
+    "carbs_g": 9.1,
+    "salt_g": 3.4,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "スープ・サラダ"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "【シェア】シーザーサラダ(大)",
+    "calories": 306,
+    "protein_g": 4.8,
+    "fat_g": 27.9,
+    "carbs_g": 9.4,
+    "salt_g": 1.6,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "スープ・サラダ"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "【シェア】バジルチキンの彩りサラダ(大)",
+    "calories": 320,
+    "protein_g": 15.0,
+    "fat_g": 25.5,
+    "carbs_g": 8.8,
+    "salt_g": 2.6,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "スープ・サラダ"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "あさりとほうれん草のバター醤油",
+    "calories": 480,
+    "protein_g": 18.1,
+    "fat_g": 15.4,
+    "carbs_g": 66.3,
+    "salt_g": 2.1,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "パスタ"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "あさりの白ワイン蒸し",
+    "calories": 178,
+    "protein_g": 7.3,
+    "fat_g": 14.8,
+    "carbs_g": 1.0,
+    "salt_g": 3.1,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "前菜"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "えびとたまごのアイオリサラダ",
+    "calories": 285,
+    "protein_g": 10.3,
+    "fat_g": 24.9,
+    "carbs_g": 6.2,
+    "salt_g": 2.5,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "スープ・サラダ"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "えびとほうれん草のトマトペペロンチーノ",
+    "calories": 482,
+    "protein_g": 14.5,
+    "fat_g": 17.8,
+    "carbs_g": 66.6,
+    "salt_g": 3.2,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "パスタ"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "えびとブロッコリーのアヒージョ(バケット3コ付)",
+    "calories": 578,
+    "protein_g": 13.7,
+    "fat_g": 48.9,
+    "carbs_g": 21.0,
+    "salt_g": 3.7,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "前菜"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "えびとブロッコリーのビスククリームリゾット",
+    "calories": 342,
+    "protein_g": 10.2,
+    "fat_g": 8.4,
+    "carbs_g": 55.5,
+    "salt_g": 3.5,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "米料理"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "えびとベーコンのレモンカルボナーラ",
+    "calories": 610,
+    "protein_g": 20.3,
+    "fat_g": 26.2,
+    "carbs_g": 73.4,
+    "salt_g": 3.8,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "パスタ"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "えびのビスククリームソース（ガンベレッティ）",
+    "calories": 515,
+    "protein_g": 16.7,
+    "fat_g": 18.0,
+    "carbs_g": 71.4,
+    "salt_g": 3.7,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "パスタ"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "えびのビスククリームドリア",
+    "calories": 527,
+    "protein_g": 18.1,
+    "fat_g": 23.8,
+    "carbs_g": 58.9,
+    "salt_g": 3.5,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "米料理"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "お子様ドリンク ぶどう（関西国際空港店 限定）",
+    "calories": 92,
+    "protein_g": 0.6,
+    "fat_g": 0.6,
+    "carbs_g": 24.0,
+    "salt_g": 0.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "お子様"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "お子様ドリンク りんご（関西国際空港店 限定）",
+    "calories": 94,
+    "protein_g": 0.2,
+    "fat_g": 0.4,
+    "carbs_g": 22.8,
+    "salt_g": 0.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "お子様"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "きのこフリット",
+    "calories": 144,
+    "protein_g": 2.7,
+    "fat_g": 5.7,
+    "carbs_g": 22.5,
+    "salt_g": 2.3,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "前菜"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "ごろごろチキンの レモンバター醤油",
+    "calories": 571,
+    "protein_g": 23.5,
+    "fat_g": 22.4,
+    "carbs_g": 68.7,
+    "salt_g": 2.6,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "パスタ"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "ごろごろチキンのボロネーゼ",
+    "calories": 649,
+    "protein_g": 30.4,
+    "fat_g": 26.8,
+    "carbs_g": 70.5,
+    "salt_g": 2.8,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ランチ(ｻﾗﾀﾞ・ｽｰﾌﾟ・ﾄﾞﾘﾝｸは別途表示)"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "しぼりたて オリーブの丘モンブラン",
+    "calories": 474,
+    "protein_g": 10.3,
+    "fat_g": 12.6,
+    "carbs_g": 81.7,
+    "salt_g": 0.3,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "デザート"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "しらすとほうれん草のペペロンチーノ",
+    "calories": 452,
+    "protein_g": 15.3,
+    "fat_g": 14.0,
+    "carbs_g": 66.9,
+    "salt_g": 2.7,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ランチ(ｻﾗﾀﾞ・ｽｰﾌﾟ・ﾄﾞﾘﾝｸは別途表示)"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "しらすと葱のジンジャーカルボ",
+    "calories": 511,
+    "protein_g": 18.0,
+    "fat_g": 17.6,
+    "carbs_g": 69.1,
+    "salt_g": 3.3,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "パスタ"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "しらすと葱のブルスケッタ",
+    "calories": 99,
+    "protein_g": 5.5,
+    "fat_g": 2.1,
+    "carbs_g": 14.0,
+    "salt_g": 0.9,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "前菜"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "たっぷりあさりとベーコンのアヒージョ(バケット3コ付)",
+    "calories": 644,
+    "protein_g": 21.9,
+    "fat_g": 53.2,
+    "carbs_g": 20.1,
+    "salt_g": 2.4,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "前菜"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "とろたま明太子",
+    "calories": 478,
+    "protein_g": 17.5,
+    "fat_g": 16.5,
+    "carbs_g": 64.7,
+    "salt_g": 2.3,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ランチ(ｻﾗﾀﾞ・ｽｰﾌﾟ・ﾄﾞﾘﾝｸは別途表示)"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "ほうれん草のガーリックバターソテー",
+    "calories": 104,
+    "protein_g": 6.0,
+    "fat_g": 6.8,
+    "carbs_g": 7.3,
+    "salt_g": 1.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "前菜"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "まぐろのブルスケッタ",
+    "calories": 131,
+    "protein_g": 6.9,
+    "fat_g": 5.4,
+    "carbs_g": 13.1,
+    "salt_g": 0.7,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "前菜"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "やわらか牛肉のビーフシチュー",
+    "calories": 290,
+    "protein_g": 12.1,
+    "fat_g": 15.0,
+    "carbs_g": 26.3,
+    "salt_g": 3.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "肉料理"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "アラビアータ",
+    "calories": 579,
+    "protein_g": 14.6,
+    "fat_g": 25.3,
+    "carbs_g": 71.6,
+    "salt_g": 3.1,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "パスタ"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "アーリオオーリオ・ペペロンチーノ",
+    "calories": 492,
+    "protein_g": 12.8,
+    "fat_g": 20.6,
+    "carbs_g": 64.4,
+    "salt_g": 2.2,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "パスタ"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "イカフリット（カラマリフリット）",
+    "calories": 147,
+    "protein_g": 11.4,
+    "fat_g": 6.8,
+    "carbs_g": 10.5,
+    "salt_g": 1.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "前菜"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "イカ墨（ネーロ）",
+    "calories": 458,
+    "protein_g": 16.6,
+    "fat_g": 14.2,
+    "carbs_g": 65.7,
+    "salt_g": 2.2,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "パスタ"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "オニオングラタンスープ",
+    "calories": 175,
+    "protein_g": 9.0,
+    "fat_g": 5.8,
+    "carbs_g": 21.5,
+    "salt_g": 3.6,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "スープ・サラダ"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "オリーブの丘 厳選生ハム",
+    "calories": 57,
+    "protein_g": 2.7,
+    "fat_g": 5.0,
+    "carbs_g": 0.3,
+    "salt_g": 0.4,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "前菜"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "オリーブの丘ティラミス",
+    "calories": 252,
+    "protein_g": 3.5,
+    "fat_g": 14.4,
+    "carbs_g": 27.3,
+    "salt_g": 0.2,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "デザート"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "オリーブの丘プリン",
+    "calories": 222,
+    "protein_g": 6.5,
+    "fat_g": 8.2,
+    "carbs_g": 30.3,
+    "salt_g": 0.2,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "デザート"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "カクテルえびバジル",
+    "calories": 73,
+    "protein_g": 7.5,
+    "fat_g": 4.4,
+    "carbs_g": 0.9,
+    "salt_g": 2.6,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "前菜"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "カスクートサンド～コーン＆マヨ～(ドリンクバー除く）",
+    "calories": 388,
+    "protein_g": 11.3,
+    "fat_g": 19.0,
+    "carbs_g": 41.9,
+    "salt_g": 1.8,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "モーニング（店舗限定）"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "カスクートサンド～バジルチキンマヨ～(ドリンクバー除く）",
+    "calories": 400,
+    "protein_g": 16.0,
+    "fat_g": 20.8,
+    "carbs_g": 36.1,
+    "salt_g": 2.1,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "モーニング（店舗限定）"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "カルボナーラ",
+    "calories": 580,
+    "protein_g": 17.5,
+    "fat_g": 26.1,
+    "carbs_g": 68.5,
+    "salt_g": 2.8,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "パスタ"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "ガーリックトースト",
+    "calories": 234,
+    "protein_g": 5.7,
+    "fat_g": 8.0,
+    "carbs_g": 33.6,
+    "salt_g": 1.4,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "前菜"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "キッズカルボナーラ（ドリンクバー除く）",
+    "calories": 579,
+    "protein_g": 17.4,
+    "fat_g": 26.1,
+    "carbs_g": 68.3,
+    "salt_g": 2.8,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "お子様"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "キッズカレー（ドリンクバー除く）",
+    "calories": 432,
+    "protein_g": 14.5,
+    "fat_g": 20.2,
+    "carbs_g": 48.0,
+    "salt_g": 2.7,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "お子様"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "キッズプレート（ドリンクバー除く）",
+    "calories": 522,
+    "protein_g": 22.4,
+    "fat_g": 26.6,
+    "carbs_g": 47.4,
+    "salt_g": 2.4,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "お子様"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "キッズボロネーゼ（ドリンクバー除く）",
+    "calories": 531,
+    "protein_g": 18.5,
+    "fat_g": 19.1,
+    "carbs_g": 70.1,
+    "salt_g": 2.2,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "お子様"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "キッズモッツァトマト（ドリンクバー除く）",
+    "calories": 563,
+    "protein_g": 22.1,
+    "fat_g": 20.8,
+    "carbs_g": 71.8,
+    "salt_g": 3.6,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "お子様"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "キッズ明太子（ドリンクバー除く）",
+    "calories": 453,
+    "protein_g": 15.7,
+    "fat_g": 14.8,
+    "carbs_g": 64.7,
+    "salt_g": 2.3,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "お子様"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "グリーンサラダ",
+    "calories": 81,
+    "protein_g": 1.5,
+    "fat_g": 7.0,
+    "carbs_g": 3.3,
+    "salt_g": 0.7,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "スープ・サラダ"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "コーンポタージュ",
+    "calories": 107,
+    "protein_g": 3.1,
+    "fat_g": 4.0,
+    "carbs_g": 14.4,
+    "salt_g": 1.4,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "スープ・サラダ"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "サーモンとほうれん草のクリームソース",
+    "calories": 589,
+    "protein_g": 21.6,
+    "fat_g": 25.3,
+    "carbs_g": 69.4,
+    "salt_g": 2.8,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "パスタ"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "サーモンのカルパッチョ",
+    "calories": 118,
+    "protein_g": 6.4,
+    "fat_g": 9.7,
+    "carbs_g": 1.5,
+    "salt_g": 0.9,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "前菜"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "シャキシャキキャロットサラダ",
+    "calories": 75,
+    "protein_g": 1.3,
+    "fat_g": 5.3,
+    "carbs_g": 6.4,
+    "salt_g": 0.7,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "前菜"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "ショコラケーキ～自家製レモンコンフィチュール添え～",
+    "calories": 341,
+    "protein_g": 4.5,
+    "fat_g": 19.5,
+    "carbs_g": 37.4,
+    "salt_g": 0.1,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "デザート"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "シーザーサラダ",
+    "calories": 185,
+    "protein_g": 4.1,
+    "fat_g": 15.9,
+    "carbs_g": 6.6,
+    "salt_g": 1.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "スープ・サラダ"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "ジェノベーゼ",
+    "calories": 509,
+    "protein_g": 17.3,
+    "fat_g": 20.5,
+    "carbs_g": 64.0,
+    "salt_g": 3.2,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "パスタ"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "ジェラート いちご（ダブル）",
+    "calories": 81,
+    "protein_g": 0.2,
+    "fat_g": 0.5,
+    "carbs_g": 18.7,
+    "salt_g": 0.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "デザート"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "ジェラート チョコ（ダブル）",
+    "calories": 159,
+    "protein_g": 2.7,
+    "fat_g": 7.1,
+    "carbs_g": 21.1,
+    "salt_g": 0.1,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "デザート"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "ジェラート バニラ（ダブル）",
+    "calories": 215,
+    "protein_g": 3.2,
+    "fat_g": 13.0,
+    "carbs_g": 21.4,
+    "salt_g": 0.1,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "デザート"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "ソーセージのオーブン焼き",
+    "calories": 341,
+    "protein_g": 14.6,
+    "fat_g": 30.2,
+    "carbs_g": 2.6,
+    "salt_g": 2.8,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "前菜"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "ダブルモッツァレラのトマトソース",
+    "calories": 667,
+    "protein_g": 30.3,
+    "fat_g": 27.7,
+    "carbs_g": 72.9,
+    "salt_g": 4.3,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "パスタ"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "チキンときのこのドリア",
+    "calories": 574,
+    "protein_g": 20.1,
+    "fat_g": 27.8,
+    "carbs_g": 60.2,
+    "salt_g": 3.3,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "米料理"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "チキンのオーブン焼き",
+    "calories": 402,
+    "protein_g": 31.0,
+    "fat_g": 26.2,
+    "carbs_g": 6.9,
+    "salt_g": 2.3,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "肉料理"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "チキンのオーブン焼き～グリル茄子トマトソース～",
+    "calories": 460,
+    "protein_g": 33.1,
+    "fat_g": 28.7,
+    "carbs_g": 13.6,
+    "salt_g": 3.1,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ランチ(ｻﾗﾀﾞ・ｽｰﾌﾟ・ﾄﾞﾘﾝｸは別途表示)"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "チキンのオーブン焼き～シャキシャキ野菜ソース～",
+    "calories": 448,
+    "protein_g": 31.5,
+    "fat_g": 29.5,
+    "carbs_g": 10.4,
+    "salt_g": 3.5,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "肉料理"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "チキンフリット",
+    "calories": 359,
+    "protein_g": 18.1,
+    "fat_g": 27.0,
+    "carbs_g": 10.9,
+    "salt_g": 2.1,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "前菜"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "チョコ・ピスタチオグラニータ(ピスタチオソース・ミルクソース付)",
+    "calories": 396,
+    "protein_g": 4.8,
+    "fat_g": 22.2,
+    "carbs_g": 45.2,
+    "salt_g": 0.2,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "季節限定"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "チーズゼッポリーネ",
+    "calories": 176,
+    "protein_g": 4.7,
+    "fat_g": 9.6,
+    "carbs_g": 16.8,
+    "salt_g": 0.8,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "前菜"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "チーズトマトハンバーグ",
+    "calories": 455,
+    "protein_g": 26.3,
+    "fat_g": 29.0,
+    "carbs_g": 19.0,
+    "salt_g": 3.2,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "肉料理"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "テイクアウト あさりの白ワイン蒸し",
+    "calories": 178,
+    "protein_g": 7.3,
+    "fat_g": 14.8,
+    "carbs_g": 1.0,
+    "salt_g": 3.1,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "持ち帰り 前菜"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "テイクアウト えびとほうれん草のトマトペペロンチーノ",
+    "calories": 485,
+    "protein_g": 14.7,
+    "fat_g": 17.9,
+    "carbs_g": 67.4,
+    "salt_g": 2.8,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "持ち帰り パスタ"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "テイクアウト えびのビスククリームソース（ガンベレッティ）",
+    "calories": 515,
+    "protein_g": 16.7,
+    "fat_g": 18.0,
+    "carbs_g": 71.4,
+    "salt_g": 3.7,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "持ち帰り パスタ"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "テイクアウト ほうれん草のガーリックバターソテー",
+    "calories": 104,
+    "protein_g": 6.0,
+    "fat_g": 6.8,
+    "carbs_g": 7.3,
+    "salt_g": 1.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "持ち帰り 前菜"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "テイクアウト イカ墨（ネーロ）",
+    "calories": 458,
+    "protein_g": 16.6,
+    "fat_g": 14.2,
+    "carbs_g": 65.7,
+    "salt_g": 2.2,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "持ち帰り パスタ"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "テイクアウト ガーリックトースト",
+    "calories": 234,
+    "protein_g": 5.7,
+    "fat_g": 8.0,
+    "carbs_g": 33.6,
+    "salt_g": 1.4,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "持ち帰り 前菜"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "テイクアウト サーモンとほうれん草のクリームソース",
+    "calories": 587,
+    "protein_g": 21.4,
+    "fat_g": 25.3,
+    "carbs_g": 69.2,
+    "salt_g": 2.8,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "持ち帰り パスタ"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "テイクアウト ショコラケーキ",
+    "calories": 259,
+    "protein_g": 4.3,
+    "fat_g": 16.9,
+    "carbs_g": 22.5,
+    "salt_g": 0.1,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "持ち帰り ドルチェ"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "テイクアウト ダブルモッツァレラのトマトソース",
+    "calories": 667,
+    "protein_g": 30.3,
+    "fat_g": 27.7,
+    "carbs_g": 72.9,
+    "salt_g": 4.3,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "持ち帰り パスタ"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "テイクアウト チキンフリット",
+    "calories": 359,
+    "protein_g": 18.1,
+    "fat_g": 27.0,
+    "carbs_g": 10.9,
+    "salt_g": 2.1,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "持ち帰り 前菜"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "テイクアウト チーズゼッポリーネ",
+    "calories": 176,
+    "protein_g": 4.7,
+    "fat_g": 9.6,
+    "carbs_g": 16.8,
+    "salt_g": 0.8,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "持ち帰り 前菜"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "テイクアウト トッピング）オリーブの丘特製アイオリソース",
+    "calories": 196,
+    "protein_g": 1.5,
+    "fat_g": 20.1,
+    "carbs_g": 1.9,
+    "salt_g": 0.9,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "持ち帰り 前菜"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "テイクアウト トッピング）半熟卵",
+    "calories": 83,
+    "protein_g": 6.8,
+    "fat_g": 5.7,
+    "carbs_g": 0.2,
+    "salt_g": 0.2,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "持ち帰り 前菜"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "テイクアウト ハーブ香る豚のポルケッタ～ペッパー＆バルサミコソース～",
+    "calories": 603,
+    "protein_g": 16.3,
+    "fat_g": 50.0,
+    "carbs_g": 17.8,
+    "salt_g": 2.8,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "持ち帰り 前菜"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "テイクアウト バスクチーズケーキ",
+    "calories": 268,
+    "protein_g": 3.9,
+    "fat_g": 20.6,
+    "carbs_g": 15.8,
+    "salt_g": 0.3,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "持ち帰り ドルチェ"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "テイクアウト ピッツァ・えびマヨガーリック",
+    "calories": 714,
+    "protein_g": 32.6,
+    "fat_g": 38.8,
+    "carbs_g": 59.5,
+    "salt_g": 6.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "持ち帰り ピッツァ"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "テイクアウト ピッツァ・たっぷりコーンマヨ",
+    "calories": 690,
+    "protein_g": 25.2,
+    "fat_g": 38.8,
+    "carbs_g": 61.1,
+    "salt_g": 2.6,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "持ち帰り ピッツァ"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "テイクアウト ピッツァ・ガーリックベーコン",
+    "calories": 555,
+    "protein_g": 27.0,
+    "fat_g": 24.8,
+    "carbs_g": 56.2,
+    "salt_g": 3.2,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "持ち帰り ピッツァ"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "テイクアウト ピッツァ・クワトロフォルマッジ",
+    "calories": 640,
+    "protein_g": 27.8,
+    "fat_g": 31.6,
+    "carbs_g": 62.3,
+    "salt_g": 2.9,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "持ち帰り ピッツァ"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "テイクアウト ピッツァ・サーモンマヨ",
+    "calories": 755,
+    "protein_g": 31.7,
+    "fat_g": 44.8,
+    "carbs_g": 57.7,
+    "salt_g": 3.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "持ち帰り ピッツァ"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "テイクアウト ピッツァ・ジェノベーゼ",
+    "calories": 615,
+    "protein_g": 27.8,
+    "fat_g": 31.8,
+    "carbs_g": 55.6,
+    "salt_g": 3.5,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "持ち帰り ピッツァ"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "テイクアウト ピッツァ・マルゲリータ",
+    "calories": 577,
+    "protein_g": 23.9,
+    "fat_g": 29.6,
+    "carbs_g": 53.8,
+    "salt_g": 2.8,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "持ち帰り ピッツァ"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "テイクアウト フレンチフライ(ケチャップ)",
+    "calories": 435,
+    "protein_g": 3.5,
+    "fat_g": 30.2,
+    "carbs_g": 39.9,
+    "salt_g": 2.9,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "持ち帰り 前菜"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "テイクアウト ブロッコリーのガーリックソテー",
+    "calories": 102,
+    "protein_g": 6.8,
+    "fat_g": 6.5,
+    "carbs_g": 7.4,
+    "salt_g": 1.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "持ち帰り 前菜"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "テイクアウト ペンネ アラビアータ",
+    "calories": 512,
+    "protein_g": 12.2,
+    "fat_g": 25.5,
+    "carbs_g": 54.3,
+    "salt_g": 3.6,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "持ち帰り パスタ"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "テイクアウト ペンネ ゴルゴンゾーラクリーム",
+    "calories": 457,
+    "protein_g": 16.5,
+    "fat_g": 19.3,
+    "carbs_g": 51.2,
+    "salt_g": 3.4,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "持ち帰り パスタ"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "テイクアウト ボンゴレビアンコ",
+    "calories": 562,
+    "protein_g": 22.2,
+    "fat_g": 22.6,
+    "carbs_g": 64.4,
+    "salt_g": 4.9,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "持ち帰り パスタ"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "テイクアウト ムール貝の白ワイン蒸し",
+    "calories": 340,
+    "protein_g": 28.8,
+    "fat_g": 19.0,
+    "carbs_g": 6.0,
+    "salt_g": 2.3,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "持ち帰り 前菜"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "テイクアウト モッツァトマト",
+    "calories": 563,
+    "protein_g": 21.5,
+    "fat_g": 20.4,
+    "carbs_g": 71.9,
+    "salt_g": 3.8,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "持ち帰り パスタ"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "テイクアウト モッツァレラとベーコンのボロネーゼ",
+    "calories": 656,
+    "protein_g": 28.0,
+    "fat_g": 28.5,
+    "carbs_g": 71.1,
+    "salt_g": 2.9,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "持ち帰り パスタ"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "テイクアウト ライスコロッケ（アランチーニ）",
+    "calories": 263,
+    "protein_g": 4.6,
+    "fat_g": 13.3,
+    "carbs_g": 29.8,
+    "salt_g": 1.6,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "持ち帰り 前菜"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "テイクアウト 単品：カスクートサンド ～バジルチキンマヨ～",
+    "calories": 365,
+    "protein_g": 15.7,
+    "fat_g": 17.7,
+    "carbs_g": 34.3,
+    "salt_g": 1.8,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "持ち帰り モーニング"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "テイクアウト 単品：カスクートサンド～コーン＆マヨ～",
+    "calories": 353,
+    "protein_g": 11.0,
+    "fat_g": 15.9,
+    "carbs_g": 40.1,
+    "salt_g": 1.5,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "持ち帰り モーニング"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "テイクアウト 単品：パニーニ～スピナッチ～",
+    "calories": 323,
+    "protein_g": 9.9,
+    "fat_g": 19.2,
+    "carbs_g": 30.2,
+    "salt_g": 1.9,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "持ち帰り モーニング"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "テイクアウト 焼き茄子とベーコンのトマトソース",
+    "calories": 498,
+    "protein_g": 14.5,
+    "fat_g": 16.1,
+    "carbs_g": 73.4,
+    "salt_g": 2.9,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "持ち帰り パスタ"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "テイクアウト 菜園風のトマトソース",
+    "calories": 498,
+    "protein_g": 15.1,
+    "fat_g": 15.3,
+    "carbs_g": 75.2,
+    "salt_g": 3.2,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "持ち帰り パスタ"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "デミたまハンバーグ",
+    "calories": 477,
+    "protein_g": 28.4,
+    "fat_g": 30.2,
+    "carbs_g": 18.9,
+    "salt_g": 2.6,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ランチ(ｻﾗﾀﾞ・ｽｰﾌﾟ・ﾄﾞﾘﾝｸは別途表示)"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "デミグラスハンバーグ",
+    "calories": 390,
+    "protein_g": 21.7,
+    "fat_g": 24.5,
+    "carbs_g": 18.0,
+    "salt_g": 2.4,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "肉料理"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "トッピング）オリーブの丘特製アイオリソース",
+    "calories": 196,
+    "protein_g": 1.5,
+    "fat_g": 20.1,
+    "carbs_g": 1.9,
+    "salt_g": 0.9,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "前菜"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "トッピング）シャキシャキ野菜ソース",
+    "calories": 34,
+    "protein_g": 0.2,
+    "fat_g": 3.3,
+    "carbs_g": 1.4,
+    "salt_g": 0.8,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "前菜"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "トッピング）半熟卵",
+    "calories": 83,
+    "protein_g": 6.8,
+    "fat_g": 5.7,
+    "carbs_g": 0.2,
+    "salt_g": 0.2,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "前菜"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "トッピング）蜂蜜ナッツ",
+    "calories": 85,
+    "protein_g": 1.8,
+    "fat_g": 6.5,
+    "carbs_g": 5.4,
+    "salt_g": 0.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "デザート"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "トルタパラディーゾ",
+    "calories": 135,
+    "protein_g": 1.3,
+    "fat_g": 7.7,
+    "carbs_g": 14.6,
+    "salt_g": 0.1,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "モーニング（店舗限定）"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "ドリアカルボナーラ",
+    "calories": 602,
+    "protein_g": 20.3,
+    "fat_g": 31.5,
+    "carbs_g": 56.6,
+    "salt_g": 2.7,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "米料理"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "ナポリ風ピッツァ・マルゲリータ（店舗限定：杉並和田・足立保塚・つくば研究学園）",
+    "calories": 514,
+    "protein_g": 23.5,
+    "fat_g": 18.8,
+    "carbs_g": 63.0,
+    "salt_g": 3.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ピッツァ"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "ハーブ香る豚のポルケッタ～チーズトマトソース～",
+    "calories": 661,
+    "protein_g": 21.2,
+    "fat_g": 54.6,
+    "carbs_g": 17.4,
+    "salt_g": 2.8,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "肉料理"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "ハーブ香る豚のポルケッタ～ペッパー＆バルサミコソース～",
+    "calories": 603,
+    "protein_g": 16.3,
+    "fat_g": 50.0,
+    "carbs_g": 17.8,
+    "salt_g": 2.8,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "肉料理"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "バジルチキンの彩りサラダ",
+    "calories": 188,
+    "protein_g": 9.3,
+    "fat_g": 14.7,
+    "carbs_g": 5.3,
+    "salt_g": 1.5,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "スープ・サラダ"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "パニーニ～スピナッチ～(ドリンクバー除く）",
+    "calories": 358,
+    "protein_g": 10.2,
+    "fat_g": 22.3,
+    "carbs_g": 32.0,
+    "salt_g": 2.2,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "モーニング（店舗限定）"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "ピッツァ・えびマヨガーリック",
+    "calories": 714,
+    "protein_g": 32.6,
+    "fat_g": 38.8,
+    "carbs_g": 59.5,
+    "salt_g": 6.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ピッツァ"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "ピッツァ・たっぷりコーンマヨ",
+    "calories": 720,
+    "protein_g": 26.0,
+    "fat_g": 39.2,
+    "carbs_g": 66.9,
+    "salt_g": 2.6,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ピッツァ"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "ピッツァ・ガーリックベーコン",
+    "calories": 555,
+    "protein_g": 27.0,
+    "fat_g": 24.8,
+    "carbs_g": 56.2,
+    "salt_g": 3.2,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ピッツァ"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "ピッツァ・クワトロフォルマッジ",
+    "calories": 660,
+    "protein_g": 27.8,
+    "fat_g": 31.6,
+    "carbs_g": 66.6,
+    "salt_g": 2.9,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ピッツァ"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "ピッツァ・サーモンマヨ",
+    "calories": 755,
+    "protein_g": 31.7,
+    "fat_g": 44.8,
+    "carbs_g": 57.7,
+    "salt_g": 3.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ピッツァ"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "ピッツァ・ジェノベーゼ",
+    "calories": 615,
+    "protein_g": 27.8,
+    "fat_g": 31.8,
+    "carbs_g": 55.6,
+    "salt_g": 3.5,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ピッツァ"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "ピッツァ・チチニエッリ・リモーネ",
+    "calories": 594,
+    "protein_g": 29.8,
+    "fat_g": 26.9,
+    "carbs_g": 60.3,
+    "salt_g": 3.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ピッツァ"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "ピッツァ・マルゲリータ",
+    "calories": 577,
+    "protein_g": 23.9,
+    "fat_g": 29.6,
+    "carbs_g": 53.8,
+    "salt_g": 2.8,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ピッツァ"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "フリコのオーブン焼き～モッツァレラチーズとマッシュポテト～",
+    "calories": 226,
+    "protein_g": 10.7,
+    "fat_g": 12.7,
+    "carbs_g": 17.7,
+    "salt_g": 1.5,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "前菜"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "フレンチフライ(ケチャップ)",
+    "calories": 435,
+    "protein_g": 3.5,
+    "fat_g": 30.2,
+    "carbs_g": 39.9,
+    "salt_g": 2.9,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "前菜"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "ブルスケッタ",
+    "calories": 140,
+    "protein_g": 4.7,
+    "fat_g": 0.6,
+    "carbs_g": 27.6,
+    "salt_g": 0.7,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "前菜"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "ブルスケッタ(2枚)",
+    "calories": 58,
+    "protein_g": 1.9,
+    "fat_g": 0.2,
+    "carbs_g": 11.5,
+    "salt_g": 0.3,
+    "serving_label": "2枚",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "モーニング（店舗限定）"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "ブロッコリーのガーリックソテー",
+    "calories": 102,
+    "protein_g": 6.8,
+    "fat_g": 6.5,
+    "carbs_g": 7.4,
+    "salt_g": 1.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "前菜"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "ベーコンと焼き茄子の醤油ソース",
+    "calories": 455,
+    "protein_g": 13.4,
+    "fat_g": 14.4,
+    "carbs_g": 67.3,
+    "salt_g": 2.1,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "パスタ"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "ペンネ えびのビスククリームソース（ガンベレッティ）",
+    "calories": 448,
+    "protein_g": 14.3,
+    "fat_g": 18.1,
+    "carbs_g": 54.1,
+    "salt_g": 4.1,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "パスタ"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "ペンネ アラビアータ",
+    "calories": 511,
+    "protein_g": 12.2,
+    "fat_g": 25.5,
+    "carbs_g": 55.6,
+    "salt_g": 3.3,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "パスタ"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "ペンネ ゴルゴンゾーラクリーム",
+    "calories": 457,
+    "protein_g": 16.5,
+    "fat_g": 19.3,
+    "carbs_g": 51.2,
+    "salt_g": 3.4,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "パスタ"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "ペンネ ボロネーゼ",
+    "calories": 464,
+    "protein_g": 16.0,
+    "fat_g": 19.3,
+    "carbs_g": 52.7,
+    "salt_g": 2.7,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "パスタ"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "ペンネ 焼き茄子とベーコンのトマトソース",
+    "calories": 431,
+    "protein_g": 12.1,
+    "fat_g": 16.3,
+    "carbs_g": 56.0,
+    "salt_g": 3.3,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "パスタ"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "ボロネーゼ",
+    "calories": 531,
+    "protein_g": 18.5,
+    "fat_g": 19.1,
+    "carbs_g": 70.1,
+    "salt_g": 2.2,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "パスタ"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "ボローニャドリア",
+    "calories": 526,
+    "protein_g": 13.9,
+    "fat_g": 25.3,
+    "carbs_g": 58.8,
+    "salt_g": 2.7,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "米料理"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "ボローニャ風ラザニア",
+    "calories": 230,
+    "protein_g": 8.3,
+    "fat_g": 13.0,
+    "carbs_g": 20.3,
+    "salt_g": 1.2,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "前菜"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "ボンゴレビアンコ",
+    "calories": 562,
+    "protein_g": 22.2,
+    "fat_g": 22.6,
+    "carbs_g": 64.4,
+    "salt_g": 4.9,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "パスタ"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "ミニピッツァ・たっぷりコーンマヨ",
+    "calories": 321,
+    "protein_g": 11.9,
+    "fat_g": 18.8,
+    "carbs_g": 26.7,
+    "salt_g": 1.2,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ピッツァ"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "ミニピッツァ・ガーリックベーコン",
+    "calories": 247,
+    "protein_g": 12.8,
+    "fat_g": 12.3,
+    "carbs_g": 21.4,
+    "salt_g": 1.5,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ピッツァ"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "ミニピッツァ・マルゲリータ",
+    "calories": 205,
+    "protein_g": 10.8,
+    "fat_g": 9.0,
+    "carbs_g": 20.2,
+    "salt_g": 1.3,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ピッツァ"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "ムール貝の白ワイン蒸し",
+    "calories": 340,
+    "protein_g": 28.8,
+    "fat_g": 19.0,
+    "carbs_g": 6.0,
+    "salt_g": 2.3,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "前菜"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "モッツァトマト",
+    "calories": 563,
+    "protein_g": 21.5,
+    "fat_g": 20.4,
+    "carbs_g": 71.9,
+    "salt_g": 3.8,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "パスタ"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "モッツァレラとベーコンのボロネーゼ",
+    "calories": 656,
+    "protein_g": 28.0,
+    "fat_g": 28.5,
+    "carbs_g": 71.1,
+    "salt_g": 2.9,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "パスタ"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "モッツァレラフリット",
+    "calories": 175,
+    "protein_g": 5.7,
+    "fat_g": 10.6,
+    "carbs_g": 13.7,
+    "salt_g": 1.1,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "前菜"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "モーニングピッツァ～3種チーズ～(ドリンクバー除く）",
+    "calories": 494,
+    "protein_g": 19.9,
+    "fat_g": 21.4,
+    "carbs_g": 56.1,
+    "salt_g": 2.6,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "モーニング（店舗限定）"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "モーニングピッツァ～ビスマルク風～(ドリンクバー除く）",
+    "calories": 517,
+    "protein_g": 23.1,
+    "fat_g": 22.0,
+    "carbs_g": 55.4,
+    "salt_g": 3.4,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "モーニング（店舗限定）"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "モーニングミニドリア～チーズミート～(ドリンクバー除く）",
+    "calories": 372,
+    "protein_g": 11.0,
+    "fat_g": 18.7,
+    "carbs_g": 38.7,
+    "salt_g": 2.4,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "モーニング（店舗限定）"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "モーニングリゾット～えびのビスクトマト～(ドリンクバー除く）",
+    "calories": 316,
+    "protein_g": 10.7,
+    "fat_g": 8.2,
+    "carbs_g": 47.9,
+    "salt_g": 4.4,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "モーニング（店舗限定）"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "モーニングリゾット～ベーコンとチーズ～(ドリンクバー除く）",
+    "calories": 372,
+    "protein_g": 10.4,
+    "fat_g": 15.8,
+    "carbs_g": 45.6,
+    "salt_g": 3.2,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "モーニング（店舗限定）"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "ライス",
+    "calories": 259,
+    "protein_g": 4.4,
+    "fat_g": 0.7,
+    "carbs_g": 56.1,
+    "salt_g": 0.2,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "セット"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "ライスコロッケ（アランチーニ）",
+    "calories": 263,
+    "protein_g": 4.6,
+    "fat_g": 13.3,
+    "carbs_g": 29.8,
+    "salt_g": 1.6,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "前菜"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "ライス（大）",
+    "calories": 388,
+    "protein_g": 6.7,
+    "fat_g": 1.0,
+    "carbs_g": 84.0,
+    "salt_g": 0.3,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "セット"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "ライス（小）",
+    "calories": 194,
+    "protein_g": 3.3,
+    "fat_g": 0.5,
+    "carbs_g": 42.0,
+    "salt_g": 0.2,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "セット"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "ランチ）サラダ",
+    "calories": 52,
+    "protein_g": 0.4,
+    "fat_g": 4.6,
+    "carbs_g": 2.4,
+    "salt_g": 0.5,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ランチ(ｻﾗﾀﾞ・ｽｰﾌﾟ・ﾄﾞﾘﾝｸは別途表示)"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "ランチ）ブルスケッタ",
+    "calories": 140,
+    "protein_g": 4.7,
+    "fat_g": 0.6,
+    "carbs_g": 27.6,
+    "salt_g": 0.7,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ランチ(ｻﾗﾀﾞ・ｽｰﾌﾟ・ﾄﾞﾘﾝｸは別途表示)"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "ランチ）ミニピッツァ・マルゲリータ",
+    "calories": 205,
+    "protein_g": 10.8,
+    "fat_g": 9.0,
+    "carbs_g": 20.4,
+    "salt_g": 1.2,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ランチ(ｻﾗﾀﾞ・ｽｰﾌﾟ・ﾄﾞﾘﾝｸは別途表示)"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "ランチ）ライス",
+    "calories": 259,
+    "protein_g": 4.4,
+    "fat_g": 0.7,
+    "carbs_g": 56.1,
+    "salt_g": 0.2,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ランチ(ｻﾗﾀﾞ・ｽｰﾌﾟ・ﾄﾞﾘﾝｸは別途表示)"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "リゾットフォルマッジ",
+    "calories": 388,
+    "protein_g": 8.8,
+    "fat_g": 14.6,
+    "carbs_g": 53.7,
+    "salt_g": 2.9,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "米料理"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "レバーパテのブルスケッタ",
+    "calories": 182,
+    "protein_g": 7.4,
+    "fat_g": 7.7,
+    "carbs_g": 20.1,
+    "salt_g": 1.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "前菜"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "レモンカラメル バスクチーズケーキ",
+    "calories": 364,
+    "protein_g": 4.2,
+    "fat_g": 23.2,
+    "carbs_g": 34.4,
+    "salt_g": 0.3,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "デザート"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "レモン香る チキンと北海道産ポテトのオーブン焼き～リモーネ アル フォルノ～",
+    "calories": 252,
+    "protein_g": 14.0,
+    "fat_g": 15.1,
+    "carbs_g": 16.8,
+    "salt_g": 2.4,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "季節限定"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "ロイヤルミルクティー グラニータ＆パンナコッタ",
+    "calories": 110,
+    "protein_g": 2.6,
+    "fat_g": 4.1,
+    "carbs_g": 15.8,
+    "salt_g": 0.1,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "デザート"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "ロイヤルミルクティーグラニータ(ミルクソース付)",
+    "calories": 301,
+    "protein_g": 4.7,
+    "fat_g": 16.3,
+    "carbs_g": 33.9,
+    "salt_g": 0.2,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "季節限定"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "冷製 ビスクスープ ～やみつきクルトン添え～",
+    "calories": 139,
+    "protein_g": 4.9,
+    "fat_g": 7.1,
+    "carbs_g": 13.5,
+    "salt_g": 1.4,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "スープ・サラダ"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "削りグラナパダーノ",
+    "calories": 19,
+    "protein_g": 1.7,
+    "fat_g": 1.4,
+    "carbs_g": 0.0,
+    "salt_g": 0.1,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "モーニング（店舗限定）"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "削りチーズのえびとアスパラのバジルクリーム",
+    "calories": 562,
+    "protein_g": 20.3,
+    "fat_g": 24.1,
+    "carbs_g": 66.3,
+    "salt_g": 4.4,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ランチ(ｻﾗﾀﾞ・ｽｰﾌﾟ・ﾄﾞﾘﾝｸは別途表示)"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "半熟卵",
+    "calories": 73,
+    "protein_g": 6.4,
+    "fat_g": 5.2,
+    "carbs_g": 0.1,
+    "salt_g": 0.5,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "モーニング（店舗限定）"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "単品：カスクートサンド～コーン＆マヨ～",
+    "calories": 353,
+    "protein_g": 11.0,
+    "fat_g": 15.9,
+    "carbs_g": 40.1,
+    "salt_g": 1.5,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "モーニング（店舗限定）"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "単品：カスクートサンド～バジルチキンマヨ～",
+    "calories": 365,
+    "protein_g": 15.7,
+    "fat_g": 17.7,
+    "carbs_g": 34.3,
+    "salt_g": 1.8,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "モーニング（店舗限定）"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "単品：パニーニ～スピナッチ～",
+    "calories": 323,
+    "protein_g": 9.9,
+    "fat_g": 19.2,
+    "carbs_g": 30.2,
+    "salt_g": 1.9,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "モーニング（店舗限定）"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "単品：モーニングピッツァ～3種チーズ～",
+    "calories": 459,
+    "protein_g": 19.6,
+    "fat_g": 18.3,
+    "carbs_g": 54.3,
+    "salt_g": 2.2,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "モーニング（店舗限定）"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "単品：モーニングピッツァ～ビスマルク風～",
+    "calories": 482,
+    "protein_g": 22.8,
+    "fat_g": 18.9,
+    "carbs_g": 53.6,
+    "salt_g": 3.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "モーニング（店舗限定）"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "単品：モーニングミニドリア～チーズミート～",
+    "calories": 337,
+    "protein_g": 10.7,
+    "fat_g": 15.6,
+    "carbs_g": 36.9,
+    "salt_g": 2.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "モーニング（店舗限定）"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "単品：モーニングリゾット～えびのビスクトマト～",
+    "calories": 281,
+    "protein_g": 10.4,
+    "fat_g": 5.2,
+    "carbs_g": 46.1,
+    "salt_g": 4.1,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "モーニング（店舗限定）"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "単品：モーニングリゾット～ベーコンとチーズ～",
+    "calories": 337,
+    "protein_g": 10.2,
+    "fat_g": 12.7,
+    "carbs_g": 43.8,
+    "salt_g": 2.9,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "モーニング（店舗限定）"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "単品：窯焼きパンプディング～バニラジェラートのせ～",
+    "calories": 358,
+    "protein_g": 10.6,
+    "fat_g": 13.4,
+    "carbs_g": 47.6,
+    "salt_g": 0.6,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "モーニング（店舗限定）"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "明太子",
+    "calories": 453,
+    "protein_g": 15.7,
+    "fat_g": 14.8,
+    "carbs_g": 64.8,
+    "salt_g": 2.3,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "パスタ"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "明太子クリーム",
+    "calories": 560,
+    "protein_g": 21.7,
+    "fat_g": 21.0,
+    "carbs_g": 71.4,
+    "salt_g": 4.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "パスタ"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "海の幸とチェリートマトのペスカトーレ",
+    "calories": 557,
+    "protein_g": 23.9,
+    "fat_g": 20.6,
+    "carbs_g": 69.0,
+    "salt_g": 4.4,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ランチ(ｻﾗﾀﾞ・ｽｰﾌﾟ・ﾄﾞﾘﾝｸは別途表示)"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "焼き茄子とベーコンのトマトソース",
+    "calories": 498,
+    "protein_g": 14.5,
+    "fat_g": 16.1,
+    "carbs_g": 73.4,
+    "salt_g": 2.9,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "パスタ"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "焼き茄子とベーコンのモッツァトマト",
+    "calories": 602,
+    "protein_g": 23.3,
+    "fat_g": 23.4,
+    "carbs_g": 74.4,
+    "salt_g": 3.8,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ランチ(ｻﾗﾀﾞ・ｽｰﾌﾟ・ﾄﾞﾘﾝｸは別途表示)"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "窯焼きパンプディング～バニラジェラートのせ～(ドリンクバー除く）",
+    "calories": 393,
+    "protein_g": 10.8,
+    "fat_g": 16.5,
+    "carbs_g": 49.4,
+    "salt_g": 0.9,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "モーニング（店舗限定）"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "窯焼きパン・プディング～バニラジェラートのせ～",
+    "calories": 412,
+    "protein_g": 12.0,
+    "fat_g": 16.3,
+    "carbs_g": 53.5,
+    "salt_g": 0.7,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "デザート"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "自家製レモンコンフィチュール",
+    "calories": 100,
+    "protein_g": 0.2,
+    "fat_g": 0.1,
+    "carbs_g": 25.7,
+    "salt_g": 0.0,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "デザート"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "苺・ミルクグラニータ(苺ソース・ミルクソース付)",
+    "calories": 336,
+    "protein_g": 2.9,
+    "fat_g": 14.7,
+    "carbs_g": 48.9,
+    "salt_g": 0.1,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "季節限定"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "菜園風のトマトソース",
+    "calories": 498,
+    "protein_g": 15.1,
+    "fat_g": 15.3,
+    "carbs_g": 75.2,
+    "salt_g": 3.2,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "パスタ"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "銚子産真いわしのマリネ",
+    "calories": 110,
+    "protein_g": 7.9,
+    "fat_g": 7.7,
+    "carbs_g": 4.0,
+    "salt_g": 0.3,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "前菜"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "鶏の唐揚（関西国際空港店 限定）",
+    "calories": 237,
+    "protein_g": 12.0,
+    "fat_g": 17.9,
+    "carbs_g": 7.0,
+    "salt_g": 1.1,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ランチ(ｻﾗﾀﾞ・ｽｰﾌﾟ・ﾄﾞﾘﾝｸは別途表示)"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "～トリュフ香る～フレンチフライ",
+    "calories": 422,
+    "protein_g": 3.5,
+    "fat_g": 30.4,
+    "carbs_g": 36.2,
+    "salt_g": 2.1,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "前菜"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "～冷製カッペリーニ～ウニといくらの和風クリームソース",
+    "calories": 452,
+    "protein_g": 15.4,
+    "fat_g": 15.5,
+    "carbs_g": 64.7,
+    "salt_g": 2.9,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "季節限定"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  },
+  {
+    "brand": "オリーブの丘",
+    "name": "～冷製カッペリーニ～明太子",
+    "calories": 503,
+    "protein_g": 19.2,
+    "fat_g": 20.9,
+    "carbs_g": 62.0,
+    "salt_g": 3.6,
+    "serving_label": "1品",
+    "tags": [
+      "公式栄養成分",
+      "公式サイズのみ",
+      "ランチ(ｻﾗﾀﾞ・ｽｰﾌﾟ・ﾄﾞﾘﾝｸは別途表示)"
+    ],
+    "source_url": "https://images.zensho.co.jp/materials/olivenooka/allergen/nutrition_facts.pdf",
+    "fetched_at": "2026-07-10T00:00:00.000Z"
+  }
+]

@@ -1,58 +1,42 @@
 # Food seed coverage report
 
-Generated: 2026-06-13T00:00:00.000Z
+Generated: 2026-07-10
 
 ## Summary
 
-This pass continues the official-source food seed expansion. It still promotes rows to `official()` only when calories, protein, fat, carbohydrate, and salt are all backed by the same official nutrition source. Ambiguous or partial rows remain in manual review.
+The bundled catalog currently contains 5,690 rows: 4,117 official, 1,542 estimated, 11 unofficial, and 20 quick-estimate rows. An item is promoted to `official` only when kcal, protein, fat, carbohydrate, and salt come from the same official source.
 
-| Brand | Source type | Official inventory | Existing before expansion | Missing add records | Replace records | Manual review |
-| --- | --- | ---: | ---: | ---: | ---: | ---: |
-| バーガーキング | official_full | 78 | 12 | 66 | 12 | 0 |
-| スターバックス | official_full | 9 | 9 | 0 | 9 | 0 |
-| ケンタッキー | official_full | 35 | 18 | 17 | 18 | 0 |
-| モスバーガー | official_full | 184 | 54 | 132 | 52 | 0 |
-| サブウェイ | official_full | 154 | 120 | 34 | 0 | 0 |
-| マクドナルド | official_full | 71 | 20 | 51 | 1 | 0 |
-| KFC coverage add-on | official_full | 50 | 35 | 15 | 0 | 0 |
-| すき家 | official_full | 129 | 62 | 67 | 0 | 1 |
-| 吉野家 | official_full | 69 | 6 | 63 | 0 | 0 |
-| 松屋 | official_full | 41 | 10 | 31 | 0 | 0 |
-| なか卯 | official_full | 209 | 2 | 207 | 2 | 0 |
-| はなまるうどん | official_full | 74 | 0 | 74 | 0 | 0 |
-| やよい軒 | official_full | 39 | 15 | 24 | 0 | 0 |
-| 大戸屋 | official_full/add_if_missing | 162 | 159 | 3 | 0 | 0 |
-| ドトール | official_full | 116 | 10 | 106 | 10 | 0 |
-| タリーズ | official_full | 10 | 9 | 1 | 9 | 0 |
-| CoCo壱番屋 | official_full | 189 | 8 | 181 | 8 | 0 |
-| しんぱち食堂 | official_menu_plus_supplemental_estimated | 43 | 14 | 29 | 14 | 0 |
-| Other supported chains | mixed/not fully extracted | 0 | 0 | 0 | 0 | 16 |
+## Official source refresh
 
-## Applied expansion
+| Brand | Official rows | Current source |
+| --- | ---: | --- |
+| びっくりドンキー | 343 | Official nutrition PDF updated 2026-06-10 |
+| ポポラマーマ | 203 | Official nutrition PDF for 2026-06 |
+| ジョイフル | 284 | Official allergen/nutrition PDF |
+| デニーズ | 380 | Official nutrition PDF updated 2026-07-08 |
+| ロイヤルホスト | 321 | Official allergen/nutrition PDF updated 2026-06-30 |
+| 丸亀製麺 | 135 | Current official product pages, including size and temperature variants |
+| オリーブの丘 | 195 | Official nutrition PDF updated 2026-07-01 |
+| とんでん | 346 | Official nutrition/allergen PDF updated 2026-06-09 |
 
-- Doutor official nutrition rows now add 116 food, snack, dessert, and light-meal records from the official nutrition search pages.
-- Tullys official food PDF rows now add 10 verified food and pasta records. Existing estimated Tullys cafe menu rows are removed from the loaded seed path to avoid duplicate brand rows.
-- Nakau official PDF rows now add 209 records across bowls, noodles, set meals, breakfast, rice, and sides. PDF rows with `W` size variants are preserved as distinct serving labels.
-- Hanamaru official PDF rows now add 74 safely extracted udon, curry, and rice records.
-- Subway ambiguous PDF rows are resolved into 34 additional official rows; the prior 15-row manual queue is cleared.
-- CoCo Ichibanya official nutrition PDF rows now add 189 records across limited items, curry plates, sides, toppings, salads, kids meals, drinks, desserts, and sauces. The previous 8 daily-chain rows are removed from the loaded seed path to avoid duplicates.
-- Existing app ranking still puts `official` rows above `unofficial`, `estimated`, and generic templates. Seed initialization also clears old estimated brand rows for chains now covered by official sources.
+These 2,207 rows replace the older estimated rows for the same brands. The refresh includes current sides, toppings, drinks, kids items, breakfast, takeout rows where separately published, and seasonal items present in the source.
 
-## Manual review queue
+## Size and customization audit
 
-- すき家カレー系追加候補: current official seed coverage already includes the safe curry rows. Remaining candidate rows still risk PDF name/value misalignment, so no new `official()` rows are added in this pass.
-- バーミヤン: official pages appear to expose mainly calories and salt. PFC is not official-backed, so automatic promotion remains blocked.
-- ガスト / すかいらーく系: official data is partial for the nutrients tracked by the app. Needs field-level provenance or secondary-source policy.
-- サイゼリヤ: nutrition availability and PFC provenance need table-level validation before official promotion.
-- コメダ珈琲: several rows remain estimated or calorie-only; do not promote until full PFC and salt are source-backed.
-- ロイヤルホスト / デニーズ / ジョイフル等: broad family-restaurant rows remain estimated until complete official or credible secondary values are available.
-- 餃子の王将 subset: rows are still estimated. Official PFC availability needs confirmation.
-- Monsoon Cafe: official menu PDF may exist, but nutrition data is not confirmed. Candidate for `unofficial()` only if a credible secondary source is found.
-- 汎用ファストフード / 汎用カフェ: keep as brandless quick-estimate fallbacks while official brand rows rank above them.
-- 丸亀製麺・ウエスト・資さんうどん汎用: official or stable third-party values still need confirmation.
+- Branded items no longer receive arbitrary noodle, rice, steak, hamburger, or chicken sizes just because a food word or gram value appears in the name.
+- Exact published variants use separate source rows and are grouped into one size selector. Supported labels include `小/並/中/大/得/特大`, `S/M/L/XL`, `温/冷`, and published cooked or dry noodle grams.
+- `公式サイズのみ` disables heuristic scaling. Quantity can still be changed after the published size is chosen.
+- Mamma Pasta uses cooked pasta 250g for standard and 375g for large. Only the pasta component is increased by 1.5x; sauce and toppings remain fixed.
+- Spajiro uses the published dry-pasta sizes S 100g, M 120g, L 170g, and XL 240g.
+- Pancho uses cooked sizes 300g, 400g, 500g, and 600g.
+- Sharin and Mita Seimen use only the size ranges shown by their official menu materials.
 
-## Notes
+## Remaining estimated brands
 
-- This is still an incremental source-of-truth crawl, not yet a completed all-chain inventory.
-- Remaining high-priority work is now concentrated on partial/ambiguous chains, Monsoon Cafe, and generic fallback cleanup.
-- Rows with only official calories/salt, or ambiguous source attachment, are intentionally not promoted to `official()`.
+The largest restaurant groups still using estimated PFC are Komeraku, Mita Seimen, Triton, Sharin, Shinpachi Shokudo, Monsoon Cafe, Pepper Lunch, Hama Sushi, Spajiro, Kando Niku to Kome, Sushiro, Bamiyan, Pancho, and Capricciosa.
+
+The official sources for these brands currently expose one or more of: menu names, allergens, kcal, salt, or published sizes, but not a complete same-source kcal/P/F/C/salt table. They therefore remain `estimated` even when names and sizes were verified. Skylark explicitly describes its restaurant nutrition display as principally calorie and salt; Komeraku's current PDF is an allergen table; Hama Sushi and Sushiro do not publish full PFC for restaurant menus.
+
+## Validation
+
+Run `npm run audit:food-seeds` before release. It checks numeric fields, provenance, duplicate natural keys, minimum source coverage, and common PDF extraction failures such as unresolved ditto marks or repeated takeout prefixes.
