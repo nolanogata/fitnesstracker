@@ -3930,8 +3930,8 @@ function NutritionEstimateDetailSheet({ estimate, isPastDate, calorieDelta, onCl
 }) {
   const status = isPastDate ? getDailyEstimateStatus(calorieDelta, estimate.uncertainty.calories) : "調整中";
   return (
-    <div className="fixed inset-0 z-50 flex items-end bg-ink/30 px-4 pb-4" onClick={onClose}>
-      <div className="home-sheet nutrition-estimate-sheet max-h-[86vh] w-full overflow-y-auto p-5" onClick={(event) => event.stopPropagation()}>
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink/30 px-4 pb-4" onClick={onClose}>
+      <div className="home-sheet nutrition-estimate-sheet max-h-[86vh] w-full max-w-[430px] overflow-y-auto p-5" onClick={(event) => event.stopPropagation()}>
         <div className="flex items-start justify-between gap-3">
           <div>
             <p className="text-lg font-bold">今日の計算と推定幅</p>
