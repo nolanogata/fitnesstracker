@@ -4071,7 +4071,7 @@ function NutritionEstimateDetailSheet({ estimate, isPastDate, calorieDelta, onCl
         <div className="flex items-start justify-between gap-3">
           <div>
             <p className="text-lg font-bold">栄養値の確かさ</p>
-            <p className="mt-1 text-xs font-semibold leading-relaxed text-moss">外食や写真から見積もった栄養値がある日は、食べられる量を少し控えめに案内します。記録済みの数値は変わりません。</p>
+            <p className="mt-1 text-xs font-semibold leading-relaxed text-moss">外食や写真から推定した栄養値がある日は、食べられる量を少し控えめに案内します。記録済みの数値は変わりません。</p>
           </div>
           <button className="icon-button h-9 w-9 shrink-0" aria-label="閉じる" onClick={onClose}>×</button>
         </div>
@@ -4079,8 +4079,8 @@ function NutritionEstimateDetailSheet({ estimate, isPastDate, calorieDelta, onCl
         <div className="nutrition-estimate-status mt-4">
           <span>{status}</span>
           <strong>{estimate.estimatedEntryCount
-            ? estimate.estimatedCalorieShare > 0 ? `見積もりを含む割合 ${estimate.estimatedCalorieShare}%` : "見積もりを含む記録あり"
-            : "見積もりなし"}</strong>
+            ? estimate.estimatedCalorieShare > 0 ? `推定値を含む割合 ${estimate.estimatedCalorieShare}%` : "推定値を含む記録あり"
+            : "推定値なし"}</strong>
         </div>
 
         <div className="mt-3 grid grid-cols-2 gap-2">
@@ -4091,7 +4091,7 @@ function NutritionEstimateDetailSheet({ estimate, isPastDate, calorieDelta, onCl
         {estimate.estimatedEntryCount > 0 ? (
           <>
             <div className="nutrition-estimate-buffer mt-3">
-              <span>見積もりの余裕</span>
+              <span>推定値の幅</span>
               <strong>{estimate.uncertainty.calories}kcal / F{round1(estimate.uncertainty.fat)}g</strong>
             </div>
             <section className="mt-4">
