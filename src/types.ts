@@ -39,6 +39,7 @@ export type NutritionMeta = {
 export type MealType = "breakfast" | "lunch" | "dinner" | "snack" | "gym_before" | "gym_after";
 export type ThemeMode = "system" | "light" | "dark";
 export type ThemeAccent = "classic" | "orange" | "aqua" | "graphite" | "crazy_pink" | "crazy_yellow" | "vivid_neon";
+export type ThemeCharacter = "none" | "titan" | "flash";
 export type HomeBodyFatDisplay = "hidden" | "average7" | "today";
 export type HomeWeightDisplay = "average7" | "today";
 export type HomeNutritionRemainingDisplay = "recorded" | "safe";
@@ -70,6 +71,7 @@ export type Settings = {
   onboarding_completed: boolean;
   theme_mode?: ThemeMode;
   theme_accent?: ThemeAccent;
+  theme_character?: ThemeCharacter;
   home_body_fat_display?: HomeBodyFatDisplay;
   home_weight_display?: HomeWeightDisplay;
   home_nutrition_remaining_display?: HomeNutritionRemainingDisplay;
