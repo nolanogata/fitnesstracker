@@ -899,6 +899,45 @@ button {
     var(--glass-highlight);
 }
 
+.home-hero-estimate {
+  background: var(--glass-bg-strong);
+  box-shadow:
+    0 0 0 1px rgba(201, 152, 72, 0.3),
+    0 0 22px rgba(201, 152, 72, 0.16),
+    0 0 10px rgba(44, 56, 48, 0.04),
+    var(--glass-highlight);
+}
+
+.text-estimate {
+  color: #9b7028;
+}
+
+.home-progress-estimate {
+  background: linear-gradient(90deg, #d4a64e, #efd99e);
+  box-shadow: 0 0 12px rgba(201, 152, 72, 0.24);
+}
+
+.home-estimate-badge {
+  max-width: 58%;
+  overflow: hidden;
+  border: 1px solid rgba(86, 110, 97, 0.16);
+  border-radius: 999px;
+  padding: 0.34rem 0.55rem;
+  color: rgba(58, 72, 63, 0.72);
+  background: rgba(255, 255, 255, 0.28);
+  font-size: 0.62rem;
+  font-weight: 800;
+  line-height: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.home-estimate-badge-active {
+  border-color: rgba(201, 152, 72, 0.32);
+  color: #765a20;
+  background: rgba(246, 224, 174, 0.34);
+}
+
 .home-hero-left,
 .home-hero-neutral {
   background: var(--glass-bg-strong);
@@ -1569,6 +1608,97 @@ button {
 
 .home-macro-over .home-macro-dot {
   background: #d97a68;
+}
+
+.home-macro-estimate {
+  color: #765a20;
+  background: rgba(246, 224, 174, 0.34);
+}
+
+.home-macro-estimate .home-macro-dot {
+  background: #c99848;
+  box-shadow: 0 0 7px rgba(201, 152, 72, 0.28);
+}
+
+.nutrition-estimate-status,
+.nutrition-estimate-buffer,
+.nutrition-estimate-entry {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.nutrition-estimate-status,
+.nutrition-estimate-buffer {
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  padding: 0.75rem;
+  background: rgba(255, 255, 255, 0.32);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.nutrition-estimate-status strong,
+.nutrition-estimate-buffer strong {
+  color: var(--accent-text);
+}
+
+.nutrition-remaining-card {
+  min-width: 0;
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  padding: 0.8rem;
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.nutrition-remaining-card-safe {
+  border-color: var(--accent-border);
+  background: var(--accent-faint);
+}
+
+.nutrition-remaining-card p {
+  color: var(--text-secondary);
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
+.nutrition-remaining-card strong,
+.nutrition-remaining-card span {
+  display: block;
+  margin-top: 0.4rem;
+  overflow: hidden;
+  font-variant-numeric: tabular-nums;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nutrition-remaining-card strong {
+  font-size: 0.88rem;
+}
+
+.nutrition-remaining-card span {
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.nutrition-estimate-entry {
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  padding: 0.75rem;
+  background: rgba(255, 255, 255, 0.24);
+}
+
+.nutrition-estimate-empty {
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  padding: 0.85rem;
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.24);
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.65;
 }
 
 .home-macro-low {
@@ -3490,6 +3620,39 @@ main[data-accent]:not([data-accent="classic"]) .ai-report-section .text-moss {
     var(--glass-highlight);
 }
 
+.theme-dark .home-hero-estimate {
+  border-color: rgba(234, 208, 154, 0.24);
+  background:
+    linear-gradient(180deg, rgba(201, 152, 72, 0.12) 0%, rgba(255, 255, 255, 0.04) 48%, rgba(255, 255, 255, 0.03) 100%),
+    var(--glass-bg);
+  box-shadow:
+    0 0 0 1px rgba(234, 208, 154, 0.22),
+    0 0 22px rgba(201, 152, 72, 0.14),
+    0 0 12px rgba(0, 0, 0, 0.22),
+    var(--glass-highlight);
+}
+
+.theme-dark .text-estimate {
+  color: #f2dba8;
+}
+
+.theme-dark .home-progress-estimate {
+  background: linear-gradient(90deg, #d6a84f, #f2dba8);
+  box-shadow: 0 0 14px rgba(234, 208, 154, 0.22);
+}
+
+.theme-dark .home-estimate-badge {
+  border-color: rgba(255, 255, 255, 0.12);
+  color: rgba(237, 244, 238, 0.78);
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.theme-dark .home-estimate-badge-active {
+  border-color: rgba(234, 208, 154, 0.24);
+  color: #f2dba8;
+  background: rgba(201, 152, 72, 0.12);
+}
+
 .theme-dark .home-hero-cheat {
   border-color: rgba(255, 255, 255, 0.18);
   background:
@@ -3573,6 +3736,26 @@ main[data-accent]:not([data-accent="classic"]) .ai-report-section .text-moss {
 .theme-dark .home-macro-over {
   color: #ffb7aa;
   background: rgba(240, 154, 134, 0.14);
+}
+
+.theme-dark .home-macro-estimate {
+  color: #f2dba8;
+  background: rgba(201, 152, 72, 0.14);
+}
+
+.theme-dark .nutrition-estimate-status,
+.theme-dark .nutrition-estimate-buffer,
+.theme-dark .nutrition-remaining-card,
+.theme-dark .nutrition-estimate-entry,
+.theme-dark .nutrition-estimate-empty {
+  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.07);
+  color: #edf4ee;
+}
+
+.theme-dark .nutrition-remaining-card-safe {
+  border-color: var(--accent-border);
+  background: var(--accent-faint);
 }
 
 .theme-dark .home-macro-low {
