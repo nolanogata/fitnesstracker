@@ -5446,7 +5446,7 @@ main.theme-dark .chain-combo-item-title,
 
 .app-shell[data-character]:not([data-character="none"]) .home-hero-card:not(.home-hero-cheat):not(.home-hero-trip):not(.home-hero-hokkaido) {
   background:
-    linear-gradient(180deg, color-mix(in srgb, var(--character-accent) 3%, transparent), transparent 42%),
+    linear-gradient(180deg, transparent, transparent 42%),
     rgba(8, 11, 13, 0.015);
   border-color: color-mix(in srgb, var(--character-accent-bright) 38%, rgba(255, 255, 255, 0.25));
   color: var(--text-primary);
@@ -5486,7 +5486,7 @@ main.theme-dark .chain-combo-item-title,
 .app-shell[data-character]:not([data-character="none"]) .home-hero-card.home-hero-theme-frame.home-hero-theme-glow-75,
 .app-shell[data-character]:not([data-character="none"]) .home-hero-card.home-hero-theme-frame.home-hero-theme-glow-90 {
   background:
-    linear-gradient(180deg, color-mix(in srgb, var(--character-accent) 3%, transparent), transparent 42%),
+    linear-gradient(180deg, transparent, transparent 42%),
     rgba(8, 11, 13, 0.015);
 }
 
