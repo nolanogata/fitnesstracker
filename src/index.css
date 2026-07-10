@@ -918,8 +918,11 @@ button {
 }
 
 .home-estimate-badge {
+  display: inline-flex;
   max-width: 58%;
   overflow: hidden;
+  align-items: center;
+  gap: 0.28rem;
   border: 1px solid rgba(86, 110, 97, 0.16);
   border-radius: 999px;
   padding: 0.34rem 0.55rem;
@@ -930,6 +933,22 @@ button {
   line-height: 1;
   text-overflow: ellipsis;
   white-space: nowrap;
+  cursor: pointer;
+  transition: transform 140ms ease, border-color 140ms ease, background 140ms ease, box-shadow 140ms ease;
+}
+
+.home-estimate-badge:active {
+  transform: scale(0.97);
+}
+
+.home-estimate-badge:focus-visible {
+  outline: 2px solid var(--accent-focus);
+  outline-offset: 2px;
+}
+
+.home-estimate-badge svg {
+  flex: 0 0 auto;
+  opacity: 0.78;
 }
 
 .home-estimate-badge-active {
@@ -4843,7 +4862,44 @@ main[data-accent]:not([data-accent="classic"]) .ai-report-section .text-moss {
 :root[data-accent="crazy_pink"] .home-macro-pill,
 :root[data-accent="crazy_yellow"] .home-macro-pill,
 :root[data-accent="vivid_neon"] .home-macro-pill {
-  box-shadow: 0 0 10px color-mix(in srgb, var(--accent-secondary) 10%, transparent), var(--glass-highlight);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--accent-secondary) 14%, transparent), var(--glass-highlight);
+}
+
+:root[data-accent="crazy_pink"] .home-macro-neutral,
+:root[data-accent="crazy_yellow"] .home-macro-neutral,
+:root[data-accent="vivid_neon"] .home-macro-neutral {
+  color: var(--accent-pill-color);
+  background: var(--accent-pill-bg);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    0 0 12px color-mix(in srgb, var(--accent-secondary) 18%, transparent),
+    var(--glass-highlight);
+}
+
+:root[data-accent="crazy_pink"] .home-macro-neutral .home-macro-dot,
+:root[data-accent="crazy_yellow"] .home-macro-neutral .home-macro-dot,
+:root[data-accent="vivid_neon"] .home-macro-neutral .home-macro-dot {
+  background: var(--accent-pill-dot);
+  box-shadow: 0 0 8px var(--accent-icon-shadow), 0 0 13px color-mix(in srgb, var(--accent-secondary) 24%, transparent);
+}
+
+:root[data-accent="crazy_pink"] .home-macro-safe,
+:root[data-accent="crazy_yellow"] .home-macro-safe,
+:root[data-accent="vivid_neon"] .home-macro-safe {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    0 0 14px color-mix(in srgb, var(--accent-secondary) 20%, transparent),
+    var(--glass-highlight);
+}
+
+:root[data-accent="crazy_pink"] .home-macro-estimate,
+:root[data-accent="crazy_yellow"] .home-macro-estimate,
+:root[data-accent="vivid_neon"] .home-macro-estimate {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    0 0 12px rgba(201, 152, 72, 0.2),
+    0 0 16px color-mix(in srgb, var(--accent-secondary) 12%, transparent),
+    var(--glass-highlight);
 }
 
 :root[data-accent="crazy_pink"] .home-macro-low,
