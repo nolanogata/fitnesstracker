@@ -47,8 +47,18 @@ import {
 } from "lucide-react";
 import { db } from "./db";
 import { initializeSeeds } from "./data/seedInit";
+import flashCheatBackground from "./assets/theme-characters/flash-cheat.jpg";
+import flashFailBackground from "./assets/theme-characters/flash-fail.jpg";
+import flashHighBackground from "./assets/theme-characters/flash-high.jpg";
 import flashHomeBackground from "./assets/theme-characters/flash-home.jpg";
+import flashLowBackground from "./assets/theme-characters/flash-low.jpg";
+import flashTravelBackground from "./assets/theme-characters/flash-travel.jpg";
+import titanCheatBackground from "./assets/theme-characters/titan-cheat.jpg";
+import titanFailBackground from "./assets/theme-characters/titan-fail.jpg";
+import titanHighBackground from "./assets/theme-characters/titan-high.jpg";
 import titanHomeBackground from "./assets/theme-characters/titan-home.jpg";
+import titanLowBackground from "./assets/theme-characters/titan-low.jpg";
+import titanTravelBackground from "./assets/theme-characters/titan-travel.jpg";
 import type {
   AchievementUnlock,
   ActivityLevel,
@@ -111,6 +121,7 @@ type LogExportStep = "type" | "grouping" | "period" | "output";
 type LogExportType = "food" | "workout" | "food_workout";
 type LogExportDateTarget = "start" | "end";
 type EditableRecordTab = "food" | "workout";
+type ThemeCharacterStage = "low" | "mid" | "high" | "fail" | "cheat" | "travel";
 const homeBodyFatDisplayLabels: Record<HomeBodyFatDisplay, string> = {
   hidden: "非表示",
   average7: "7日間平均",
@@ -144,9 +155,32 @@ const themeCharacterOptions: Array<{ value: ThemeCharacter; label: string; image
   { value: "titan", label: "TITAN", image: titanHomeBackground },
   { value: "flash", label: "FLASH", image: flashHomeBackground },
 ];
+const themeCharacterImages: Record<Exclude<ThemeCharacter, "none">, Record<ThemeCharacterStage, string>> = {
+  titan: {
+    low: titanLowBackground,
+    mid: titanHomeBackground,
+    high: titanHighBackground,
+    fail: titanFailBackground,
+    cheat: titanCheatBackground,
+    travel: titanTravelBackground,
+  },
+  flash: {
+    low: flashLowBackground,
+    mid: flashHomeBackground,
+    high: flashHighBackground,
+    fail: flashFailBackground,
+    cheat: flashCheatBackground,
+    travel: flashTravelBackground,
+  },
+};
 const themeCharacterLabels = Object.fromEntries(themeCharacterOptions.map((option) => [option.value, option.label])) as Record<ThemeCharacter, string>;
 function normalizeThemeCharacter(value: unknown): ThemeCharacter {
   return themeCharacterOptions.some((option) => option.value === value) ? value as ThemeCharacter : "none";
+}
+function themeCharacterStageFromProgress(progress: number): ThemeCharacterStage {
+  if (progress >= 85) return "high";
+  if (progress >= 40) return "mid";
+  return "low";
 }
 type BackupInfo = {
   lastBackupAt?: string;
@@ -2054,7 +2088,7 @@ function App() {
   const themeAccent = normalizeThemeAccent(settings?.theme_accent);
   const themeCharacter = normalizeThemeCharacter(settings?.theme_character);
   const resolvedTheme: "light" | "dark" = themeMode === "system" ? (prefersDarkTheme ? "dark" : "light") : themeMode;
-  const shellTheme = tab === "home" && themeCharacter !== "none" ? "dark" : resolvedTheme;
+  const shellTheme = themeCharacter !== "none" ? "dark" : resolvedTheme;
   const specialModeSettings = useMemo(() => getSpecialModeSettings(settings), [settings]);
   const pauseModeSettings = useMemo(() => getPauseModeSettings(settings), [settings]);
   const activeSpecialMode = useMemo(() => getActiveSpecialMode(appDate, specialModeSettings), [appDate, specialModeSettings]);
@@ -2219,6 +2253,15 @@ function App() {
   }, [resolvedTheme, themeAccent]);
 
   useEffect(() => {
+    if (themeCharacter === "none") return;
+    Object.values(themeCharacterImages[themeCharacter]).forEach((src) => {
+      const image = new Image();
+      image.decoding = "async";
+      image.src = src;
+    });
+  }, [themeCharacter]);
+
+  useEffect(() => {
     const refreshCurrentTime = () => setCurrentTime(new Date());
     const interval = window.setInterval(refreshCurrentTime, 60_000);
     document.addEventListener("visibilitychange", refreshCurrentTime);
@@ -2252,6 +2295,31 @@ function App() {
   const isSpecialModeDay = !!activeSpecialMode;
   const isPauseModeDay = !!activePauseMode;
   const isExceptionDay = isCheatDay || isSpecialModeDay || isPauseModeDay;
+  const homeCharacterEstimate = useMemo(
+    () => getDailyNutritionEstimate(todayEntries, dayTotals, target, menuItems),
+    [todayEntries, dayTotals.calories, dayTotals.protein, dayTotals.fat, dayTotals.carbs, target, menuItems],
+  );
+  const homeCharacterRemaining = settings?.home_nutrition_remaining_display === "safe"
+    ? homeCharacterEstimate.safeRemaining
+    : homeCharacterEstimate.adoptedRemaining;
+  const homeCharacterProgress = isExceptionDay
+    ? 100
+    : typeof developerProgressPercent === "number"
+      ? Math.max(0, Math.min(100, developerProgressPercent))
+      : target?.target_calories
+        ? Math.max(0, Math.min(100, Math.round(((target.target_calories - homeCharacterRemaining.calories) / target.target_calories) * 100)))
+        : 0;
+  const themeCharacterStage: ThemeCharacterStage = isCheatDay
+    ? "cheat"
+    : activeSpecialMode
+      ? "travel"
+      : (!isExceptionDay && (
+        (typeof developerProgressPercent === "number" && developerProgressPercent > 100)
+        || (!!target?.target_calories && dayTotals.calories > target.target_calories)
+      ))
+        ? "fail"
+        : themeCharacterStageFromProgress(homeCharacterProgress);
+  const themeCharacterImage = themeCharacter === "none" ? undefined : themeCharacterImages[themeCharacter][themeCharacterStage];
   const unseenAchievementCount = useMemo(() => {
     const viewedAt = settings?.achievements_viewed_at ?? "";
     return (settings?.achievements ?? []).filter((achievement) => (
@@ -2555,7 +2623,8 @@ function App() {
       data-theme={shellTheme}
       data-accent={themeAccent}
       data-character={themeCharacter}
-      style={themeCharacter !== "none" ? { "--theme-character-image": `url(${themeCharacterOptions.find((option) => option.value === themeCharacter)?.image})` } as CSSProperties : undefined}
+      data-character-stage={themeCharacter === "none" ? undefined : themeCharacterStage}
+      style={themeCharacterImage ? { "--theme-character-image": `url(${themeCharacterImage})` } as CSSProperties : undefined}
     >
       <header className={`safe-top app-header sticky top-0 z-20 px-4 ${tab === "home" ? "home-header pb-2" : "pb-3"}`}>
         <div className="flex items-center justify-between">
@@ -8374,7 +8443,7 @@ function SettingsTab(props: {
         </div>
         <div className="mt-5">
           <p className="text-xs font-black text-moss">テーマキャラ</p>
-          <p className="mt-1 text-xs text-moss">Homeの背景をキャラクターテーマに切り替えます。</p>
+          <p className="mt-1 text-xs text-moss">Homeの背景が変わり、今日の達成状況に合わせてキャラクターも変化します。</p>
           <div className="theme-character-grid mt-2">
             {themeCharacterOptions.map((option) => (
               <button
