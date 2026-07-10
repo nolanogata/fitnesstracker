@@ -27,6 +27,9 @@
 - Adopted nutrition and interpretation are separate layers. The app never changes a saved kcal/P/F/C value because it is estimated; uncertainty only affects status language and the safe amount suggested for additional food.
 - User ownership and nutrition provenance are separate. An AI-created My Menu item remains user-owned but keeps `estimated` provenance and copies its nutrition metadata into every new food-log snapshot.
 - Home stays compact: current-day deficits are treated as remaining room, while past days receive final interpretation. Estimate share and safe kcal/fat remaining live behind a small detail control, and special-mode visuals take precedence.
+- The Home check-in card can show either today's weight or the 7-day average. Body fat can show today's value, the 7-day average, or remain hidden. These are display preferences and never alter saved check-in records.
+- Home goal access first shows a concise summary of the active calorie, PFC, phase, and target values. Editing continues into the focused Goal Settings flow instead of dropping the user at the Settings root.
+- User-facing copy explains the outcome or next action. Internal storage names, implementation details, and visual-system notes do not appear in ordinary guidance text.
 - Recommendation surfaces use adopted remaining P/C and safety-adjusted kcal/fat. AI reports use calorie-weighted estimate share rather than entry-count share.
 - Missing food days are displayed as missing, never counted as zero.
 - Goal changes update targets going forward without mutating old entries.

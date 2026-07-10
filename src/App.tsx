@@ -58,6 +58,7 @@ import type {
   FoodEntry,
   Goal,
   HomeBodyFatDisplay,
+  HomeWeightDisplay,
   MealType,
   MenuItem,
   NutritionMeta,
@@ -109,6 +110,10 @@ type EditableRecordTab = "food" | "workout";
 const homeBodyFatDisplayLabels: Record<HomeBodyFatDisplay, string> = {
   hidden: "非表示",
   average7: "7日間平均",
+  today: "今日の数値",
+};
+const homeWeightDisplayLabels: Record<HomeWeightDisplay, string> = {
+  average7: "7日平均",
   today: "今日の数値",
 };
 const bottomTabs: Tab[] = ["home", "food", "workout", "records", "settings"];
@@ -982,6 +987,16 @@ const achievementProgressSpecs: Record<string, AchievementProgressSpec> = {
   streak_365: { metric: "streak", target: 365, unit: "日" },
 };
 const appUpdates: AppUpdate[] = [
+  {
+    id: "2026-07-10-home-guidance",
+    title: "Homeの表示と案内を改善",
+    date: "2026-07-10",
+    items: [
+      "チェックインから、Homeに表示する体重と体脂肪率を選べるようにしました。",
+      "ゴールを確認する時は、現在のカロリーとPFCを先に確認してから編集へ進めるようにしました。",
+      "推定値を含む日の表示と、設定画面などの説明を分かりやすく見直しました。",
+    ],
+  },
   {
     id: "2026-07-10-estimate-aware-nutrition",
     title: "推定値を含む日の判断を改善",
@@ -2597,6 +2612,7 @@ function App() {
             latestWeight={latestWeight}
             weightLogs={weightLogs}
             bodyFatDisplayMode={settings?.home_body_fat_display ?? "today"}
+            weightDisplayMode={settings?.home_weight_display ?? "today"}
             backupInfo={backupInfo}
             recordReminder={recordReminder}
             needsGoalTargetPeriod={needsGoalTargetPeriod}
@@ -3464,6 +3480,7 @@ function HomeTab(props: {
   latestWeight?: WeightLog;
   weightLogs: WeightLog[];
   bodyFatDisplayMode: HomeBodyFatDisplay;
+  weightDisplayMode: HomeWeightDisplay;
   backupInfo: BackupInfo;
   recordReminder?: RecordReminder;
   needsGoalTargetPeriod: boolean;
@@ -3489,13 +3506,16 @@ function HomeTab(props: {
   const [isCheckInOpen, setIsCheckInOpen] = useState(false);
   const [isPerfectFoodOpen, setIsPerfectFoodOpen] = useState(false);
   const [isEstimateDetailOpen, setIsEstimateDetailOpen] = useState(false);
+  const [isGoalSummaryOpen, setIsGoalSummaryOpen] = useState(false);
   const [showMacroRemaining, setShowMacroRemaining] = useState(false);
   const [pullOffset, setPullOffset] = useState(0);
   const [isPullRefreshing, setIsPullRefreshing] = useState(false);
   const pullStartYRef = useRef<number | undefined>(undefined);
   const pullThreshold = 64;
   const average7 = movingAverage(props.weightLogs, 7);
+  const previousAverage7 = movingAverage(props.weightLogs.slice(0, -1), 7);
   const bodyFatAverage7 = movingAverageValue(props.weightLogs, 7, (log) => log.body_fat_percentage);
+  const displayedWeight = props.weightDisplayMode === "average7" ? (average7 ?? weight) : weight;
   const displayedBodyFat = props.bodyFatDisplayMode === "average7" ? bodyFatAverage7 : bodyFat;
   const shouldShowBodyFat = props.bodyFatDisplayMode !== "hidden";
   const developerProgressPercent = typeof props.developerProgressPercent === "number"
@@ -3517,7 +3537,10 @@ function HomeTab(props: {
   const previousWeight = props.weightLogs.length > 1 ? props.weightLogs.at(-2)?.weight_kg : undefined;
   const weightDelta = typeof previousWeight === "number" ? round1(weight - previousWeight) : undefined;
   const average7Delta = typeof average7 === "number" ? round1(weight - average7) : undefined;
-  const average7Trend = typeof average7Delta === "number" && Math.abs(average7Delta) >= 0.1 ? (average7Delta > 0 ? "up" : "down") : undefined;
+  const displayedWeightTrendDelta = props.weightDisplayMode === "average7"
+    ? typeof average7 === "number" && typeof previousAverage7 === "number" ? round1(average7 - previousAverage7) : undefined
+    : average7Delta;
+  const average7Trend = typeof displayedWeightTrendDelta === "number" && Math.abs(displayedWeightTrendDelta) >= 0.1 ? (displayedWeightTrendDelta > 0 ? "up" : "down") : undefined;
   const calorieDelta = props.goal?.target_calories ? props.dayTotals.calories - props.goal.target_calories : undefined;
   const dailyEstimate = useMemo(
     () => getDailyNutritionEstimate(props.todayEntries, props.dayTotals, props.goal, props.menuItems),
@@ -3592,6 +3615,10 @@ function HomeTab(props: {
     setIsCheckInOpen(false);
     await props.refresh();
     props.showToast("チェックインを保存しました");
+  };
+  const saveCheckInDisplay = async (patch: Partial<Pick<AppSettings, "home_weight_display" | "home_body_fat_display">>) => {
+    await db.settings.update("local", { ...patch, updated_at: nowIso() });
+    await props.refresh();
   };
   const logPerfectFood = async (item: MenuItem) => {
     const timestamp = nowIso();
@@ -3695,8 +3722,8 @@ function HomeTab(props: {
       {props.needsGoalTargetPeriod && (
         <button className="home-notice flex w-full items-center gap-3 px-4 py-3 text-left" onClick={props.openGoalSettings}>
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-bold">ゴール設定を確認できます</p>
-            <p className="mt-1 text-xs text-moss">目標達成期間と目標体脂肪率を追加しました。設定すると期間補正やAIレポートの体組成判断が使いやすくなります。</p>
+            <p className="text-sm font-bold">目標日と体脂肪率を追加できます</p>
+            <p className="mt-1 text-xs text-moss">いつまでに、どの体脂肪率を目指すか設定すると、毎日の目標が分かりやすくなります。</p>
           </div>
           <ChevronRight className="shrink-0 text-muted" size={18} />
         </button>
@@ -3759,8 +3786,9 @@ function HomeTab(props: {
             : props.activePauseMode ? <span className="home-cheat-badge">{props.activePauseMode.label}</span>
             : (
               <button className={`home-estimate-badge ${dailyEstimate.estimatedEntryCount ? "home-estimate-badge-active" : ""}`} onClick={() => setIsEstimateDetailOpen(true)}>
-                {props.isEditingPastDate ? getDailyEstimateStatus(calorieDelta, dailyEstimate.uncertainty.calories) : "調整中"}
-                {dailyEstimate.estimatedEntryCount ? ` · 推定${dailyEstimate.estimatedCalorieShare}%` : " · 推定なし"}
+                {props.isEditingPastDate
+                  ? `${getDailyEstimateStatus(calorieDelta, dailyEstimate.uncertainty.calories)}${dailyEstimate.estimatedEntryCount ? " · 一部見積もり" : ""}`
+                  : dailyEstimate.estimatedEntryCount ? "一部は見積もり" : "記録した値で計算"}
               </button>
             )}
         </div>
@@ -3812,7 +3840,7 @@ function HomeTab(props: {
           props.unlockAchievement("used_perfect_food");
           setIsPerfectFoodOpen(true);
         }}>ぴったりフード</button>
-        <button className="px-2 py-1" onClick={() => props.setTab("settings")}>ゴールを確認</button>
+        <button className="px-2 py-1" onClick={() => setIsGoalSummaryOpen(true)}>ゴールを確認</button>
         <button className="px-2 py-1" onClick={props.openAiReport}>AIレポート</button>
       </div>
 
@@ -3822,15 +3850,18 @@ function HomeTab(props: {
           <div>
             <p className="text-sm font-bold">今日のチェックイン</p>
             <p className="numeric-text mt-4 flex items-end gap-1 text-[2.45rem] font-semibold leading-none tracking-normal">
-              <span>{round1(weight)}</span>
+              <span>{typeof displayedWeight === "number" ? round1(displayedWeight) : "-"}</span>
               <span className="mb-1 text-base font-semibold">kg</span>
               {average7Trend && (
-                <span className={`mb-1 inline-flex h-6 w-6 items-center justify-center rounded-full ${average7Trend === "up" ? "text-clay" : "text-moss"}`} aria-label={`7日平均より${average7Trend === "up" ? "上" : "下"}`} title={`7日平均より${average7Trend === "up" ? "上" : "下"}`}>
+                <span className={`mb-1 inline-flex h-6 w-6 items-center justify-center rounded-full ${average7Trend === "up" ? "text-clay" : "text-moss"}`} aria-label={`${props.weightDisplayMode === "average7" ? "前回の7日平均" : "現在の7日平均"}より${average7Trend === "up" ? "上" : "下"}`} title={`${props.weightDisplayMode === "average7" ? "前回の7日平均" : "現在の7日平均"}より${average7Trend === "up" ? "上" : "下"}`}>
                   {average7Trend === "up" ? <ArrowUp size={16} strokeWidth={2.6} /> : <ArrowDown size={16} strokeWidth={2.6} />}
                 </span>
               )}
             </p>
-            <p className="numeric-text mt-1.5 text-xs text-moss">7日平均 {average7 ? `${average7}kg` : "-"}{typeof weightDelta === "number" ? ` / 前日比 ${weightDelta > 0 ? "+" : ""}${weightDelta}kg` : ""}</p>
+            <p className="numeric-text mt-1.5 text-xs text-moss">
+              {props.weightDisplayMode === "average7" ? `今日 ${round1(weight)}kg` : `7日平均 ${average7 ? `${average7}kg` : "-"}`}
+              {typeof weightDelta === "number" ? ` / 前日比 ${weightDelta > 0 ? "+" : ""}${weightDelta}kg` : ""}
+            </p>
           </div>
           {shouldShowBodyFat && (
             <div className="text-right">
@@ -3882,8 +3913,8 @@ function HomeTab(props: {
       </div>
 
       {isCheckInOpen && (
-        <div className="fixed inset-0 z-50 flex items-end bg-ink/25 px-4 pb-4" onClick={() => setIsCheckInOpen(false)}>
-          <div className="home-sheet w-full p-5" onClick={(event) => event.stopPropagation()}>
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink/25 px-4 pb-4" onClick={() => setIsCheckInOpen(false)}>
+          <div className="home-sheet max-h-[88vh] w-full max-w-[430px] overflow-y-auto p-5" onClick={(event) => event.stopPropagation()}>
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-lg font-bold">今日のチェックイン</p>
@@ -3895,6 +3926,30 @@ function HomeTab(props: {
               <CheckInStepper label="体重" value={weight} suffix="kg" step={0.1} onChange={setWeight} />
               <CheckInStepper label="体脂肪" value={bodyFat} suffix="%" step={0.5} onChange={(value) => setBodyFat(clampBodyFat(value))} />
             </div>
+            <section className="checkin-display-settings mt-4">
+              <p className="text-sm font-bold">Homeに表示する数値</p>
+              <p className="mt-1 text-xs text-moss">記録は変えず、チェックイン欄の見せ方だけを選べます。</p>
+              <div className="mt-3">
+                <p className="text-xs font-bold text-moss">体重</p>
+                <div className="mt-2 grid grid-cols-2 gap-2">
+                  {(Object.keys(homeWeightDisplayLabels) as HomeWeightDisplay[]).map((mode) => (
+                    <button className={`mode-button min-h-10 text-xs ${props.weightDisplayMode === mode ? "mode-button-active" : ""}`} key={mode} onClick={() => void saveCheckInDisplay({ home_weight_display: mode })}>
+                      {homeWeightDisplayLabels[mode]}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="mt-3">
+                <p className="text-xs font-bold text-moss">体脂肪率</p>
+                <div className="mt-2 grid grid-cols-3 gap-2">
+                  {(Object.keys(homeBodyFatDisplayLabels) as HomeBodyFatDisplay[]).map((mode) => (
+                    <button className={`mode-button min-h-10 text-xs ${props.bodyFatDisplayMode === mode ? "mode-button-active" : ""}`} key={mode} onClick={() => void saveCheckInDisplay({ home_body_fat_display: mode })}>
+                      {homeBodyFatDisplayLabels[mode]}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </section>
             <button className="primary-button mt-5 w-full" onClick={saveCheckIn}><Save size={16} />保存</button>
           </div>
         </div>
@@ -3917,6 +3972,64 @@ function HomeTab(props: {
           onClose={() => setIsEstimateDetailOpen(false)}
         />
       )}
+      {isGoalSummaryOpen && (
+        <GoalSummarySheet
+          goal={props.goal}
+          onClose={() => setIsGoalSummaryOpen(false)}
+          onEdit={() => {
+            setIsGoalSummaryOpen(false);
+            props.openGoalSettings();
+          }}
+        />
+      )}
+      </div>
+    </div>
+  );
+}
+
+function GoalSummarySheet({ goal, onClose, onEdit }: { goal?: Goal; onClose: () => void; onEdit: () => void }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink/30 px-4 pb-4" onClick={onClose}>
+      <div className="home-sheet goal-summary-sheet max-h-[86vh] w-full max-w-[430px] overflow-y-auto p-5" onClick={(event) => event.stopPropagation()}>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-lg font-bold">現在のゴール</p>
+            <p className="mt-1 text-xs font-semibold text-moss">今日の食事と運動は、この目標を基準に表示されます。</p>
+          </div>
+          <button className="icon-button h-9 w-9 shrink-0" aria-label="閉じる" onClick={onClose}>×</button>
+        </div>
+        {goal ? (
+          <>
+            <div className="goal-summary-calories mt-4">
+              <span>1日の目標</span>
+              <strong className="numeric-text">{goal.target_calories} kcal</strong>
+            </div>
+            <div className="mt-3 grid grid-cols-3 gap-2">
+              {[
+                ["P", goal.target_protein_g],
+                ["F", goal.target_fat_g],
+                ["C", goal.target_carbs_g],
+              ].map(([label, value]) => (
+                <div className="goal-summary-macro" key={label}>
+                  <span>{label}</span>
+                  <strong className="numeric-text">{value}g</strong>
+                </div>
+              ))}
+            </div>
+            <div className="goal-summary-details mt-3">
+              <div><span>目的</span><strong>{phaseLabels[goal.phase]}</strong></div>
+              {typeof goal.target_weight_kg === "number" && <div><span>目標体重</span><strong>{goal.target_weight_kg}kg</strong></div>}
+              {typeof goal.target_body_fat_percentage === "number" && <div><span>目標体脂肪率</span><strong>{goal.target_body_fat_percentage}%</strong></div>}
+              {goal.target_date && <div><span>目標日</span><strong>{formatJapaneseDate(goal.target_date)}</strong></div>}
+            </div>
+          </>
+        ) : (
+          <p className="nutrition-estimate-empty mt-4">ゴールがまだ設定されていません。</p>
+        )}
+        <div className="mt-4 grid grid-cols-2 gap-2">
+          <button className="secondary-button" onClick={onClose}>閉じる</button>
+          <button className="primary-button" onClick={onEdit}>{goal ? "ゴールを変更" : "ゴールを設定"}<ChevronRight size={17} /></button>
+        </div>
       </div>
     </div>
   );
@@ -3928,32 +4041,34 @@ function NutritionEstimateDetailSheet({ estimate, isPastDate, calorieDelta, onCl
   calorieDelta?: number;
   onClose: () => void;
 }) {
-  const status = isPastDate ? getDailyEstimateStatus(calorieDelta, estimate.uncertainty.calories) : "調整中";
+  const status = isPastDate ? getDailyEstimateStatus(calorieDelta, estimate.uncertainty.calories) : "記録中";
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink/30 px-4 pb-4" onClick={onClose}>
       <div className="home-sheet nutrition-estimate-sheet max-h-[86vh] w-full max-w-[430px] overflow-y-auto p-5" onClick={(event) => event.stopPropagation()}>
         <div className="flex items-start justify-between gap-3">
           <div>
-            <p className="text-lg font-bold">今日の計算と推定幅</p>
-            <p className="mt-1 text-xs font-semibold text-moss">採用した栄養値は変更せず、追加判断だけ安全側にします。</p>
+            <p className="text-lg font-bold">栄養値の確かさ</p>
+            <p className="mt-1 text-xs font-semibold leading-relaxed text-moss">外食や写真から見積もった栄養値がある日は、食べられる量を少し控えめに案内します。記録済みの数値は変わりません。</p>
           </div>
           <button className="icon-button h-9 w-9 shrink-0" aria-label="閉じる" onClick={onClose}>×</button>
         </div>
 
         <div className="nutrition-estimate-status mt-4">
           <span>{status}</span>
-          <strong>{estimate.estimatedEntryCount ? `推定カロリー ${estimate.estimatedCalorieShare}%` : "推定値なし"}</strong>
+          <strong>{estimate.estimatedEntryCount
+            ? estimate.estimatedCalorieShare > 0 ? `見積もりを含む割合 ${estimate.estimatedCalorieShare}%` : "見積もりを含む記録あり"
+            : "見積もりなし"}</strong>
         </div>
 
         <div className="mt-3 grid grid-cols-2 gap-2">
           <NutritionRemainingCard title="記録上の残り" calories={estimate.adoptedRemaining.calories} fat={estimate.adoptedRemaining.fat} />
-          <NutritionRemainingCard title="安全側の追加目安" calories={estimate.safeRemaining.calories} fat={estimate.safeRemaining.fat} safe />
+          <NutritionRemainingCard title="余裕をみた残り" calories={estimate.safeRemaining.calories} fat={estimate.safeRemaining.fat} safe />
         </div>
 
         {estimate.estimatedEntryCount > 0 ? (
           <>
             <div className="nutrition-estimate-buffer mt-3">
-              <span>差し引く推定幅</span>
+              <span>見積もりの余裕</span>
               <strong>{estimate.uncertainty.calories}kcal / F{round1(estimate.uncertainty.fat)}g</strong>
             </div>
             <section className="mt-4">
@@ -5593,7 +5708,7 @@ function FoodTab(props: {
                   <div className="mb-3 flex items-start justify-between gap-3">
                     <div>
                       <h2 className="font-bold">{menuOverwriteTarget ? "メニューを上書き編集" : "マイメニュー登録"}</h2>
-                      {menuOverwriteTarget && <p className="mt-1 text-xs font-semibold text-moss">公式値ではないメニューの栄養値を、このメニュー自体に反映します。</p>}
+                      {menuOverwriteTarget && <p className="mt-1 text-xs font-semibold text-moss">保存済みのメニューを、この内容で更新します。</p>}
                     </div>
                     <button className="secondary-button shrink-0 px-3 py-2 text-xs" onClick={closeMyMenuRegistration}>閉じる</button>
                   </div>
@@ -7537,6 +7652,7 @@ function SettingsTab(props: {
   const developerHokkaidoMode = props.specialModeSettings.find((mode) => mode.id === "hokkaido_trip");
   const isDeveloperHokkaidoModeEnabled = !!developerHokkaidoMode?.enabled;
   const homeBodyFatDisplay = props.settings?.home_body_fat_display ?? "today";
+  const homeWeightDisplay = props.settings?.home_weight_display ?? "today";
 
   const resetSettingsAiFoodImport = () => {
     setSettingsAiFoodImportStep("prompt");
@@ -8110,7 +8226,7 @@ function SettingsTab(props: {
         <>
           <section className="compact-card divide-y divide-line overflow-hidden">
             <SettingsMenuRow title="AI相談レポート" description="AIにコピーする日別・週別・月別レポート" icon={<FileText size={18} />} onClick={() => setActiveSettingsSection("ai")} />
-            <SettingsMenuRow title="エクスポート" description="バックアップJSON / タイプ別ログ出力" icon={<Archive size={18} />} onClick={() => setActiveSettingsSection("backup")} />
+            <SettingsMenuRow title="エクスポート" description="バックアップ保存 / 食事・ワークアウトのログ出力" icon={<Archive size={18} />} onClick={() => setActiveSettingsSection("backup")} />
             <SettingsMenuRow title="ゴール設定" description={`${phaseLabels[goalDraft.phase]} / ${calculated?.target_calories ?? "-"}kcal`} icon={<SlidersHorizontal size={18} />} onClick={() => setActiveSettingsSection("goal")} />
           </section>
           <section className="compact-card divide-y divide-line overflow-hidden">
@@ -8164,10 +8280,24 @@ function SettingsTab(props: {
               </button>
             ))}
           </div>
-          <p className="mt-2 text-xs text-moss">カードはグラファイト基調のまま、主要ボタン、選択中のチップ、下部ナビに反映します。</p>
         </div>
         <div className="mt-5">
-          <p className="text-xs font-black text-moss">今日のチェックインの体脂肪率</p>
+          <p className="text-sm font-black">Homeのチェックイン</p>
+          <p className="mt-1 text-xs text-moss">Homeに大きく表示する数値を選べます。記録内容は変わりません。</p>
+          <p className="mt-3 text-xs font-black text-moss">体重</p>
+          <div className="mt-2 grid grid-cols-2 gap-2">
+            {(Object.keys(homeWeightDisplayLabels) as HomeWeightDisplay[]).map((mode) => (
+              <button
+                className={`mode-button min-h-10 text-xs ${homeWeightDisplay === mode ? "mode-button-active" : ""}`}
+                key={mode}
+                aria-pressed={homeWeightDisplay === mode}
+                onClick={() => saveSettingsPatch({ home_weight_display: mode })}
+              >
+                {homeWeightDisplayLabels[mode]}
+              </button>
+            ))}
+          </div>
+          <p className="mt-3 text-xs font-black text-moss">体脂肪率</p>
           <div className="mt-2 grid grid-cols-3 gap-2">
             {(Object.keys(homeBodyFatDisplayLabels) as HomeBodyFatDisplay[]).map((mode) => (
               <button
@@ -8180,18 +8310,17 @@ function SettingsTab(props: {
               </button>
             ))}
           </div>
-          <p className="mt-2 text-xs text-moss">Homeのチェックインカードだけに反映します。チェックイン入力では体脂肪率をこれまで通り保存できます。</p>
         </div>
       </section>}
 
       {activeSettingsSection === "goal" && !activeGoalSettingsSection && (
         <section className={`compact-card divide-y divide-line overflow-hidden scroll-mt-24 ${props.focus === "goal" ? "border-2 border-leaf" : ""}`}>
-          <SettingsMenuRow title="再度質問に答える" description="初期セットアップのように1ページずつ答えて再計算" icon={<Sparkles size={18} />} onClick={() => {
+          <SettingsMenuRow title="再度質問に答える" description="質問に答えながら目標を計算し直します" icon={<Sparkles size={18} />} onClick={() => {
             setGoalWizardStep(0);
             setActiveGoalSettingsSection("guided");
           }} />
-          <SettingsMenuRow title="手動で入力する" description={`${phaseLabels[goalDraft.phase]} / ${calculated?.target_calories ?? "-"}kcal / ${macroOverrideSummary}`} icon={<SlidersHorizontal size={18} />} onClick={() => setActiveGoalSettingsSection("manual")} />
-          <SettingsMenuRow title="カスタムPFCを設定する" description={`目標kcal/PFCを上書き · ${macroOverrideSummary}`} icon={<BarChart3 size={18} />} onClick={() => setActiveGoalSettingsSection("custom")} />
+          <SettingsMenuRow title="手動で入力する" description="目標体重・目標日・運動回数などを直接変更します" icon={<SlidersHorizontal size={18} />} onClick={() => setActiveGoalSettingsSection("manual")} />
+          <SettingsMenuRow title="カスタムPFCを設定する" description={`カロリーとPFCを自分で入力 · ${macroOverrideSummary}`} icon={<BarChart3 size={18} />} onClick={() => setActiveGoalSettingsSection("custom")} />
         </section>
       )}
 
@@ -8263,7 +8392,7 @@ function SettingsTab(props: {
             <span className="mini-chip">{macroOverrideSummary}</span>
           </button>
           {goalCalculationSummary}
-          <p className="mt-2 text-xs text-moss">自動計算は現在体重から消費カロリーを出し、目標体重・目標体脂肪率・目標達成日・フェーズ・運動強度・総カロリーからP/F/Cと体組成の目標差分を出します。</p>
+          <p className="mt-2 text-xs text-moss">入力した体重・目標・活動量から、1日のカロリーとPFCを計算します。</p>
         </section>
       )}
 
@@ -8272,7 +8401,7 @@ function SettingsTab(props: {
           <div className="flex items-center justify-between gap-3">
             <div>
               <h2 className="font-bold">カスタムPFCを設定する</h2>
-              <p className="mt-1 text-xs text-moss">0にすると自動計算に戻ります。保存するとAIレポートにもカスタム設定として入ります。</p>
+              <p className="mt-1 text-xs text-moss">0にすると自動計算に戻ります。設定した値はAIレポートにも表示されます。</p>
             </div>
             <button className="primary-button shrink-0 px-3 py-2 text-xs" onClick={saveGoalSettings}><Save size={15} />保存</button>
           </div>
@@ -8705,8 +8834,7 @@ function SettingsTab(props: {
 
       {activeSettingsSection === "general" && <section className="compact-card p-4 text-sm text-moss">
         <p className="font-semibold text-ink">100% トラッカー</p>
-        <p>IndexedDB local-only · no login · no backend</p>
-        <p className="mt-2">同じURLを友達が開いても、ログは各iPhone内に別々に保存されます。</p>
+        <p className="mt-2">記録はこの端末に保存されます。端末の故障や機種変更に備えて、定期的にエクスポートしてください。</p>
         <p className="mt-2 text-xs">レポート名: <span className="font-bold text-ink">{props.profile?.name || "未設定"}</span></p>
         <div className="mt-3 grid gap-2">
           <button className="secondary-button w-full" onClick={() => {
@@ -8750,7 +8878,7 @@ function SettingsTab(props: {
                 <div className="flex items-center justify-between gap-3">
                   <div>
                     <p className="text-sm font-black text-ink">プログレスバーを進める</p>
-                    <p className="mt-1 text-xs font-semibold text-moss">Homeのヒーローカード表示だけを上書きします。</p>
+                    <p className="mt-1 text-xs font-semibold text-moss">スライダーでHomeの進み具合を確認できます。</p>
                   </div>
                   <span className="numeric-text rounded-full bg-leaf/15 px-3 py-1 text-sm font-black text-leaf">{developerProgressPercent}%</span>
                 </div>
@@ -9141,7 +9269,7 @@ function Onboarding({ refresh }: { refresh: () => Promise<void> }) {
               体組成目標: 脂肪 {calculated.target_fat_mass_kg}kg / 除脂肪 {calculated.target_lean_mass_kg}kg
             </p>
           )}
-          <p className="mt-3 text-xs leading-relaxed text-moss">現在体重・年齢・目標・運動量・目標体脂肪率・目標達成日からざっくり計算しています。AI相談後や実際の変化を見ながらSettingsで調整できます。</p>
+          <p className="mt-3 text-xs leading-relaxed text-moss">入力した体重・年齢・目標・運動量から計算しています。あとからゴール設定で調整できます。</p>
         </div>
         <button className="secondary-button w-full" onClick={() => setShowAdvanced((current) => !current)}>
           {showAdvanced ? "詳細上書きを閉じる" : "kcal/PFCを手で上書きする"}
@@ -9179,7 +9307,7 @@ function Onboarding({ refresh }: { refresh: () => Promise<void> }) {
         <div className="mt-5 min-h-[16rem]">
           {renderStep()}
         </div>
-        <p className="mt-4 rounded-3xl bg-surface p-3 text-xs leading-relaxed text-moss">初回設定後は、Settingsのエクスポートから週1回くらいJSONエクスポートしておくと安心です。</p>
+        <p className="mt-4 rounded-3xl bg-surface p-3 text-xs leading-relaxed text-moss">設定の「エクスポート」から、定期的にバックアップを保存しておくと安心です。</p>
         <div className="mt-5 grid grid-cols-2 gap-2">
           <button className="secondary-button" disabled={step === 0} onClick={goBack}><ChevronLeft size={17} />戻る</button>
           {step === lastStep ? (
@@ -9732,7 +9860,7 @@ function AiFoodImportModal({ intent = "log", step, setStep, text, setText, items
                     >
                       <span>
                         <span className="block text-sm font-bold">AI推定値で今回だけ記録</span>
-                        <span className="mt-1 block text-xs text-moss">既存DBには登録せず、この食事ログだけ作成します。</span>
+                        <span className="mt-1 block text-xs text-moss">今回の食事にだけ記録し、マイメニューには保存しません。</span>
                       </span>
                       <span className="mini-chip shrink-0">今回</span>
                     </button>
@@ -11245,8 +11373,8 @@ function MacroOverrideModal({ draft, setDraft, calculated, onClose }: {
       <div className="compact-card max-h-[82vh] w-full overflow-y-auto p-4" onClick={(event) => event.stopPropagation()}>
         <div className="flex items-start justify-between gap-3">
           <div>
-            <p className="text-lg font-bold">目標kcal/PFCを上書き</p>
-            <p className="mt-1 text-xs text-moss">0にすると自動計算に戻ります。上書き中はAIレポートにもカスタム設定として明記されます。</p>
+            <p className="text-lg font-bold">カロリーとPFCを入力</p>
+            <p className="mt-1 text-xs text-moss">0にすると自動計算に戻ります。設定した値はAIレポートにも表示されます。</p>
           </div>
           <button className="icon-button h-9 w-9" aria-label="閉じる" onClick={onClose}>×</button>
         </div>
