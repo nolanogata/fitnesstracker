@@ -602,6 +602,48 @@ button {
   --character-accent-text: #c8f5ff;
 }
 
+.app-shell[data-character="sage"] {
+  --character-accent: #7f9184;
+  --character-accent-bright: #dce9df;
+  --character-accent-text: #e9f2eb;
+}
+
+.app-shell[data-character="volt"] {
+  --character-accent: #1fbad2;
+  --character-accent-bright: #ff4fd8;
+  --character-accent-text: #d9fbff;
+}
+
+.app-shell[data-character="nova"] {
+  --character-accent: #d83c53;
+  --character-accent-bright: #ffc95a;
+  --character-accent-text: #ffe1e4;
+}
+
+.app-shell[data-character="grit"] {
+  --character-accent: #b9bfc4;
+  --character-accent-bright: #f2f4f5;
+  --character-accent-text: #ffffff;
+}
+
+.app-shell[data-character="aegis"] {
+  --character-accent: #2e9fc4;
+  --character-accent-bright: #9cecff;
+  --character-accent-text: #c8f5ff;
+}
+
+.app-shell[data-character="kitsune"] {
+  --character-accent: #c36b3d;
+  --character-accent-bright: #f4c66b;
+  --character-accent-text: #ffe3bd;
+}
+
+.app-shell[data-character="kairo"] {
+  --character-accent: #274b9b;
+  --character-accent-bright: #d84c5a;
+  --character-accent-text: #dce6ff;
+}
+
 .app-shell[data-character]:not([data-character="none"])::before {
   position: fixed;
   inset: 0 auto 0 50%;
