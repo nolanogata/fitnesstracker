@@ -41,6 +41,7 @@ export type ThemeMode = "system" | "light" | "dark";
 export type ThemeAccent = "classic" | "orange" | "aqua" | "graphite" | "crazy_pink" | "crazy_yellow" | "vivid_neon";
 export type HomeBodyFatDisplay = "hidden" | "average7" | "today";
 export type HomeWeightDisplay = "average7" | "today";
+export type HomeNutritionRemainingDisplay = "recorded" | "safe";
 export type SpecialModeId = "hokkaido_trip" | string;
 
 export type SpecialModeSettings = {
@@ -71,6 +72,7 @@ export type Settings = {
   theme_accent?: ThemeAccent;
   home_body_fat_display?: HomeBodyFatDisplay;
   home_weight_display?: HomeWeightDisplay;
+  home_nutrition_remaining_display?: HomeNutritionRemainingDisplay;
   data_seed_version?: number;
   active_goal_id?: string;
   hidden_workout_template_ids?: string[];
