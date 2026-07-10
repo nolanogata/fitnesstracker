@@ -532,9 +532,9 @@ button {
 }
 
 .app-shell[data-character]:not([data-character="none"]) {
-  --glass-bg: rgba(8, 11, 13, 0.38);
-  --glass-bg-strong: rgba(8, 11, 13, 0.48);
-  --glass-bg-soft: rgba(255, 255, 255, 0.08);
+  --glass-bg: rgba(8, 11, 13, 0.24);
+  --glass-bg-strong: rgba(8, 11, 13, 0.32);
+  --glass-bg-soft: rgba(255, 255, 255, 0.06);
   --glass-border: rgba(255, 255, 255, 0.2);
   --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.16);
   --glass-shadow: 0 16px 38px rgba(0, 0, 0, 0.2);
@@ -582,7 +582,7 @@ button {
   margin: 0;
   background-color: #000;
   background-image:
-    linear-gradient(180deg, rgba(0, 0, 0, 0.08) 0%, rgba(0, 0, 0, 0.18) 28%, rgba(0, 0, 0, 0.78) 68%, #000 100%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.04) 0%, rgba(0, 0, 0, 0.12) 28%, rgba(0, 0, 0, 0.58) 68%, #000 100%),
     var(--theme-character-image);
   background-position: center top;
   background-repeat: no-repeat;
@@ -594,7 +594,7 @@ button {
 
 .app-shell[data-character="flash"]:not([data-character="none"])::before {
   background-image:
-    linear-gradient(180deg, rgba(0, 8, 25, 0.18) 0%, rgba(0, 10, 30, 0.34) 30%, rgba(0, 8, 24, 0.84) 66%, #000 100%),
+    linear-gradient(180deg, rgba(0, 8, 25, 0.1) 0%, rgba(0, 10, 30, 0.22) 30%, rgba(0, 8, 24, 0.66) 66%, #000 100%),
     var(--theme-character-image);
 }
 
@@ -5437,7 +5437,7 @@ main.theme-dark .chain-combo-item-title,
   .app-bottom-nav
 ) {
   border-color: rgba(255, 255, 255, 0.2);
-  background: rgba(8, 11, 13, 0.36);
+  background: rgba(8, 11, 13, 0.2);
   color: var(--text-primary);
   box-shadow: 0 14px 34px rgba(0, 0, 0, 0.2), var(--glass-highlight);
   backdrop-filter: blur(22px) saturate(118%);
@@ -5447,7 +5447,7 @@ main.theme-dark .chain-combo-item-title,
 .app-shell[data-character]:not([data-character="none"]) .home-hero-card:not(.home-hero-cheat):not(.home-hero-trip):not(.home-hero-hokkaido) {
   background:
     linear-gradient(180deg, color-mix(in srgb, var(--character-accent) 7%, transparent), transparent 42%),
-    rgba(8, 11, 13, 0.4);
+    rgba(8, 11, 13, 0.22);
   backdrop-filter: blur(20px) saturate(116%);
   -webkit-backdrop-filter: blur(20px) saturate(116%);
 }
@@ -5466,7 +5466,7 @@ main.theme-dark .chain-combo-item-title,
   border-color: color-mix(in srgb, var(--character-accent-bright) 38%, transparent);
   background:
     linear-gradient(135deg, color-mix(in srgb, var(--character-accent) 16%, transparent), transparent),
-    rgba(8, 11, 13, 0.36);
+    rgba(8, 11, 13, 0.24);
 }
 
 .app-shell[data-character]:not([data-character="none"]) .tab-glass-indicator {
@@ -5486,6 +5486,9 @@ main.theme-dark .chain-combo-item-title,
 }
 
 .app-shell[data-character]:not([data-character="none"]) .app-bottom-nav {
+  position: fixed;
+  left: 0;
+  right: 0;
   bottom: max(0.8rem, calc(env(safe-area-inset-bottom, 0px) + 0.25rem)) !important;
   transform: none !important;
 }
