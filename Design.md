@@ -17,7 +17,7 @@
 
 - Mobile utility app, not marketing.
 - Restrained off-white base, ink text, green status accents, clay warnings/actions.
-- Display Settings offers optional character backgrounds. The default remains no character; selecting one changes the app to a dark glass presentation and can be reversed without changing logs or the saved accent color. Current characters are TITAN, FLASH, SAGE, VOLT, NOVA, GRIT (boxing-photo style), AEGIS (comic masked hero), KITSUNE, and KAIRO.
+- Display Settings offers optional character backgrounds. The default remains no character; selecting one changes the app to a dark glass presentation and can be reversed without changing logs or the saved accent color. Current characters are TITAN, FLASH, SAGE, VOLT, NOVA, GRIT (sports-photo style with a white singlet), AEGIS (comic masked hero), KITSUNE, and KAIRO.
 - Character themes provide six state backgrounds: low, middle, high, goal miss, cheat day, and travel. The state image follows the same exception-day priority as Home, while all tabs share the background layer and keep the standard card and bottom-navigation placement. Assets are grouped by character and `default` variant so future trophy-unlocked clothing versions can be added without changing the character identity or state contract.
 - Compact cards with 8px radius or less.
 - Segmented tabs, chips, steppers, and icon buttons for common actions.
