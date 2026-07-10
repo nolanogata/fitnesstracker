@@ -3933,7 +3933,12 @@ function HomeTab(props: {
                 <p className="text-xs font-bold text-moss">体重</p>
                 <div className="mt-2 grid grid-cols-2 gap-2">
                   {(Object.keys(homeWeightDisplayLabels) as HomeWeightDisplay[]).map((mode) => (
-                    <button className={`mode-button min-h-10 text-xs ${props.weightDisplayMode === mode ? "mode-button-active" : ""}`} key={mode} onClick={() => void saveCheckInDisplay({ home_weight_display: mode })}>
+                    <button
+                      className={`mode-button min-h-10 text-xs ${props.weightDisplayMode === mode ? "mode-button-active" : ""}`}
+                      key={mode}
+                      aria-pressed={props.weightDisplayMode === mode}
+                      onClick={() => void saveCheckInDisplay({ home_weight_display: mode })}
+                    >
                       {homeWeightDisplayLabels[mode]}
                     </button>
                   ))}
@@ -3943,7 +3948,12 @@ function HomeTab(props: {
                 <p className="text-xs font-bold text-moss">体脂肪率</p>
                 <div className="mt-2 grid grid-cols-3 gap-2">
                   {(Object.keys(homeBodyFatDisplayLabels) as HomeBodyFatDisplay[]).map((mode) => (
-                    <button className={`mode-button min-h-10 text-xs ${props.bodyFatDisplayMode === mode ? "mode-button-active" : ""}`} key={mode} onClick={() => void saveCheckInDisplay({ home_body_fat_display: mode })}>
+                    <button
+                      className={`mode-button min-h-10 text-xs ${props.bodyFatDisplayMode === mode ? "mode-button-active" : ""}`}
+                      key={mode}
+                      aria-pressed={props.bodyFatDisplayMode === mode}
+                      onClick={() => void saveCheckInDisplay({ home_body_fat_display: mode })}
+                    >
                       {homeBodyFatDisplayLabels[mode]}
                     </button>
                   ))}
