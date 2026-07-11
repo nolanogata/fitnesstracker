@@ -4534,8 +4534,17 @@ function NutritionEstimateDetailSheet({ estimate, isPastDate, calorieDelta, rema
 
         <div className="mt-3 grid grid-cols-2 gap-2">
           <NutritionRemainingCard title="記録上の残り" {...estimate.adoptedRemaining} selected={remainingDisplayMode === "recorded"} />
-          <NutritionRemainingCard title="余裕をみた残り" {...estimate.safeRemaining} safe selected={remainingDisplayMode === "safe"} />
+          <NutritionRemainingCard title="安全側の追加上限" calories={estimate.safeRemaining.calories} fat={estimate.safeRemaining.fat} carbs={estimate.safeRemaining.carbs} safe selected={remainingDisplayMode === "safe"} />
         </div>
+        <section className="nutrition-display-setting mt-3">
+          <p className="text-sm font-bold">Pの安全側評価</p>
+          <p className="numeric-text mt-1 text-xs font-semibold text-moss">採用P {round1(estimate.adoptedTotals.protein)}g / 安全側下限 P{round1(estimate.safeProteinLowerBound)}g</p>
+          <p className="mt-1 text-xs leading-relaxed text-moss">
+            {estimate.safeProteinTargetGap > 0
+              ? `目標まで最大${round1(estimate.safeProteinTargetGap)}g不足する可能性があります。追加摂取が必須という意味ではありません。`
+              : "推定幅を考慮しても、P目標を満たす見込みです。"}
+          </p>
+        </section>
 
         {estimate.estimatedEntryCount > 0 ? (
           <>
@@ -4548,13 +4557,14 @@ function NutritionEstimateDetailSheet({ estimate, isPastDate, calorieDelta, rema
                 <p className="text-sm font-bold">推定値を含む記録</p>
                 <span className="mini-chip">{estimate.estimatedEntryCount}件</span>
               </div>
-              <p className="mt-1 text-xs font-semibold text-moss">カロリー推定 {estimate.estimatedCalorieEntryCount}件 / PFC推定 {estimate.macroEstimatedEntryCount}件 / 摂取量推定 {estimate.quantityEstimatedEntryCount}件{estimate.zeroCalorieEstimatedEntryCount ? ` / 0kcal推定 ${estimate.zeroCalorieEstimatedEntryCount}件` : ""}</p>
+              <p className="mt-1 text-xs font-semibold text-moss">カロリー {estimate.estimatedCalorieEntryCount}件 / PFC {estimate.macroEstimatedEntryCount}件（PFCのみ {estimate.pfcOnlyEstimatedEntryCount}件）/ 総量 {estimate.quantityEstimatedEntryCount}件 / 内訳 {estimate.compositionEstimatedEntryCount}件{estimate.zeroCalorieEstimatedEntryCount ? ` / 0kcal ${estimate.zeroCalorieEstimatedEntryCount}件` : ""}</p>
+              <p className="mt-1 text-[11px] font-semibold text-moss">各分類は重複するため、内訳件数の合計はログ総数と一致しない場合があります。</p>
               <div className="mt-2 space-y-2">
-                {estimate.entries.map(({ entry, meta, uncertainty, inferred, estimatedFields, quantityEstimated }) => (
+                {estimate.entries.map(({ entry, meta, uncertainty, inferred, estimatedFields, quantityEstimated, compositionEstimated }) => (
                   <div className="nutrition-estimate-entry" key={entry.id}>
                     <div className="min-w-0">
                       <p className="truncate text-sm font-bold">{entry.name}</p>
-                      <p className="mt-1 text-xs text-moss">{nutritionEstimateEntrySummary(meta, estimatedFields, quantityEstimated, entry.confidence)}{inferred ? " · 旧データから復元" : ""}</p>
+                      <p className="mt-1 text-xs text-moss">{nutritionEstimateEntrySummary(meta, estimatedFields, quantityEstimated, compositionEstimated, entry.confidence)}{inferred ? " · 旧データから復元" : ""}</p>
                     </div>
                     <span className="numeric-text shrink-0 text-xs font-bold">±{uncertainty.calories ?? 0}kcal / F{uncertainty.fat_g ?? 0}g</span>
                   </div>
@@ -4571,7 +4581,7 @@ function NutritionEstimateDetailSheet({ estimate, isPastDate, calorieDelta, rema
   );
 }
 
-function NutritionRemainingCard({ title, calories, protein, fat, carbs, safe = false, selected = false }: { title: string; calories: number; protein: number; fat: number; carbs: number; safe?: boolean; selected?: boolean }) {
+function NutritionRemainingCard({ title, calories, protein, fat, carbs, safe = false, selected = false }: { title: string; calories: number; protein?: number; fat: number; carbs: number; safe?: boolean; selected?: boolean }) {
   return (
     <div className={`nutrition-remaining-card ${safe ? "nutrition-remaining-card-safe" : ""} ${selected ? "nutrition-remaining-card-selected" : ""}`}>
       <div className="flex items-center justify-between gap-2">
@@ -4579,14 +4589,15 @@ function NutritionRemainingCard({ title, calories, protein, fat, carbs, safe = f
         {selected && <span className="nutrition-remaining-selected-label">表示中</span>}
       </div>
       <strong>{formatSignedRemaining(calories, "kcal")}</strong>
-      <span>P{formatSignedRemaining(protein, "g")} / F{formatSignedRemaining(fat, "g")} / C{formatSignedRemaining(carbs, "g")}{safe ? "（Pは確保目安）" : ""}</span>
+      <span>{typeof protein === "number" ? `P${formatSignedRemaining(protein, "g")} / ` : ""}F{formatSignedRemaining(fat, "g")} / C{formatSignedRemaining(carbs, "g")}</span>
     </div>
   );
 }
 
-function nutritionEstimateEntrySummary(meta: NutritionMeta, estimatedFields: Array<"calories" | "protein_g" | "fat_g" | "carbs_g">, quantityEstimated: boolean, confidence: Confidence) {
+function nutritionEstimateEntrySummary(meta: NutritionMeta, estimatedFields: Array<"calories" | "protein_g" | "fat_g" | "carbs_g">, quantityEstimated: boolean, compositionEstimated: boolean, confidence: Confidence) {
   const labels = estimatedFields.map((field) => ({ calories: "kcal", protein_g: "P", fat_g: "F", carbs_g: "C" })[field]);
-  if (quantityEstimated) labels.push("量");
+  if (quantityEstimated) labels.push("総量");
+  if (compositionEstimated) labels.push("内訳");
   const source = meta.nutrient_evidence?.calories?.origin ?? meta.origin;
   return `${nutritionOriginLabel(source)} · ${labels.length ? `${labels.join("/")}推定` : "量推定"} · ${confidenceLabel(meta.nutrient_evidence?.calories?.confidence ?? confidence)}`;
 }
@@ -4725,8 +4736,9 @@ function PerfectFoodModal({ dayTotals, goal, menuItems, foodEntries, onClose, on
               ))}
             </div>
             <div className="perfect-food-panel rounded-md bg-rice p-3">
-              <p className="text-xs font-bold text-moss">計算に使う安全側の残り</p>
-              <p className="numeric-text mt-2 text-sm font-bold">あと {Math.round(adjusted.calories)}kcal / P{round1(adjusted.protein)} F{round1(adjusted.fat)} C{round1(adjusted.carbs)}</p>
+              <p className="text-xs font-bold text-moss">計算に使う安全側の追加上限</p>
+              <p className="numeric-text mt-2 text-sm font-bold">あと {Math.round(adjusted.calories)}kcal / F{round1(adjusted.fat)} C{round1(adjusted.carbs)}</p>
+              <p className="numeric-text mt-1 text-[11px] font-semibold text-moss">P確保の目安: あと{round1(adjusted.protein)}g（追加は必須ではありません）</p>
               {estimate.estimatedEntryCount > 0 && <p className="mt-2 text-[11px] font-semibold text-moss">記録上は残り{Math.max(0, Math.round(remaining.calories))}kcal / P{round1(Math.max(0, remaining.protein))} / F{round1(Math.max(0, remaining.fat))} / C{round1(Math.max(0, remaining.carbs))}。推定幅を考慮して候補を絞っています。</p>}
             </div>
             <div className="grid grid-cols-2 gap-2">
@@ -4824,7 +4836,7 @@ function ChainComboModal({ brand, menuItems, variantIndex, remainingNutrition, a
     selectedMain,
   }), [menuItems, variantIndex, remainingNutrition.calories, remainingNutrition.protein, remainingNutrition.fat, remainingNutrition.carbs, usageMap, selectedMain?.id]);
   const topSuggestions = suggestions.slice(0, 8);
-  const remainingSummary = `あと ${Math.round(remainingNutrition.calories)}kcal / P${round1(remainingNutrition.protein)} F${round1(remainingNutrition.fat)} C${round1(remainingNutrition.carbs)}`;
+  const remainingSummary = `追加上限 ${Math.round(remainingNutrition.calories)}kcal / F${round1(remainingNutrition.fat)} C${round1(remainingNutrition.carbs)}`;
   const hasSafetyAdjustment = Math.round(adoptedRemainingNutrition.calories) !== Math.round(remainingNutrition.calories)
     || round1(adoptedRemainingNutrition.protein) !== round1(remainingNutrition.protein)
     || round1(adoptedRemainingNutrition.fat) !== round1(remainingNutrition.fat)
@@ -4837,6 +4849,7 @@ function ChainComboModal({ brand, menuItems, variantIndex, remainingNutrition, a
           <div className="min-w-0">
             <p className="text-lg font-bold">おすすめの組み合わせ</p>
             <p className="numeric-text mt-1 text-xs font-semibold text-moss">{brand} · 安全側 {remainingSummary}</p>
+            <p className="numeric-text mt-1 text-[11px] font-semibold text-moss">P確保の目安: あと{round1(remainingNutrition.protein)}g（追加は必須ではありません）</p>
             {hasSafetyAdjustment && <p className="numeric-text mt-1 text-[11px] font-semibold text-moss">記録上はあと {Math.round(adoptedRemainingNutrition.calories)}kcal / P{round1(adoptedRemainingNutrition.protein)} F{round1(adoptedRemainingNutrition.fat)} C{round1(adoptedRemainingNutrition.carbs)}</p>}
           </div>
           <button className="icon-button h-9 w-9 shrink-0" aria-label="閉じる" onClick={onClose}>×</button>
@@ -13967,7 +13980,8 @@ const aiFoodImportPrompt = `あなたは食事写真・バーコード・食品�
 - nutrition_meta.nutrient_evidence で kcal / P / F / C を必ず個別に明記する。公式kcal・推定PFCのような混在では、kcalだけ exact、P/F/C は estimated にする
 - 公式サイト・商品ラベル・ユーザー実測の栄養素だけ estimation_policy を exact にする。derived_calculation は、確定値同士の単純な合算・倍率計算で components を示せる場合だけ exact。それ以外は estimated にする
 - 推定幅は各栄養素の uncertainty.plus / minus に絶対値で入れる。公式確認済み栄養素は 0 にする。採用値はアプリ側で自動補正しない
-- 商品ラベルの栄養値が確定でも、食べた量だけが推定の場合は nutrition_meta.quantity_meta に estimated と推定量・推定幅を入れる。栄養素そのものを推定値扱いにしない
+- 商品ラベルの栄養値が確定でも、食べた量だけが推定の場合は nutrition_meta.quantity_meta に estimated と推定量・推定幅を入れる。この場合、記録されるkcal/PFCは量に応じた推定値である
+- 1杯・1人前など食べた総量は確定していて、ご飯約220g・肉約80gのように料理内部の配分だけを推定した場合は、quantity_meta ではなく composition_meta.estimated を true にする
 - 複数メニューや追加トッピングの合計は components に親商品・追加分を分け、公式値の根拠を残す
 
 返却フォーマット:
@@ -13999,6 +14013,7 @@ const aiFoodImportPrompt = `あなたは食事写真・バーコード・食品�
           "carbs_g": { "origin": "derived_calculation", "confidence": "medium", "estimation_policy": "estimated", "uncertainty": { "minus": 5, "plus": 5 } }
         },
         "quantity_meta": { "estimated": false, "estimated_amount": 1, "uncertainty_amount": 0, "unit": "食" },
+        "composition_meta": { "estimated": false, "evidence_note": "内訳の推定がなければfalse" },
         "components": [{ "name": "親商品または追加トッピング", "calories": 0, "nutrition_meta": { "origin": "official_website", "estimation_policy": "exact" } }],
         "evidence_note": "参照した根拠を短く"
       },
@@ -14177,6 +14192,7 @@ function normalizeAiFoodNutritionMeta(raw: unknown): NutritionMeta | undefined {
   const uncertainty = normalizeAiFoodUncertainty(uncertaintyRaw);
   const nutrientEvidence = normalizeAiFoodNutrientEvidence(object.nutrient_evidence ?? object.nutrition_evidence ?? object.fields ?? object["栄養素別根拠"]);
   const quantityMeta = normalizeAiFoodQuantityMeta(object.quantity_meta ?? object.quantityMeta ?? object["量の推定"]);
+  const compositionMeta = normalizeAiFoodCompositionMeta(object.composition_meta ?? object.compositionMeta ?? object["内訳の推定"]);
   const components = normalizeAiFoodComponents(object.components ?? object["内訳"]);
   return {
     origin,
@@ -14186,6 +14202,7 @@ function normalizeAiFoodNutritionMeta(raw: unknown): NutritionMeta | undefined {
     explicit_uncertainty: !!uncertainty,
     nutrient_evidence: nutrientEvidence,
     quantity_meta: quantityMeta,
+    composition_meta: compositionMeta,
     components,
   };
 }
@@ -14257,6 +14274,17 @@ function normalizeAiFoodQuantityMeta(raw: unknown): NutritionMeta["quantity_meta
     estimated_amount: estimatedAmount === undefined ? undefined : Math.max(0, estimatedAmount),
     uncertainty_amount: uncertaintyAmount === undefined ? undefined : Math.max(0, uncertaintyAmount),
     unit: stringValue(object.unit ?? object["単位"]),
+    evidence_note: longStringValue(object.evidence_note ?? object.evidence ?? object["根拠"]),
+  };
+}
+
+function normalizeAiFoodCompositionMeta(raw: unknown): NutritionMeta["composition_meta"] | undefined {
+  if (typeof raw !== "object" || raw === null) return undefined;
+  const object = raw as Record<string, unknown>;
+  const estimated = Boolean(object.estimated ?? object.is_estimated ?? object["推定"]);
+  if (!estimated) return undefined;
+  return {
+    estimated: true,
     evidence_note: longStringValue(object.evidence_note ?? object.evidence ?? object["根拠"]),
   };
 }
