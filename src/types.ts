@@ -21,7 +21,42 @@ export type NutritionOrigin =
   | "manual_estimate"
   | "derived_calculation"
   | "unknown";
-export type NutritionEstimationPolicy = "exact" | "neutral" | "safe_high";
+export type NutritionEstimationPolicy = "exact" | "estimated" | "neutral" | "safe_high" | "calories_exact_macros_estimated" | "quantity_estimated";
+export type NutritionFieldKey = "calories" | "protein_g" | "fat_g" | "carbs_g";
+export type NutritionFieldUncertainty = {
+  minus?: number;
+  plus?: number;
+};
+export type NutritionFieldEvidence = {
+  origin: NutritionOrigin;
+  confidence?: Confidence;
+  estimation_policy: NutritionEstimationPolicy;
+  uncertainty?: NutritionFieldUncertainty;
+  evidence_note?: string;
+};
+export type NutritionQuantityMeta = {
+  estimated: boolean;
+  estimated_amount?: number;
+  uncertainty_amount?: number;
+  unit?: string;
+  evidence_note?: string;
+};
+export type NutritionComponent = {
+  name: string;
+  calories?: number;
+  protein_g?: number;
+  fat_g?: number;
+  carbs_g?: number;
+  source_url?: string;
+  nutrition_meta?: Pick<NutritionMeta, "origin" | "estimation_policy" | "nutrient_evidence" | "evidence_note">;
+};
+export type NutritionCandidate = {
+  calories: number;
+  protein_g: number;
+  fat_g: number;
+  carbs_g: number;
+  salt_g?: number;
+};
 export type NutritionUncertainty = {
   calories?: number;
   protein_g?: number;
@@ -35,6 +70,13 @@ export type NutritionMeta = {
   evidence_note?: string;
   explicit_uncertainty?: boolean;
   import_group_id?: string;
+  /** Field-level evidence takes precedence over legacy item-level metadata. */
+  nutrient_evidence?: Partial<Record<NutritionFieldKey, NutritionFieldEvidence>>;
+  quantity_meta?: NutritionQuantityMeta;
+  components?: NutritionComponent[];
+  /** Original AI candidate, retained only when it differs from the adopted entry values. */
+  nutrition_candidate?: NutritionCandidate;
+  analysis_fingerprint?: string;
 };
 export type MealType = "breakfast" | "lunch" | "dinner" | "snack" | "gym_before" | "gym_after";
 export type ThemeMode = "system" | "light" | "dark";

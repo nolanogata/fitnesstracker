@@ -127,6 +127,38 @@ export function generateMarkdownReport(input: {
     sets: input.workoutSets,
   });
   const isCurrentDailySnapshot = isDaily && input.periodEnd === input.currentAppDate;
+  const inProgressDifferenceLines = macroDiffs && isCurrentDailySnapshot
+    ? [
+        `- kcal: ${formatInProgressRemaining(estimateSummary.adoptedRemaining.calories, "kcal")}`,
+        `- P: ${formatInProgressRemaining(estimateSummary.adoptedRemaining.protein, "g")}`,
+        `- F: ${formatInProgressRemaining(estimateSummary.adoptedRemaining.fat, "g")}`,
+        `- C: ${formatInProgressRemaining(estimateSummary.adoptedRemaining.carbs, "g")}`,
+        "- 判定: 当日途中のため最終評価はしません",
+      ].join("\n")
+    : macroDiffs
+      ? [
+          `- kcal: ${formatDiff(macroDiffs.calories, "kcal")}`,
+          `- P: ${formatDiff(macroDiffs.protein, "g")}`,
+          `- F: ${formatDiff(macroDiffs.fat, "g")}`,
+          `- C: ${formatDiff(macroDiffs.carbs, "g")}`,
+          `- F/C超過: ${fcWarnings.join(" / ") || "なし"}`,
+        ].join("\n")
+      : "- 目標未設定";
+  const estimateBreakdownLines = [
+    `- 推定を含むログ: ${estimateSummary.estimatedEntryCount}件${estimateSummary.estimatedEntryCount ? "（該当ログは食事詳細に明記）" : ""}`,
+    `  - カロリー推定あり: ${estimateSummary.estimatedCalorieEntryCount}件`,
+    `  - PFCのみ推定あり: ${estimateSummary.macroEstimatedEntryCount}件`,
+    `  - 摂取量推定あり: ${estimateSummary.quantityEstimatedEntryCount}件`,
+    `  - 0kcal推定項目: ${estimateSummary.zeroCalorieEstimatedEntryCount}件`,
+    `- 推定カロリー比率: ${estimatedFoodRatio}`,
+    `- 安全側バッファ: ${estimateSummary.uncertainty.calories}kcal / P${estimateSummary.uncertainty.protein}g / F${estimateSummary.uncertainty.fat}g / C${estimateSummary.uncertainty.carbs}g`,
+  ].join("\n");
+  const dailyRemainingLines = isDaily
+    ? [
+        `- 採用値ベース残量: ${formatRemainingForReport(estimateSummary.adoptedRemaining.calories, "kcal")} / P ${formatRemainingForReport(estimateSummary.adoptedRemaining.protein, "g")} / F ${formatRemainingForReport(estimateSummary.adoptedRemaining.fat, "g")} / C ${formatRemainingForReport(estimateSummary.adoptedRemaining.carbs, "g")}`,
+        `- 安全側の食事枠: ${formatRemainingForReport(estimateSummary.safeRemaining.calories, "kcal")} / P確保 ${formatRemainingForReport(estimateSummary.safeRemaining.protein, "g")} / F ${formatRemainingForReport(estimateSummary.safeRemaining.fat, "g")} / C ${formatRemainingForReport(estimateSummary.safeRemaining.carbs, "g")}`,
+      ].join("\n")
+    : "";
   const estimatedFoodRequestLine = estimatedFoodEntries.length
     ? "- 食事ログに推定値が含まれています。可能ならAI側で公式サイト・商品ページ・信頼できる栄養データから正しい kcal / P / F / C の取得を試み、推定値との差分が大きいものを明記してください。"
     : "";
@@ -256,19 +288,12 @@ ${formatTargetPeriodReferenceSection({
 - 旅行モード: ${travelModeDays.length ? `${travelModeDays.length}日 (${travelModeDays.map((day) => day.label).join(", ")})` : "なし"}
 - 一時停止モード: ${pauseModeDays.length ? `${pauseModeDays.length}日 (${pauseModeDays.map((day) => day.label).join(", ")})` : "なし"}
 - テストモード: ${testModeDays.length ? `${testModeDays.length}日` : "なし"}
-- 推定値を含む食事ログ: ${estimatedFoodEntries.length}件${estimatedFoodEntries.length ? "（該当ログは食事詳細に明記）" : ""}
-- 推定カロリー比率: ${estimatedFoodRatio}
-- 推定バッファ: ${estimateSummary.uncertainty.calories}kcal / F${estimateSummary.uncertainty.fat}g
-${isDaily ? `- 採用値ベース残量: ${formatRemainingForReport(estimateSummary.adoptedRemaining.calories, "kcal")} / F ${formatRemainingForReport(estimateSummary.adoptedRemaining.fat, "g")}
-- 安全側残量: ${formatRemainingForReport(estimateSummary.safeRemaining.calories, "kcal")} / F ${formatRemainingForReport(estimateSummary.safeRemaining.fat, "g")}` : ""}
+${estimateBreakdownLines}
+${dailyRemainingLines}
 
 ## 目標との差分
 
-- kcal: ${macroDiffs ? formatDiff(macroDiffs.calories, "kcal") : "目標未設定"}
-- P: ${macroDiffs ? formatDiff(macroDiffs.protein, "g") : "目標未設定"}
-- F: ${macroDiffs ? formatDiff(macroDiffs.fat, "g") : "目標未設定"}
-- C: ${macroDiffs ? formatDiff(macroDiffs.carbs, "g") : "目標未設定"}
-- F/C超過: ${fcWarnings.join(" / ") || "なし"}
+${inProgressDifferenceLines}
 
 ${isDaily ? "## その日の食事詳細" : "## 食事ログ"}
 
@@ -307,7 +332,20 @@ function formatRemainingForReport(value: number, unit: string) {
   return value >= 0 ? `残り${absolute}${unit}` : `超過${absolute}${unit}`;
 }
 
+function formatInProgressRemaining(value: number, unit: string) {
+  const absolute = unit === "kcal" ? Math.round(Math.abs(value)) : Math.round(Math.abs(value) * 10) / 10;
+  if (value > 0) return unit === "kcal" ? `残り${absolute}${unit}` : `あと${absolute}${unit}`;
+  if (value < 0) return `記録上は${absolute}${unit}多め`;
+  return "目標まで0";
+}
+
 function formatFoodEntrySourceNote(entry: FoodEntry) {
+  const evidence = entry.nutrition_meta?.nutrient_evidence;
+  const calorieOrigin = evidence?.calories?.origin;
+  const caloriesOfficial = evidence?.calories?.estimation_policy === "exact" && (calorieOrigin === "official_website" || calorieOrigin === "package_label");
+  const macrosEstimated = [evidence?.protein_g, evidence?.fat_g, evidence?.carbs_g].some((item) => item && item.estimation_policy !== "exact");
+  if (caloriesOfficial && macrosEstimated) return " / データ: 公式kcal・PFC推定";
+  if (entry.nutrition_meta?.quantity_meta?.estimated && caloriesOfficial) return " / データ: 商品ラベル値・摂取量推定";
   if (entry.entry_source === "official" && entry.confidence === "high") return " / データ: 公式値";
   if (entry.entry_source === "user") {
     return ` / データ: ユーザー入力${entry.confidence !== "high" ? "（未確認・要確認）" : ""}`;
@@ -402,8 +440,10 @@ function buildDailyWorkoutDetailLines(input: {
     .sort((a, b) => a.logged_at.localeCompare(b.logged_at))
     .flatMap((session) => {
       const sessionExercises = [...(exercisesBySession.get(session.id) ?? [])].sort((a, b) => a.order - b.order);
+      const sessionKind = workoutSessionKindLabel(session, sessionExercises);
+      const bodyParts = [...new Set((sessionExercises.length ? sessionExercises.map((exercise) => exercise.body_part) : session.body_parts).filter((part) => part !== "有酸素"))].join(" / ");
       const sessionLines = [
-        `- セッション: ${session.title} (${session.body_parts.join(" / ") || session.workout_type}${session.note ? ` / ${session.note}` : ""})`,
+        `- セッション: ${session.title}（${sessionKind}${bodyParts ? ` / ${bodyParts}` : ""}${session.note ? ` / ${session.note}` : ""}）`,
       ];
       if (!sessionExercises.length) {
         sessionLines.push("  - 種目なし");
@@ -425,6 +465,20 @@ function buildDailyWorkoutDetailLines(input: {
     });
 
   return { lines, setCount };
+}
+
+function workoutSessionKindLabel(session: WorkoutSession, exercises: WorkoutExercise[]) {
+  if (exercises.length) {
+    const hasCardio = exercises.some((exercise) => exercise.body_part === "有酸素");
+    const hasStrength = exercises.some((exercise) => exercise.body_part !== "有酸素");
+    if (hasCardio && hasStrength) return "筋トレ＋有酸素";
+    if (hasCardio) return "有酸素";
+    if (hasStrength) return "筋トレ";
+  }
+  if (session.workout_type === "mixed") return "筋トレ＋有酸素";
+  if (session.workout_type === "cardio") return "有酸素";
+  if (session.workout_type === "strength") return "筋トレ";
+  return session.workout_type || "未分類";
 }
 
 function formatWorkoutSetDetail(set: WorkoutSet) {
