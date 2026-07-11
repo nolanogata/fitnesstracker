@@ -41,6 +41,10 @@ export type NutritionQuantityMeta = {
   unit?: string;
   evidence_note?: string;
 };
+export type NutritionCompositionMeta = {
+  estimated: boolean;
+  evidence_note?: string;
+};
 export type NutritionComponent = {
   name: string;
   calories?: number;
@@ -73,6 +77,8 @@ export type NutritionMeta = {
   /** Field-level evidence takes precedence over legacy item-level metadata. */
   nutrient_evidence?: Partial<Record<NutritionFieldKey, NutritionFieldEvidence>>;
   quantity_meta?: NutritionQuantityMeta;
+  /** Internal ingredient ratios are uncertain while the consumed total is known. */
+  composition_meta?: NutritionCompositionMeta;
   components?: NutritionComponent[];
   /** Original AI candidate, retained only when it differs from the adopted entry values. */
   nutrition_candidate?: NutritionCandidate;

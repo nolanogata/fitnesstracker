@@ -147,16 +147,22 @@ export function generateMarkdownReport(input: {
   const estimateBreakdownLines = [
     `- 推定を含むログ: ${estimateSummary.estimatedEntryCount}件${estimateSummary.estimatedEntryCount ? "（該当ログは食事詳細に明記）" : ""}`,
     `  - カロリー推定あり: ${estimateSummary.estimatedCalorieEntryCount}件`,
-    `  - PFCのみ推定あり: ${estimateSummary.macroEstimatedEntryCount}件`,
-    `  - 摂取量推定あり: ${estimateSummary.quantityEstimatedEntryCount}件`,
+    `  - PFC推定あり: ${estimateSummary.macroEstimatedEntryCount}件`,
+    `  - PFCのみ推定あり: ${estimateSummary.pfcOnlyEstimatedEntryCount}件`,
+    `  - 摂取総量推定あり: ${estimateSummary.quantityEstimatedEntryCount}件`,
+    `  - 構成量・内訳推定あり: ${estimateSummary.compositionEstimatedEntryCount}件`,
     `  - 0kcal推定項目: ${estimateSummary.zeroCalorieEstimatedEntryCount}件`,
+    "  - ※各分類は重複するため、内訳件数の合計はログ総数と一致しない場合があります",
     `- 推定カロリー比率: ${estimatedFoodRatio}`,
     `- 安全側バッファ: ${estimateSummary.uncertainty.calories}kcal / P${estimateSummary.uncertainty.protein}g / F${estimateSummary.uncertainty.fat}g / C${estimateSummary.uncertainty.carbs}g`,
   ].join("\n");
   const dailyRemainingLines = isDaily
     ? [
         `- 採用値ベース残量: ${formatRemainingForReport(estimateSummary.adoptedRemaining.calories, "kcal")} / P ${formatRemainingForReport(estimateSummary.adoptedRemaining.protein, "g")} / F ${formatRemainingForReport(estimateSummary.adoptedRemaining.fat, "g")} / C ${formatRemainingForReport(estimateSummary.adoptedRemaining.carbs, "g")}`,
-        `- 安全側の食事枠: ${formatRemainingForReport(estimateSummary.safeRemaining.calories, "kcal")} / P確保 ${formatRemainingForReport(estimateSummary.safeRemaining.protein, "g")} / F ${formatRemainingForReport(estimateSummary.safeRemaining.fat, "g")} / C ${formatRemainingForReport(estimateSummary.safeRemaining.carbs, "g")}`,
+        `- 安全側の追加上限: ${formatRemainingForReport(estimateSummary.safeRemaining.calories, "kcal")} / F ${formatRemainingForReport(estimateSummary.safeRemaining.fat, "g")} / C ${formatRemainingForReport(estimateSummary.safeRemaining.carbs, "g")}`,
+        estimateSummary.safeProteinTargetGap > 0
+          ? `- Pの安全側評価: 採用P ${round1(estimateSummary.adoptedTotals.protein)}g / 下限P ${round1(estimateSummary.safeProteinLowerBound)}g / 目標まで最大${round1(estimateSummary.safeProteinTargetGap)}g不足の可能性（追加摂取は必須ではありません）`
+          : `- Pの安全側評価: 採用P ${round1(estimateSummary.adoptedTotals.protein)}g / 下限P ${round1(estimateSummary.safeProteinLowerBound)}g（下限でも目標を満たす見込み）`,
       ].join("\n")
     : "";
   const estimatedFoodRequestLine = estimatedFoodEntries.length
