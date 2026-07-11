@@ -3,7 +3,7 @@ import { foodSeeds } from "./seeds/foods";
 import { exerciseSeeds, workoutTemplateSeeds } from "./seeds/workouts";
 import { nowIso } from "../lib/date";
 
-const DATA_SEED_VERSION = 2026071201;
+const DATA_SEED_VERSION = 2026071202;
 
 function menuSeedNaturalKey(item: { brand?: string; name: string; serving_label?: string; data_source: string }) {
   return [item.brand ?? "", item.name, item.serving_label ?? "", item.data_source]
@@ -102,6 +102,7 @@ export async function initializeSeeds() {
       "デニーズ",
       "ロイヤルホスト",
       "丸亀製麺",
+      "ウエスト",
       "オリーブの丘",
       "とんでん",
       "バーガーキング",
