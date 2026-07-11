@@ -34,8 +34,13 @@ export function getWeeklyWorkoutStatus(
   const cardioDates = new Set<string>();
   weekSessions.forEach((session) => {
     const sessionExercises = exercisesBySession.get(session.id) ?? [];
-    const hasCardio = session.workout_type === "cardio" || session.body_parts.includes("有酸素") || sessionExercises.some((exercise) => exercise.body_part === "有酸素");
-    const hasStrength = session.workout_type !== "cardio" && sessionExercises.some((exercise) => exercise.body_part !== "有酸素");
+    // Exercises are the source of truth. A session may begin as cardio and later receive strength exercises.
+    const hasCardio = sessionExercises.length
+      ? sessionExercises.some((exercise) => exercise.body_part === "有酸素")
+      : session.workout_type === "cardio" || session.workout_type === "mixed" || session.body_parts.includes("有酸素");
+    const hasStrength = sessionExercises.length
+      ? sessionExercises.some((exercise) => exercise.body_part !== "有酸素")
+      : session.workout_type === "strength" || session.workout_type === "mixed" || session.body_parts.some((part) => part !== "有酸素");
     if (hasCardio) cardioDates.add(session.app_date);
     if (hasStrength) strengthDates.add(session.app_date);
   });

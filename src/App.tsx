@@ -543,6 +543,7 @@ type AiFoodBridgeItem = {
   };
   confidence: Confidence;
   nutrition_meta?: NutritionMeta;
+  analysis_fingerprint?: string;
   match_keywords: string[];
   needs_confirmation: string[];
   note?: string;
@@ -564,8 +565,10 @@ const aiFoodImportMaxKeywords = 12;
 const aiFoodImportMaxStringLength = 120;
 const aiFoodImportMaxNoteLength = 260;
 function menuItemFromAiFoodImportItem(aiItem: AiFoodBridgeItem, timestamp: string, defaultMealType?: MealType): MenuItem {
-  const name = aiItem.possible_menu_name?.trim() || aiItem.observed_name.trim() || "AI推定メニュー";
+  // A possible menu name is only a matching hint. Do not save an unverified alias as an official menu name.
+  const name = aiItem.observed_name.trim() || "AI推定メニュー";
   const brand = aiItem.possible_brand?.trim() || undefined;
+  const nutritionMeta = aiItem.nutrition_meta;
   return {
     id: makeId("menu_user"),
     name,
@@ -579,9 +582,9 @@ function menuItemFromAiFoodImportItem(aiItem: AiFoodBridgeItem, timestamp: strin
     salt_g: aiItem.nutrition_estimate.salt_g,
     serving_label: aiItem.quantity,
     default_meal_type: defaultMealType,
-    data_source: "estimated",
-    confidence: aiItem.confidence,
-    nutrition_meta: aiItem.nutrition_meta,
+    data_source: dataSourceFromNutritionMeta(nutritionMeta),
+    confidence: nutritionMeta?.nutrient_evidence?.calories?.confidence ?? aiItem.confidence,
+    nutrition_meta: nutritionMeta,
     is_public_preset: false,
     is_user_created: true,
     is_favorite: false,
@@ -4508,7 +4511,7 @@ function NutritionEstimateDetailSheet({ estimate, isPastDate, calorieDelta, rema
         <div className="nutrition-estimate-status mt-4">
           <span>{status}</span>
           <strong>{estimate.estimatedEntryCount
-            ? estimate.estimatedCalorieShare > 0 ? `推定値を含む割合 ${estimate.estimatedCalorieShare}%` : "推定値を含む記録あり"
+            ? estimate.estimatedCalorieShare > 0 ? `カロリー推定の割合 ${estimate.estimatedCalorieShare}%` : "カロリーへの推定影響なし"
             : "推定値なし"}</strong>
         </div>
 
@@ -4530,29 +4533,30 @@ function NutritionEstimateDetailSheet({ estimate, isPastDate, calorieDelta, rema
         </section>
 
         <div className="mt-3 grid grid-cols-2 gap-2">
-          <NutritionRemainingCard title="記録上の残り" calories={estimate.adoptedRemaining.calories} fat={estimate.adoptedRemaining.fat} selected={remainingDisplayMode === "recorded"} />
-          <NutritionRemainingCard title="余裕をみた残り" calories={estimate.safeRemaining.calories} fat={estimate.safeRemaining.fat} safe selected={remainingDisplayMode === "safe"} />
+          <NutritionRemainingCard title="記録上の残り" {...estimate.adoptedRemaining} selected={remainingDisplayMode === "recorded"} />
+          <NutritionRemainingCard title="余裕をみた残り" {...estimate.safeRemaining} safe selected={remainingDisplayMode === "safe"} />
         </div>
 
         {estimate.estimatedEntryCount > 0 ? (
           <>
             <div className="nutrition-estimate-buffer mt-3">
               <span>推定値の幅</span>
-              <strong>{estimate.uncertainty.calories}kcal / F{round1(estimate.uncertainty.fat)}g</strong>
+              <strong>{estimate.uncertainty.calories}kcal / P{round1(estimate.uncertainty.protein)}g / F{round1(estimate.uncertainty.fat)}g / C{round1(estimate.uncertainty.carbs)}g</strong>
             </div>
             <section className="mt-4">
               <div className="flex items-center justify-between gap-2">
                 <p className="text-sm font-bold">推定値を含む記録</p>
                 <span className="mini-chip">{estimate.estimatedEntryCount}件</span>
               </div>
+              <p className="mt-1 text-xs font-semibold text-moss">カロリー推定 {estimate.estimatedCalorieEntryCount}件 / PFC推定 {estimate.macroEstimatedEntryCount}件 / 摂取量推定 {estimate.quantityEstimatedEntryCount}件{estimate.zeroCalorieEstimatedEntryCount ? ` / 0kcal推定 ${estimate.zeroCalorieEstimatedEntryCount}件` : ""}</p>
               <div className="mt-2 space-y-2">
-                {estimate.entries.map(({ entry, meta, uncertainty, inferred }) => (
+                {estimate.entries.map(({ entry, meta, uncertainty, inferred, estimatedFields, quantityEstimated }) => (
                   <div className="nutrition-estimate-entry" key={entry.id}>
                     <div className="min-w-0">
                       <p className="truncate text-sm font-bold">{entry.name}</p>
-                      <p className="mt-1 text-xs text-moss">{nutritionOriginLabel(meta.origin)} · {confidenceLabel(entry.confidence)}{inferred ? " · 旧データから復元" : ""}</p>
+                      <p className="mt-1 text-xs text-moss">{nutritionEstimateEntrySummary(meta, estimatedFields, quantityEstimated, entry.confidence)}{inferred ? " · 旧データから復元" : ""}</p>
                     </div>
-                    <span className="numeric-text shrink-0 text-xs font-bold">±{uncertainty.calories ?? 0}kcal</span>
+                    <span className="numeric-text shrink-0 text-xs font-bold">±{uncertainty.calories ?? 0}kcal / F{uncertainty.fat_g ?? 0}g</span>
                   </div>
                 ))}
               </div>
@@ -4567,7 +4571,7 @@ function NutritionEstimateDetailSheet({ estimate, isPastDate, calorieDelta, rema
   );
 }
 
-function NutritionRemainingCard({ title, calories, fat, safe = false, selected = false }: { title: string; calories: number; fat: number; safe?: boolean; selected?: boolean }) {
+function NutritionRemainingCard({ title, calories, protein, fat, carbs, safe = false, selected = false }: { title: string; calories: number; protein: number; fat: number; carbs: number; safe?: boolean; selected?: boolean }) {
   return (
     <div className={`nutrition-remaining-card ${safe ? "nutrition-remaining-card-safe" : ""} ${selected ? "nutrition-remaining-card-selected" : ""}`}>
       <div className="flex items-center justify-between gap-2">
@@ -4575,9 +4579,16 @@ function NutritionRemainingCard({ title, calories, fat, safe = false, selected =
         {selected && <span className="nutrition-remaining-selected-label">表示中</span>}
       </div>
       <strong>{formatSignedRemaining(calories, "kcal")}</strong>
-      <span>{formatSignedRemaining(fat, "g", "F")}</span>
+      <span>P{formatSignedRemaining(protein, "g")} / F{formatSignedRemaining(fat, "g")} / C{formatSignedRemaining(carbs, "g")}{safe ? "（Pは確保目安）" : ""}</span>
     </div>
   );
+}
+
+function nutritionEstimateEntrySummary(meta: NutritionMeta, estimatedFields: Array<"calories" | "protein_g" | "fat_g" | "carbs_g">, quantityEstimated: boolean, confidence: Confidence) {
+  const labels = estimatedFields.map((field) => ({ calories: "kcal", protein_g: "P", fat_g: "F", carbs_g: "C" })[field]);
+  if (quantityEstimated) labels.push("量");
+  const source = meta.nutrient_evidence?.calories?.origin ?? meta.origin;
+  return `${nutritionOriginLabel(source)} · ${labels.length ? `${labels.join("/")}推定` : "量推定"} · ${confidenceLabel(meta.nutrient_evidence?.calories?.confidence ?? confidence)}`;
 }
 
 function getDailyEstimateStatus(calorieDelta: number | undefined, uncertaintyCalories: number) {
@@ -4607,15 +4618,43 @@ function nutritionOriginLabel(origin: NutritionOrigin) {
 }
 
 function scaleNutritionMeta(meta: NutritionMeta | undefined, multiplier: number) {
-  if (!meta?.uncertainty || !Number.isFinite(multiplier) || multiplier === 1) return meta;
+  if (!meta || !Number.isFinite(multiplier) || multiplier === 1) return meta;
   const scale = Math.max(0, multiplier);
+  const legacyUncertainty = meta.uncertainty;
   return {
     ...meta,
-    uncertainty: {
-      calories: meta.uncertainty.calories === undefined ? undefined : Math.round(meta.uncertainty.calories * scale),
-      protein_g: meta.uncertainty.protein_g === undefined ? undefined : round1(meta.uncertainty.protein_g * scale),
-      fat_g: meta.uncertainty.fat_g === undefined ? undefined : round1(meta.uncertainty.fat_g * scale),
-      carbs_g: meta.uncertainty.carbs_g === undefined ? undefined : round1(meta.uncertainty.carbs_g * scale),
+    uncertainty: legacyUncertainty && {
+      calories: legacyUncertainty.calories === undefined ? undefined : Math.round(legacyUncertainty.calories * scale),
+      protein_g: legacyUncertainty.protein_g === undefined ? undefined : round1(legacyUncertainty.protein_g * scale),
+      fat_g: legacyUncertainty.fat_g === undefined ? undefined : round1(legacyUncertainty.fat_g * scale),
+      carbs_g: legacyUncertainty.carbs_g === undefined ? undefined : round1(legacyUncertainty.carbs_g * scale),
+    },
+    nutrient_evidence: meta.nutrient_evidence && Object.fromEntries(Object.entries(meta.nutrient_evidence).map(([key, evidence]) => [key, evidence && {
+      ...evidence,
+      uncertainty: evidence.uncertainty && {
+        minus: evidence.uncertainty.minus === undefined ? undefined : round1(evidence.uncertainty.minus * scale),
+        plus: evidence.uncertainty.plus === undefined ? undefined : round1(evidence.uncertainty.plus * scale),
+      },
+    }])),
+    quantity_meta: meta.quantity_meta && {
+      ...meta.quantity_meta,
+      estimated_amount: meta.quantity_meta.estimated_amount === undefined ? undefined : round1(meta.quantity_meta.estimated_amount * scale),
+      uncertainty_amount: meta.quantity_meta.uncertainty_amount === undefined ? undefined : round1(meta.quantity_meta.uncertainty_amount * scale),
+    },
+    components: meta.components?.map((component) => ({
+      ...component,
+      calories: component.calories === undefined ? undefined : Math.round(component.calories * scale),
+      protein_g: component.protein_g === undefined ? undefined : round1(component.protein_g * scale),
+      fat_g: component.fat_g === undefined ? undefined : round1(component.fat_g * scale),
+      carbs_g: component.carbs_g === undefined ? undefined : round1(component.carbs_g * scale),
+    })),
+    nutrition_candidate: meta.nutrition_candidate && {
+      ...meta.nutrition_candidate,
+      calories: Math.round(meta.nutrition_candidate.calories * scale),
+      protein_g: round1(meta.nutrition_candidate.protein_g * scale),
+      fat_g: round1(meta.nutrition_candidate.fat_g * scale),
+      carbs_g: round1(meta.nutrition_candidate.carbs_g * scale),
+      salt_g: meta.nutrition_candidate.salt_g === undefined ? undefined : round1(meta.nutrition_candidate.salt_g * scale),
     },
   };
 }
@@ -4634,9 +4673,10 @@ function PerfectFoodModal({ dayTotals, goal, menuItems, foodEntries, onClose, on
   const estimate = useMemo(() => getDailyNutritionEstimate(foodEntries, dayTotals, goal, menuItems), [foodEntries, dayTotals.calories, dayTotals.protein, dayTotals.fat, dayTotals.carbs, goal, menuItems]);
   const remaining = getRemainingNutrition(dayTotals, goal);
   const safeRemaining = {
-    ...remaining,
     calories: Math.max(0, estimate.safeRemaining.calories),
+    protein: Math.max(0, estimate.safeRemaining.protein),
     fat: Math.max(0, estimate.safeRemaining.fat),
+    carbs: Math.max(0, estimate.safeRemaining.carbs),
   };
   const planned = getPlannedNutrition(plans);
   const adjusted = {
@@ -4687,7 +4727,7 @@ function PerfectFoodModal({ dayTotals, goal, menuItems, foodEntries, onClose, on
             <div className="perfect-food-panel rounded-md bg-rice p-3">
               <p className="text-xs font-bold text-moss">計算に使う安全側の残り</p>
               <p className="numeric-text mt-2 text-sm font-bold">あと {Math.round(adjusted.calories)}kcal / P{round1(adjusted.protein)} F{round1(adjusted.fat)} C{round1(adjusted.carbs)}</p>
-              {estimate.estimatedEntryCount > 0 && <p className="mt-2 text-[11px] font-semibold text-moss">記録上は残り{Math.max(0, Math.round(remaining.calories))}kcal。推定幅{estimate.uncertainty.calories}kcalを差し引いています。</p>}
+              {estimate.estimatedEntryCount > 0 && <p className="mt-2 text-[11px] font-semibold text-moss">記録上は残り{Math.max(0, Math.round(remaining.calories))}kcal / P{round1(Math.max(0, remaining.protein))} / F{round1(Math.max(0, remaining.fat))} / C{round1(Math.max(0, remaining.carbs))}。推定幅を考慮して候補を絞っています。</p>}
             </div>
             <div className="grid grid-cols-2 gap-2">
               <button className="secondary-button" onClick={onClose}>閉じる</button>
@@ -4785,7 +4825,10 @@ function ChainComboModal({ brand, menuItems, variantIndex, remainingNutrition, a
   }), [menuItems, variantIndex, remainingNutrition.calories, remainingNutrition.protein, remainingNutrition.fat, remainingNutrition.carbs, usageMap, selectedMain?.id]);
   const topSuggestions = suggestions.slice(0, 8);
   const remainingSummary = `あと ${Math.round(remainingNutrition.calories)}kcal / P${round1(remainingNutrition.protein)} F${round1(remainingNutrition.fat)} C${round1(remainingNutrition.carbs)}`;
-  const hasSafetyAdjustment = Math.round(adoptedRemainingNutrition.calories) !== Math.round(remainingNutrition.calories) || round1(adoptedRemainingNutrition.fat) !== round1(remainingNutrition.fat);
+  const hasSafetyAdjustment = Math.round(adoptedRemainingNutrition.calories) !== Math.round(remainingNutrition.calories)
+    || round1(adoptedRemainingNutrition.protein) !== round1(remainingNutrition.protein)
+    || round1(adoptedRemainingNutrition.fat) !== round1(remainingNutrition.fat)
+    || round1(adoptedRemainingNutrition.carbs) !== round1(remainingNutrition.carbs);
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink/30 px-4 pb-4" onClick={onClose}>
@@ -4794,7 +4837,7 @@ function ChainComboModal({ brand, menuItems, variantIndex, remainingNutrition, a
           <div className="min-w-0">
             <p className="text-lg font-bold">おすすめの組み合わせ</p>
             <p className="numeric-text mt-1 text-xs font-semibold text-moss">{brand} · 安全側 {remainingSummary}</p>
-            {hasSafetyAdjustment && <p className="numeric-text mt-1 text-[11px] font-semibold text-moss">記録上はあと {Math.round(adoptedRemainingNutrition.calories)}kcal / F{round1(adoptedRemainingNutrition.fat)}g</p>}
+            {hasSafetyAdjustment && <p className="numeric-text mt-1 text-[11px] font-semibold text-moss">記録上はあと {Math.round(adoptedRemainingNutrition.calories)}kcal / P{round1(adoptedRemainingNutrition.protein)} F{round1(adoptedRemainingNutrition.fat)} C{round1(adoptedRemainingNutrition.carbs)}</p>}
           </div>
           <button className="icon-button h-9 w-9 shrink-0" aria-label="閉じる" onClick={onClose}>×</button>
         </div>
@@ -5409,9 +5452,10 @@ function FoodTab(props: {
     [currentDayFoodEntries, props.dayTotals.calories, props.dayTotals.protein, props.dayTotals.fat, props.dayTotals.carbs, props.goal, props.menuItems],
   );
   const remainingNutrition = {
-    ...adoptedRemainingNutrition,
     calories: Math.max(0, currentDayEstimate.safeRemaining.calories),
+    protein: Math.max(0, currentDayEstimate.safeRemaining.protein),
     fat: Math.max(0, currentDayEstimate.safeRemaining.fat),
+    carbs: Math.max(0, currentDayEstimate.safeRemaining.carbs),
   };
   const canUseOverGoalFilter = !!props.goal && props.goal.target_calories > 0;
   const canShowFoodBalance = canUseOverGoalFilter;
@@ -5541,6 +5585,19 @@ function FoodTab(props: {
   const saveAiFoodImport = async () => {
     const timestamp = nowIso();
     const importGroupId = makeId("ai_import");
+    if (aiFoodImportIntent === "log") {
+      const existingEntries = await db.food_entries.where("app_date").equals(props.appDate).toArray();
+      const duplicates = aiFoodImportItems.flatMap((aiItem, index) => {
+        const selection = aiFoodImportSelections[index] ?? { source: "skip" };
+        if (selection.source === "skip" || selection.source === "ai_menu_only") return [];
+        const matchedItem = selection.source === "menu" && selection.menuItemId ? menuItemsById.get(selection.menuItemId) : undefined;
+        const name = matchedItem?.name ?? aiItem.observed_name;
+        const brand = matchedItem?.brand ?? aiItem.possible_brand;
+        const calories = matchedItem?.calories ?? aiItem.nutrition_estimate.calories;
+        return existingEntries.some((entry) => isLikelyAiFoodDuplicate(entry, { name, brand, calories, timestamp })) ? [`${brand ? `${brand} / ` : ""}${name}`] : [];
+      });
+      if (duplicates.length && !window.confirm(`同じ写真・同じ商品をすでに記録している可能性があります。\n${duplicates.join("\n")}\n\n追加分として記録しますか？`)) return;
+    }
     let savedCount = 0;
     let menuSavedCount = 0;
     for (let index = 0; index < aiFoodImportItems.length; index += 1) {
@@ -5585,6 +5642,8 @@ function FoodTab(props: {
         nutrition_meta: {
           ...(aiItem.nutrition_meta ?? defaultAiPhotoNutritionMeta(aiItem.confidence)),
           import_group_id: importGroupId,
+          analysis_fingerprint: aiItem.analysis_fingerprint ?? buildAiFoodAnalysisFingerprint(aiItem),
+          nutrition_candidate: aiItem.nutrition_estimate,
         },
       };
       const aiMenuItem = menuItemFromAiFoodImportItem(resolvedAiItem, timestamp, aiFoodMealType);
@@ -5608,8 +5667,8 @@ function FoodTab(props: {
         carbs_g: aiItem.nutrition_estimate.carbs_g,
         salt_g: aiItem.nutrition_estimate.salt_g,
         portion_multiplier: 1,
-        entry_source: "estimated",
-        confidence: aiItem.confidence,
+        entry_source: aiMenuItem.data_source,
+        confidence: aiMenuItem.confidence,
         nutrition_meta: resolvedAiItem.nutrition_meta,
         menu_item_id: shouldSaveMenu ? aiMenuItem.id : undefined,
         note: unique(["AI写真登録", aiItem.note ?? "", aiItem.quantity ? `AI推定量: ${aiItem.quantity}` : "", aiItem.needs_confirmation.length ? `確認事項: ${aiItem.needs_confirmation.join(" / ")}` : ""]).join(" / ") || undefined,
@@ -6021,7 +6080,7 @@ function FoodTab(props: {
               >
                 <span>
                   <span className="block text-sm font-bold">残りの数値とのバランスを表示</span>
-                  <span className="mt-1 block text-xs text-moss">P不足、F/C超過、kcal超過を検索結果の行に表示します。</span>
+                  <span className="mt-1 block text-xs text-moss">Pを補いやすさと、F/C/kcalの収まりを検索結果の行に表示します。</span>
                 </span>
                 <span className="mini-chip shrink-0">{showFoodBalance ? "ON" : "OFF"}</span>
               </button>
@@ -10260,7 +10319,7 @@ function AiFoodImportModal({ intent = "log", step, setStep, text, setText, items
   const currentItem = items[currentMatchIndex];
   const currentCandidates = candidates[currentMatchIndex] ?? [];
   const currentSelection = selections[currentMatchIndex];
-  const currentDisplayName = currentItem?.possible_menu_name || currentItem?.observed_name || "読み取った品目";
+  const currentDisplayName = currentItem?.observed_name || "読み取った品目";
   const beginItemReview = () => {
     setMatchIndex(0);
     setMatchStage("candidate");
@@ -10352,7 +10411,7 @@ function AiFoodImportModal({ intent = "log", step, setStep, text, setText, items
                 <div className="ai-food-read-item" key={`${item.observed_name}-${index}`}>
                   <span className="numeric-text">{index + 1}</span>
                   <div className="min-w-0">
-                    <p className="break-words text-sm font-black">{item.possible_menu_name || item.observed_name}</p>
+                    <p className="break-words text-sm font-black">{item.observed_name}</p>
                     <p className="mt-1 text-xs font-semibold text-moss">{item.possible_brand || item.food_type || "ブランド不明"} · {item.nutrition_estimate.calories}kcal</p>
                   </div>
                 </div>
@@ -10395,7 +10454,7 @@ function AiFoodImportModal({ intent = "log", step, setStep, text, setText, items
                   <p className="ai-food-section-label">AIが読み取った品目</p>
                   <h3 className="break-words text-xl font-black leading-snug">{currentDisplayName}</h3>
                   {currentItem.possible_menu_name && currentItem.possible_menu_name !== currentItem.observed_name && (
-                    <p className="mt-1 break-words text-xs font-semibold text-moss">写真上の品目: {currentItem.observed_name}</p>
+                    <p className="mt-1 break-words text-xs font-semibold text-moss">照合候補: {currentItem.possible_menu_name}</p>
                   )}
                   <p className="mt-2 text-xs font-bold text-moss">
                     {[currentItem.possible_brand || "ブランド不明", currentItem.quantity].filter(Boolean).join(" · ")}
@@ -10547,7 +10606,7 @@ function AiFoodImportModal({ intent = "log", step, setStep, text, setText, items
             )}
             <div className="space-y-2">
               {selectedSummary.map(({ item, selection, matched }, index) => {
-                const name = matched ? formatMenuItemName(matched) : item.possible_menu_name || item.observed_name;
+                const name = matched ? formatMenuItemName(matched) : item.observed_name;
                 const nutrition = matched ?? item.nutrition_estimate;
                 const skipped = selection.source === "skip";
                 const statusText = skipped
@@ -11533,7 +11592,7 @@ function FoodLogRow({ entry, displayName, showSource = false, onEdit, onDelete }
         <p className="truncate text-sm font-semibold">{displayName ?? entry.name}</p>
         <div className="mt-1 flex flex-wrap items-center gap-1.5">
           <span className="numeric-text text-xs text-moss">{mealLabels[entry.meal_type]} · P{entry.protein_g} F{entry.fat_g} C{entry.carbs_g}</span>
-          {showSource && <SourceBadge source={entry.entry_source} confidence={entry.confidence} />}
+          {showSource && <SourceBadge source={entry.entry_source} confidence={entry.confidence} nutritionMeta={entry.nutrition_meta} />}
         </div>
       </div>
       <div className="flex items-center gap-2">
@@ -13147,6 +13206,17 @@ async function addExerciseToSession(
     updated_at: timestamp,
   };
   await db.workout_exercises.put(exercise);
+  const session = await db.workout_sessions.get(sessionId);
+  if (session) {
+    const bodyParts = [...new Set([...session.body_parts, item.body_part])];
+    const hasCardio = bodyParts.includes("有酸素");
+    const hasStrength = bodyParts.some((part) => part !== "有酸素");
+    await db.workout_sessions.update(sessionId, {
+      body_parts: bodyParts,
+      workout_type: hasCardio && hasStrength ? "mixed" : hasCardio ? "cardio" : "strength",
+      updated_at: timestamp,
+    });
+  }
   const previousExercise = allExercises
     .filter((candidate) => candidate.exercise_name === item.exercise_name)
     .sort((a, b) => b.created_at.localeCompare(a.created_at))[0];
@@ -13877,13 +13947,13 @@ const aiFoodImportPrompt = `あなたは食事写真・バーコード・食品�
 
 注意:
 - このプロンプトだけで写真・バーコード・栄養成分表示が添付されていない場合は、JSONを作らず「写真、バーコード、または栄養成分表示を添付してください。」とだけ返す
-- 画像だけで店名や商品名が不確かな場合、断定せず possible_brand / possible_menu_name に候補として入れる
+- 画像だけで店名や商品名が不確かな場合、断定せず possible_brand / possible_menu_name に候補として入れる。possible_menu_name は照合候補であり、正式名称として断定しない
 - 料理が複数見える場合は、原則として1つの items 要素にまとめず、食品ごとに分ける
 - チェーン店の公式セットメニューとして特定できる場合は、possible_menu_name にセット名候補を入れつつ、note に「分解候補: 白米 / 味噌汁 / 主菜 ...」のように残す
 - 逆に自炊・一般的な定食・弁当のように公式セット名が不明な場合は、セット名1件ではなく分解した複数 items を優先する
 - 外食っぽい場合は、店名・レシート・メニュー名・サイズなど追加確認が必要なら needs_confirmation に入れる
 - バーコードや栄養成分表示が読める場合は、その情報を優先する
-- 写真・バーコード・栄養成分表示・ユーザーコメントから店名、チェーン名、商品名、メニュー名、サイズが特定できた場合は、可能であれば公式サイト、公式PDF、公式商品ページ、公式栄養成分表など一次情報を検索し、公式の栄養値を nutrition_estimate に反映する
+- 写真・バーコード・栄養成分表示・ユーザーコメントから店名、チェーン名、商品名、メニュー名、サイズが特定できた場合は、可能であれば公式サイト、公式PDF、公式商品ページ、公式栄養成分表など一次情報を検索し、公式の栄養値を nutrition_candidate に反映する
 - 公式ソースを使えた場合は note に「公式栄養値参照: ソース名またはURL」のように短く残す。公式でkcalだけ分かりP/F/Cが不明な場合は、kcalは公式値、P/F/Cは推定であることを note に明記する
 - 公式ソースが見つからない、または商品・サイズが断定できない場合は、公式値として扱わず推定値にし、needs_confirmation と note に不足情報を残す
 - 同じチャットで新しい写真・バーコード・栄養成分表示が添付された場合は、前回の食品候補を引き継がず、新しいメニューとして最初から分析し直す
@@ -13893,15 +13963,17 @@ const aiFoodImportPrompt = `あなたは食事写真・バーコード・食品�
 - 最後に「修正がなければ上のコードブロックをコピーして100% トラッカーに戻してください。修正がある場合は、どの項目をどう直すか教えてください。修正版のコードブロックを再生成します。次のメニューを分析するには、新しく写真・バーコード・栄養成分表示を添付してください。」と案内する
 - ユーザーから修正が来た場合は、修正内容を反映したJSONコードブロックを再生成し、同じ形式で読み取り要約も更新する
 - 数値不明でも calories / protein_g / fat_g / carbs_g は推定値を入れる
-- nutrition_estimate はアプリが日々の計算に採用する単一値。幅やレンジではなく、根拠を踏まえて採用する値を1つ決める
-- 採用値はアプリ側で自動補正しないため、安全側に見た想定誤差を nutrition_meta.uncertainty に絶対値で入れる。例: calories が上下100kcal程度ぶれるなら 100
-- 公式サイトやパッケージで確認できた栄養素の uncertainty は0にする。公式kcal・PFC推定のような混在時は、栄養素ごとに幅を分ける
-- estimation_policy は、公式・実測なら exact、中央寄りの推定なら neutral、意図的に上振れ側を採用した場合は safe_high とする
+- nutrition_candidate はアプリに渡す候補値。幅やレンジではなく、根拠を踏まえた単一値を入れる。アプリで保存された数値が日々の計算の採用値になり、あとから自動補正されない
+- nutrition_meta.nutrient_evidence で kcal / P / F / C を必ず個別に明記する。公式kcal・推定PFCのような混在では、kcalだけ exact、P/F/C は estimated にする
+- 公式サイト・商品ラベル・ユーザー実測の栄養素だけ estimation_policy を exact にする。derived_calculation は、確定値同士の単純な合算・倍率計算で components を示せる場合だけ exact。それ以外は estimated にする
+- 推定幅は各栄養素の uncertainty.plus / minus に絶対値で入れる。公式確認済み栄養素は 0 にする。採用値はアプリ側で自動補正しない
+- 商品ラベルの栄養値が確定でも、食べた量だけが推定の場合は nutrition_meta.quantity_meta に estimated と推定量・推定幅を入れる。栄養素そのものを推定値扱いにしない
+- 複数メニューや追加トッピングの合計は components に親商品・追加分を分け、公式値の根拠を残す
 
 返却フォーマット:
 \`\`\`json
 {
-  "type": "food_ai_bridge_v2",
+  "type": "food_ai_bridge_v3",
   "items": [
     {
       "observed_name": "写真から見えた食事名",
@@ -13909,7 +13981,7 @@ const aiFoodImportPrompt = `あなたは食事写真・バーコード・食品�
       "possible_menu_name": "メニュー名・商品名候補。なければ空文字",
       "food_type": "chain_menu | packaged_food | home_cooked | general | unknown",
       "quantity": "1品、1個、約180gなど",
-      "nutrition_estimate": {
+      "nutrition_candidate": {
         "calories": 0,
         "protein_g": 0,
         "fat_g": 0,
@@ -13919,13 +13991,15 @@ const aiFoodImportPrompt = `あなたは食事写真・バーコード・食品�
       "confidence": "high | medium | low",
       "nutrition_meta": {
         "origin": "official_website | package_label | user_measured | user_entered | brand_match | ai_photo_estimate | manual_estimate | derived_calculation | unknown",
-        "estimation_policy": "exact | neutral | safe_high",
-        "uncertainty": {
-          "calories": 0,
-          "protein_g": 0,
-          "fat_g": 0,
-          "carbs_g": 0
+        "estimation_policy": "exact | estimated | neutral | safe_high",
+        "nutrient_evidence": {
+          "calories": { "origin": "official_website", "confidence": "high", "estimation_policy": "exact", "uncertainty": { "minus": 0, "plus": 0 } },
+          "protein_g": { "origin": "derived_calculation", "confidence": "medium", "estimation_policy": "estimated", "uncertainty": { "minus": 4, "plus": 4 } },
+          "fat_g": { "origin": "derived_calculation", "confidence": "medium", "estimation_policy": "estimated", "uncertainty": { "minus": 3, "plus": 3 } },
+          "carbs_g": { "origin": "derived_calculation", "confidence": "medium", "estimation_policy": "estimated", "uncertainty": { "minus": 5, "plus": 5 } }
         },
+        "quantity_meta": { "estimated": false, "estimated_amount": 1, "uncertainty_amount": 0, "unit": "食" },
+        "components": [{ "name": "親商品または追加トッピング", "calories": 0, "nutrition_meta": { "origin": "official_website", "estimation_policy": "exact" } }],
         "evidence_note": "参照した根拠を短く"
       },
       "match_keywords": ["照合に使える日本語キーワード"],
@@ -14064,14 +14138,14 @@ function getAiFoodRawItems(payload: unknown) {
       }).slice(0, aiFoodImportMaxItems);
     }
   }
-  if (object.nutrition_estimate || object.estimated_nutrition || object.nutrition || object.nutrients || object["栄養値"] || object["栄養成分"]) return [object];
+  if (object.nutrition_candidate || object.nutrition_estimate || object.estimated_nutrition || object.nutrition || object.nutrients || object["栄養値"] || object["栄養成分"]) return [object];
   return [];
 }
 
 function normalizeAiFoodBridgeItem(raw: unknown): AiFoodBridgeItem | undefined {
   if (typeof raw !== "object" || raw === null) return undefined;
   const object = raw as Record<string, unknown>;
-  const nutrition = normalizeAiFoodNutrition(object.nutrition_estimate ?? object.estimated_nutrition ?? object.nutrition ?? object.nutrients ?? object["栄養値"] ?? object["栄養成分"]);
+  const nutrition = normalizeAiFoodNutrition(object.nutrition_candidate ?? object.nutrition_estimate ?? object.estimated_nutrition ?? object.nutrition ?? object.nutrients ?? object["栄養値"] ?? object["栄養成分"]);
   if (!nutrition) return undefined;
   const observedName = stringValue(object.observed_name) || stringValue(object.estimated_food_name) || stringValue(object.name) || stringValue(object.food_name) || stringValue(object["料理名"]) || stringValue(object["食品名"]) || stringValue(object["名前"]) || stringValue(object.possible_menu_name) || stringValue(object["メニュー名"]) || "AI推定メニュー";
   const possibleBrand = stringValue(object.possible_brand) || stringValue(object.brand) || stringValue(object["店名"]) || stringValue(object["ブランド"]) || stringValue(object["ブランド名"]);
@@ -14087,6 +14161,7 @@ function normalizeAiFoodBridgeItem(raw: unknown): AiFoodBridgeItem | undefined {
     nutrition_estimate: nutrition,
     confidence: confidenceValue(object.confidence),
     nutrition_meta: normalizeAiFoodNutritionMeta(object.nutrition_meta ?? object.nutritionMeta ?? object["推定情報"]),
+    analysis_fingerprint: stringValue(object.analysis_fingerprint ?? object.analysisFingerprint),
     match_keywords: unique([...keywords, possibleBrand, possibleMenuName, observedName, category].filter(Boolean)).slice(0, aiFoodImportMaxKeywords),
     needs_confirmation: stringArrayValue(object.needs_confirmation ?? object.questions ?? object["確認事項"] ?? object["確認"]).slice(0, aiFoodImportMaxKeywords),
     note: longStringValue(object.note) || longStringValue(object["メモ"]) || longStringValue(object["推定根拠"]),
@@ -14100,13 +14175,112 @@ function normalizeAiFoodNutritionMeta(raw: unknown): NutritionMeta | undefined {
   const estimationPolicy = estimationPolicyValue(object.estimation_policy ?? object.estimationPolicy ?? object.policy ?? object["推定方針"]);
   const uncertaintyRaw = object.uncertainty ?? object.uncertainty_upper ?? object["推定幅"];
   const uncertainty = normalizeAiFoodUncertainty(uncertaintyRaw);
+  const nutrientEvidence = normalizeAiFoodNutrientEvidence(object.nutrient_evidence ?? object.nutrition_evidence ?? object.fields ?? object["栄養素別根拠"]);
+  const quantityMeta = normalizeAiFoodQuantityMeta(object.quantity_meta ?? object.quantityMeta ?? object["量の推定"]);
+  const components = normalizeAiFoodComponents(object.components ?? object["内訳"]);
   return {
     origin,
     estimation_policy: estimationPolicy,
     uncertainty,
     evidence_note: longStringValue(object.evidence_note ?? object.evidence ?? object["根拠"]),
     explicit_uncertainty: !!uncertainty,
+    nutrient_evidence: nutrientEvidence,
+    quantity_meta: quantityMeta,
+    components,
   };
+}
+
+function normalizeAiFoodNutrientEvidence(raw: unknown): NutritionMeta["nutrient_evidence"] | undefined {
+  if (typeof raw !== "object" || raw === null) return undefined;
+  const object = raw as Record<string, unknown>;
+  const mappings: Array<[keyof NonNullable<NutritionMeta["nutrient_evidence"]>, string[]]> = [
+    ["calories", ["calories", "calories_kcal", "kcal", "カロリー"]],
+    ["protein_g", ["protein_g", "protein", "P", "たんぱく質"]],
+    ["fat_g", ["fat_g", "fat", "F", "脂質"]],
+    ["carbs_g", ["carbs_g", "carbs", "carbohydrate_g", "C", "炭水化物"]],
+  ];
+  const result: NonNullable<NutritionMeta["nutrient_evidence"]> = {};
+  mappings.forEach(([key, aliases]) => {
+    const value = aliases.map((alias) => object[alias]).find((candidate) => typeof candidate === "object" && candidate !== null);
+    const evidence = normalizeAiFoodFieldEvidence(value);
+    if (evidence) result[key] = evidence;
+  });
+  return Object.keys(result).length ? result : undefined;
+}
+
+function normalizeAiFoodFieldEvidence(raw: unknown) {
+  if (typeof raw !== "object" || raw === null) return undefined;
+  const object = raw as Record<string, unknown>;
+  const rawOrigin = object.origin ?? object.source ?? object["出所"];
+  const rawPolicy = object.estimation_policy ?? object.estimationPolicy ?? object.policy ?? object["推定方針"];
+  const rawConfidence = object.confidence ?? object["信頼度"];
+  const uncertainty = normalizeAiFoodFieldUncertainty(object.uncertainty ?? object["推定幅"]);
+  if (rawOrigin === undefined && rawPolicy === undefined && rawConfidence === undefined && !uncertainty) return undefined;
+  const origin = nutritionOriginValue(rawOrigin);
+  const estimation_policy = rawPolicy === undefined
+    ? (["official_website", "package_label", "user_measured", "user_entered"].includes(origin) ? "exact" : "estimated")
+    : estimationPolicyValue(rawPolicy);
+  return {
+    origin,
+    confidence: confidenceValue(rawConfidence),
+    estimation_policy,
+    uncertainty,
+    evidence_note: longStringValue(object.evidence_note ?? object.evidence ?? object["根拠"]),
+  };
+}
+
+function normalizeAiFoodFieldUncertainty(raw: unknown) {
+  if (typeof raw === "number" || typeof raw === "string") {
+    const value = numericValue(raw);
+    return value === undefined ? undefined : { minus: Math.max(0, value), plus: Math.max(0, value) };
+  }
+  if (typeof raw !== "object" || raw === null) return undefined;
+  const object = raw as Record<string, unknown>;
+  const minus = numericValue(object.minus ?? object.lower ?? object.down ?? object["下振れ"]);
+  const plus = numericValue(object.plus ?? object.upper ?? object.up ?? object["上振れ"] ?? object.value);
+  if (minus === undefined && plus === undefined) return undefined;
+  return {
+    minus: minus === undefined ? undefined : Math.max(0, minus),
+    plus: plus === undefined ? undefined : Math.max(0, plus),
+  };
+}
+
+function normalizeAiFoodQuantityMeta(raw: unknown): NutritionMeta["quantity_meta"] | undefined {
+  if (typeof raw !== "object" || raw === null) return undefined;
+  const object = raw as Record<string, unknown>;
+  const estimated = Boolean(object.estimated ?? object.is_estimated ?? object["推定"]);
+  const estimatedAmount = numericValue(object.estimated_amount ?? object.amount ?? object.grams ?? object["推定量"]);
+  const uncertaintyAmount = numericValue(object.uncertainty_amount ?? object.uncertainty ?? object["推定幅"]);
+  if (!estimated && estimatedAmount === undefined && uncertaintyAmount === undefined) return undefined;
+  return {
+    estimated,
+    estimated_amount: estimatedAmount === undefined ? undefined : Math.max(0, estimatedAmount),
+    uncertainty_amount: uncertaintyAmount === undefined ? undefined : Math.max(0, uncertaintyAmount),
+    unit: stringValue(object.unit ?? object["単位"]),
+    evidence_note: longStringValue(object.evidence_note ?? object.evidence ?? object["根拠"]),
+  };
+}
+
+function normalizeAiFoodComponents(raw: unknown): NutritionMeta["components"] | undefined {
+  if (!Array.isArray(raw)) return undefined;
+  const components = raw.slice(0, aiFoodImportMaxItems).flatMap((value) => {
+    if (typeof value !== "object" || value === null) return [];
+    const object = value as Record<string, unknown>;
+    const name = stringValue(object.name ?? object.observed_name ?? object["名前"]);
+    if (!name) return [];
+    const nutrition = normalizeAiFoodNutrition(object.nutrition ?? object.nutrition_estimate ?? object["栄養値"]);
+    const meta = normalizeAiFoodNutritionMeta(object.nutrition_meta ?? object.meta ?? object["根拠"]);
+    return [{
+      name,
+      calories: nutrition?.calories,
+      protein_g: nutrition?.protein_g,
+      fat_g: nutrition?.fat_g,
+      carbs_g: nutrition?.carbs_g,
+      source_url: stringValue(object.source_url ?? object.url),
+      nutrition_meta: meta,
+    }];
+  });
+  return components.length ? components : undefined;
 }
 
 function normalizeAiFoodUncertainty(raw: unknown): NutritionMeta["uncertainty"] | undefined {
@@ -14131,7 +14305,7 @@ function nutritionOriginValue(value: unknown): NutritionOrigin {
 }
 
 function estimationPolicyValue(value: unknown): NutritionMeta["estimation_policy"] {
-  return value === "exact" || value === "safe_high" ? value : "neutral";
+  return value === "exact" || value === "estimated" || value === "safe_high" || value === "calories_exact_macros_estimated" || value === "quantity_estimated" ? value : "neutral";
 }
 
 function defaultAiPhotoNutritionMeta(confidence: Confidence): NutritionMeta {
@@ -14140,7 +14314,41 @@ function defaultAiPhotoNutritionMeta(confidence: Confidence): NutritionMeta {
     estimation_policy: "neutral",
     evidence_note: `AI写真推定・信用度${confidenceLabel(confidence)}`,
     explicit_uncertainty: false,
+    nutrient_evidence: {
+      calories: { origin: "ai_photo_estimate", confidence, estimation_policy: "estimated" },
+      protein_g: { origin: "ai_photo_estimate", confidence, estimation_policy: "estimated" },
+      fat_g: { origin: "ai_photo_estimate", confidence, estimation_policy: "estimated" },
+      carbs_g: { origin: "ai_photo_estimate", confidence, estimation_policy: "estimated" },
+    },
   };
+}
+
+function dataSourceFromNutritionMeta(meta: NutritionMeta | undefined): DataSource {
+  const calories = meta?.nutrient_evidence?.calories;
+  const origin = calories?.origin ?? meta?.origin;
+  const policy = calories?.estimation_policy ?? meta?.estimation_policy;
+  const exact = policy === "exact" && (origin === "official_website" || origin === "package_label" || origin === "user_measured" || origin === "user_entered");
+  if (!exact) return "estimated";
+  if (origin === "user_measured" || origin === "user_entered") return "user";
+  return "official";
+}
+
+function buildAiFoodAnalysisFingerprint(item: AiFoodBridgeItem) {
+  const text = [item.possible_brand ?? "", item.observed_name, item.quantity ?? "", item.nutrition_estimate.calories]
+    .map((value) => normalizeExactMenuKeyPart(String(value)))
+    .filter(Boolean)
+    .join("|");
+  return text.slice(0, 180);
+}
+
+function isLikelyAiFoodDuplicate(entry: FoodEntry, candidate: { name: string; brand?: string; calories: number; timestamp: string }) {
+  const entryName = normalizeExactMenuKeyPart(entry.name.replace(/（[^（）]*）/g, ""));
+  const candidateName = normalizeExactMenuKeyPart(candidate.name.replace(/（[^（）]*）/g, ""));
+  const entryBrand = normalizeExactMenuKeyPart(entry.brand ?? "");
+  const candidateBrand = normalizeExactMenuKeyPart(candidate.brand ?? "");
+  const sameName = entryName === candidateName && (!entryBrand || !candidateBrand || entryBrand === candidateBrand);
+  const elapsedMs = Math.abs(new Date(entry.logged_at).getTime() - new Date(candidate.timestamp).getTime());
+  return sameName && Number.isFinite(elapsedMs) && elapsedMs <= 15 * 60 * 1000;
 }
 
 function normalizeAiFoodNutrition(raw: unknown): AiFoodBridgeItem["nutrition_estimate"] | undefined {
@@ -14374,21 +14582,29 @@ function specialModeFoodRank(item: MenuItem, specialMode?: ActiveSpecialMode) {
   return 0;
 }
 
-function sourceLabel(source: MenuItem["data_source"], confidence: MenuItem["confidence"], item?: MenuItem) {
-  const sourceText = sourceDescription(source, item);
-  const confidenceText = confidenceDescription(source, confidence, item);
+function sourceLabel(source: MenuItem["data_source"], confidence: MenuItem["confidence"], item?: MenuItem, nutritionMeta?: NutritionMeta) {
+  const sourceText = sourceDescription(source, item, nutritionMeta);
+  const confidenceText = confidenceDescription(source, confidence, item, nutritionMeta);
   return [sourceText, confidenceText].filter(Boolean).join(" · ");
 }
 
-function SourceBadge({ source, confidence, item }: { source: MenuItem["data_source"]; confidence: MenuItem["confidence"]; item?: MenuItem }) {
+function SourceBadge({ source, confidence, item, nutritionMeta }: { source: MenuItem["data_source"]; confidence: MenuItem["confidence"]; item?: MenuItem; nutritionMeta?: NutritionMeta }) {
+  const resolvedMeta = nutritionMeta ?? item?.nutrition_meta;
   return (
-    <span className={`source-badge ${sourceBadgeClass(source, item)}`}>
-      {sourceLabel(source, confidence, item)}
+    <span className={`source-badge ${sourceBadgeClass(source, item, resolvedMeta)}`}>
+      {sourceLabel(source, confidence, item, resolvedMeta)}
     </span>
   );
 }
 
-function sourceDescription(source: MenuItem["data_source"], item?: MenuItem) {
+function sourceDescription(source: MenuItem["data_source"], item?: MenuItem, nutritionMeta?: NutritionMeta) {
+  const evidence = nutritionMeta?.nutrient_evidence;
+  const calorieOrigin = evidence?.calories?.origin;
+  const officialCalories = evidence?.calories?.estimation_policy === "exact" && (calorieOrigin === "official_website" || calorieOrigin === "package_label");
+  const estimatedMacros = [evidence?.protein_g, evidence?.fat_g, evidence?.carbs_g].some((field) => field && field.estimation_policy !== "exact");
+  if (officialCalories && estimatedMacros) return "公式kcal・PFC推定";
+  if (officialCalories && nutritionMeta?.quantity_meta?.estimated) return "公式値・量推定";
+  if (officialCalories) return calorieOrigin === "package_label" ? "商品ラベル値" : "公式値";
   if (source === "estimated" && item) {
     if (item.tags.includes("公式カロリー")) return "公式kcal・PFC推定";
     if (hasOfficialPartialSignal(item)) return "公式名・PFC推定";
@@ -14402,7 +14618,9 @@ function sourceDescription(source: MenuItem["data_source"], item?: MenuItem) {
   }[source];
 }
 
-function confidenceDescription(source: MenuItem["data_source"], confidence: MenuItem["confidence"], item?: MenuItem) {
+function confidenceDescription(source: MenuItem["data_source"], confidence: MenuItem["confidence"], item?: MenuItem, nutritionMeta?: NutritionMeta) {
+  const calorieConfidence = nutritionMeta?.nutrient_evidence?.calories?.confidence;
+  if (nutritionMeta?.nutrient_evidence?.calories?.estimation_policy === "exact" && calorieConfidence === "high") return "信用度 高";
   if (source === "official") return "信用度 高";
   if (source === "unofficial") return "信用度 中";
   if (source === "estimated" && item && hasOfficialPartialSignal(item)) return "信用度 中";
@@ -14417,7 +14635,12 @@ function hasOfficialPartialSignal(item: MenuItem) {
   return Boolean(item.source_url || item.tags.some((tag) => tag.includes("公式")));
 }
 
-function sourceBadgeClass(source: MenuItem["data_source"], item?: MenuItem) {
+function sourceBadgeClass(source: MenuItem["data_source"], item?: MenuItem, nutritionMeta?: NutritionMeta) {
+  const evidence = nutritionMeta?.nutrient_evidence;
+  const officialCalories = evidence?.calories?.estimation_policy === "exact" && ["official_website", "package_label"].includes(evidence.calories.origin);
+  const estimatedMacros = [evidence?.protein_g, evidence?.fat_g, evidence?.carbs_g].some((field) => field && field.estimation_policy !== "exact");
+  if (officialCalories && estimatedMacros) return "source-badge-partial";
+  if (officialCalories) return "source-badge-official";
   if (source === "estimated" && item && hasOfficialPartialSignal(item)) return "source-badge-partial";
   return {
     official: "source-badge-official",
