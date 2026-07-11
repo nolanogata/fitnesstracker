@@ -2302,6 +2302,14 @@ button {
   -webkit-backdrop-filter: blur(34px) saturate(170%);
 }
 
+/* Full-screen sheets live inside their tab section, so they cannot out-stack the sibling nav. */
+@supports selector(.app-shell:has(.fixed.inset-0)) {
+  .app-shell:has(.fixed.inset-0) .app-bottom-nav {
+    visibility: hidden;
+    pointer-events: none;
+  }
+}
+
 .app-bottom-nav::before {
   content: "";
   pointer-events: none;
