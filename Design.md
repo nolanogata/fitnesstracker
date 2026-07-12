@@ -42,7 +42,7 @@
 - Missing food days are displayed as missing, never counted as zero.
 - Goal changes update targets going forward without mutating old entries.
 - Manual entry exists, but quick logging is the default path.
-- Exception days such as cheat day, travel modes, and pause mode keep streaks intact and visually mark Home goal evaluation as special handling.
+- Exception days such as cheat day, travel modes, and pause mode keep streaks intact and visually mark Home goal evaluation as special handling. Their hidden goal delta must not leak normal-day over-target warning colors into the hero value or PFC pills.
 - Settings is hierarchical like iOS Settings. Current top-level groups are AI report, Export, Goal, Record settings, My Menu, My Training, and General.
 - Registered My Menu and My Training entries support overwrite editing so small variations do not create accidental duplicates.
 - Trophies reward first-use moments and long-term consistency. New feature adoption includes AI Photo logging and My Training registration; streak milestones currently include 3, 7, 14, 30, 45, 60, 75, 100, 150, and 365 days. The trophy sheet doubles as a guide: it highlights near-term targets, shows progress and remaining actions, and update notes can route directly into the trophy guide after trophy-related releases.
