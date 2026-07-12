@@ -15203,8 +15203,14 @@ function inferRicePortionGrams(item: MenuItem, primaryText: string) {
   return undefined;
 }
 
-function inferNoodlePortionGrams(primaryText: string) {
-  return extractAnyPortionGrams(primaryText);
+function inferNoodlePortionGrams(item: Pick<MenuItem, "brand">, primaryText: string) {
+  const explicitGrams = extractAnyPortionGrams(primaryText);
+  if (explicitGrams) return explicitGrams;
+  if (item.brand === "マンマパスタ") {
+    if (/大盛|大盛り/.test(primaryText)) return 375;
+    return 250;
+  }
+  return undefined;
 }
 
 function isRiceAdjustableCurry(item: MenuItem, primaryText: string, tagText: string) {
@@ -15315,7 +15321,7 @@ function getStaplePortionConfigs(item: MenuItem): StaplePortionConfig[] {
     ...(hasSteak ? [makeStaplePortionConfig("steak", extractPortionGrams(primaryText, ["ステーキ", "肉", "ヒレ", "リブロース", "肩ロース", "ブレードミート"]))] : []),
     ...(hasHamburger ? [makeStaplePortionConfig("hamburger", extractPortionGrams(primaryText, ["ハンバーグ", "バーグ"]))] : []),
     ...(hasChicken ? [makeStaplePortionConfig("chicken", extractPortionGrams(primaryText, ["チキン"]))] : []),
-    ...(hasNoodle ? [makeStaplePortionConfig("noodle", inferNoodlePortionGrams(primaryText))] : []),
+    ...(hasNoodle ? [makeStaplePortionConfig("noodle", inferNoodlePortionGrams(item, primaryText))] : []),
     ...((hasRice || isRiceComposite) ? [makeStaplePortionConfig("rice", inferRicePortionGrams(item, primaryText))] : []),
   ];
 }
@@ -15426,9 +15432,10 @@ function getPortionOptions(item: MenuItem): PortionOption[] {
     ];
   }
   if (item.brand === "マンマパスタ" && staple?.kind === "noodle") {
+    const base = Math.max(1, staple.defaultGrams);
     return [
-      { label: "標準 茹で上がり250g", value: 1 },
-      { label: "大盛り 茹で上がり375g", value: 1.5 },
+      { label: "標準 茹で上がり250g", value: 250 / base },
+      { label: "大盛り 茹で上がり375g", value: 375 / base },
     ];
   }
   if (staple) return getStaplePortionOptions(staple);
