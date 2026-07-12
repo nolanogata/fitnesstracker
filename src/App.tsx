@@ -3968,6 +3968,7 @@ function HomeTab(props: {
   const shouldMaskGoalProgress = props.isExceptionDay;
   const shouldShowRainbowProgress = props.isCheatDay || !!props.activeSpecialMode;
   const shouldShowPausedProgress = !shouldShowRainbowProgress && !!props.activePauseMode;
+  const shouldShowCalorieOverTone = !shouldMaskGoalProgress && !!heroCalorieDelta && heroCalorieDelta > 0;
   const heroProgressPercent = shouldMaskGoalProgress ? 100 : Math.min(100, developerProgressPercent ?? heroCaloriePercent);
   const heroGlowPercent = shouldMaskGoalProgress ? 100 : developerProgressPercent ?? heroProgressPercent;
   const heroBackgroundProgress = Math.max(0, Math.min(100, heroGlowPercent));
@@ -4217,7 +4218,7 @@ function HomeTab(props: {
             )}
         </div>
         <div className="mt-5">
-          <p className={`numeric-text text-[4.25rem] font-semibold leading-none tracking-normal ${heroCalorieDelta && heroCalorieDelta > 0 ? (isCalorieOverWithinEstimate ? "text-estimate" : "text-clay") : "text-ink"}`}>
+          <p className={`numeric-text text-[4.25rem] font-semibold leading-none tracking-normal ${shouldShowCalorieOverTone ? (isCalorieOverWithinEstimate ? "text-estimate" : "text-clay") : "text-ink"}`}>
             {calorieDisplayText}<span className="ml-2 text-xl font-semibold">kcal</span>
           </p>
           {!shouldMaskGoalProgress && <p className="numeric-text mt-2 text-sm text-moss">摂取 {props.dayTotals.calories} / 目標 {props.goal?.target_calories ?? "-"} kcal</p>}
