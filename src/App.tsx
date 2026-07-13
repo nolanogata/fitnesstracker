@@ -7921,6 +7921,18 @@ function RecordsTab(props: {
               <button className="primary-button mt-3 w-full" onClick={generateHistoryDayReport}>
                 <FileText size={17} />この日の日別レポートを生成
               </button>
+              {historyReport && (
+                <>
+                  <div className="mt-2 grid grid-cols-2 gap-2">
+                    <button className="primary-button" onClick={async () => {
+                      await copyText(historyReport);
+                      setHistoryReportCopied(true);
+                    }}><Copy size={17} />{historyReportCopied ? "コピー済み" : "コピー"}</button>
+                    <button className="secondary-button" onClick={() => downloadText(`phase-log-report-${selectedReportDate}.md`, historyReport, "text/markdown")}><FileDown size={17} />MD保存</button>
+                  </div>
+                  <textarea className="mt-3 min-h-56 w-full font-mono text-xs" value={historyReport} readOnly />
+                </>
+              )}
               <div className="mt-2 grid grid-cols-2 gap-2">
                 <button
                   className={`secondary-button justify-center ${selectedRecordDetail === "food" ? "border-leaf bg-leaf/15 text-leaf" : ""}`}
@@ -8003,18 +8015,6 @@ function RecordsTab(props: {
             <p className="text-xs text-moss">印が付いた日を選ぶと生成ボタンが表示されます。</p>
           )}
         </div>
-        {historyReport && (
-          <>
-            <textarea className="mt-3 min-h-56 w-full font-mono text-xs" value={historyReport} readOnly />
-            <div className="mt-2 grid grid-cols-2 gap-2">
-              <button className="primary-button" onClick={async () => {
-                await copyText(historyReport);
-                setHistoryReportCopied(true);
-              }}><Copy size={17} />{historyReportCopied ? "コピー済み" : "コピー"}</button>
-              <button className="secondary-button" onClick={() => downloadText(`phase-log-report-${selectedReportDate}.md`, historyReport, "text/markdown")}><FileDown size={17} />MD保存</button>
-            </div>
-          </>
-        )}
       </section>
 
       <section className="compact-card divide-y divide-line">
@@ -9183,7 +9183,6 @@ function SettingsTab(props: {
       }}><FileText size={17} />生成</button>
       {report && (
         <>
-          <textarea className="mt-3 min-h-56 w-full font-mono text-xs" value={report} readOnly />
           <div className="mt-2 grid grid-cols-2 gap-2">
             <button className="primary-button" onClick={async () => {
               await copyText(report);
@@ -9191,6 +9190,7 @@ function SettingsTab(props: {
             }}><Copy size={17} />{copiedReport ? "コピー済み" : "コピー"}</button>
             <button className="secondary-button" onClick={() => downloadText(`phase-log-report-${Date.now()}.md`, report, "text/markdown")}><FileDown size={17} />MD保存</button>
           </div>
+          <textarea className="mt-3 min-h-56 w-full font-mono text-xs" value={report} readOnly />
         </>
       )}
     </section>
