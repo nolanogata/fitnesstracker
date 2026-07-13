@@ -12,6 +12,7 @@ import {
   foodRecordContextFromSelection,
   getFoodCoverageReviewDays,
 } from "../src/lib/foodRecordCoverage.ts";
+import { getCalorieOverTone } from "../src/lib/nutritionEstimate.ts";
 
 let passed = 0;
 
@@ -71,6 +72,30 @@ test("推定幅0でも採用P未達は通常の残量", () => {
 test("Pが目標と完全一致", () => {
   const result = getProteinSafetyPresentation({ adoptedProtein: 150, safeProteinLowerBound: 150, targetProtein: 150, coverage: "partial" });
   assert.equal(result.kind, "safe_target_met");
+});
+
+test("安全側だけのカロリー超過は推定トーン", () => {
+  assert.equal(getCalorieOverTone({
+    adoptedRemainingCalories: 50,
+    displayedRemainingCalories: -30,
+    uncertaintyCalories: 80,
+  }), "estimate");
+});
+
+test("採用値も推定幅を超えてオーバーした時だけ警告トーン", () => {
+  assert.equal(getCalorieOverTone({
+    adoptedRemainingCalories: -120,
+    displayedRemainingCalories: -200,
+    uncertaintyCalories: 80,
+  }), "over");
+});
+
+test("採用値の小幅超過が推定幅内なら推定トーン", () => {
+  assert.equal(getCalorieOverTone({
+    adoptedRemainingCalories: -40,
+    displayedRemainingCalories: -120,
+    uncertaintyCalories: 80,
+  }), "estimate");
 });
 
 test("平均あり・対象日は定性入力のみ", () => {
