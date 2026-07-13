@@ -2460,7 +2460,8 @@ button {
 }
 
 .number-stepper-button:disabled,
-.secondary-button:disabled {
+.secondary-button:disabled,
+.primary-button:disabled {
   opacity: 0.48;
 }
 
@@ -2470,6 +2471,16 @@ button {
 
 .onboarding-card {
   min-height: min(720px, calc(100vh - 4rem));
+}
+
+.onboarding-welcome {
+  padding: 1rem 0 0.5rem;
+}
+
+.onboarding-welcome-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .onboarding-hero,

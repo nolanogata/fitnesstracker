@@ -170,6 +170,7 @@ import { generateMarkdownReport } from "./lib/report";
 import { getWeeklyWorkoutStatus, type WeeklyWorkoutStatus } from "./lib/workoutStatus";
 import { getDailyNutritionEstimate } from "./lib/nutritionEstimate";
 import { activityDataSourceLabel, getProteinSafetyPresentation } from "./lib/reportPresentation";
+import { getOnboardingSteps, type OnboardingActivityMode, type OnboardingStepKey } from "./lib/onboarding";
 
 type Tab = "home" | "food" | "workout" | "records" | "settings";
 type FoodMode = "search" | "favorite" | "chain" | "quick" | "manual" | "personal" | "recommend" | "ai";
@@ -10125,7 +10126,8 @@ function SettingsTab(props: {
 }
 
 function Onboarding({ refresh }: { refresh: () => Promise<void> }) {
-  const [step, setStep] = useState(0);
+  const [stepKey, setStepKey] = useState<OnboardingStepKey>("welcome");
+  const [activityMode, setActivityMode] = useState<OnboardingActivityMode>();
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [draft, setDraft] = useState({
     name: "Nick",
@@ -10145,8 +10147,15 @@ function Onboarding({ refresh }: { refresh: () => Promise<void> }) {
     target_carbs_g: 0,
     workouts: 3,
     cardio: 1,
+    average_steps: "" as number | "",
+    average_active_calories: "" as number | "",
+    average_exercise_minutes: "" as number | "",
+    activity_notes: "",
+    activity_averaging_period: "last_30_days" as ActivityProfile["averaging_period"],
+    activity_data_source: "unknown" as ActivityProfileDataSource,
   });
   const [restoreMessage, setRestoreMessage] = useState("");
+  const [restoreFailed, setRestoreFailed] = useState(false);
   const currentYear = new Date().getFullYear();
   const age = currentYear - draft.birth_year;
   const profile: Profile = {
@@ -10194,26 +10203,20 @@ function Onboarding({ refresh }: { refresh: () => Promise<void> }) {
     { value: "male", label: "男性", description: "基礎代謝の自動計算に反映します。" },
     { value: "female", label: "女性", description: "基礎代謝の自動計算に反映します。" },
   ];
-  const steps = [
-    { title: "まずは復元", subtitle: "以前のバックアップがなければ、そのまま次へ進めます。" },
-    { title: "呼び名", subtitle: "アプリ内で表示する名前です。あとから変更できます。" },
-    { title: "身長", subtitle: "基礎代謝の自動計算に使います。" },
-    { title: "今の体重", subtitle: "今日のスタート地点です。記録しながら後で更新できます。" },
-    { title: "体脂肪率", subtitle: "わからなければ空欄でOK。空欄でも目標は計算できます。" },
-    { title: "生まれ年", subtitle: "年齢による消費量の違いをざっくり反映します。" },
-    { title: "性別", subtitle: "基礎代謝の推定に使います。未指定でも開始できます。" },
-    { title: "目標", subtitle: "体重や筋肉の方向性を選びます。" },
-    { title: "運動量", subtitle: "日常活動も含めた消費量の補正です。迷ったら普通がおすすめ。" },
-    { title: "目標体重", subtitle: "PFCの基準にする体重です。維持でも今の体重でOK。" },
-    { title: "目標体脂肪率", subtitle: "リコンプやバルクで、体重だけでは見えない変化をAI相談に渡せます。未定なら空欄でOK。" },
-    { title: "目標達成日", subtitle: "体重差と期間から、減量・増量に必要なカロリー補正を計算します。" },
-    { title: "筋トレ頻度", subtitle: "Homeの今週の運動カードに使います。" },
-    { title: "有酸素頻度", subtitle: "歩く・バイク・ランなどの週目標です。" },
-    { title: "確認", subtitle: "自動計算した目標で始めます。細かい上書きは後からでもOKです。" },
-  ];
-  const lastStep = steps.length - 1;
-  const goNext = () => setStep((current) => Math.min(lastStep, current + 1));
-  const goBack = () => setStep((current) => Math.max(0, current - 1));
+  const steps = getOnboardingSteps(activityMode);
+  const stepIndex = Math.max(0, steps.findIndex((step) => step.key === stepKey));
+  const currentStep = steps[stepIndex] ?? steps[0];
+  const setupSteps = steps.filter((step) => step.key !== "welcome");
+  const setupStepIndex = Math.max(0, setupSteps.findIndex((step) => step.key === stepKey));
+  const goNext = () => {
+    const next = steps[Math.min(steps.length - 1, stepIndex + 1)];
+    if (next) setStepKey(next.key);
+  };
+  const goBack = () => {
+    const previous = steps[Math.max(0, stepIndex - 1)];
+    if (previous) setStepKey(previous.key);
+  };
+  const canGoNext = stepKey !== "activityMethod" || !!activityMode;
   const finish = async () => {
     const timestamp = nowIso();
     await db.profile.put(profile);
@@ -10233,38 +10236,64 @@ function Onboarding({ refresh }: { refresh: () => Promise<void> }) {
       target_cardio_sessions_per_week: draft.cardio,
     });
     await db.goals.put(goal);
-    await db.settings.update("local", { onboarding_completed: true, active_goal_id: goal.id, updated_at: timestamp });
+    const activityProfile: ActivityProfile | undefined = activityMode === "later" || !activityMode
+      ? undefined
+      : {
+          activity_level: draft.activity_level,
+          average_steps: activityMode === "detailed" ? optionalPositiveNumber(draft.average_steps) : undefined,
+          average_active_calories: activityMode === "detailed" ? optionalPositiveNumber(draft.average_active_calories) : undefined,
+          average_exercise_minutes: activityMode === "detailed" ? optionalPositiveNumber(draft.average_exercise_minutes) : undefined,
+          notes: activityMode === "detailed" ? draft.activity_notes.trim() || undefined : undefined,
+          averaging_period: activityMode === "detailed" ? draft.activity_averaging_period : "initial_setup",
+          data_source: activityMode === "detailed" ? draft.activity_data_source : "initial_setup",
+          confirmed_at: timestamp,
+          updated_at: timestamp,
+        };
+    await db.settings.update("local", {
+      onboarding_completed: true,
+      active_goal_id: goal.id,
+      activity_profile: activityProfile,
+      activity_profile_prompt_dismissed_at: activityProfile ? undefined : timestamp,
+      activity_profile_prompt_next_at: activityProfile ? undefined : addDays(todayAppDate(), 7),
+      updated_at: timestamp,
+    });
     await refresh();
   };
+  const restoreBackup = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    try {
+      const payload = JSON.parse(await file.text()) as BackupPayload;
+      await importBackup(payload);
+      localStorage.setItem(backupStorageKey, nowIso());
+      setRestoreFailed(false);
+      setRestoreMessage("バックアップを復元しました。");
+      await refresh();
+    } catch (error) {
+      setRestoreFailed(true);
+      setRestoreMessage(error instanceof Error ? error.message : "読み込みに失敗しました。JSONファイルを確認してください。");
+    } finally {
+      event.target.value = "";
+    }
+  };
   const renderStep = () => {
-    if (step === 0) {
+    if (stepKey === "welcome") {
       return (
-        <section className="onboarding-panel">
-          <p className="text-sm font-bold text-ink">前に使っていたデータがある場合</p>
-          <p className="mt-2 text-sm leading-relaxed text-moss">アップデート後や別のiPhoneでこの画面が出たら、設定で保存したバックアップJSONを読み込むと復元できます。読み込みは追加ではなく置き換えです。</p>
-          <label className="secondary-button mt-4 w-full cursor-pointer">
-            <Archive size={17} />バックアップJSONを読み込む
-            <input className="hidden" type="file" accept="application/json" onChange={async (event: ChangeEvent<HTMLInputElement>) => {
-              const file = event.target.files?.[0];
-              if (!file) return;
-              try {
-                const payload = JSON.parse(await file.text()) as BackupPayload;
-                await importBackup(payload);
-                localStorage.setItem(backupStorageKey, nowIso());
-                setRestoreMessage("復元しました。");
-                await refresh();
-              } catch (error) {
-                setRestoreMessage(error instanceof Error ? error.message : "読み込みに失敗しました。JSONファイルを確認してください。");
-              } finally {
-                event.target.value = "";
-              }
-            }} />
-          </label>
-          {restoreMessage && <p className="mt-3 rounded-2xl bg-clay/10 px-3 py-2 text-xs font-semibold text-clay">{restoreMessage}</p>}
-        </section>
+        <div className="grid gap-3">
+          <button className="primary-button w-full" onClick={() => setStepKey("name")}><ChevronRight size={18} />初期設定を始める</button>
+          <section className="onboarding-panel">
+            <p className="text-sm font-bold text-ink">すでにバックアップがある場合</p>
+            <p className="mt-2 text-sm leading-relaxed text-moss">これまでの記録と設定を引き継げます。読み込むと、この端末のデータはバックアップの内容に置き換わります。</p>
+            <label className="secondary-button mt-4 w-full cursor-pointer">
+              <Archive size={17} />バックアップから復元
+              <input className="hidden" type="file" accept="application/json" onChange={restoreBackup} />
+            </label>
+            {restoreMessage && <p className={`mt-3 rounded-2xl px-3 py-2 text-xs font-semibold ${restoreFailed ? "bg-clay/10 text-clay" : "bg-leaf/10 text-ink"}`}>{restoreMessage}</p>}
+          </section>
+        </div>
       );
     }
-    if (step === 1) {
+    if (stepKey === "name") {
       return (
         <label className="onboarding-field">
           <span>名前</span>
@@ -10272,11 +10301,11 @@ function Onboarding({ refresh }: { refresh: () => Promise<void> }) {
         </label>
       );
     }
-    if (step === 2) return <NumberInput label="身長 cm" value={draft.height_cm} onChange={(value) => setDraft({ ...draft, height_cm: value })} />;
-    if (step === 3) return <NumberInput label="体重 kg" value={draft.current_weight_kg} step={0.1} onChange={(value) => setDraft({ ...draft, current_weight_kg: value, target_weight_kg: draft.target_weight_kg || value })} />;
-    if (step === 4) return <PartialNumberInput label="体脂肪 %" value={draft.body_fat_percentage} step={0.1} onChange={(value) => setDraft({ ...draft, body_fat_percentage: value })} />;
-    if (step === 5) return <NumberInput label="生まれ年" value={draft.birth_year} onChange={(value) => setDraft({ ...draft, birth_year: Math.round(value) })} />;
-    if (step === 6) {
+    if (stepKey === "height") return <NumberInput label="身長 cm" value={draft.height_cm} onChange={(value) => setDraft({ ...draft, height_cm: value })} />;
+    if (stepKey === "weight") return <NumberInput label="体重 kg" value={draft.current_weight_kg} step={0.1} onChange={(value) => setDraft({ ...draft, current_weight_kg: value, target_weight_kg: draft.target_weight_kg === draft.current_weight_kg ? value : draft.target_weight_kg })} />;
+    if (stepKey === "bodyFat") return <PartialNumberInput label="体脂肪 %" value={draft.body_fat_percentage} step={0.1} onChange={(value) => setDraft({ ...draft, body_fat_percentage: value })} />;
+    if (stepKey === "birthYear") return <NumberInput label="生まれ年" value={draft.birth_year} onChange={(value) => setDraft({ ...draft, birth_year: Math.min(currentYear, Math.max(1900, Math.round(value))) })} />;
+    if (stepKey === "sex") {
       return (
         <div className="grid gap-2">
           {sexOptions.map((option) => (
@@ -10292,23 +10321,49 @@ function Onboarding({ refresh }: { refresh: () => Promise<void> }) {
         </div>
       );
     }
-    if (step === 7) {
+    if (stepKey === "activityMethod") {
+      const activityMethods: Array<{ value: OnboardingActivityMode; title: string; description: string }> = [
+        { value: "simple", title: "かんたんに設定", description: "今までと同じように、普段の活動量を4段階から選びます。" },
+        { value: "detailed", title: "詳しく設定", description: "平均歩数・ムーブ・エクササイズ時間も任意で登録します。" },
+        { value: "later", title: "後で設定", description: "今は普通を仮の基準にして、あとでSettingsから確認します。" },
+      ];
       return (
         <div className="grid gap-2">
-          {(Object.keys(phaseLabels) as Phase[]).map((key) => (
+          {activityMethods.map((option) => (
             <button
-              key={key}
-              className={`onboarding-choice ${draft.phase === key ? "onboarding-choice-active" : ""}`}
-              onClick={() => setDraft({ ...draft, phase: key })}
+              key={option.value}
+              className={`onboarding-choice ${activityMode === option.value ? "onboarding-choice-active" : ""}`}
+              onClick={() => {
+                setActivityMode(option.value);
+                if (option.value === "later") setDraft((current) => ({ ...current, activity_level: "moderate" }));
+              }}
             >
-              <span>{phaseLabels[key]}</span>
-              <small>{phaseDescriptions[key]}</small>
+              <span>{option.title}</span>
+              <small>{option.description}</small>
             </button>
           ))}
         </div>
       );
     }
-    if (step === 8) {
+    if (stepKey === "averageSteps" || stepKey === "averageMove" || stepKey === "averageExercise") {
+      const config = stepKey === "averageSteps"
+        ? { field: "average_steps" as const, label: "1日平均 歩", guide: "steps" as const }
+        : stepKey === "averageMove"
+          ? { field: "average_active_calories" as const, label: "1日平均 ムーブ kcal", guide: "move" as const }
+          : { field: "average_exercise_minutes" as const, label: "1日平均 エクササイズ 分", guide: "exercise" as const };
+      return (
+        <div>
+          <ActivityOptionalInput
+            label={config.label}
+            value={optionalPositiveNumber(draft[config.field])}
+            onChange={(value) => setDraft({ ...draft, [config.field]: value ?? "" })}
+          />
+          <button className="secondary-button mt-3 w-full" onClick={() => setDraft({ ...draft, [config.field]: "" })}>わからない</button>
+          <ActivityGuide kind={config.guide} />
+        </div>
+      );
+    }
+    if (stepKey === "activityLevel") {
       return (
         <div className="grid gap-2">
           {(Object.keys(activityLabels) as ActivityLevel[]).map((key) => (
@@ -10324,9 +10379,60 @@ function Onboarding({ refresh }: { refresh: () => Promise<void> }) {
         </div>
       );
     }
-    if (step === 9) return <NumberInput label="目標体重 kg" value={draft.target_weight_kg} step={0.1} onChange={(value) => setDraft({ ...draft, target_weight_kg: value })} />;
-    if (step === 10) return <PartialNumberInput label="目標体脂肪 %" value={draft.target_body_fat_percentage} step={0.1} onChange={(value) => setDraft({ ...draft, target_body_fat_percentage: value })} />;
-    if (step === 11) {
+    if (stepKey === "activityNotes") {
+      return (
+        <label className="onboarding-field">
+          <span>補足メモ（任意）</span>
+          <textarea rows={6} value={draft.activity_notes} onChange={(event) => setDraft({ ...draft, activity_notes: event.target.value })} placeholder="例: 基本はリモートワーク。週1回出社し、運動は週4回。" />
+        </label>
+      );
+    }
+    if (stepKey === "activityConfirm") {
+      return (
+        <div className="grid gap-3">
+          <section className="onboarding-panel">
+            <p className="font-black">普段の活動量: {activityLabels[draft.activity_level]}</p>
+            <div className="mt-3 grid grid-cols-3 gap-2 text-center text-xs">
+              <div><span className="text-moss">歩数</span><strong className="mt-1 block">{formatOptionalActivityValue(optionalPositiveNumber(draft.average_steps), "歩")}</strong></div>
+              <div><span className="text-moss">ムーブ</span><strong className="mt-1 block">{formatOptionalActivityValue(optionalPositiveNumber(draft.average_active_calories), "kcal")}</strong></div>
+              <div><span className="text-moss">運動</span><strong className="mt-1 block">{formatOptionalActivityValue(optionalPositiveNumber(draft.average_exercise_minutes), "分")}</strong></div>
+            </div>
+          </section>
+          <label className="onboarding-field">
+            <span>平均期間</span>
+            <select value={draft.activity_averaging_period} onChange={(event) => setDraft({ ...draft, activity_averaging_period: event.target.value as ActivityProfile["averaging_period"] })}>
+              <option value="last_30_days">直近30日</option>
+              <option value="last_4_weeks">直近4週間</option>
+            </select>
+          </label>
+          <label className="onboarding-field">
+            <span>数値の確認元</span>
+            <select value={draft.activity_data_source} onChange={(event) => setDraft({ ...draft, activity_data_source: event.target.value as ActivityProfileDataSource })}>
+              {activityProfileDataSourceOptions.filter((option) => option.value !== "initial_setup").map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+            </select>
+          </label>
+        </div>
+      );
+    }
+    if (stepKey === "phase") {
+      return (
+        <div className="grid gap-2">
+          {(Object.keys(phaseLabels) as Phase[]).map((key) => (
+            <button
+              key={key}
+              className={`onboarding-choice ${draft.phase === key ? "onboarding-choice-active" : ""}`}
+              onClick={() => setDraft({ ...draft, phase: key })}
+            >
+              <span>{phaseLabels[key]}</span>
+              <small>{phaseDescriptions[key]}</small>
+            </button>
+          ))}
+        </div>
+      );
+    }
+    if (stepKey === "targetWeight") return <NumberInput label="目標体重 kg" value={draft.target_weight_kg} step={0.1} onChange={(value) => setDraft({ ...draft, target_weight_kg: value })} />;
+    if (stepKey === "targetBodyFat") return <PartialNumberInput label="目標体脂肪 %" value={draft.target_body_fat_percentage} step={0.1} onChange={(value) => setDraft({ ...draft, target_body_fat_percentage: value })} />;
+    if (stepKey === "targetDate") {
       return (
         <label className="onboarding-field">
           <span>目標達成日</span>
@@ -10334,8 +10440,8 @@ function Onboarding({ refresh }: { refresh: () => Promise<void> }) {
         </label>
       );
     }
-    if (step === 12) return <NumberInput label="筋トレ / 週" value={draft.workouts} onChange={(value) => setDraft({ ...draft, workouts: Math.max(0, Math.round(value)) })} />;
-    if (step === 13) return <NumberInput label="有酸素 / 週" value={draft.cardio} onChange={(value) => setDraft({ ...draft, cardio: Math.max(0, Math.round(value)) })} />;
+    if (stepKey === "workout") return <NumberInput label="筋トレ / 週" value={draft.workouts} onChange={(value) => setDraft({ ...draft, workouts: Math.max(0, Math.round(value)) })} />;
+    if (stepKey === "cardio") return <NumberInput label="有酸素 / 週" value={draft.cardio} onChange={(value) => setDraft({ ...draft, cardio: Math.max(0, Math.round(value)) })} />;
     return (
       <div className="grid gap-3">
         <div className="onboarding-target-card">
@@ -10351,8 +10457,12 @@ function Onboarding({ refresh }: { refresh: () => Promise<void> }) {
               体組成目標: 脂肪 {calculated.target_fat_mass_kg}kg / 除脂肪 {calculated.target_lean_mass_kg}kg
             </p>
           )}
-          <p className="mt-3 text-xs leading-relaxed text-moss">入力した体重・年齢・目標・運動量から計算しています。あとからゴール設定で調整できます。</p>
+          <p className="mt-3 text-xs leading-relaxed text-moss">体重・年齢・目標と、{activityMode === "later" ? "仮に設定した普通の活動量" : `${activityLabels[draft.activity_level]}の活動量`}から計算しています。</p>
         </div>
+        <section className="onboarding-panel text-sm">
+          <p className="font-black">活動量</p>
+          <p className="mt-1 text-moss">{activityMode === "later" ? "後で設定（今は普通を仮使用）" : `${activityLabels[draft.activity_level]}で保存`}</p>
+        </section>
         <button className="secondary-button w-full" onClick={() => setShowAdvanced((current) => !current)}>
           {showAdvanced ? "詳細上書きを閉じる" : "kcal/PFCを手で上書きする"}
         </button>
@@ -10364,9 +10474,25 @@ function Onboarding({ refresh }: { refresh: () => Promise<void> }) {
             <NumberInput label="C g (0=自動)" value={draft.target_carbs_g} onChange={(value) => setDraft({ ...draft, target_carbs_g: Math.max(0, Math.round(value)) })} />
           </div>
         )}
+        <p className="rounded-3xl bg-surface p-3 text-xs leading-relaxed text-moss">開始後はSettingsの「ゴール設定」と「活動量プロフィール」から変更できます。データは端末内に保存されます。</p>
       </div>
     );
   };
+
+  if (stepKey === "welcome") {
+    return (
+      <main className="onboarding-shell mx-auto min-h-screen max-w-[430px] px-4 py-8 text-ink">
+        <div className="onboarding-card onboarding-welcome-card compact-card p-5">
+          <section className="onboarding-welcome">
+            <p className="text-xs font-black uppercase tracking-[0.16em] text-moss">100% Tracker</p>
+            <h1 className="mt-3 text-4xl font-black tracking-normal">Welcome</h1>
+            <p className="mt-3 text-sm leading-relaxed text-moss">食事・体重・ワークアウトを記録して、自分の100%を目指します。</p>
+          </section>
+          <div className="mt-8">{renderStep()}</div>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="onboarding-shell mx-auto min-h-screen max-w-[430px] px-4 py-8 text-ink">
@@ -10374,28 +10500,27 @@ function Onboarding({ refresh }: { refresh: () => Promise<void> }) {
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-xs font-black uppercase tracking-[0.16em] text-moss">100% Tracker</p>
-            <h1 className="mt-2 text-2xl font-black tracking-normal">初回設定</h1>
+            <h1 className="mt-2 text-2xl font-black tracking-normal">初期設定</h1>
           </div>
-          <span className="numeric-text mini-chip">{step + 1}/{steps.length}</span>
+          <span className="numeric-text mini-chip">{setupStepIndex + 1}/{setupSteps.length}</span>
         </div>
         <div className="mt-5 h-1.5 overflow-hidden rounded-full bg-ink/5">
-          <div className="h-full rounded-full bg-leaf transition-all" style={{ width: `${((step + 1) / steps.length) * 100}%` }} />
+          <div className="h-full rounded-full bg-leaf transition-all" style={{ width: `${((setupStepIndex + 1) / setupSteps.length) * 100}%` }} />
         </div>
         <section className="onboarding-hero mt-5">
-          <p className="text-xs font-bold text-moss">STEP {step + 1}</p>
-          <h2 className="mt-2 text-2xl font-black leading-tight">{steps[step].title}</h2>
-          <p className="mt-2 text-sm leading-relaxed text-moss">{steps[step].subtitle}</p>
+          <p className="text-xs font-bold text-moss">STEP {setupStepIndex + 1}</p>
+          <h2 className="mt-2 text-2xl font-black leading-tight">{currentStep.title}</h2>
+          <p className="mt-2 text-sm leading-relaxed text-moss">{currentStep.subtitle}</p>
         </section>
         <div className="mt-5 min-h-[16rem]">
           {renderStep()}
         </div>
-        <p className="mt-4 rounded-3xl bg-surface p-3 text-xs leading-relaxed text-moss">設定の「エクスポート」から、定期的にバックアップを保存しておくと安心です。</p>
         <div className="mt-5 grid grid-cols-2 gap-2">
-          <button className="secondary-button" disabled={step === 0} onClick={goBack}><ChevronLeft size={17} />戻る</button>
-          {step === lastStep ? (
+          <button className="secondary-button" onClick={goBack}><ChevronLeft size={17} />戻る</button>
+          {stepKey === "confirm" ? (
             <button className="primary-button" onClick={finish}><Check size={17} />開始</button>
           ) : (
-            <button className="primary-button" onClick={goNext}>次へ<ChevronRight size={17} /></button>
+            <button className="primary-button" disabled={!canGoNext} onClick={goNext}>次へ<ChevronRight size={17} /></button>
           )}
         </div>
       </div>
