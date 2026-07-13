@@ -125,6 +125,7 @@ import type {
   ActivityDataSource,
   ActivityLevel,
   ActivityProfile,
+  ActivityProfileDataSource,
   AiReport,
   BackupPayload,
   Confidence,
@@ -168,6 +169,7 @@ import { downloadText, exportBackup, importBackup, resetLocalData } from "./lib/
 import { generateMarkdownReport } from "./lib/report";
 import { getWeeklyWorkoutStatus, type WeeklyWorkoutStatus } from "./lib/workoutStatus";
 import { getDailyNutritionEstimate } from "./lib/nutritionEstimate";
+import { activityDataSourceLabel, getProteinSafetyPresentation } from "./lib/reportPresentation";
 
 type Tab = "home" | "food" | "workout" | "records" | "settings";
 type FoodMode = "search" | "favorite" | "chain" | "quick" | "manual" | "personal" | "recommend" | "ai";
@@ -386,6 +388,7 @@ type ActivityProfileDraft = {
   average_exercise_minutes: number | "";
   notes: string;
   averaging_period: "last_30_days" | "last_4_weeks";
+  data_source: ActivityProfileDataSource;
 };
 
 function activityProfileDraftFrom(profile?: ActivityProfile, fallbackLevel: ActivityLevel = "moderate"): ActivityProfileDraft {
@@ -396,6 +399,7 @@ function activityProfileDraftFrom(profile?: ActivityProfile, fallbackLevel: Acti
     average_exercise_minutes: profile?.average_exercise_minutes ?? "",
     notes: profile?.notes ?? "",
     averaging_period: profile?.averaging_period === "last_4_weeks" ? "last_4_weeks" : "last_30_days",
+    data_source: profile?.data_source ?? "unknown",
   };
 }
 
@@ -417,6 +421,16 @@ const activityDataSourceOptions: Array<{ value: ActivityDataSource; label: strin
   { value: "wearable", label: "その他のウェアラブル" },
   { value: "user_estimate", label: "ユーザーによる推定" },
   { value: "unknown", label: "不明" },
+];
+
+const activityProfileDataSourceOptions: Array<{ value: ActivityProfileDataSource; label: string }> = [
+  { value: "apple_health", label: "Appleヘルスケア" },
+  { value: "apple_watch", label: "Apple Watch" },
+  { value: "smartphone", label: "スマートフォン" },
+  { value: "wearable", label: "その他のウェアラブル" },
+  { value: "user_estimate", label: "自分で見積もった値" },
+  { value: "initial_setup", label: "初期セットアップ" },
+  { value: "unknown", label: "保存元不明" },
 ];
 
 function formatOptionalActivityValue(value: number | undefined, unit: string) {
@@ -2354,6 +2368,7 @@ function App() {
       activity_profile: {
         activity_level: activeGoal?.activity_level ?? "moderate",
         averaging_period: "initial_setup",
+        data_source: "initial_setup",
         confirmed_at: timestamp,
         updated_at: timestamp,
       },
@@ -4613,6 +4628,12 @@ function NutritionEstimateDetailSheet({ estimate, isPastDate, calorieDelta, rema
   onClose: () => void;
 }) {
   const status = isPastDate ? getDailyEstimateStatus(calorieDelta, estimate.uncertainty.calories) : "記録中";
+  const proteinSafety = getProteinSafetyPresentation({
+    adoptedProtein: estimate.adoptedTotals.protein,
+    safeProteinLowerBound: estimate.safeProteinLowerBound,
+    targetProtein: estimate.adoptedTotals.protein + estimate.adoptedRemaining.protein,
+    coverage: isPastDate ? "completed" : "partial",
+  });
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink/30 px-4 pb-4" onClick={onClose}>
       <div className="home-sheet nutrition-estimate-sheet max-h-[86vh] w-full max-w-[430px] overflow-y-auto p-5" onClick={(event) => event.stopPropagation()}>
@@ -4654,12 +4675,8 @@ function NutritionEstimateDetailSheet({ estimate, isPastDate, calorieDelta, rema
         </div>
         <section className="nutrition-display-setting mt-3">
           <p className="text-sm font-bold">Pの安全側評価</p>
-          <p className="numeric-text mt-1 text-xs font-semibold text-moss">採用P {round1(estimate.adoptedTotals.protein)}g / 安全側下限 P{round1(estimate.safeProteinLowerBound)}g</p>
-          <p className="mt-1 text-xs leading-relaxed text-moss">
-            {estimate.safeProteinTargetGap > 0
-              ? `目標まで最大${round1(estimate.safeProteinTargetGap)}g不足する可能性があります。追加摂取が必須という意味ではありません。`
-              : "推定幅を考慮しても、P目標を満たす見込みです。"}
-          </p>
+          <p className="numeric-text mt-1 text-xs font-semibold text-moss">{proteinSafety.valueLine}</p>
+          <p className="mt-1 text-xs leading-relaxed text-moss">{proteinSafety.message}</p>
         </section>
 
         {estimate.estimatedEntryCount > 0 ? (
@@ -8245,6 +8262,7 @@ function SettingsTab(props: {
       activity_profile: {
         activity_level: props.activeGoal?.activity_level ?? "moderate",
         averaging_period: "initial_setup",
+        data_source: "initial_setup",
         confirmed_at: timestamp,
         updated_at: timestamp,
       },
@@ -8262,6 +8280,7 @@ function SettingsTab(props: {
       average_exercise_minutes: optionalPositiveNumber(activityProfileDraft.average_exercise_minutes),
       notes: activityProfileDraft.notes.trim() || undefined,
       averaging_period: activityProfileDraft.averaging_period,
+      data_source: activityProfileDraft.data_source,
       confirmed_at: props.settings?.activity_profile?.confirmed_at ?? timestamp,
       updated_at: timestamp,
     };
@@ -8892,6 +8911,7 @@ function SettingsTab(props: {
             <p className="mt-1 text-xs text-moss">
               歩数 {formatOptionalActivityValue(props.settings?.activity_profile?.average_steps, "歩")} / ムーブ {formatOptionalActivityValue(props.settings?.activity_profile?.average_active_calories, "kcal")} / 運動 {formatOptionalActivityValue(props.settings?.activity_profile?.average_exercise_minutes, "分")}
             </p>
+            <p className="mt-1 text-xs text-moss">確認元: {activityDataSourceLabel(props.settings?.activity_profile?.data_source)}</p>
           </div>
           <div className="mt-3 grid gap-2">
             {!props.settings?.activity_profile && <button className="secondary-button w-full" onClick={() => void saveCurrentActivityProfile()}>現在の設定を使用</button>}
@@ -8952,9 +8972,16 @@ function SettingsTab(props: {
                   <button className={`mode-button ${activityProfileDraft.averaging_period === "last_30_days" ? "mode-button-active" : ""}`} onClick={() => setActivityProfileDraft((current) => ({ ...current, averaging_period: "last_30_days" }))}>直近30日</button>
                   <button className={`mode-button ${activityProfileDraft.averaging_period === "last_4_weeks" ? "mode-button-active" : ""}`} onClick={() => setActivityProfileDraft((current) => ({ ...current, averaging_period: "last_4_weeks" }))}>直近4週間</button>
                 </div>
+                <label className="onboarding-field">
+                  <span>平均値の確認元</span>
+                  <select value={activityProfileDraft.data_source} onChange={(event) => setActivityProfileDraft((current) => ({ ...current, data_source: event.target.value as ActivityProfileDataSource }))}>
+                    {activityProfileDataSourceOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                  </select>
+                </label>
                 <div className="rounded-2xl border border-line p-3 text-sm leading-relaxed">
                   <p className="font-bold">{activityLabels[activityProfileDraft.activity_level]}</p>
                   <p className="mt-2 text-xs text-moss">歩数 {formatOptionalActivityValue(optionalPositiveNumber(activityProfileDraft.average_steps), "歩")} / ムーブ {formatOptionalActivityValue(optionalPositiveNumber(activityProfileDraft.average_active_calories), "kcal")} / 運動 {formatOptionalActivityValue(optionalPositiveNumber(activityProfileDraft.average_exercise_minutes), "分")}</p>
+                  <p className="mt-1 text-xs text-moss">確認元: {activityDataSourceLabel(activityProfileDraft.data_source)}</p>
                   {activityProfileDraft.notes && <p className="mt-2 text-xs text-moss">{activityProfileDraft.notes}</p>}
                 </div>
               </div>
