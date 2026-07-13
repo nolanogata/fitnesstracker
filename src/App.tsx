@@ -122,11 +122,14 @@ import ariaMidBackground from "./assets/theme-characters/aria-mid.jpg";
 import ariaTravelBackground from "./assets/theme-characters/aria-travel.jpg";
 import type {
   AchievementUnlock,
+  ActivityDataSource,
   ActivityLevel,
+  ActivityProfile,
   AiReport,
   BackupPayload,
   Confidence,
   DataSource,
+  DailyActivityContext,
   ExercisePreset,
   FoodEntry,
   Goal,
@@ -139,6 +142,8 @@ import type {
   NutritionOrigin,
   Phase,
   Profile,
+  RelativeActivityLevel,
+  ReportCoverage,
   Settings as AppSettings,
   SpecialModeSettings,
   TemplateExercise,
@@ -173,8 +178,8 @@ type ManualFoodWizardStep = "basic" | "unit" | "purpose" | "category" | "nutriti
 type AiFoodImportStep = "prompt" | "paste" | "read" | "match" | "timing" | "confirm";
 type WorkoutFocus = "dateLog" | undefined;
 type MyTrainingWizardStep = "method" | "source" | "basic" | "defaults" | "presets" | "confirm";
-type SettingsFocus = "ai" | "backup" | "myMenu" | "goal" | undefined;
-type SettingsSection = "ai" | "backup" | "goal" | "theme" | "records" | "myMenu" | "myTraining" | "general";
+type SettingsFocus = "ai" | "activity" | "backup" | "myMenu" | "goal" | undefined;
+type SettingsSection = "ai" | "activity" | "backup" | "goal" | "theme" | "records" | "myMenu" | "myTraining" | "general";
 type MyMenuSection = "list" | "method" | "new" | "edit";
 type MyTrainingSection = "list";
 type GoalSettingsSection = "guided" | "manual" | "custom";
@@ -374,6 +379,62 @@ type CalendarCell = {
   day?: number;
 };
 type ReportMode = HistoryGrouping;
+type ActivityProfileDraft = {
+  activity_level: ActivityLevel;
+  average_steps: number | "";
+  average_active_calories: number | "";
+  average_exercise_minutes: number | "";
+  notes: string;
+  averaging_period: "last_30_days" | "last_4_weeks";
+};
+
+function activityProfileDraftFrom(profile?: ActivityProfile, fallbackLevel: ActivityLevel = "moderate"): ActivityProfileDraft {
+  return {
+    activity_level: profile?.activity_level ?? fallbackLevel,
+    average_steps: profile?.average_steps ?? "",
+    average_active_calories: profile?.average_active_calories ?? "",
+    average_exercise_minutes: profile?.average_exercise_minutes ?? "",
+    notes: profile?.notes ?? "",
+    averaging_period: profile?.averaging_period === "last_4_weeks" ? "last_4_weeks" : "last_30_days",
+  };
+}
+
+function optionalPositiveNumber(value: number | "") {
+  return value === "" || !Number.isFinite(value) ? undefined : Math.max(0, value);
+}
+
+const activityRelativeOptions: Array<{ value: RelativeActivityLevel; label: string }> = [
+  { value: "normal", label: "いつも通り" },
+  { value: "low", label: "少なめ" },
+  { value: "high", label: "多め" },
+  { value: "unknown", label: "わからない" },
+];
+
+const activityDataSourceOptions: Array<{ value: ActivityDataSource; label: string }> = [
+  { value: "apple_watch", label: "Apple Watch" },
+  { value: "apple_health", label: "Appleヘルスケア" },
+  { value: "smartphone", label: "スマートフォン" },
+  { value: "wearable", label: "その他のウェアラブル" },
+  { value: "user_estimate", label: "ユーザーによる推定" },
+  { value: "unknown", label: "不明" },
+];
+
+function formatOptionalActivityValue(value: number | undefined, unit: string) {
+  return typeof value === "number" ? `${Math.round(value).toLocaleString("ja-JP")}${unit}` : "未入力";
+}
+
+function ActivityOptionalInput({ label, value, onChange }: { label: string; value?: number; onChange: (value?: number) => void }) {
+  return <label className="onboarding-field"><span>{label}</span><input type="number" inputMode="numeric" min="0" value={value ?? ""} placeholder="任意" onChange={(event) => onChange(event.target.value === "" ? undefined : Math.max(0, Number(event.target.value)))} /></label>;
+}
+
+function ActivityGuide({ kind }: { kind: "steps" | "move" | "exercise" }) {
+  const detail = kind === "steps"
+    ? { title: "平均歩数", steps: "ヘルスケア → ブラウズ → アクティビティ → 歩数を開き、月表示の1日平均を確認します。" }
+    : kind === "move"
+      ? { title: "平均ムーブ", steps: "フィットネスの概要でムーブを開き、日別のアクティブカロリーを確認します。総消費カロリーではありません。" }
+      : { title: "平均エクササイズ時間", steps: "フィットネスの概要でエクササイズを開き、日別の分数を確認します。" };
+  return <div className="mt-3 rounded-2xl border border-line bg-white/5 p-3 text-xs leading-relaxed"><p className="font-bold">{detail.title}の確認方法</p><p className="mt-1 text-moss">{detail.steps}</p><p className="mt-2 text-[11px] text-moss">iOSやアプリのバージョンにより名称・配置が異なる場合があります。</p></div>;
+}
 type LogExportResult = {
   text: string;
   csv: string;
@@ -2276,6 +2337,8 @@ function App() {
   const activeSpecialMode = useMemo(() => getActiveSpecialMode(appDate, specialModeSettings), [appDate, specialModeSettings]);
   const activePauseMode = useMemo(() => getActivePauseMode(appDate, pauseModeSettings), [appDate, pauseModeSettings]);
   const isDeveloperTestMode = useMemo(() => isDeveloperTestModeActive(settings, currentTime), [settings?.developer_test_active_until, currentTime]);
+  const shouldShowActivityProfilePrompt = !settings?.activity_profile
+    && (!settings?.activity_profile_prompt_next_at || settings.activity_profile_prompt_next_at <= actualAppDate);
   const shouldForceTrophyAnimation = isDeveloperTestMode && !!settings?.developer_force_trophy_animation;
   const developerProgressPercent = isDeveloperTestMode ? settings?.developer_progress_percent : undefined;
   const openSpecialFoodMode = () => {
@@ -2284,6 +2347,31 @@ function App() {
     setWorkoutFocus(undefined);
     setFoodFocus("specialMode");
     setTab("food");
+  };
+  const useCurrentActivityProfile = async () => {
+    const timestamp = nowIso();
+    await db.settings.update("local", {
+      activity_profile: {
+        activity_level: activeGoal?.activity_level ?? "moderate",
+        averaging_period: "initial_setup",
+        confirmed_at: timestamp,
+        updated_at: timestamp,
+      },
+      activity_profile_prompt_dismissed_at: undefined,
+      activity_profile_prompt_next_at: undefined,
+      updated_at: timestamp,
+    });
+    await refresh();
+    showToast("普段の活動量を保存しました");
+  };
+  const deferActivityProfilePrompt = async () => {
+    const timestamp = nowIso();
+    await db.settings.update("local", {
+      activity_profile_prompt_dismissed_at: timestamp,
+      activity_profile_prompt_next_at: addDays(actualAppDate, 30),
+      updated_at: timestamp,
+    });
+    await refresh();
   };
 
   const refresh = async () => {
@@ -3017,6 +3105,7 @@ function App() {
             backupInfo={backupInfo}
             recordReminder={recordReminder}
             needsGoalTargetPeriod={needsGoalTargetPeriod}
+            showActivityProfilePrompt={shouldShowActivityProfilePrompt}
             setTab={(nextTab) => {
               setSettingsFocus(undefined);
               setFoodFocus(nextTab === "food" ? "favorite" : undefined);
@@ -3047,6 +3136,14 @@ function App() {
               setWorkoutFocus(undefined);
               setTab("settings");
             }}
+            openActivityProfile={() => {
+              setSettingsFocus("activity");
+              setFoodFocus(undefined);
+              setWorkoutFocus(undefined);
+              setTab("settings");
+            }}
+            useCurrentActivityProfile={useCurrentActivityProfile}
+            deferActivityProfilePrompt={deferActivityProfilePrompt}
             openBackup={() => {
               setSettingsFocus("backup");
               setFoodFocus(undefined);
@@ -3894,11 +3991,15 @@ function HomeTab(props: {
   backupInfo: BackupInfo;
   recordReminder?: RecordReminder;
   needsGoalTargetPeriod: boolean;
+  showActivityProfilePrompt: boolean;
   setTab: (tab: Tab) => void;
   openGoalSettings: () => void;
   openTodayFoodLog: () => void;
   openTodayWorkoutLog: () => void;
   openAiReport: () => void;
+  openActivityProfile: () => void;
+  useCurrentActivityProfile: () => Promise<void>;
+  deferActivityProfilePrompt: () => Promise<void>;
   openBackup: () => void;
   dismissRecordReminder: (id: string) => void;
   latestUpdate?: AppUpdate;
@@ -4149,6 +4250,20 @@ function HomeTab(props: {
           </div>
           <ChevronRight className="shrink-0 text-muted" size={18} />
         </button>
+      )}
+
+      {props.showActivityProfilePrompt && (
+        <div className="home-notice flex items-start gap-3 px-4 py-3">
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-bold">普段の活動量を確認しましょう</p>
+            <p className="mt-1 text-xs leading-relaxed text-moss">活動量を設定すると、AI相談レポートで普段との差を判断しやすくなります。</p>
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <button className="secondary-button px-3 py-2 text-xs" onClick={() => void props.useCurrentActivityProfile()}>現在の設定を使用</button>
+              <button className="primary-button px-3 py-2 text-xs" onClick={props.openActivityProfile}>詳しく設定</button>
+            </div>
+            <button className="mt-2 w-full py-1 text-xs font-bold text-moss" onClick={() => void props.deferActivityProfilePrompt()}>後で設定する</button>
+          </div>
+        </div>
       )}
 
       {props.showStaleAppPrompt && (
@@ -7641,6 +7756,9 @@ function RecordsTab(props: {
         ...getDeveloperTestModeDaysInRange(selectedReportDate, selectedReportDate, props.settings),
       ],
       workoutGrouping: "day",
+      activityProfile: props.settings?.activity_profile,
+      dailyActivity: { date: selectedReportDate, relative_activity_level: "unknown", data_source: "unknown" },
+      reportCoverage: selectedReportDate === todayAppDate(props.settings?.day_boundary_hour ?? 3) ? "partial" : "completed",
       question: `${formatJapaneseDate(selectedReportDate)}の記録を翌朝に振り返る前提で、よかった点と次回の調整を簡潔に整理してください。`,
     });
     setHistoryReport(content);
@@ -7651,6 +7769,8 @@ function RecordsTab(props: {
       period_end: selectedReportDate,
       format: "markdown",
       content,
+      report_coverage: selectedReportDate === todayAppDate(props.settings?.day_boundary_hour ?? 3) ? "partial" : "completed",
+      activity_context: { date: selectedReportDate, relative_activity_level: "unknown", data_source: "unknown" },
       created_at: generatedAt,
       updated_at: generatedAt,
     });
@@ -8004,6 +8124,13 @@ function SettingsTab(props: {
   const [question, setQuestion] = useState("");
   const [report, setReport] = useState("");
   const [copiedReport, setCopiedReport] = useState(false);
+  const [reportCoverage, setReportCoverage] = useState<ReportCoverage>(() => props.appDate === todayAppDate(props.settings?.day_boundary_hour ?? 3) ? "partial" : "completed");
+  const [reportActivity, setReportActivity] = useState<DailyActivityContext>(() => ({ date: props.appDate, relative_activity_level: "unknown", data_source: "unknown" }));
+  const [isReportActivityManualOpen, setIsReportActivityManualOpen] = useState(false);
+  const [activityProfileStep, setActivityProfileStep] = useState(0);
+  const [isActivityProfileWizardOpen, setIsActivityProfileWizardOpen] = useState(false);
+  const [activityGuideStep, setActivityGuideStep] = useState<number>();
+  const [activityProfileDraft, setActivityProfileDraft] = useState(() => activityProfileDraftFrom(props.settings?.activity_profile, props.activeGoal?.activity_level));
   const [backupImportMessage, setBackupImportMessage] = useState("");
   const [logExportStep, setLogExportStep] = useState<LogExportStep>("type");
   const [logExportType, setLogExportType] = useState<LogExportType>("food_workout");
@@ -8046,6 +8173,17 @@ function SettingsTab(props: {
     { key: "cardio", title: "有酸素頻度", subtitle: "歩く・バイク・ランなどの週目標です。" },
     { key: "confirm", title: "確認", subtitle: "計算結果を確認して保存します。" },
   ] as const;
+  const activityProfileSteps = ["平均歩数", "平均ムーブ", "平均エクササイズ時間", "日常生活の活動区分", "補足メモ", "確認"];
+
+  useEffect(() => {
+    setReportCoverage(props.appDate === todayAppDate(props.settings?.day_boundary_hour ?? 3) ? "partial" : "completed");
+    setReportActivity({ date: props.appDate, relative_activity_level: "unknown", data_source: "unknown" });
+    setIsReportActivityManualOpen(false);
+  }, [props.appDate]);
+
+  useEffect(() => {
+    setActivityProfileDraft(activityProfileDraftFrom(props.settings?.activity_profile, props.activeGoal?.activity_level));
+  }, [props.settings?.activity_profile, props.activeGoal?.activity_level]);
 
   const updateThemeMode = async (theme_mode: ThemeMode) => {
     const timestamp = nowIso();
@@ -8101,6 +8239,40 @@ function SettingsTab(props: {
     }
     await props.refresh();
   };
+  const saveCurrentActivityProfile = async () => {
+    const timestamp = nowIso();
+    await saveSettingsPatch({
+      activity_profile: {
+        activity_level: props.activeGoal?.activity_level ?? "moderate",
+        averaging_period: "initial_setup",
+        confirmed_at: timestamp,
+        updated_at: timestamp,
+      },
+      activity_profile_prompt_dismissed_at: undefined,
+      activity_profile_prompt_next_at: undefined,
+    });
+    props.showToast("現在の活動量設定を使用します");
+  };
+  const saveDetailedActivityProfile = async () => {
+    const timestamp = nowIso();
+    const profile: ActivityProfile = {
+      activity_level: activityProfileDraft.activity_level,
+      average_steps: optionalPositiveNumber(activityProfileDraft.average_steps),
+      average_active_calories: optionalPositiveNumber(activityProfileDraft.average_active_calories),
+      average_exercise_minutes: optionalPositiveNumber(activityProfileDraft.average_exercise_minutes),
+      notes: activityProfileDraft.notes.trim() || undefined,
+      averaging_period: activityProfileDraft.averaging_period,
+      confirmed_at: props.settings?.activity_profile?.confirmed_at ?? timestamp,
+      updated_at: timestamp,
+    };
+    await saveSettingsPatch({
+      activity_profile: profile,
+      activity_profile_prompt_dismissed_at: undefined,
+      activity_profile_prompt_next_at: undefined,
+    });
+    setActivityProfileStep(0);
+    props.showToast("普段の活動量を保存しました");
+  };
   const updateThemeCharacter = async (theme_character: ThemeCharacter, theme_character_variant = "default") => {
     await saveSettingsPatch({ theme_character, theme_character_variant });
     setThemeCharacterCandidate(undefined);
@@ -8122,6 +8294,11 @@ function SettingsTab(props: {
     if (props.focus === "goal") {
       setActiveGoalSettingsSection(undefined);
       setGoalWizardStep(0);
+    }
+    if (props.focus === "activity") {
+      setActivityProfileDraft(activityProfileDraftFrom(props.settings?.activity_profile, props.activeGoal?.activity_level));
+      setActivityProfileStep(0);
+      setIsActivityProfileWizardOpen(true);
     }
   }, [props.focus]);
 
@@ -8697,6 +8874,102 @@ function SettingsTab(props: {
     );
   };
 
+  const activityProfileSection = (
+    <section className="compact-card p-4">
+      {!isActivityProfileWizardOpen ? (
+        <>
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h2 className="font-bold">普段の活動量</h2>
+              <p className="mt-1 text-xs text-moss">AI相談で、対象日が普段より多く動いた日かを判断する基準です。</p>
+            </div>
+            <span className="rounded-md border border-line px-2 py-1 text-[11px] font-bold text-moss">{props.settings?.activity_profile ? "設定済み" : "未確認"}</span>
+          </div>
+          <div className="mt-4 rounded-2xl border border-line p-3 text-sm">
+            <p className="font-bold">{activityLabels[props.settings?.activity_profile?.activity_level ?? props.activeGoal?.activity_level ?? "moderate"]}</p>
+            <p className="mt-1 text-xs text-moss">
+              歩数 {formatOptionalActivityValue(props.settings?.activity_profile?.average_steps, "歩")} / ムーブ {formatOptionalActivityValue(props.settings?.activity_profile?.average_active_calories, "kcal")} / 運動 {formatOptionalActivityValue(props.settings?.activity_profile?.average_exercise_minutes, "分")}
+            </p>
+          </div>
+          <div className="mt-3 grid gap-2">
+            {!props.settings?.activity_profile && <button className="secondary-button w-full" onClick={() => void saveCurrentActivityProfile()}>現在の設定を使用</button>}
+            <button className="primary-button w-full" onClick={() => {
+              setActivityProfileDraft(activityProfileDraftFrom(props.settings?.activity_profile, props.activeGoal?.activity_level));
+              setActivityProfileStep(0);
+              setIsActivityProfileWizardOpen(true);
+            }}>{props.settings?.activity_profile ? "詳しい設定を編集" : "詳しく設定する"}</button>
+          </div>
+        </>
+      ) : (
+        <>
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-xs font-bold text-moss">{activityProfileStep + 1} / {activityProfileSteps.length}</p>
+              <h2 className="mt-1 font-bold">{activityProfileSteps[activityProfileStep]}</h2>
+              <p className="mt-1 text-xs text-moss">数値は直近30日または4週間の1日平均です。わからなければ空欄で進められます。</p>
+            </div>
+          </div>
+          <div className="manual-wizard-progress mt-4" aria-hidden="true">
+            {activityProfileSteps.map((step, index) => <span className={index <= activityProfileStep ? "active" : ""} key={step} />)}
+          </div>
+          <div className="mt-4">
+            {activityProfileStep <= 2 && (
+              <>
+                <label className="onboarding-field">
+                  <span>{activityProfileStep === 0 ? "平均歩数" : activityProfileStep === 1 ? "平均ムーブ（アクティブカロリー）" : "平均エクササイズ時間"}</span>
+                  <input
+                    inputMode="numeric"
+                    type="number"
+                    min="0"
+                    placeholder="わからない"
+                    value={activityProfileStep === 0 ? activityProfileDraft.average_steps : activityProfileStep === 1 ? activityProfileDraft.average_active_calories : activityProfileDraft.average_exercise_minutes}
+                    onChange={(event) => {
+                      const value = event.target.value === "" ? "" : Math.max(0, Number(event.target.value));
+                      setActivityProfileDraft((current) => activityProfileStep === 0
+                        ? { ...current, average_steps: value }
+                        : activityProfileStep === 1
+                          ? { ...current, average_active_calories: value }
+                          : { ...current, average_exercise_minutes: value });
+                    }}
+                  />
+                </label>
+                <button className="secondary-button mt-3 w-full" onClick={() => setActivityGuideStep(activityGuideStep === activityProfileStep ? undefined : activityProfileStep)}>確認方法を見る</button>
+                <button className="mt-2 w-full py-2 text-xs font-bold text-moss" onClick={() => setActivityProfileDraft((current) => activityProfileStep === 0 ? { ...current, average_steps: "" } : activityProfileStep === 1 ? { ...current, average_active_calories: "" } : { ...current, average_exercise_minutes: "" })}>わからない</button>
+                {activityGuideStep === activityProfileStep && <ActivityGuide kind={activityProfileStep === 0 ? "steps" : activityProfileStep === 1 ? "move" : "exercise"} />}
+              </>
+            )}
+            {activityProfileStep === 3 && <div className="grid gap-2">{(Object.keys(activityLabels) as ActivityLevel[]).map((level) => (
+              <button className={`onboarding-choice ${activityProfileDraft.activity_level === level ? "onboarding-choice-active" : ""}`} key={level} onClick={() => setActivityProfileDraft((current) => ({ ...current, activity_level: level }))}>
+                <span>{activityLabels[level]}</span><small>{activityDescriptions[level]}</small>
+              </button>
+            ))}</div>}
+            {activityProfileStep === 4 && <label className="onboarding-field"><span>補足メモ</span><textarea className="min-h-28" value={activityProfileDraft.notes} onChange={(event) => setActivityProfileDraft((current) => ({ ...current, notes: event.target.value }))} placeholder="例: 立ち仕事、自転車通勤、週3日はリモートワーク" /></label>}
+            {activityProfileStep === 5 && (
+              <div className="grid gap-3">
+                <div className="grid grid-cols-2 gap-2">
+                  <button className={`mode-button ${activityProfileDraft.averaging_period === "last_30_days" ? "mode-button-active" : ""}`} onClick={() => setActivityProfileDraft((current) => ({ ...current, averaging_period: "last_30_days" }))}>直近30日</button>
+                  <button className={`mode-button ${activityProfileDraft.averaging_period === "last_4_weeks" ? "mode-button-active" : ""}`} onClick={() => setActivityProfileDraft((current) => ({ ...current, averaging_period: "last_4_weeks" }))}>直近4週間</button>
+                </div>
+                <div className="rounded-2xl border border-line p-3 text-sm leading-relaxed">
+                  <p className="font-bold">{activityLabels[activityProfileDraft.activity_level]}</p>
+                  <p className="mt-2 text-xs text-moss">歩数 {formatOptionalActivityValue(optionalPositiveNumber(activityProfileDraft.average_steps), "歩")} / ムーブ {formatOptionalActivityValue(optionalPositiveNumber(activityProfileDraft.average_active_calories), "kcal")} / 運動 {formatOptionalActivityValue(optionalPositiveNumber(activityProfileDraft.average_exercise_minutes), "分")}</p>
+                  {activityProfileDraft.notes && <p className="mt-2 text-xs text-moss">{activityProfileDraft.notes}</p>}
+                </div>
+              </div>
+            )}
+          </div>
+          <div className="mt-5 grid grid-cols-2 gap-2">
+            <button className="secondary-button" onClick={() => activityProfileStep === 0 ? setIsActivityProfileWizardOpen(false) : setActivityProfileStep((current) => current - 1)}><ChevronLeft size={17} />戻る</button>
+            {activityProfileStep < activityProfileSteps.length - 1
+              ? <button className="primary-button" onClick={() => { setActivityGuideStep(undefined); setActivityProfileStep((current) => current + 1); }}>次へ<ChevronRight size={17} /></button>
+              : <button className="primary-button" onClick={() => void saveDetailedActivityProfile()}><Check size={17} />保存</button>}
+          </div>
+          <button className="mt-2 w-full py-2 text-xs font-bold text-moss" onClick={() => { setIsActivityProfileWizardOpen(false); setActivityProfileStep(0); }}>後で設定する</button>
+        </>
+      )}
+    </section>
+  );
+
   const aiReportSection = (
     <section className={`ai-report-section compact-card p-4 ${props.focus === "ai" ? "border-2 border-leaf" : ""}`}>
       <div className="flex items-center justify-between gap-2">
@@ -8709,6 +8982,44 @@ function SettingsTab(props: {
         <button className={`mode-button ${reportMode === "month" ? "mode-button-active" : ""}`} onClick={() => setReportMode("month")}>月別</button>
       </div>
       <p className="mt-2 text-xs text-moss">{reportMode === "day" ? "今日1日分を参照します。" : reportMode === "week" ? "直近7日分を週別の相談材料としてまとめます。" : "直近30日分を月別の相談材料としてまとめます。"}</p>
+      {reportMode === "day" && <div className="mt-4">
+        <p className="text-xs font-black text-moss">レポートの範囲</p>
+        <div className="mt-2 grid grid-cols-2 gap-2">
+          <button className={`mode-button min-h-12 ${reportCoverage === "partial" ? "mode-button-active" : ""}`} onClick={() => setReportCoverage("partial")}>途中経過</button>
+          <button className={`mode-button min-h-12 ${reportCoverage === "completed" ? "mode-button-active" : ""}`} onClick={() => setReportCoverage("completed")}>1日全体</button>
+        </div>
+      </div>}
+      {reportMode === "day" && <div className="mt-4 rounded-2xl border border-line p-3">
+        <p className="text-sm font-bold">{props.appDate === todayAppDate(props.settings?.day_boundary_hour ?? 3) ? "今日の活動量は？" : "対象日の活動量は？"}</p>
+        <p className="mt-1 text-xs text-moss">普段と比べて選びます。ここで目標カロリーが自動変更されることはありません。</p>
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          {activityRelativeOptions.map((option) => (
+            <button
+              className={`mode-button min-h-11 text-xs ${reportActivity.relative_activity_level === option.value && !isReportActivityManualOpen ? "mode-button-active" : ""}`}
+              key={option.value}
+              onClick={() => {
+                setIsReportActivityManualOpen(false);
+                setReportActivity((current) => ({ ...current, relative_activity_level: option.value }));
+              }}
+            >{option.label}</button>
+          ))}
+          <button className={`mode-button min-h-11 text-xs ${isReportActivityManualOpen ? "mode-button-active" : ""}`} onClick={() => setIsReportActivityManualOpen(true)}>手動入力</button>
+        </div>
+        {isReportActivityManualOpen && <div className="mt-4 grid gap-3">
+          <div className="grid grid-cols-3 gap-2">
+            {activityRelativeOptions.filter((option) => option.value !== "unknown").map((option) => <button className={`mode-button min-h-10 px-1 text-[11px] ${reportActivity.relative_activity_level === option.value ? "mode-button-active" : ""}`} key={option.value} onClick={() => setReportActivity((current) => ({ ...current, relative_activity_level: option.value }))}>{option.label}</button>)}
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <ActivityOptionalInput label="歩数" value={reportActivity.steps} onChange={(steps) => setReportActivity((current) => ({ ...current, steps }))} />
+            <ActivityOptionalInput label="ムーブ kcal" value={reportActivity.active_calories} onChange={(active_calories) => setReportActivity((current) => ({ ...current, active_calories }))} />
+            <ActivityOptionalInput label="エクササイズ 分" value={reportActivity.exercise_minutes} onChange={(exercise_minutes) => setReportActivity((current) => ({ ...current, exercise_minutes }))} />
+            <ActivityOptionalInput label="追加の徒歩 分" value={reportActivity.walking_minutes} onChange={(walking_minutes) => setReportActivity((current) => ({ ...current, walking_minutes }))} />
+            <ActivityOptionalInput label="追加の自転車 分" value={reportActivity.cycling_minutes} onChange={(cycling_minutes) => setReportActivity((current) => ({ ...current, cycling_minutes }))} />
+            <label className="onboarding-field"><span>データソース</span><select value={reportActivity.data_source ?? "unknown"} onChange={(event) => setReportActivity((current) => ({ ...current, data_source: event.target.value as ActivityDataSource }))}>{activityDataSourceOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
+          </div>
+          <label className="onboarding-field"><span>その他の活動</span><textarea className="min-h-20" value={reportActivity.notes ?? ""} onChange={(event) => setReportActivity((current) => ({ ...current, notes: event.target.value }))} placeholder="例: 展示会で長時間歩いた、引っ越し作業" /></label>
+        </div>}
+      </div>}
       <textarea className="mt-3 min-h-20 w-full" value={question} onChange={(event) => setQuestion(event.target.value)} placeholder="AIにコピーして相談できるレポートを生成します。特に相談したいことがあれば記入してください。なければそのまま生成を押してください" />
       <button className="primary-button mt-3 w-full" onClick={async () => {
         const generatedAt = nowIso();
@@ -8738,11 +9049,14 @@ function SettingsTab(props: {
           cheatDayDates: scopedCheatDayDates,
           specialModeDays: scopedSpecialModeDays,
           workoutGrouping: reportMode,
+          activityProfile: props.settings?.activity_profile,
+          dailyActivity: reportMode === "day" ? { ...reportActivity, date: end } : undefined,
+          reportCoverage: reportMode === "day" ? reportCoverage : undefined,
           question,
         });
         setReport(content);
         setCopiedReport(false);
-        await db.ai_reports.put({ id: makeId("report"), period_start: start, period_end: end, format: "markdown", content, created_at: generatedAt, updated_at: generatedAt });
+        await db.ai_reports.put({ id: makeId("report"), period_start: start, period_end: end, format: "markdown", content, report_coverage: reportMode === "day" ? reportCoverage : undefined, activity_context: reportMode === "day" ? { ...reportActivity, date: end } : undefined, created_at: generatedAt, updated_at: generatedAt });
         await props.refresh();
       }}><FileText size={17} />生成</button>
       {report && (
@@ -8761,6 +9075,7 @@ function SettingsTab(props: {
   );
   const sectionTitles: Record<SettingsSection, { title: string; subtitle: string }> = {
     ai: { title: "AI相談レポート", subtitle: "AIに渡す相談材料を生成します。" },
+    activity: { title: "活動量プロフィール", subtitle: "普段の生活でどの程度動いているかを設定します。" },
     backup: { title: "エクスポート", subtitle: "バックアップ保存とログ出力を管理します。" },
     goal: { title: "ゴール設定", subtitle: "目標体重、PFC、運動目標を調整します。" },
     theme: { title: "テーマ設定", subtitle: "表示モード、テーマカラー、テーマキャラクターを選びます。" },
@@ -8771,6 +9086,12 @@ function SettingsTab(props: {
   };
   const activeSectionTitle = activeSettingsSection ? sectionTitles[activeSettingsSection] : undefined;
   const goBackFromSettingsSection = () => {
+    if (activeSettingsSection === "activity" && isActivityProfileWizardOpen) {
+      setIsActivityProfileWizardOpen(false);
+      setActivityProfileStep(0);
+      setActivityGuideStep(undefined);
+      return;
+    }
     if (activeSettingsSection === "theme" && themeCharacterCandidate) {
       setThemeCharacterCandidate(undefined);
       return;
@@ -8801,6 +9122,7 @@ function SettingsTab(props: {
         <>
           <section className="compact-card divide-y divide-line overflow-hidden">
             <SettingsMenuRow title="AI相談レポート" description="AIにコピーする日別・週別・月別レポート" icon={<FileText size={18} />} onClick={() => setActiveSettingsSection("ai")} />
+            <SettingsMenuRow title="活動量プロフィール" description={props.settings?.activity_profile ? `${activityLabels[props.settings.activity_profile.activity_level]} / 確認済み` : "普段の活動量を確認"} icon={<Activity size={18} />} onClick={() => setActiveSettingsSection("activity")} />
             <SettingsMenuRow title="エクスポート" description="バックアップ保存 / 食事・ワークアウトのログ出力" icon={<Archive size={18} />} onClick={() => setActiveSettingsSection("backup")} />
             <SettingsMenuRow title="ゴール設定" description={`${phaseLabels[goalDraft.phase]} / ${calculated?.target_calories ?? "-"}kcal`} icon={<SlidersHorizontal size={18} />} onClick={() => setActiveSettingsSection("goal")} />
             <SettingsMenuRow title="テーマ設定" description={`${props.resolvedTheme === "dark" ? "ダーク" : "ライト"} / ${themeAccentLabels[props.themeAccent]} / ${themeCharacterLabels[props.themeCharacter]}`} icon={<Palette size={18} />} onClick={() => setActiveSettingsSection("theme")} />
@@ -9188,6 +9510,7 @@ function SettingsTab(props: {
       )}
 
       {activeSettingsSection === "ai" && aiReportSection}
+      {activeSettingsSection === "activity" && activityProfileSection}
 
       {activeSettingsSection === "backup" && !activeExportSection && (
         <section className={`compact-card divide-y divide-line overflow-hidden scroll-mt-24 ${props.focus === "backup" ? "border-2 border-leaf" : ""}`}>
