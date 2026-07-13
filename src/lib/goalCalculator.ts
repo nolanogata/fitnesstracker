@@ -86,6 +86,42 @@ export function calculateTargets(input: {
   };
 }
 
+export function hasCustomNutritionTargets(goal: Goal) {
+  return goal.phase === "custom" || [
+    goal.manual_target_calories,
+    goal.manual_protein_g,
+    goal.manual_fat_g,
+    goal.manual_carbs_g,
+  ].some((value) => typeof value === "number" && value > 0);
+}
+
+export function calculateActivityProfileGoalReference(input: {
+  profile: Profile;
+  goal: Goal;
+  activity_level: ActivityLevel;
+}) {
+  const targets = calculateTargets({
+    profile: input.profile,
+    age: input.goal.age,
+    sex: input.profile.sex,
+    activity_level: input.activity_level,
+    phase: input.goal.phase,
+    target_weight_kg: input.goal.target_weight_kg,
+    target_body_fat_percentage: input.goal.target_body_fat_percentage,
+    target_date: input.goal.target_date,
+  });
+  const matchesCurrent = input.goal.activity_level === input.activity_level
+    && input.goal.target_calories === targets.target_calories
+    && input.goal.target_protein_g === targets.target_protein_g
+    && input.goal.target_fat_g === targets.target_fat_g
+    && input.goal.target_carbs_g === targets.target_carbs_g;
+  return {
+    targets,
+    hasCustomTargets: hasCustomNutritionTargets(input.goal),
+    matchesCurrent,
+  };
+}
+
 export function buildGoal(input: {
   profile: Profile;
   phase: Phase;

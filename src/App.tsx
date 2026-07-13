@@ -164,7 +164,7 @@ import type {
 } from "./types";
 import { addDays, dateRange, formatJapaneseDate, nowIso, todayAppDate } from "./lib/date";
 import { makeId } from "./lib/ids";
-import { activityLabels, buildGoal, calculateTargets, phaseLabels } from "./lib/goalCalculator";
+import { activityLabels, buildGoal, calculateActivityProfileGoalReference, calculateTargets, phaseLabels } from "./lib/goalCalculator";
 import { downloadText, exportBackup, importBackup, resetLocalData } from "./lib/backup";
 import { generateMarkdownReport } from "./lib/report";
 import { getWeeklyWorkoutStatus, type WeeklyWorkoutStatus } from "./lib/workoutStatus";
@@ -945,13 +945,13 @@ function exercisePresetFromMyTrainingDraft(draft: MyTrainingDraft, timestamp: st
   };
 }
 
-function settingsGoalDraftFrom(activeGoal?: Goal, profile?: Profile) {
+function settingsGoalDraftFrom(activeGoal?: Goal, profile?: Profile, activityProfile?: ActivityProfile) {
   const isLegacyCustomGoal = activeGoal?.phase === "custom";
   const fallbackTargetDate = addDays(todayAppDate(), 90);
   return {
     phase: activeGoal?.phase ?? ("maintenance" as Phase),
     age: activeGoal?.age ?? 35,
-    activity_level: activeGoal?.activity_level ?? ("moderate" as ActivityLevel),
+    activity_level: activityProfile?.activity_level ?? activeGoal?.activity_level ?? ("moderate" as ActivityLevel),
     target_weight_kg: activeGoal?.target_weight_kg ?? profile?.current_weight_kg ?? 70,
     target_body_fat_percentage: activeGoal?.target_body_fat_percentage ?? profile?.body_fat_percentage ?? 0,
     target_date: activeGoal?.target_date ?? fallbackTargetDate,
@@ -8118,7 +8118,7 @@ function SettingsTab(props: {
 }) {
   const [activeSettingsSection, setActiveSettingsSection] = useState<SettingsSection | undefined>(() => props.focus);
   const [themeCharacterCandidate, setThemeCharacterCandidate] = useState<Exclude<ThemeCharacter, "none">>();
-  const [goalDraft, setGoalDraft] = useState(() => settingsGoalDraftFrom(props.activeGoal, props.profile));
+  const [goalDraft, setGoalDraft] = useState(() => settingsGoalDraftFrom(props.activeGoal, props.profile, props.settings?.activity_profile));
   const [activeGoalSettingsSection, setActiveGoalSettingsSection] = useState<GoalSettingsSection>();
   const [goalWizardStep, setGoalWizardStep] = useState(0);
   const [presetDraft, setPresetDraft] = useState({ ...emptyManual, name: "", savePreset: true });
@@ -8146,6 +8146,7 @@ function SettingsTab(props: {
   const [isReportActivityManualOpen, setIsReportActivityManualOpen] = useState(false);
   const [activityProfileStep, setActivityProfileStep] = useState(0);
   const [isActivityProfileWizardOpen, setIsActivityProfileWizardOpen] = useState(false);
+  const [isActivityGoalPreviewOpen, setIsActivityGoalPreviewOpen] = useState(false);
   const [activityGuideStep, setActivityGuideStep] = useState<number>();
   const [activityProfileDraft, setActivityProfileDraft] = useState(() => activityProfileDraftFrom(props.settings?.activity_profile, props.activeGoal?.activity_level));
   const [backupImportMessage, setBackupImportMessage] = useState("");
@@ -8181,7 +8182,7 @@ function SettingsTab(props: {
   ];
   const goalWizardSteps = [
     { key: "phase", title: "目標", subtitle: "体重や筋肉の方向性を選びます。" },
-    { key: "activity", title: "運動量", subtitle: "日常活動も含めた消費量の補正です。" },
+    { key: "activity", title: "普段の活動量", subtitle: "目標の計算と活動量プロフィールで共通して使います。" },
     { key: "age", title: "年齢", subtitle: "消費カロリーの自動計算に使います。" },
     { key: "targetWeight", title: "目標体重", subtitle: "PFCの基準にする体重です。" },
     { key: "targetBodyFat", title: "目標体脂肪率", subtitle: "未定なら0のままでOKです。" },
@@ -8269,6 +8270,7 @@ function SettingsTab(props: {
       activity_profile_prompt_dismissed_at: undefined,
       activity_profile_prompt_next_at: undefined,
     });
+    setIsActivityGoalPreviewOpen(true);
     props.showToast("現在の活動量設定を使用します");
   };
   const saveDetailedActivityProfile = async () => {
@@ -8290,6 +8292,7 @@ function SettingsTab(props: {
       activity_profile_prompt_next_at: undefined,
     });
     setIsActivityProfileWizardOpen(false);
+    setIsActivityGoalPreviewOpen(true);
     setActivityProfileStep(0);
     setActivityGuideStep(undefined);
     props.showToast("普段の活動量を保存しました");
@@ -8324,8 +8327,8 @@ function SettingsTab(props: {
   }, [props.focus]);
 
   useEffect(() => {
-    setGoalDraft(settingsGoalDraftFrom(props.activeGoal, props.profile));
-  }, [props.activeGoal?.id, props.profile?.current_weight_kg, props.profile?.body_fat_percentage]);
+    setGoalDraft(settingsGoalDraftFrom(props.activeGoal, props.profile, props.settings?.activity_profile));
+  }, [props.activeGoal?.id, props.profile?.current_weight_kg, props.profile?.body_fat_percentage, props.settings?.activity_profile?.activity_level]);
 
   useEffect(() => {
     setProfileNameDraft(props.profile?.name ?? "");
@@ -8350,6 +8353,14 @@ function SettingsTab(props: {
         manual_carbs_g: goalDraft.manual_carbs_g || undefined,
       })
     : undefined;
+  const activityGoalComparison = useMemo(() => {
+    if (!props.profile || !props.activeGoal || !props.settings?.activity_profile) return undefined;
+    return calculateActivityProfileGoalReference({
+      profile: props.profile,
+      goal: props.activeGoal,
+      activity_level: props.settings.activity_profile.activity_level,
+    });
+  }, [props.profile, props.activeGoal, props.settings?.activity_profile]);
   const macroOverrideSummary = [
     goalDraft.manual_target_calories ? `kcal ${goalDraft.manual_target_calories}` : "",
     goalDraft.manual_protein_g ? `P ${goalDraft.manual_protein_g}g` : "",
@@ -8805,11 +8816,45 @@ function SettingsTab(props: {
       target_cardio_sessions_per_week: goalDraft.target_cardio_sessions_per_week,
     });
     await db.goals.put(goal);
-    await db.settings.update("local", { active_goal_id: goal.id, updated_at: timestamp });
+    const currentActivityProfile = props.settings?.activity_profile;
+    const activity_profile: ActivityProfile = currentActivityProfile
+      ? { ...currentActivityProfile, activity_level: goalDraft.activity_level, updated_at: timestamp }
+      : {
+          activity_level: goalDraft.activity_level,
+          averaging_period: "initial_setup",
+          data_source: "initial_setup",
+          confirmed_at: timestamp,
+          updated_at: timestamp,
+        };
+    await db.settings.update("local", { active_goal_id: goal.id, activity_profile, updated_at: timestamp });
     setActiveGoalSettingsSection(undefined);
+    setIsActivityGoalPreviewOpen(false);
     setGoalWizardStep(0);
     await props.refresh();
     props.showToast("ゴールを保存しました");
+  };
+  const applyActivityProfileToGoal = async () => {
+    const activityProfile = props.settings?.activity_profile;
+    const currentGoal = props.activeGoal;
+    if (!props.profile || !activityProfile || !currentGoal || activityGoalComparison?.hasCustomTargets) return;
+    const timestamp = nowIso();
+    await Promise.all(props.goals.filter((goal) => goal.is_active).map((goal) => db.goals.update(goal.id, { is_active: false, end_date: addDays(todayAppDate(), -1), updated_at: timestamp })));
+    const goal = buildGoal({
+      profile: props.profile,
+      phase: currentGoal.phase,
+      activity_level: activityProfile.activity_level,
+      age: currentGoal.age,
+      target_weight_kg: currentGoal.target_weight_kg,
+      target_body_fat_percentage: currentGoal.target_body_fat_percentage,
+      target_date: currentGoal.target_date,
+      target_workouts_per_week: currentGoal.target_workouts_per_week,
+      target_cardio_sessions_per_week: currentGoal.target_cardio_sessions_per_week,
+    });
+    await db.goals.put(goal);
+    await db.settings.update("local", { active_goal_id: goal.id, updated_at: timestamp });
+    setIsActivityGoalPreviewOpen(false);
+    await props.refresh();
+    props.showToast("活動量プロフィールを目標に反映しました");
   };
   const generateLogExport = () => {
     const result = buildLogExport({
@@ -8902,9 +8947,9 @@ function SettingsTab(props: {
           <div className="flex items-start justify-between gap-3">
             <div>
               <h2 className="font-bold">普段の活動量</h2>
-              <p className="mt-1 text-xs text-moss">AI相談で、対象日が普段より多く動いた日かを判断する基準です。</p>
+              <p className="mt-1 text-xs text-moss">AI相談と目標カロリーの自動計算で使う基準です。</p>
             </div>
-            <span className="rounded-md border border-line px-2 py-1 text-[11px] font-bold text-moss">{props.settings?.activity_profile ? "設定済み" : "未確認"}</span>
+            <span className="shrink-0 whitespace-nowrap rounded-md border border-line px-2 py-1 text-[11px] font-bold text-moss">{props.settings?.activity_profile ? "設定済み" : "未確認"}</span>
           </div>
           <div className="mt-4 rounded-2xl border border-line p-3 text-sm">
             <p className="font-bold">{activityLabels[props.settings?.activity_profile?.activity_level ?? props.activeGoal?.activity_level ?? "moderate"]}</p>
@@ -8916,11 +8961,54 @@ function SettingsTab(props: {
           <div className="mt-3 grid gap-2">
             {!props.settings?.activity_profile && <button className="secondary-button w-full" onClick={() => void saveCurrentActivityProfile()}>現在の設定を使用</button>}
             <button className="primary-button w-full" onClick={() => {
+              setIsActivityGoalPreviewOpen(false);
               setActivityProfileDraft(activityProfileDraftFrom(props.settings?.activity_profile, props.activeGoal?.activity_level));
               setActivityProfileStep(0);
               setIsActivityProfileWizardOpen(true);
             }}>{props.settings?.activity_profile ? "詳しい設定を編集" : "詳しく設定する"}</button>
+            {props.settings?.activity_profile && props.activeGoal && (
+              <button className="secondary-button w-full" onClick={() => setIsActivityGoalPreviewOpen((current) => !current)}>
+                {isActivityGoalPreviewOpen ? "再計算を閉じる" : "目標への反映を確認"}
+              </button>
+            )}
           </div>
+          {isActivityGoalPreviewOpen && activityGoalComparison && props.activeGoal && (
+            <div className="mt-4 rounded-2xl border border-line p-3">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h3 className="text-sm font-black">目標の再計算</h3>
+                  <p className="mt-1 text-xs text-moss">平均歩数やムーブは活動区分の判断材料にし、そのままカロリーへ加算しません。</p>
+                </div>
+                <span className="mini-chip shrink-0">{activityLabels[props.settings?.activity_profile?.activity_level ?? props.activeGoal.activity_level]}</span>
+              </div>
+              <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                <div className="rounded-xl border border-line p-3">
+                  <p className="font-bold text-moss">現在</p>
+                  <p className="numeric-text mt-1 text-lg font-black">{props.activeGoal.target_calories}kcal</p>
+                  <p className="mt-1 text-moss">P{props.activeGoal.target_protein_g} F{props.activeGoal.target_fat_g} C{props.activeGoal.target_carbs_g}</p>
+                </div>
+                <div className="rounded-xl border border-line p-3">
+                  <p className="font-bold text-moss">プロフィール基準</p>
+                  <p className="numeric-text mt-1 text-lg font-black">{activityGoalComparison.targets.target_calories}kcal</p>
+                  <p className="mt-1 text-moss">P{activityGoalComparison.targets.target_protein_g} F{activityGoalComparison.targets.target_fat_g} C{activityGoalComparison.targets.target_carbs_g}</p>
+                </div>
+              </div>
+              {activityGoalComparison.hasCustomTargets ? (
+                <>
+                  <p className="mt-3 text-xs leading-relaxed text-moss">現在はカスタムkcal/PFCを使用しているため、目標値は変更しません。プロフィール基準は参考値です。</p>
+                  <button className="secondary-button mt-3 w-full" onClick={() => {
+                    setIsActivityGoalPreviewOpen(false);
+                    setActiveSettingsSection("goal");
+                    setActiveGoalSettingsSection("custom");
+                  }}>ゴール設定を確認</button>
+                </>
+              ) : activityGoalComparison.matchesCurrent ? (
+                <p className="mt-3 rounded-xl bg-rice p-3 text-xs font-bold text-moss">現在の目標に反映済みです。</p>
+              ) : (
+                <button className="primary-button mt-3 w-full" onClick={() => void applyActivityProfileToGoal()}><Check size={17} />この目標を適用</button>
+              )}
+            </div>
+          )}
         </>
       ) : (
         <>
@@ -9361,7 +9449,7 @@ function SettingsTab(props: {
                 {Object.entries(phaseLabels).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
               </select>
             </SelectField>
-            <SelectField label="運動強度" hint="日常活動込みの消費量補正" labelAction={<GoalHelpButton label="運動強度のヘルプ" onClick={() => setGoalHelpTopic("activity")} />}>
+            <SelectField label="普段の活動量" hint="活動量プロフィールと共通" labelAction={<GoalHelpButton label="運動強度のヘルプ" onClick={() => setGoalHelpTopic("activity")} />}>
               <select value={goalDraft.activity_level} onChange={(event) => setGoalDraft({ ...goalDraft, activity_level: event.target.value as ActivityLevel })}>
                 {Object.entries(activityLabels).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
               </select>
@@ -9385,7 +9473,7 @@ function SettingsTab(props: {
             <span className="mini-chip">{macroOverrideSummary}</span>
           </button>
           {goalCalculationSummary}
-          <p className="mt-2 text-xs text-moss">入力した体重・目標・活動量から、1日のカロリーとPFCを計算します。</p>
+          <p className="mt-2 text-xs text-moss">入力した体重・目標・活動量から、1日のカロリーとPFCを計算します。活動量はプロフィールにも反映されます。</p>
         </section>
       )}
 
