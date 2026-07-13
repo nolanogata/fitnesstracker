@@ -8270,7 +8270,9 @@ function SettingsTab(props: {
       activity_profile_prompt_dismissed_at: undefined,
       activity_profile_prompt_next_at: undefined,
     });
+    setIsActivityProfileWizardOpen(false);
     setActivityProfileStep(0);
+    setActivityGuideStep(undefined);
     props.showToast("普段の活動量を保存しました");
   };
   const updateThemeCharacter = async (theme_character: ThemeCharacter, theme_character_variant = "default") => {
