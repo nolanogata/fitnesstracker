@@ -60,6 +60,7 @@ Current verified restaurant size rules:
   - Denny's, Royal Host, Joyfull, Bikkuri Donkey, Olive no Oka, and Tonden now use their current official full nutrition PDFs and are `official/high`.
   - Gusto, Bamiyan, Jonathan's, Aiya, Saizeriya, and Hanaya Yohei remain estimated where the official publication does not provide complete P/F/C.
 - モンスーンカフェ: official site and store PDF menus were checked on 2026-06-12. Added representative official-menu-name entries from grand, weekday lunch, and takeout menus as `estimated/medium`; P/F/C values are not official.
+- ティーヌン: the official AEON Mall Makuhari Shintoshin store page and its linked Grand Mall menu PDF were checked on 2026-07-13, with recent store-menu observations used to confirm the food-court lineup. Entries are limited to the イオンモール幕張新都心店 and remain `estimated/medium` because no official kcal/P/F/C table was published.
 - ペッパーランチ: official all-menu page was checked on 2026-06-19. Added selected official-menu-name entries as `estimated/medium`; P/F/C values are not official.
 - 舎鈴: official おしながき page was checked on 2026-06-19. Added selected official-menu-name entries as `estimated/medium`; P/F/C values are not official.
 - 三田製麺所: official menu and allergen pages were checked on 2026-06-30. Added selected official-menu-name entries, side items, rice items, and toppings as `estimated/medium`; P/F/C values are not official.

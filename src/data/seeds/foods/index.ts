@@ -37,6 +37,7 @@ import { matsuyaOfficialFoods } from "./chains/matsuyaOfficial";
 import { mcdonaldsOfficialFoods } from "./chains/mcdonaldsOfficial";
 import { mcdonaldsKfcOfficialCoverageFoods } from "./chains/mcdonaldsKfcOfficialCoverage";
 import { monsoonCafeMenuFoods } from "./chains/monsoonCafeMenu";
+import { tinunMakuhariMenuFoods } from "./chains/tinunMakuhariMenu";
 import { mosOfficialFoods } from "./chains/mosOfficial";
 import { nakauOfficialFoods } from "./chains/nakauOfficial";
 import { ootoyaMenuFoods } from "./chains/ootoyaMenu";
@@ -130,6 +131,7 @@ const legacyFoodSeeds = [
   ...kandoNikuKomeMenuFoods,
   ...pepperLunchTsukemenMenuFoods,
   ...monsoonCafeMenuFoods,
+  ...tinunMakuhariMenuFoods,
   ...externalNutritionFoods,
   ...familyRestaurantMenuFoods,
   ...familyRestaurantFoods,
