@@ -13,6 +13,7 @@
 - Workout logging favors templates, favorites, My Training, body-part drilldown, equipment drilldown, and stepper controls.
 - My Training is the workout equivalent of My Menu: user-created exercises can be registered from an existing exercise or from scratch, saved with defaults and weight presets, edited in place, deleted without touching past logs, and reused from Workout or Settings.
 - Settings always exposes JSON backup/import and reminds the user to back up local data.
+- First launch starts on Welcome rather than treating restore as a mandatory setup step. A backup can be imported there, while new setup always collects the shared profile fields needed for calculation, including birth year. Before goal setup, activity can follow the original four-level quick choice, an optional detailed baseline wizard, or be deferred. Quick and detailed choices drive the initial automatic goal and save the same activity profile; deferring uses `moderate` only as a provisional goal input and schedules a later profile reminder without inventing average activity data.
 
 ## Visual Direction
 
