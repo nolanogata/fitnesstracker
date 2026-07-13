@@ -170,7 +170,7 @@ import { activityLabels, buildGoal, calculateActivityProfileGoalReference, calcu
 import { downloadText, exportBackup, importBackup, resetLocalData } from "./lib/backup";
 import { generateMarkdownReport } from "./lib/report";
 import { getWeeklyWorkoutStatus, type WeeklyWorkoutStatus } from "./lib/workoutStatus";
-import { getDailyNutritionEstimate } from "./lib/nutritionEstimate";
+import { getCalorieOverTone, getDailyNutritionEstimate } from "./lib/nutritionEstimate";
 import { activityDataSourceLabel, getProteinSafetyPresentation } from "./lib/reportPresentation";
 import { getOnboardingSteps, type OnboardingActivityMode, type OnboardingStepKey } from "./lib/onboarding";
 import { buildFoodCoverageDays, foodRecordContextFromSelection, getFoodCoverageReviewDays, intakeRelativeLevelLabels, type FoodCoverageDay } from "./lib/foodRecordCoverage";
@@ -4088,10 +4088,14 @@ function HomeTab(props: {
   const heroCaloriePercent = props.goal?.target_calories
     ? Math.max(0, Math.min(100, Math.round(((props.goal.target_calories - displayedRemaining.calories) / props.goal.target_calories) * 100)))
     : 0;
-  const isCalorieOverWithinEstimate = props.nutritionRemainingDisplayMode === "recorded"
-    && typeof calorieDelta === "number"
-    && calorieDelta > 0
-    && calorieDelta <= dailyEstimate.uncertainty.calories;
+  const calorieOverTone = props.goal?.target_calories
+    ? getCalorieOverTone({
+      adoptedRemainingCalories: dailyEstimate.adoptedRemaining.calories,
+      displayedRemainingCalories: displayedRemaining.calories,
+      uncertaintyCalories: dailyEstimate.uncertainty.calories,
+    })
+    : "none";
+  const isCalorieOverWithinEstimate = calorieOverTone === "estimate";
   const calorieDeltaText = typeof heroCalorieDelta === "number" ? `${heroCalorieDelta > 0 ? "+" : ""}${Math.round(heroCalorieDelta)}` : "-";
   const shouldMaskGoalProgress = props.isExceptionDay;
   const shouldShowRainbowProgress = props.isCheatDay || !!props.activeSpecialMode;
@@ -4101,7 +4105,7 @@ function HomeTab(props: {
   const heroGlowPercent = shouldMaskGoalProgress ? 100 : developerProgressPercent ?? heroProgressPercent;
   const heroBackgroundProgress = Math.max(0, Math.min(100, heroGlowPercent));
   const isDeveloperProgressOver = typeof developerProgressPercent === "number" && developerProgressPercent > 100;
-  const shouldUseThemeHeroFrame = !shouldShowRainbowProgress && !shouldShowPausedProgress && !isDeveloperProgressOver && !(heroCalorieDelta && heroCalorieDelta > 0);
+  const shouldUseThemeHeroFrame = !shouldShowRainbowProgress && !shouldShowPausedProgress && !isDeveloperProgressOver && calorieOverTone === "none";
   const heroThemeGlowClass = !shouldUseThemeHeroFrame
     ? ""
     : heroGlowPercent >= 90
@@ -4117,7 +4121,7 @@ function HomeTab(props: {
     ? "home-progress-rainbow"
     : shouldShowPausedProgress
       ? "home-progress-paused"
-      : isCalorieOverWithinEstimate ? "home-progress-estimate" : (isDeveloperProgressOver || (heroCalorieDelta && heroCalorieDelta > 0)) ? "home-progress-over" : "home-progress-normal";
+      : isCalorieOverWithinEstimate ? "home-progress-estimate" : (isDeveloperProgressOver || calorieOverTone === "over") ? "home-progress-over" : "home-progress-normal";
   const calorieDisplayText = shouldMaskGoalProgress ? "-" : calorieDeltaText;
   const calorieMoodClass = props.isCheatDay ? "cheat" : props.activeSpecialMode ? "trip" : props.activePauseMode ? "cheat" : typeof heroCalorieDelta === "number" ? (heroCalorieDelta > 0 ? (isCalorieOverWithinEstimate ? "estimate" : "over") : Math.abs(heroCalorieDelta) <= 100 ? "on-track" : "left") : "neutral";
   const heroStyle = {

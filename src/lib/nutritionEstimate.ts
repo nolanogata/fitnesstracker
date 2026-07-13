@@ -1,6 +1,7 @@
 import type { Confidence, FoodEntry, Goal, MenuItem, NutritionFieldEvidence, NutritionFieldKey, NutritionMeta, NutritionUncertainty } from "../types";
 
 export type NutritionTotals = { calories: number; protein: number; fat: number; carbs: number };
+export type CalorieOverTone = "none" | "estimate" | "over";
 export type EstimatedNutritionEntry = {
   entry: FoodEntry;
   meta: NutritionMeta;
@@ -35,6 +36,16 @@ export type DailyNutritionEstimate = {
   safeProteinTargetGap: number;
   entries: EstimatedNutritionEntry[];
 };
+
+export function getCalorieOverTone(input: {
+  adoptedRemainingCalories: number;
+  displayedRemainingCalories: number;
+  uncertaintyCalories: number;
+}): CalorieOverTone {
+  if (input.displayedRemainingCalories >= 0) return "none";
+  const adoptedOver = Math.max(0, -input.adoptedRemainingCalories);
+  return adoptedOver <= Math.max(0, input.uncertaintyCalories) ? "estimate" : "over";
+}
 
 const nutrientFields: Array<{ key: NutritionFieldKey; totalKey: keyof NutritionTotals; entryKey: keyof Pick<FoodEntry, "calories" | "protein_g" | "fat_g" | "carbs_g">; uncertaintyKey: keyof NutritionUncertainty }> = [
   { key: "calories", totalKey: "calories", entryKey: "calories", uncertaintyKey: "calories" },
