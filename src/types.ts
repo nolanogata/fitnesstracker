@@ -36,6 +36,23 @@ export type DailyActivityContext = {
   data_source?: ActivityDataSource;
 };
 export type ReportCoverage = "partial" | "completed";
+export type MealRecordStatus = "declared_no_food" | "estimated_only" | "unrecorded" | "partial" | "excluded";
+export type IntakeRelativeLevel = "none" | "much_less" | "less" | "normal" | "more" | "much_more" | "consumed_unknown" | "unknown";
+export type IntakeEstimateConfidence = "low" | "medium" | "high";
+export type FoodRecordConfirmationSource = "report_generation_prompt" | "daily_log" | "manual_edit" | "imported";
+export type FoodRecordContext = {
+  date: string;
+  meal_record_status: MealRecordStatus;
+  intake_relative_level: IntakeRelativeLevel;
+  estimated_calories?: number;
+  estimated_protein_g?: number;
+  estimated_fat_g?: number;
+  estimated_carbs_g?: number;
+  intake_memo?: string;
+  intake_estimate_confidence?: IntakeEstimateConfidence;
+  confirmation_source: FoodRecordConfirmationSource;
+  confirmed_at: string;
+};
 export type DataSource = "official" | "unofficial" | "estimated" | "quick_estimate" | "user";
 export type Confidence = "high" | "medium" | "low";
 export type NutritionOrigin =
@@ -185,6 +202,7 @@ export type Settings = {
   activity_profile?: ActivityProfile;
   activity_profile_prompt_dismissed_at?: string;
   activity_profile_prompt_next_at?: string;
+  food_record_contexts?: Record<string, FoodRecordContext>;
   created_at: string;
   updated_at: string;
 };
@@ -405,6 +423,7 @@ export type AiReport = {
   content: string;
   report_coverage?: ReportCoverage;
   activity_context?: DailyActivityContext;
+  food_record_contexts?: FoodRecordContext[];
   created_at: string;
   updated_at: string;
 };

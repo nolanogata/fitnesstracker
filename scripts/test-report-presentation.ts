@@ -7,6 +7,11 @@ import {
   getProteinSafetyPresentation,
 } from "../src/lib/reportPresentation.ts";
 import type { ActivityProfile, DailyActivityContext } from "../src/types.ts";
+import {
+  buildFoodCoverageDays,
+  foodRecordContextFromSelection,
+  getFoodCoverageReviewDays,
+} from "../src/lib/foodRecordCoverage.ts";
 
 let passed = 0;
 
@@ -112,6 +117,60 @@ test("平均活動量のデータソース不明", () => {
   assert.equal(result.confidenceLabel, "中（保存元不明）");
 });
 
+test("過去のチートデー未記録は生成前確認の対象", () => {
+  const days = buildFoodCoverageDays({
+    dates: ["2026-07-11"],
+    foodEntries: [],
+    cheatDayDates: ["2026-07-11"],
+    currentAppDate: "2026-07-12",
+  });
+  assert.equal(getFoodCoverageReviewDays(days).length, 1);
+  assert.equal(days[0].isCheatDay, true);
+  assert.equal(days[0].status, "unrecorded");
+});
+
+test("過去の通常日未記録も生成前確認の対象", () => {
+  const days = buildFoodCoverageDays({
+    dates: ["2026-07-11"],
+    foodEntries: [],
+    currentAppDate: "2026-07-12",
+  });
+  assert.equal(getFoodCoverageReviewDays(days).length, 1);
+  assert.equal(days[0].isCheatDay, false);
+});
+
+test("当日途中の未記録は生成前確認を要求しない", () => {
+  const days = buildFoodCoverageDays({
+    dates: ["2026-07-12"],
+    foodEntries: [],
+    currentAppDate: "2026-07-12",
+    dailyReportCoverage: "partial",
+  });
+  assert.equal(getFoodCoverageReviewDays(days).length, 0);
+  assert.equal(days[0].status, "partial");
+});
+
+test("一時停止日の未記録は集計対象外", () => {
+  const days = buildFoodCoverageDays({
+    dates: ["2026-07-11"],
+    foodEntries: [],
+    pauseDayDates: ["2026-07-11"],
+    currentAppDate: "2026-07-12",
+  });
+  assert.equal(getFoodCoverageReviewDays(days).length, 0);
+  assert.equal(days[0].status, "excluded");
+});
+
+test("定性的な回答はkcalへ自動変換しない", () => {
+  const context = foodRecordContextFromSelection({
+    date: "2026-07-11",
+    relativeLevel: "much_more",
+    confirmedAt: "2026-07-12T00:00:00.000Z",
+  });
+  assert.equal(context.meal_record_status, "estimated_only");
+  assert.equal(context.estimated_calories, undefined);
+});
+
 test("1日レポートは当日集計", () => {
   assert.deepEqual(getFoodSummaryLabels(true), { heading: "当日集計", calories: "当日 kcal", macros: "当日 P/F/C" });
 });
@@ -198,6 +257,60 @@ const { generateMarkdownReport } = await import(reportModuleUrl) as typeof impor
     const report = generateMarkdownReport({ ...reportInput, reportCoverage: "partial" });
     assert.match(report, /### 平均活動量プロフィール[\s\S]*データソース: 保存元不明[\s\S]*信頼度: 中（保存元不明）/);
     assert.match(report, /### 対象日の活動量[\s\S]*データソース: ユーザーの定性入力[\s\S]*数値評価: 不可（対象日の数値は未入力）[\s\S]*信頼度: 定性評価のみ/);
+  });
+
+  test("未記録のチートデーを0kcalや期間平均として扱わない", () => {
+    const context = foodRecordContextFromSelection({
+      date: "2026-07-11",
+      relativeLevel: "much_more",
+      confirmedAt: "2026-07-12T00:00:00.000Z",
+    });
+    const report = generateMarkdownReport({
+      ...reportInput,
+      periodStart: "2026-07-11",
+      periodEnd: "2026-07-12",
+      cheatDayDates: ["2026-07-11"],
+      foodRecordContexts: [context],
+      reportCoverage: undefined,
+    });
+    assert.match(report, /## 食事記録カバレッジ/);
+    assert.match(report, /チートデーで詳細未記録: 1日 \(2026-07-11\)/);
+    assert.match(report, /2026-07-11: チートデー \/ 普段よりかなり多く食べた \/ カロリー不明/);
+    assert.match(report, /期間全体の平均摂取量: 正確な算出不可/);
+    assert.match(report, /## 記録日の食事平均/);
+    assert.match(report, /未記録日を0 kcalとして扱わないでください/);
+  });
+
+  test("食事未記録の日別レポートは0kcalや全量不足を表示しない", () => {
+    const report = generateMarkdownReport({
+      ...reportInput,
+      foodEntries: [],
+      reportCoverage: "completed",
+    });
+    assert.match(report, /当日 kcal: 算出不可（未記録を0kcalとは扱いません）/);
+    assert.match(report, /食事の摂取量が不明なため、目標との差分は評価できません/);
+    assert.doesNotMatch(report, /当日 kcal: 0/);
+    assert.doesNotMatch(report, /2500kcal不足/);
+  });
+
+  test("未記録日の概算値は採用値の食事平均へ加算しない", () => {
+    const context = foodRecordContextFromSelection({
+      date: "2026-07-11",
+      relativeLevel: "much_more",
+      estimatedCalories: 3_500,
+      estimatedProtein: 120,
+      confirmedAt: "2026-07-12T00:00:00.000Z",
+    });
+    const report = generateMarkdownReport({
+      ...reportInput,
+      periodStart: "2026-07-11",
+      periodEnd: "2026-07-12",
+      foodRecordContexts: [context],
+      reportCoverage: undefined,
+    });
+    assert.match(report, /2026-07-11: 普段よりかなり多く食べた \/ 概算 3500kcal \(P120g\)/);
+    assert.match(report, /記録日の平均 kcal: 760/);
+    assert.doesNotMatch(report, /記録日の平均 kcal: 4260/);
   });
 }
 
