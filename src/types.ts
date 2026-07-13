@@ -9,6 +9,31 @@ export type Phase =
 
 export type Sex = "male" | "female" | "unspecified";
 export type ActivityLevel = "low" | "moderate" | "high" | "very_high";
+export type ActivityAveragingPeriod = "last_30_days" | "last_4_weeks" | "initial_setup";
+export type ActivityProfile = {
+  activity_level: ActivityLevel;
+  average_steps?: number;
+  average_active_calories?: number;
+  average_exercise_minutes?: number;
+  notes?: string;
+  averaging_period: ActivityAveragingPeriod;
+  confirmed_at: string;
+  updated_at: string;
+};
+export type RelativeActivityLevel = "low" | "normal" | "high" | "unknown";
+export type ActivityDataSource = "apple_watch" | "apple_health" | "smartphone" | "wearable" | "user_estimate" | "unknown";
+export type DailyActivityContext = {
+  date: string;
+  relative_activity_level: RelativeActivityLevel;
+  steps?: number;
+  active_calories?: number;
+  exercise_minutes?: number;
+  walking_minutes?: number;
+  cycling_minutes?: number;
+  notes?: string;
+  data_source?: ActivityDataSource;
+};
+export type ReportCoverage = "partial" | "completed";
 export type DataSource = "official" | "unofficial" | "estimated" | "quick_estimate" | "user";
 export type Confidence = "high" | "medium" | "low";
 export type NutritionOrigin =
@@ -155,6 +180,9 @@ export type Settings = {
   achievements?: AchievementUnlock[];
   achievements_viewed_at?: string;
   workout_weight_presets?: Record<string, number[]>;
+  activity_profile?: ActivityProfile;
+  activity_profile_prompt_dismissed_at?: string;
+  activity_profile_prompt_next_at?: string;
   created_at: string;
   updated_at: string;
 };
@@ -373,6 +401,8 @@ export type AiReport = {
   period_end: string;
   format: "markdown";
   content: string;
+  report_coverage?: ReportCoverage;
+  activity_context?: DailyActivityContext;
   created_at: string;
   updated_at: string;
 };
