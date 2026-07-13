@@ -133,10 +133,12 @@ import type {
   DailyActivityContext,
   ExercisePreset,
   FoodEntry,
+  FoodRecordContext,
   Goal,
   HomeBodyFatDisplay,
   HomeNutritionRemainingDisplay,
   HomeWeightDisplay,
+  IntakeRelativeLevel,
   MealType,
   MenuItem,
   NutritionMeta,
@@ -171,6 +173,7 @@ import { getWeeklyWorkoutStatus, type WeeklyWorkoutStatus } from "./lib/workoutS
 import { getDailyNutritionEstimate } from "./lib/nutritionEstimate";
 import { activityDataSourceLabel, getProteinSafetyPresentation } from "./lib/reportPresentation";
 import { getOnboardingSteps, type OnboardingActivityMode, type OnboardingStepKey } from "./lib/onboarding";
+import { buildFoodCoverageDays, foodRecordContextFromSelection, getFoodCoverageReviewDays, intakeRelativeLevelLabels, type FoodCoverageDay } from "./lib/foodRecordCoverage";
 
 type Tab = "home" | "food" | "workout" | "records" | "settings";
 type FoodMode = "search" | "favorite" | "chain" | "quick" | "manual" | "personal" | "recommend" | "ai";
@@ -390,6 +393,14 @@ type ActivityProfileDraft = {
   notes: string;
   averaging_period: "last_30_days" | "last_4_weeks";
   data_source: ActivityProfileDataSource;
+};
+type FoodCoverageEstimateDraft = {
+  calories: number | "";
+  protein: number | "";
+  fat: number | "";
+  carbs: number | "";
+  memo: string;
+  confidence: "low" | "medium" | "high";
 };
 
 function activityProfileDraftFrom(profile?: ActivityProfile, fallbackLevel: ActivityLevel = "moderate"): ActivityProfileDraft {
@@ -7685,6 +7696,123 @@ function WorkoutTab(props: {
   );
 }
 
+const emptyFoodCoverageEstimate: FoodCoverageEstimateDraft = {
+  calories: "",
+  protein: "",
+  fat: "",
+  carbs: "",
+  memo: "",
+  confidence: "low",
+};
+
+function FoodCoverageReviewModal({ days, onCancel, onComplete }: {
+  days: FoodCoverageDay[];
+  onCancel: () => void;
+  onComplete: (contexts: FoodRecordContext[]) => void | Promise<void>;
+}) {
+  const [index, setIndex] = useState(0);
+  const [contexts, setContexts] = useState<FoodRecordContext[]>([]);
+  const [isEstimateOpen, setIsEstimateOpen] = useState(false);
+  const [estimate, setEstimate] = useState<FoodCoverageEstimateDraft>(emptyFoodCoverageEstimate);
+  const day = days[index];
+  const normalOptions: IntakeRelativeLevel[] = ["none", "much_less", "less", "normal", "more", "much_more", "consumed_unknown"];
+  const options = day?.isCheatDay
+    ? ["more", "much_more", "consumed_unknown", "normal", "less", "much_less", "none"] as IntakeRelativeLevel[]
+    : normalOptions;
+  const finishDay = async (context: FoodRecordContext) => {
+    const nextContexts = [...contexts, context];
+    if (index >= days.length - 1) {
+      await onComplete(nextContexts);
+      return;
+    }
+    setContexts(nextContexts);
+    setIndex((current) => current + 1);
+    setIsEstimateOpen(false);
+    setEstimate(emptyFoodCoverageEstimate);
+  };
+  const selectLevel = (relativeLevel: IntakeRelativeLevel) => finishDay(foodRecordContextFromSelection({
+    date: day.date,
+    relativeLevel,
+    confirmedAt: nowIso(),
+  }));
+  const markPartialDay = () => finishDay(foodRecordContextFromSelection({
+    date: day.date,
+    relativeLevel: "unknown",
+    mealRecordStatus: "partial",
+    confirmedAt: nowIso(),
+  }));
+  const saveEstimate = () => finishDay(foodRecordContextFromSelection({
+    date: day.date,
+    relativeLevel: day.isCheatDay ? "more" : "consumed_unknown",
+    estimatedCalories: optionalPositiveNumber(estimate.calories),
+    estimatedProtein: optionalPositiveNumber(estimate.protein),
+    estimatedFat: optionalPositiveNumber(estimate.fat),
+    estimatedCarbs: optionalPositiveNumber(estimate.carbs),
+    memo: estimate.memo,
+    confidence: estimate.confidence,
+    confirmedAt: nowIso(),
+  }));
+
+  if (!day) return null;
+  return (
+    <div className="fixed inset-0 z-[70] flex items-end justify-center bg-ink/35 px-4 pb-4" onClick={onCancel}>
+      <div className="home-sheet max-h-[88vh] w-full max-w-[430px] overflow-y-auto p-5" onClick={(event) => event.stopPropagation()}>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-lg font-bold">食事記録を確認</p>
+            <p className="mt-1 text-xs leading-relaxed text-moss">正確な内容が分からなくても、ざっくりした量だけで大丈夫です。</p>
+          </div>
+          <button className="icon-button h-9 w-9 shrink-0" aria-label="閉じる" onClick={onCancel}>×</button>
+        </div>
+        <div className="mt-4 flex items-center justify-between gap-3">
+          <div>
+            <p className="font-bold">{formatJapaneseDate(day.date)}</p>
+            <p className="mt-1 text-xs font-semibold text-moss">食事記録なし{day.isCheatDay ? " / チートデー" : ""}</p>
+          </div>
+          <span className="mini-chip shrink-0">{index + 1}/{days.length}</span>
+        </div>
+
+        {!isEstimateOpen ? <>
+          <p className="mt-5 text-sm font-bold">この日の食事量に近いものは？</p>
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            {options.map((option) => (
+              <button className="mode-button min-h-14 px-2 text-xs leading-snug" key={option} onClick={() => void selectLevel(option)}>
+                {intakeRelativeLevelLabels[option]}
+              </button>
+            ))}
+          </div>
+          <button className="secondary-button mt-3 w-full" onClick={() => setIsEstimateOpen(true)}>ざっくり数値を入力</button>
+          <button className="secondary-button mt-2 w-full" onClick={() => void markPartialDay()}>まだ1日の途中だった</button>
+          <button className="mt-2 w-full py-3 text-xs font-bold text-moss" onClick={() => void selectLevel("unknown")}>不明のまま続ける</button>
+          <button className="mt-1 w-full py-2 text-xs font-bold text-moss" onClick={onCancel}>後で食事を記録する</button>
+        </> : <>
+          <p className="mt-5 text-sm font-bold">分かる数値だけ入力</p>
+          <p className="mt-1 text-xs text-moss">概算値は確定ログへ加えず、AI相談の参考情報として使います。</p>
+          <div className="mt-3 grid min-w-0 grid-cols-2 gap-3">
+            {([
+              ["カロリー kcal", "calories"],
+              ["P g", "protein"],
+              ["F g", "fat"],
+              ["C g", "carbs"],
+            ] as const).map(([label, key]) => (
+              <label className="onboarding-field min-w-0" key={key}>
+                <span>{label}</span>
+                <input className="min-w-0 w-full" type="number" min="0" inputMode="decimal" value={estimate[key]} onChange={(event) => setEstimate((current) => ({ ...current, [key]: event.target.value === "" ? "" : Number(event.target.value) }))} placeholder="任意" />
+              </label>
+            ))}
+          </div>
+          <label className="onboarding-field mt-3 min-w-0"><span>食事内容のメモ</span><textarea className="min-h-20 min-w-0 w-full" value={estimate.memo} onChange={(event) => setEstimate((current) => ({ ...current, memo: event.target.value }))} placeholder="例: 外食でコース料理、デザートあり" /></label>
+          <label className="onboarding-field mt-3 min-w-0"><span>概算の確かさ</span><select className="min-w-0 w-full" value={estimate.confidence} onChange={(event) => setEstimate((current) => ({ ...current, confidence: event.target.value as FoodCoverageEstimateDraft["confidence"] }))}><option value="low">低い</option><option value="medium">中程度</option><option value="high">高い</option></select></label>
+          <div className="mt-4 grid grid-cols-2 gap-2">
+            <button className="secondary-button" onClick={() => setIsEstimateOpen(false)}><ChevronLeft size={17} />戻る</button>
+            <button className="primary-button" onClick={() => void saveEstimate()}><Check size={17} />この内容で続ける</button>
+          </div>
+        </>}
+      </div>
+    </div>
+  );
+}
+
 function RecordsTab(props: {
   profile?: Profile;
   goal?: Goal;
@@ -7710,6 +7838,7 @@ function RecordsTab(props: {
   const [selectedRecordDetail, setSelectedRecordDetail] = useState<EditableRecordTab | undefined>();
   const [historyReport, setHistoryReport] = useState("");
   const [historyReportCopied, setHistoryReportCopied] = useState(false);
+  const [historyFoodCoverageReviewDays, setHistoryFoodCoverageReviewDays] = useState<FoodCoverageDay[]>([]);
   const sortedWeightLogs = useMemo(() => [...props.weightLogs].sort((a, b) => a.logged_at.localeCompare(b.logged_at)), [props.weightLogs]);
   const latestWeight = sortedWeightLogs.at(-1);
   const firstWeight = sortedWeightLogs[0];
@@ -7750,7 +7879,7 @@ function RecordsTab(props: {
   useEffect(() => {
     setSelectedRecordDetail(undefined);
   }, [selectedReportDate]);
-  const generateHistoryDayReport = async () => {
+  const generateHistoryDayReport = async (foodRecordContexts = Object.values(props.settings?.food_record_contexts ?? {})) => {
     if (!selectedReportDate || !selectedHasRecords) return;
     const generatedAt = nowIso();
     const content = generateMarkdownReport({
@@ -7766,7 +7895,7 @@ function RecordsTab(props: {
       periodStart: selectedReportDate,
       periodEnd: selectedReportDate,
       generatedAt,
-      currentAppDate: props.appDate,
+      currentAppDate: todayAppDate(props.settings?.day_boundary_hour ?? 3),
       cheatDayDates: props.cheatDayDates.filter((date) => date === selectedReportDate),
       specialModeDays: [
         ...getSpecialModeDaysInRange(selectedReportDate, selectedReportDate, props.specialModeSettings),
@@ -7777,6 +7906,7 @@ function RecordsTab(props: {
       activityProfile: props.settings?.activity_profile,
       dailyActivity: { date: selectedReportDate, relative_activity_level: "unknown", data_source: "unknown" },
       reportCoverage: selectedReportDate === todayAppDate(props.settings?.day_boundary_hour ?? 3) ? "partial" : "completed",
+      foodRecordContexts: foodRecordContexts.filter((context) => context.date === selectedReportDate),
       question: `${formatJapaneseDate(selectedReportDate)}の記録を翌朝に振り返る前提で、よかった点と次回の調整を簡潔に整理してください。`,
     });
     setHistoryReport(content);
@@ -7789,11 +7919,39 @@ function RecordsTab(props: {
       content,
       report_coverage: selectedReportDate === todayAppDate(props.settings?.day_boundary_hour ?? 3) ? "partial" : "completed",
       activity_context: { date: selectedReportDate, relative_activity_level: "unknown", data_source: "unknown" },
+      food_record_contexts: foodRecordContexts.filter((context) => context.date === selectedReportDate),
       created_at: generatedAt,
       updated_at: generatedAt,
     });
     await props.refresh();
     props.showToast("日別AIレポートを生成しました");
+  };
+  const prepareHistoryDayReport = async () => {
+    if (!selectedReportDate || !selectedHasRecords) return;
+    const coverage = selectedReportDate === todayAppDate(props.settings?.day_boundary_hour ?? 3) ? "partial" : "completed";
+    const pauseDayDates = getPauseModeDaysInRange(selectedReportDate, selectedReportDate, props.pauseModeSettings).map((day) => day.date);
+    const days = buildFoodCoverageDays({
+      dates: [selectedReportDate],
+      foodEntries: selectedFoodEntries,
+      contexts: Object.values(props.settings?.food_record_contexts ?? {}),
+      cheatDayDates: props.cheatDayDates,
+      pauseDayDates,
+      currentAppDate: todayAppDate(props.settings?.day_boundary_hour ?? 3),
+      dailyReportCoverage: coverage,
+    });
+    const reviewDays = getFoodCoverageReviewDays(days);
+    if (reviewDays.length) {
+      setHistoryFoodCoverageReviewDays(reviewDays);
+      return;
+    }
+    await generateHistoryDayReport();
+  };
+  const completeHistoryFoodCoverageReview = async (contexts: FoodRecordContext[]) => {
+    const mergedContexts = { ...(props.settings?.food_record_contexts ?? {}) };
+    contexts.forEach((context) => { mergedContexts[context.date] = context; });
+    if (props.settings) await db.settings.update("local", { food_record_contexts: mergedContexts, updated_at: nowIso() });
+    setHistoryFoodCoverageReviewDays([]);
+    await generateHistoryDayReport(Object.values(mergedContexts));
   };
 
   return (
@@ -7918,7 +8076,7 @@ function RecordsTab(props: {
                 <MetricPill label="チートデー" value={props.cheatDayDates.includes(selectedReportDate) ? "対象" : "-"} />
                 <MetricPill label="一時停止" value={getPauseModeDaysInRange(selectedReportDate, selectedReportDate, props.pauseModeSettings).length ? "対象" : "-"} />
               </div>
-              <button className="primary-button mt-3 w-full" onClick={generateHistoryDayReport}>
+              <button className="primary-button mt-3 w-full" onClick={() => void prepareHistoryDayReport()}>
                 <FileText size={17} />この日の日別レポートを生成
               </button>
               {historyReport && (
@@ -8077,6 +8235,13 @@ function RecordsTab(props: {
         ))}
         {workoutHistory.length === 0 && <EmptyLine text="まだワークアウト履歴はありません" />}
       </section>
+      {historyFoodCoverageReviewDays.length > 0 && (
+        <FoodCoverageReviewModal
+          days={historyFoodCoverageReviewDays}
+          onCancel={() => setHistoryFoodCoverageReviewDays([])}
+          onComplete={completeHistoryFoodCoverageReview}
+        />
+      )}
     </div>
   );
 }
@@ -8145,6 +8310,7 @@ function SettingsTab(props: {
   const [reportCoverage, setReportCoverage] = useState<ReportCoverage>(() => props.appDate === todayAppDate(props.settings?.day_boundary_hour ?? 3) ? "partial" : "completed");
   const [reportActivity, setReportActivity] = useState<DailyActivityContext>(() => ({ date: props.appDate, relative_activity_level: "unknown", data_source: "unknown" }));
   const [isReportActivityManualOpen, setIsReportActivityManualOpen] = useState(false);
+  const [foodCoverageReviewDays, setFoodCoverageReviewDays] = useState<FoodCoverageDay[]>([]);
   const [activityProfileStep, setActivityProfileStep] = useState(0);
   const [isActivityProfileWizardOpen, setIsActivityProfileWizardOpen] = useState(false);
   const [isActivityGoalPreviewOpen, setIsActivityGoalPreviewOpen] = useState(false);
@@ -9088,6 +9254,88 @@ function SettingsTab(props: {
     </section>
   );
 
+  const getAiReportScope = () => {
+    const end = props.appDate;
+    const start = reportMode === "day" ? end : addDays(end, reportMode === "week" ? -6 : -29);
+    const range = dateRange(start, end);
+    const scopedCheatDayDates = props.cheatDayDates.filter((date) => range.includes(date));
+    const scopedSpecialModeDays = [
+      ...getSpecialModeDaysInRange(start, end, props.specialModeSettings),
+      ...getPauseModeDaysInRange(start, end, props.pauseModeSettings),
+      ...getDeveloperTestModeDaysInRange(start, end, props.settings),
+    ];
+    return { start, end, range, scopedCheatDayDates, scopedSpecialModeDays };
+  };
+  const generateAiReport = async (foodRecordContexts = Object.values(props.settings?.food_record_contexts ?? {})) => {
+    const generatedAt = nowIso();
+    const { start, end, range, scopedCheatDayDates, scopedSpecialModeDays } = getAiReportScope();
+    const scopedFoodRecordContexts = foodRecordContexts.filter((context) => range.includes(context.date));
+    const content = generateMarkdownReport({
+      profile: props.profile,
+      goal: props.activeGoal,
+      foodEntries: props.allData.foodEntries.filter((entry) => range.includes(entry.app_date)),
+      menuItems: props.menuItems,
+      weightLogs: props.allData.weightLogs.filter((entry) => reportMode === "day" ? entry.app_date <= end : range.includes(entry.app_date)),
+      workoutSessions: props.allData.workoutSessions.filter((entry) => range.includes(entry.app_date)),
+      workoutExercises: props.allData.workoutExercises,
+      workoutSets: props.allData.workoutSets,
+      weeklyWorkoutStatus: props.weeklyWorkoutStatus,
+      periodStart: start,
+      periodEnd: end,
+      generatedAt,
+      currentAppDate: todayAppDate(props.settings?.day_boundary_hour ?? 3),
+      cheatDayDates: scopedCheatDayDates,
+      specialModeDays: scopedSpecialModeDays,
+      workoutGrouping: reportMode,
+      activityProfile: props.settings?.activity_profile,
+      dailyActivity: reportMode === "day" ? { ...reportActivity, date: end } : undefined,
+      reportCoverage: reportMode === "day" ? reportCoverage : undefined,
+      foodRecordContexts: scopedFoodRecordContexts,
+      question,
+    });
+    setReport(content);
+    setCopiedReport(false);
+    await db.ai_reports.put({
+      id: makeId("report"),
+      period_start: start,
+      period_end: end,
+      format: "markdown",
+      content,
+      report_coverage: reportMode === "day" ? reportCoverage : undefined,
+      activity_context: reportMode === "day" ? { ...reportActivity, date: end } : undefined,
+      food_record_contexts: scopedFoodRecordContexts,
+      created_at: generatedAt,
+      updated_at: generatedAt,
+    });
+    await props.refresh();
+  };
+  const prepareAiReport = async () => {
+    const { range, scopedCheatDayDates, scopedSpecialModeDays } = getAiReportScope();
+    const pauseDayDates = scopedSpecialModeDays.filter((day) => day.kind === "pause").map((day) => day.date);
+    const coverageDays = buildFoodCoverageDays({
+      dates: range,
+      foodEntries: props.allData.foodEntries.filter((entry) => range.includes(entry.app_date)),
+      contexts: Object.values(props.settings?.food_record_contexts ?? {}),
+      cheatDayDates: scopedCheatDayDates,
+      pauseDayDates,
+      currentAppDate: todayAppDate(props.settings?.day_boundary_hour ?? 3),
+      dailyReportCoverage: reportMode === "day" ? reportCoverage : undefined,
+    });
+    const reviewDays = getFoodCoverageReviewDays(coverageDays);
+    if (reviewDays.length) {
+      setFoodCoverageReviewDays(reviewDays);
+      return;
+    }
+    await generateAiReport();
+  };
+  const completeFoodCoverageReview = async (contexts: FoodRecordContext[]) => {
+    const mergedContexts = { ...(props.settings?.food_record_contexts ?? {}) };
+    contexts.forEach((context) => { mergedContexts[context.date] = context; });
+    await saveSettingsPatch({ food_record_contexts: mergedContexts });
+    setFoodCoverageReviewDays([]);
+    await generateAiReport(Object.values(mergedContexts));
+  };
+
   const aiReportSection = (
     <section className={`ai-report-section compact-card p-4 ${props.focus === "ai" ? "border-2 border-leaf" : ""}`}>
       <div className="flex items-center justify-between gap-2">
@@ -9143,44 +9391,7 @@ function SettingsTab(props: {
         </div>}
       </div>}
       <textarea className="mt-3 min-h-20 w-full" value={question} onChange={(event) => setQuestion(event.target.value)} placeholder="AIにコピーして相談できるレポートを生成します。特に相談したいことがあれば記入してください。なければそのまま生成を押してください" />
-      <button className="primary-button mt-3 w-full" onClick={async () => {
-        const generatedAt = nowIso();
-        const end = props.appDate;
-        const start = reportMode === "day" ? end : addDays(end, reportMode === "week" ? -6 : -29);
-        const range = dateRange(start, end);
-        const scopedCheatDayDates = props.cheatDayDates.filter((date) => range.includes(date));
-        const scopedSpecialModeDays = [
-          ...getSpecialModeDaysInRange(start, end, props.specialModeSettings),
-          ...getPauseModeDaysInRange(start, end, props.pauseModeSettings),
-          ...getDeveloperTestModeDaysInRange(start, end, props.settings),
-        ];
-        const content = generateMarkdownReport({
-          profile: props.profile,
-          goal: props.activeGoal,
-          foodEntries: props.allData.foodEntries.filter((entry) => range.includes(entry.app_date)),
-          menuItems: props.menuItems,
-          weightLogs: props.allData.weightLogs.filter((entry) => reportMode === "day" ? entry.app_date <= end : range.includes(entry.app_date)),
-          workoutSessions: props.allData.workoutSessions.filter((entry) => range.includes(entry.app_date)),
-          workoutExercises: props.allData.workoutExercises,
-          workoutSets: props.allData.workoutSets,
-          weeklyWorkoutStatus: props.weeklyWorkoutStatus,
-          periodStart: start,
-          periodEnd: end,
-          generatedAt,
-          currentAppDate: props.appDate,
-          cheatDayDates: scopedCheatDayDates,
-          specialModeDays: scopedSpecialModeDays,
-          workoutGrouping: reportMode,
-          activityProfile: props.settings?.activity_profile,
-          dailyActivity: reportMode === "day" ? { ...reportActivity, date: end } : undefined,
-          reportCoverage: reportMode === "day" ? reportCoverage : undefined,
-          question,
-        });
-        setReport(content);
-        setCopiedReport(false);
-        await db.ai_reports.put({ id: makeId("report"), period_start: start, period_end: end, format: "markdown", content, report_coverage: reportMode === "day" ? reportCoverage : undefined, activity_context: reportMode === "day" ? { ...reportActivity, date: end } : undefined, created_at: generatedAt, updated_at: generatedAt });
-        await props.refresh();
-      }}><FileText size={17} />生成</button>
+      <button className="primary-button mt-3 w-full" onClick={() => void prepareAiReport()}><FileText size={17} />生成</button>
       {report && (
         <>
           <div className="mt-2 grid grid-cols-2 gap-2">
@@ -10014,6 +10225,13 @@ function SettingsTab(props: {
             </div>
           </div>
         </div>
+      )}
+      {foodCoverageReviewDays.length > 0 && (
+        <FoodCoverageReviewModal
+          days={foodCoverageReviewDays}
+          onCancel={() => setFoodCoverageReviewDays([])}
+          onComplete={completeFoodCoverageReview}
+        />
       )}
       {isMacroOverrideOpen && (
         <MacroOverrideModal

@@ -1,9 +1,10 @@
-import type { ActivityProfile, DailyActivityContext, FoodEntry, Goal, MenuItem, Phase, Profile, ReportCoverage, WeightLog, WorkoutExercise, WorkoutSession, WorkoutSet } from "../types";
+import type { ActivityProfile, DailyActivityContext, FoodEntry, FoodRecordContext, Goal, MenuItem, Phase, Profile, ReportCoverage, WeightLog, WorkoutExercise, WorkoutSession, WorkoutSet } from "../types";
 import { dateRange } from "./date";
 import { phaseLabels } from "./goalCalculator";
 import { formatWeeklyWorkoutStatus, type WeeklyWorkoutStatus } from "./workoutStatus";
 import { getDailyNutritionEstimate } from "./nutritionEstimate";
 import { getActivityProfilePresentation, getDailyActivityPresentation, getFoodSummaryLabels, getProteinSafetyPresentation } from "./reportPresentation";
+import { buildFoodCoverageDays, getFoodCoverageConfidence, intakeRelativeLevelLabels, type FoodCoverageDay } from "./foodRecordCoverage";
 
 const finisherPulseIntensity = "finisher_pulse";
 const mealTypeLabels: Record<string, string> = {
@@ -45,13 +46,13 @@ export function generateMarkdownReport(input: {
   activityProfile?: ActivityProfile;
   dailyActivity?: DailyActivityContext;
   reportCoverage?: ReportCoverage;
+  foodRecordContexts?: FoodRecordContext[];
   question: string;
 }) {
   const dates = dateRange(input.periodStart, input.periodEnd);
   const cheatDayDates = dates.filter((date) => input.cheatDayDates?.includes(date));
   const specialModeDays = (input.specialModeDays ?? []).filter((day) => dates.includes(day.date));
   const foodDays = new Set(input.foodEntries.map((entry) => entry.app_date));
-  const missingDays = dates.filter((date) => !foodDays.has(date));
   const totals = input.foodEntries.reduce(
     (sum, entry) => ({
       calories: sum.calories + entry.calories,
@@ -131,6 +132,19 @@ export function generateMarkdownReport(input: {
     sets: input.workoutSets,
   });
   const reportCoverage: ReportCoverage = input.reportCoverage ?? (isDaily && input.periodEnd === input.currentAppDate ? "partial" : "completed");
+  const pauseDayDates = specialModeDays.filter((day) => day.kind === "pause").map((day) => day.date);
+  const foodCoverageDays = buildFoodCoverageDays({
+    dates,
+    foodEntries: input.foodEntries,
+    contexts: input.foodRecordContexts,
+    cheatDayDates,
+    pauseDayDates,
+    currentAppDate: input.currentAppDate,
+    dailyReportCoverage: isDaily ? reportCoverage : undefined,
+  });
+  const missingDays = foodCoverageDays.filter((day) => day.status !== "recorded").map((day) => day.date);
+  const incompleteFoodDays = foodCoverageDays.filter((day) => !["recorded", "excluded"].includes(day.status));
+  const periodFoodAverageReliable = incompleteFoodDays.length === 0;
   const isInProgressDailyReport = isDaily && reportCoverage === "partial";
   const proteinSafety = input.goal ? getProteinSafetyPresentation({
     adoptedProtein: estimateSummary.adoptedTotals.protein,
@@ -138,14 +152,22 @@ export function generateMarkdownReport(input: {
     targetProtein: input.goal.target_protein_g,
     coverage: reportCoverage,
   }) : undefined;
-  const foodSummaryLabels = getFoodSummaryLabels(isDaily);
+  const defaultFoodSummaryLabels = getFoodSummaryLabels(isDaily);
+  const foodSummaryLabels = !isDaily && !periodFoodAverageReliable
+    ? { heading: "記録日の食事平均", calories: "記録日の平均 kcal", macros: "記録日の平均 P/F/C" }
+    : defaultFoodSummaryLabels;
   const displayedNutrition = isDaily ? {
     calories: Math.round(totals.calories),
     protein: round1(totals.protein),
     fat: round1(totals.fat),
     carbs: round1(totals.carbs),
   } : average;
-  const inProgressDifferenceLines = macroDiffs && isInProgressDailyReport
+  const hasRecordedFood = foodDays.size > 0;
+  const inProgressDifferenceLines = isDaily && !hasRecordedFood
+    ? reportCoverage === "partial"
+      ? "- 食事はまだ記録されていません。途中経過のため、残量や未達は評価しません"
+      : "- 食事の摂取量が不明なため、目標との差分は評価できません"
+    : macroDiffs && isInProgressDailyReport
     ? [
         `- kcal: ${formatInProgressRemaining(estimateSummary.adoptedRemaining.calories, "kcal")}`,
         `- P: ${formatInProgressRemaining(estimateSummary.adoptedRemaining.protein, "g")}`,
@@ -174,7 +196,7 @@ export function generateMarkdownReport(input: {
     `- 推定カロリー比率: ${estimatedFoodRatio}`,
     `- 安全側バッファ: ${estimateSummary.uncertainty.calories}kcal / P${estimateSummary.uncertainty.protein}g / F${estimateSummary.uncertainty.fat}g / C${estimateSummary.uncertainty.carbs}g`,
   ].join("\n");
-  const dailyRemainingLines = isDaily
+  const dailyRemainingLines = isDaily && hasRecordedFood
     ? [
         `- 採用値ベース残量: ${formatRemainingForReport(estimateSummary.adoptedRemaining.calories, "kcal")} / P ${formatRemainingForReport(estimateSummary.adoptedRemaining.protein, "g")} / F ${formatRemainingForReport(estimateSummary.adoptedRemaining.fat, "g")} / C ${formatRemainingForReport(estimateSummary.adoptedRemaining.carbs, "g")}`,
         `- 安全側の追加上限: ${formatRemainingForReport(estimateSummary.safeRemaining.calories, "kcal")} / F ${formatRemainingForReport(estimateSummary.safeRemaining.fat, "g")} / C ${formatRemainingForReport(estimateSummary.safeRemaining.carbs, "g")}`,
@@ -182,7 +204,7 @@ export function generateMarkdownReport(input: {
           ? `- Pの安全側評価: ${proteinSafety.valueLine} / ${proteinSafety.message}`
           : "- Pの安全側評価: P目標未設定",
       ].join("\n")
-    : "";
+    : isDaily ? "- 食事の摂取量が不明なため、残量は算出しません" : "";
   const estimatedFoodRequestLine = estimatedFoodEntries.length
     ? "- 食事ログに推定値が含まれています。可能ならAI側で公式サイト・商品ページ・信頼できる栄養データから正しい kcal / P / F / C の取得を試み、推定値との差分が大きいものを明記してください。"
     : "";
@@ -214,6 +236,7 @@ export function generateMarkdownReport(input: {
     ? "- 目標kcal/PFCはカスタム設定です。表示されている目標kcalを最終目標として扱い、期間補正をさらに上乗せ/差し引きしないでください。期間補正は目標設計の参考情報として扱ってください。"
     : "- 期間補正や参考kcal補正は二重加算せず、変更が必要な場合は修正後の最終目標kcalとして提案してください。";
   const activitySection = formatActivitySection(input.activityProfile, input.dailyActivity, input.goal, isDaily);
+  const foodCoverageSection = formatFoodCoverageSection(foodCoverageDays, periodFoodAverageReliable);
 
   const goalTargetWeightText = typeof input.goal?.target_weight_kg === "number" ? `${input.goal.target_weight_kg}kg` : "-";
   const goalTargetBodyFatText = typeof input.goal?.target_body_fat_percentage === "number" ? `${input.goal.target_body_fat_percentage}%` : "-";
@@ -254,6 +277,10 @@ ${isDaily && reportCoverage === "partial" ? "- 注意: このレポートは1日
 - 筋トレや有酸素の記録だけから、日常の総活動量が増えたと断定しないでください。
 - 活動量データが不足している場合は不足を明記し、推測で補完しないでください。
 - 摂取量、体重推移、活動量、筋トレ状況を合わせて評価し、単日の活動量だけで長期目標を大きく変更しないでください。
+- 食事記録がない日は、明示的な「ほぼ食事なし」の申告がない限り0 kcalや絶食日として扱わないでください。
+- チートデーの食事が未記録の場合、記録済みの日だけから期間平均やカロリー収支を断定しないでください。
+- 食事記録カバレッジが不完全な場合は信頼度を明記し、必要なら最終判断の前に未記録日の食事量を確認してください。
+- 未記録摂取がある可能性を確認してから、活動量、有酸素運動、目標カロリーの変更を提案してください。
 - AI側で判断した適正値が、現在トラッカーに設定されている kcal / P / F / C と違う場合は、トラッカー側の値を編集する前提で修正後の数値を明示してください。
 - 体重・体脂肪率・運動強度・フェーズ・週の運動目標など、PFC以外にもトラッカー側で直した方がよい項目があれば併せて示してください。
 ${targetPeriodRequestLine}
@@ -310,12 +337,17 @@ ${formatTargetPeriodReferenceSection({
 
 ${activitySection}
 
+## 食事記録カバレッジ
+
+${foodCoverageSection}
+
 ## ${foodSummaryLabels.heading}
 
 - 記録あり日数: ${foodDays.size}
-- 未記録日: ${missingDays.length}日 (${missingDays.join(", ") || "なし"})
-- ${foodSummaryLabels.calories}: ${displayedNutrition.calories}
-- ${foodSummaryLabels.macros}: ${displayedNutrition.protein}g / ${displayedNutrition.fat}g / ${displayedNutrition.carbs}g
+- 詳細未記録日: ${missingDays.length}日 (${missingDays.join(", ") || "なし"})
+- 期間平均の扱い: ${periodFoodAverageReliable ? "対象期間の平均として参照可能" : `正確な算出不可（表示値は記録のある${foodDays.size}日間のみ）`}
+- ${foodSummaryLabels.calories}: ${hasRecordedFood ? displayedNutrition.calories : "算出不可（未記録を0kcalとは扱いません）"}
+- ${foodSummaryLabels.macros}: ${hasRecordedFood ? `${displayedNutrition.protein}g / ${displayedNutrition.fat}g / ${displayedNutrition.carbs}g` : "算出不可"}
 - 外食・チェーン系ログ: ${eatingOut}件
 - スイーツ系ログ: ${sweets}件
 - 飲酒・飲み会ログ: ${drinking}件
@@ -360,6 +392,64 @@ ${exerciseLines.join("\n") || "- 記録なし"}`}
 
 ${input.question || "ここに質問を追記してください。"}
 `;
+}
+
+function formatFoodCoverageSection(days: FoodCoverageDay[], periodAverageReliable: boolean) {
+  const recordedDays = days.filter((day) => day.status === "recorded");
+  const unrecordedDays = days.filter((day) => day.status === "unrecorded");
+  const qualitativeDays = days.filter((day) => day.status === "estimated_only" && day.context?.estimated_calories === undefined);
+  const roughEstimateDays = days.filter((day) => day.status === "estimated_only" && day.context?.estimated_calories !== undefined);
+  const noFoodDays = days.filter((day) => day.status === "declared_no_food");
+  const partialDays = days.filter((day) => day.status === "partial");
+  const excludedDays = days.filter((day) => day.status === "excluded");
+  const cheatWithoutDetails = days.filter((day) => day.isCheatDay && day.status !== "recorded");
+  const detailLines = days
+    .filter((day) => day.status !== "recorded")
+    .map((day) => {
+      const prefix = day.isCheatDay ? "チートデー / " : "";
+      if (day.status === "excluded") return `- ${day.date}: ${prefix}一時停止モードのため集計対象外`;
+      if (day.status === "partial") return `- ${day.date}: ${prefix}途中経過`;
+      if (day.status === "declared_no_food") return `- ${day.date}: ${prefix}ユーザー申告上、ほぼ食事なし`;
+      if (day.context) {
+        const estimate = typeof day.context.estimated_calories === "number"
+          ? ` / 概算 ${Math.round(day.context.estimated_calories)}kcal${formatOptionalMacroEstimate(day.context)}`
+          : " / カロリー不明";
+        const memo = day.context.intake_memo ? ` / メモ: ${day.context.intake_memo}` : "";
+        return `- ${day.date}: ${prefix}${intakeRelativeLevelLabels[day.context.intake_relative_level]}${estimate}${memo}`;
+      }
+      return `- ${day.date}: ${prefix}食事記録なし・摂取量不明`;
+    });
+  return [
+    `- 対象日数: ${days.length}日`,
+    `- 詳細な食事記録あり: ${recordedDays.length}日`,
+    `- 食事未記録・摂取量不明: ${unrecordedDays.length}日`,
+    `- 定性的な申告のみ: ${qualitativeDays.length}日`,
+    `- 概算値のみ: ${roughEstimateDays.length}日`,
+    `- ほぼ食事なしの申告: ${noFoodDays.length}日`,
+    `- 途中経過: ${partialDays.length}日`,
+    `- 集計対象外: ${excludedDays.length}日`,
+    `- チートデーで詳細未記録: ${cheatWithoutDetails.length}日${cheatWithoutDetails.length ? ` (${cheatWithoutDetails.map((day) => day.date).join(", ")})` : ""}`,
+    `- 期間全体の平均摂取量: ${periodAverageReliable ? "算出可能" : "正確な算出不可"}`,
+    `- 食事記録の信頼度: ${getFoodCoverageConfidence(days)}`,
+    ...(detailLines.length ? ["", "### 詳細未記録日の状態", ...detailLines] : []),
+    ...(!periodAverageReliable ? [
+      "",
+      "### AIへの注意",
+      "- 未記録日を0 kcalとして扱わないでください。",
+      "- 表示される食事平均は記録日のみを対象としており、期間全体の平均ではありません。",
+      "- 記録済みの日だけを根拠に、期間全体の食事管理やエネルギー収支を肯定しないでください。",
+      "- 情報不足が結論へ影響する場合は、追加確認するか低信頼度として示してください。",
+    ] : []),
+  ].join("\n");
+}
+
+function formatOptionalMacroEstimate(context: FoodRecordContext) {
+  const macros = [
+    typeof context.estimated_protein_g === "number" ? `P${context.estimated_protein_g}g` : "",
+    typeof context.estimated_fat_g === "number" ? `F${context.estimated_fat_g}g` : "",
+    typeof context.estimated_carbs_g === "number" ? `C${context.estimated_carbs_g}g` : "",
+  ].filter(Boolean);
+  return macros.length ? ` (${macros.join(" ")})` : "";
 }
 
 function formatRemainingForReport(value: number, unit: string) {
