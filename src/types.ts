@@ -10,6 +10,8 @@ export type Phase =
 export type Sex = "male" | "female" | "unspecified";
 export type ActivityLevel = "low" | "moderate" | "high" | "very_high";
 export type ActivityAveragingPeriod = "last_30_days" | "last_4_weeks" | "initial_setup";
+export type ActivityDataSource = "apple_watch" | "apple_health" | "smartphone" | "wearable" | "user_estimate" | "unknown";
+export type ActivityProfileDataSource = ActivityDataSource | "initial_setup";
 export type ActivityProfile = {
   activity_level: ActivityLevel;
   average_steps?: number;
@@ -17,11 +19,11 @@ export type ActivityProfile = {
   average_exercise_minutes?: number;
   notes?: string;
   averaging_period: ActivityAveragingPeriod;
+  data_source?: ActivityProfileDataSource;
   confirmed_at: string;
   updated_at: string;
 };
 export type RelativeActivityLevel = "low" | "normal" | "high" | "unknown";
-export type ActivityDataSource = "apple_watch" | "apple_health" | "smartphone" | "wearable" | "user_estimate" | "unknown";
 export type DailyActivityContext = {
   date: string;
   relative_activity_level: RelativeActivityLevel;

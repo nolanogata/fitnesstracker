@@ -1,8 +1,9 @@
-import type { ActivityDataSource, ActivityProfile, DailyActivityContext, FoodEntry, Goal, MenuItem, Phase, Profile, ReportCoverage, WeightLog, WorkoutExercise, WorkoutSession, WorkoutSet } from "../types";
+import type { ActivityProfile, DailyActivityContext, FoodEntry, Goal, MenuItem, Phase, Profile, ReportCoverage, WeightLog, WorkoutExercise, WorkoutSession, WorkoutSet } from "../types";
 import { dateRange } from "./date";
 import { phaseLabels } from "./goalCalculator";
 import { formatWeeklyWorkoutStatus, type WeeklyWorkoutStatus } from "./workoutStatus";
 import { getDailyNutritionEstimate } from "./nutritionEstimate";
+import { getActivityProfilePresentation, getDailyActivityPresentation, getFoodSummaryLabels, getProteinSafetyPresentation } from "./reportPresentation";
 
 const finisherPulseIntensity = "finisher_pulse";
 const mealTypeLabels: Record<string, string> = {
@@ -131,6 +132,19 @@ export function generateMarkdownReport(input: {
   });
   const reportCoverage: ReportCoverage = input.reportCoverage ?? (isDaily && input.periodEnd === input.currentAppDate ? "partial" : "completed");
   const isInProgressDailyReport = isDaily && reportCoverage === "partial";
+  const proteinSafety = input.goal ? getProteinSafetyPresentation({
+    adoptedProtein: estimateSummary.adoptedTotals.protein,
+    safeProteinLowerBound: estimateSummary.safeProteinLowerBound,
+    targetProtein: input.goal.target_protein_g,
+    coverage: reportCoverage,
+  }) : undefined;
+  const foodSummaryLabels = getFoodSummaryLabels(isDaily);
+  const displayedNutrition = isDaily ? {
+    calories: Math.round(totals.calories),
+    protein: round1(totals.protein),
+    fat: round1(totals.fat),
+    carbs: round1(totals.carbs),
+  } : average;
   const inProgressDifferenceLines = macroDiffs && isInProgressDailyReport
     ? [
         `- kcal: ${formatInProgressRemaining(estimateSummary.adoptedRemaining.calories, "kcal")}`,
@@ -164,9 +178,9 @@ export function generateMarkdownReport(input: {
     ? [
         `- 採用値ベース残量: ${formatRemainingForReport(estimateSummary.adoptedRemaining.calories, "kcal")} / P ${formatRemainingForReport(estimateSummary.adoptedRemaining.protein, "g")} / F ${formatRemainingForReport(estimateSummary.adoptedRemaining.fat, "g")} / C ${formatRemainingForReport(estimateSummary.adoptedRemaining.carbs, "g")}`,
         `- 安全側の追加上限: ${formatRemainingForReport(estimateSummary.safeRemaining.calories, "kcal")} / F ${formatRemainingForReport(estimateSummary.safeRemaining.fat, "g")} / C ${formatRemainingForReport(estimateSummary.safeRemaining.carbs, "g")}`,
-        estimateSummary.safeProteinTargetGap > 0
-          ? `- Pの安全側評価: 採用P ${round1(estimateSummary.adoptedTotals.protein)}g / 下限P ${round1(estimateSummary.safeProteinLowerBound)}g / 目標まで最大${round1(estimateSummary.safeProteinTargetGap)}g不足の可能性（追加摂取は必須ではありません）`
-          : `- Pの安全側評価: 採用P ${round1(estimateSummary.adoptedTotals.protein)}g / 下限P ${round1(estimateSummary.safeProteinLowerBound)}g（下限でも目標を満たす見込み）`,
+        proteinSafety
+          ? `- Pの安全側評価: ${proteinSafety.valueLine} / ${proteinSafety.message}`
+          : "- Pの安全側評価: P目標未設定",
       ].join("\n")
     : "";
   const estimatedFoodRequestLine = estimatedFoodEntries.length
@@ -296,12 +310,12 @@ ${formatTargetPeriodReferenceSection({
 
 ${activitySection}
 
-## 食事平均
+## ${foodSummaryLabels.heading}
 
 - 記録あり日数: ${foodDays.size}
 - 未記録日: ${missingDays.length}日 (${missingDays.join(", ") || "なし"})
-- 平均 kcal: ${average.calories}
-- 平均 P/F/C: ${average.protein}g / ${average.fat}g / ${average.carbs}g
+- ${foodSummaryLabels.calories}: ${displayedNutrition.calories}
+- ${foodSummaryLabels.macros}: ${displayedNutrition.protein}g / ${displayedNutrition.fat}g / ${displayedNutrition.carbs}g
 - 外食・チェーン系ログ: ${eatingOut}件
 - スイーツ系ログ: ${sweets}件
 - 飲酒・飲み会ログ: ${drinking}件
@@ -367,41 +381,33 @@ const relativeActivityReportLabels = {
   unknown: "わからない",
 } as const;
 
-const activityDataSourceReportLabels: Record<ActivityDataSource, string> = {
-  apple_watch: "Apple Watch",
-  apple_health: "Appleヘルスケア",
-  smartphone: "スマートフォン",
-  wearable: "その他のウェアラブル",
-  user_estimate: "ユーザーによる推定",
-  unknown: "不明",
-};
-
 function formatActivitySection(profile: ActivityProfile | undefined, daily: DailyActivityContext | undefined, goal: Goal | undefined, isDaily: boolean) {
   const level = profile?.activity_level ?? goal?.activity_level;
-  const hasDailyDetails = !!daily && [daily.steps, daily.active_calories, daily.exercise_minutes, daily.walking_minutes, daily.cycling_minutes]
-    .some((value) => typeof value === "number");
-  const confidence = !daily || daily.relative_activity_level === "unknown"
-    ? "低"
-    : hasDailyDetails && daily.data_source && daily.data_source !== "unknown" && daily.data_source !== "user_estimate"
-      ? "高"
-      : "中";
+  const profilePresentation = getActivityProfilePresentation(profile, goal?.activity_level);
+  const dailyPresentation = getDailyActivityPresentation(daily);
   const lines = [
-    `- 平均活動量プロフィール: ${level ? activityLevelReportLabels[level] : "未設定"}${!profile && level ? "（ゴール設定の活動量を参照）" : ""}`,
+    "### 平均活動量プロフィール",
+    `- 活動区分: ${level ? activityLevelReportLabels[level] : "未設定"}${!profile && level ? "（ゴール設定を参照）" : ""}`,
     `- 平均期間: ${profile?.averaging_period === "last_4_weeks" ? "直近4週間" : profile?.averaging_period === "last_30_days" ? "直近30日" : profile ? "初期セットアップ時の設定" : "未設定"}`,
     `- 平均歩数: ${typeof profile?.average_steps === "number" ? `${Math.round(profile.average_steps).toLocaleString("ja-JP")}歩` : "未入力"}`,
     `- 平均ムーブ: ${typeof profile?.average_active_calories === "number" ? `${Math.round(profile.average_active_calories)}kcal（アクティブカロリー）` : "未入力"}`,
     `- 平均エクササイズ時間: ${typeof profile?.average_exercise_minutes === "number" ? `${Math.round(profile.average_exercise_minutes)}分` : "未入力"}`,
     `- 平均活動量の補足: ${profile?.notes?.trim() || "なし"}`,
-    `- ${isDaily ? "対象日の活動量" : "対象期間の日別活動量"}: ${daily ? relativeActivityReportLabels[daily.relative_activity_level] : isDaily ? "わからない" : "未入力"}`,
+    `- データソース: ${profilePresentation.sourceLabel}`,
+    `- 信頼度: ${profilePresentation.confidenceLabel}`,
+    "",
+    `### ${isDaily ? "対象日の活動量" : "対象期間の日別活動量"}`,
+    `- 定性入力: ${daily ? relativeActivityReportLabels[daily.relative_activity_level] : isDaily ? "わからない" : "未入力"}`,
     `- 対象日の歩数: ${typeof daily?.steps === "number" ? `${Math.round(daily.steps).toLocaleString("ja-JP")}歩` : "未入力"}`,
     `- 対象日のムーブ: ${typeof daily?.active_calories === "number" ? `${Math.round(daily.active_calories)}kcal（アクティブカロリー）` : "未入力"}`,
     `- 対象日のエクササイズ時間: ${typeof daily?.exercise_minutes === "number" ? `${Math.round(daily.exercise_minutes)}分` : "未入力"}`,
     `- 追加の徒歩 / 自転車: ${typeof daily?.walking_minutes === "number" ? `${Math.round(daily.walking_minutes)}分` : "未入力"} / ${typeof daily?.cycling_minutes === "number" ? `${Math.round(daily.cycling_minutes)}分` : "未入力"}`,
     `- その他の活動: ${daily?.notes?.trim() || "なし"}`,
-    `- データソース: ${daily?.data_source ? activityDataSourceReportLabels[daily.data_source] : "不明"}`,
-    `- 活動量データの信頼度: ${confidence}`,
+    `- データソース: ${dailyPresentation.sourceLabel}`,
+    `- 数値評価: ${dailyPresentation.numericEvaluationLabel}`,
+    `- 信頼度: ${dailyPresentation.confidenceLabel}`,
   ];
-  if (!daily || daily.relative_activity_level === "unknown") {
+  if (!daily || (daily.relative_activity_level === "unknown" && !dailyPresentation.hasNumericData)) {
     lines.push(`- 注意: ${isDaily ? "対象日の" : "対象期間の日別"}活動量情報が不足しているため、エネルギー収支には不確実性があります`);
   }
   return lines.join("\n");
