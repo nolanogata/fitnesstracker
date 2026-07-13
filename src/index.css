@@ -2484,9 +2484,29 @@ button {
 
 .onboarding-field {
   display: grid;
+  min-width: 0;
   gap: 0.5rem;
   font-size: 0.82rem;
   font-weight: 800;
+}
+
+.activity-manual-fields {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.activity-manual-fields :where(input, select) {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+
+@media (max-width: 370px) {
+  .activity-manual-fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 .onboarding-choice {
