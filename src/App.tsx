@@ -438,7 +438,7 @@ function formatOptionalActivityValue(value: number | undefined, unit: string) {
 }
 
 function ActivityOptionalInput({ label, value, onChange }: { label: string; value?: number; onChange: (value?: number) => void }) {
-  return <label className="onboarding-field"><span>{label}</span><input type="number" inputMode="numeric" min="0" value={value ?? ""} placeholder="任意" onChange={(event) => onChange(event.target.value === "" ? undefined : Math.max(0, Number(event.target.value)))} /></label>;
+  return <label className="onboarding-field min-w-0"><span>{label}</span><input className="min-w-0 w-full" type="number" inputMode="numeric" min="0" value={value ?? ""} placeholder="任意" onChange={(event) => onChange(event.target.value === "" ? undefined : Math.max(0, Number(event.target.value)))} /></label>;
 }
 
 function ActivityGuide({ kind }: { kind: "steps" | "move" | "exercise" }) {
@@ -9032,21 +9032,25 @@ function SettingsTab(props: {
               }}
             >{option.label}</button>
           ))}
-          <button className={`mode-button min-h-11 text-xs ${isReportActivityManualOpen ? "mode-button-active" : ""}`} onClick={() => setIsReportActivityManualOpen(true)}>手動入力</button>
+          <button
+            className={`mode-button min-h-11 text-xs ${isReportActivityManualOpen ? "mode-button-active" : ""}`}
+            onClick={() => {
+              setIsReportActivityManualOpen(true);
+              setReportActivity((current) => ({ ...current, relative_activity_level: "unknown" }));
+            }}
+          >手動入力</button>
         </div>
-        {isReportActivityManualOpen && <div className="mt-4 grid gap-3">
-          <div className="grid grid-cols-3 gap-2">
-            {activityRelativeOptions.filter((option) => option.value !== "unknown").map((option) => <button className={`mode-button min-h-10 px-1 text-[11px] ${reportActivity.relative_activity_level === option.value ? "mode-button-active" : ""}`} key={option.value} onClick={() => setReportActivity((current) => ({ ...current, relative_activity_level: option.value }))}>{option.label}</button>)}
-          </div>
-          <div className="grid grid-cols-2 gap-2">
+        {isReportActivityManualOpen && <div className="mt-4 grid min-w-0 gap-3">
+          <p className="text-xs text-moss">分かる項目だけ入力してください。</p>
+          <div className="activity-manual-fields">
             <ActivityOptionalInput label="歩数" value={reportActivity.steps} onChange={(steps) => setReportActivity((current) => ({ ...current, steps }))} />
             <ActivityOptionalInput label="ムーブ kcal" value={reportActivity.active_calories} onChange={(active_calories) => setReportActivity((current) => ({ ...current, active_calories }))} />
             <ActivityOptionalInput label="エクササイズ 分" value={reportActivity.exercise_minutes} onChange={(exercise_minutes) => setReportActivity((current) => ({ ...current, exercise_minutes }))} />
             <ActivityOptionalInput label="追加の徒歩 分" value={reportActivity.walking_minutes} onChange={(walking_minutes) => setReportActivity((current) => ({ ...current, walking_minutes }))} />
             <ActivityOptionalInput label="追加の自転車 分" value={reportActivity.cycling_minutes} onChange={(cycling_minutes) => setReportActivity((current) => ({ ...current, cycling_minutes }))} />
-            <label className="onboarding-field"><span>データソース</span><select value={reportActivity.data_source ?? "unknown"} onChange={(event) => setReportActivity((current) => ({ ...current, data_source: event.target.value as ActivityDataSource }))}>{activityDataSourceOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
+            <label className="onboarding-field min-w-0"><span>データソース</span><select className="min-w-0 w-full" value={reportActivity.data_source ?? "unknown"} onChange={(event) => setReportActivity((current) => ({ ...current, data_source: event.target.value as ActivityDataSource }))}>{activityDataSourceOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
           </div>
-          <label className="onboarding-field"><span>その他の活動</span><textarea className="min-h-20" value={reportActivity.notes ?? ""} onChange={(event) => setReportActivity((current) => ({ ...current, notes: event.target.value }))} placeholder="例: 展示会で長時間歩いた、引っ越し作業" /></label>
+          <label className="onboarding-field min-w-0"><span>その他の活動</span><textarea className="min-h-20 min-w-0 w-full" value={reportActivity.notes ?? ""} onChange={(event) => setReportActivity((current) => ({ ...current, notes: event.target.value }))} placeholder="例: 展示会で長時間歩いた、引っ越し作業" /></label>
         </div>}
       </div>}
       <textarea className="mt-3 min-h-20 w-full" value={question} onChange={(event) => setQuestion(event.target.value)} placeholder="AIにコピーして相談できるレポートを生成します。特に相談したいことがあれば記入してください。なければそのまま生成を押してください" />
