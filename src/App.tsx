@@ -174,6 +174,13 @@ import { getCalorieOverTone, getDailyNutritionEstimate } from "./lib/nutritionEs
 import { activityDataSourceLabel, getProteinSafetyPresentation } from "./lib/reportPresentation";
 import { getOnboardingSteps, type OnboardingActivityMode, type OnboardingStepKey } from "./lib/onboarding";
 import { buildFoodCoverageDays, foodRecordContextFromSelection, getFoodCoverageReviewDays, intakeRelativeLevelLabels, type FoodCoverageDay } from "./lib/foodRecordCoverage";
+import {
+  getDefaultChainComboMealPeriod,
+  getDefaultChainComboServiceMode,
+  isChainComboItemAvailable,
+  type ChainComboMealPeriod,
+  type ChainComboServiceMode,
+} from "./lib/chainComboAvailability";
 
 type Tab = "home" | "food" | "workout" | "records" | "settings";
 type FoodMode = "search" | "favorite" | "chain" | "quick" | "manual" | "personal" | "recommend" | "ai";
@@ -4969,21 +4976,27 @@ function ChainComboModal({ brand, menuItems, variantIndex, remainingNutrition, a
 }) {
   const [mode, setMode] = useState<ChainComboMode>(initialMainItem ? "main" : "auto");
   const [selectedMainId, setSelectedMainId] = useState(initialMainItem?.id);
+  const [serviceMode, setServiceMode] = useState<ChainComboServiceMode>(() => getDefaultChainComboServiceMode(initialMainItem));
+  const [mealPeriod, setMealPeriod] = useState<ChainComboMealPeriod>(() => getDefaultChainComboMealPeriod(initialMainItem, new Date().getHours()));
   const usageMap = useMemo(() => buildFoodUsageMap(foodEntries), [foodEntries]);
+  const availableMenuItems = useMemo(
+    () => menuItems.filter((item) => isChainComboItemAvailable(item, { serviceMode, mealPeriod })),
+    [menuItems, serviceMode, mealPeriod],
+  );
   const mainCandidates = useMemo(() => (
-    menuItems
+    availableMenuItems
       .filter(isChainComboMainItem)
       .sort((a, b) => chainComboUsageBoost(b, usageMap) - chainComboUsageBoost(a, usageMap) || b.protein_g - a.protein_g || a.calories - b.calories)
       .slice(0, 36)
-  ), [menuItems, usageMap]);
-  const selectedMain = mainCandidates.find((item) => item.id === selectedMainId) ?? (initialMainItem && isChainComboMainItem(initialMainItem) ? initialMainItem : undefined);
+  ), [availableMenuItems, usageMap]);
+  const selectedMain = mainCandidates.find((item) => item.id === selectedMainId);
   const suggestions = useMemo(() => buildChainComboSuggestions({
-    menuItems,
+    menuItems: availableMenuItems,
     variantIndex,
     remainingNutrition,
     usageMap,
     selectedMain,
-  }), [menuItems, variantIndex, remainingNutrition.calories, remainingNutrition.protein, remainingNutrition.fat, remainingNutrition.carbs, usageMap, selectedMain?.id]);
+  }), [availableMenuItems, variantIndex, remainingNutrition.calories, remainingNutrition.protein, remainingNutrition.fat, remainingNutrition.carbs, usageMap, selectedMain?.id]);
   const topSuggestions = suggestions.slice(0, 8);
   const remainingSummary = `追加上限 ${Math.round(remainingNutrition.calories)}kcal / F${round1(remainingNutrition.fat)} C${round1(remainingNutrition.carbs)}`;
   const hasSafetyAdjustment = Math.round(adoptedRemainingNutrition.calories) !== Math.round(remainingNutrition.calories)
@@ -5018,6 +5031,50 @@ function ChainComboModal({ brand, menuItems, variantIndex, remainingNutrition, a
             メインを選ぶ
           </button>
         </div>
+
+        <section className="chain-combo-panel mt-3 rounded-md border border-line bg-rice/70 p-3">
+          <p className="text-xs font-bold text-moss">利用方法</p>
+          <div className="mt-2 grid grid-cols-2 gap-2">
+            {([[
+              "dine_in",
+              "店内",
+            ], [
+              "takeout",
+              "持ち帰り",
+            ]] as Array<[ChainComboServiceMode, string]>).map(([value, label]) => (
+              <button
+                className={`mini-chip min-h-10 ${serviceMode === value ? "mini-chip-active" : ""}`}
+                key={value}
+                aria-pressed={serviceMode === value}
+                onClick={() => setServiceMode(value)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <p className="mt-3 text-xs font-bold text-moss">時間帯</p>
+          <div className="mt-2 grid grid-cols-3 gap-2">
+            {([[
+              "breakfast",
+              "朝",
+            ], [
+              "lunch",
+              "昼",
+            ], [
+              "dinner",
+              "夜",
+            ]] as Array<[ChainComboMealPeriod, string]>).map(([value, label]) => (
+              <button
+                className={`mini-chip min-h-10 ${mealPeriod === value ? "mini-chip-active" : ""}`}
+                key={value}
+                aria-pressed={mealPeriod === value}
+                onClick={() => setMealPeriod(value)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </section>
 
         {mode === "main" && (
           <section className="chain-combo-panel mt-4 rounded-md border border-line bg-rice/70 p-3">
@@ -5081,7 +5138,7 @@ function ChainComboModal({ brand, menuItems, variantIndex, remainingNutrition, a
             </section>
           )) : (
             <p className="perfect-food-panel rounded-md bg-rice p-4 text-center text-sm font-semibold text-moss">
-              このチェーン内で組み合わせ候補を作れませんでした。
+              選んだ利用方法・時間帯で組み合わせ候補を作れませんでした。
             </p>
           )}
         </div>

@@ -8,8 +8,9 @@
     "test:goal": "node --experimental-strip-types scripts/test-goal-activity-profile.ts",
     "test:onboarding": "node --experimental-strip-types scripts/test-onboarding.ts",
     "test:report": "node --experimental-strip-types scripts/test-report-presentation.ts",
+    "test:chain-combo": "node --experimental-strip-types scripts/test-chain-combo-availability.ts",
     "dev": "vite --host 0.0.0.0",
-    "build": "npm run audit:food-seeds && npm run test:goal && npm run test:onboarding && npm run test:report && tsc --noEmit && vite build",
+    "build": "npm run audit:food-seeds && npm run test:goal && npm run test:onboarding && npm run test:report && npm run test:chain-combo && tsc --noEmit && vite build",
     "preview": "vite preview --host 0.0.0.0"
   },
   "dependencies": {
