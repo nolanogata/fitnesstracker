@@ -1,5 +1,5 @@
-import type { MenuItem, NutritionMeta } from "../../../types";
-import { stableIdWithHash } from "../../../lib/ids";
+import type { MenuItem, NutritionMeta } from "../../../types.ts";
+import { stableIdWithHash } from "../../../lib/ids.ts";
 
 type SeedInput = Omit<MenuItem, "id" | "created_at" | "updated_at" | "is_public_preset" | "is_user_created" | "is_favorite"> & {
   is_favorite?: boolean;

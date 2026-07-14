@@ -181,12 +181,19 @@ import {
   type ChainComboMealPeriod,
   type ChainComboServiceMode,
 } from "./lib/chainComboAvailability";
+import {
+  addBaskinRobbinsContainerMeta,
+  addBaskinRobbinsContainerNutrition,
+  baskinRobbinsContainerOptions,
+  isBaskinRobbinsFlavor,
+  type BaskinRobbinsContainerId,
+} from "./lib/baskinRobbins";
 
 type Tab = "home" | "food" | "workout" | "records" | "settings";
 type FoodMode = "search" | "favorite" | "chain" | "quick" | "manual" | "personal" | "recommend" | "ai";
 type WorkoutMode = "favorite" | "preset" | "body" | "equipment" | "my" | "search";
 type FoodFocus = "todayLog" | "specialMode" | "favorite" | undefined;
-type FoodAddStep = "size" | "customSize" | "quantity" | "timing" | "confirm";
+type FoodAddStep = "size" | "customSize" | "container" | "quantity" | "timing" | "confirm";
 type ManualFoodWizardStep = "basic" | "unit" | "purpose" | "category" | "nutrition" | "confirm";
 type AiFoodImportStep = "prompt" | "paste" | "read" | "match" | "timing" | "confirm";
 type WorkoutFocus = "dateLog" | undefined;
@@ -777,7 +784,7 @@ const chainCategories: Record<string, string[]> = {
   ステーキ: ["いきなりステーキ", "ペッパーランチ", "感動の肉と米"],
   イタリアン: ["パンチョ", "カプリチョーザ", "マンマパスタ", "ポポラマーマ", "すぱじろう"],
   エスニック: ["モンスーンカフェ"],
-  カフェ: ["スターバックス", "ドトール", "タリーズ", "コメダ珈琲"],
+  カフェ: ["スターバックス", "ドトール", "タリーズ", "コメダ珈琲", "サーティワン"],
   ドーナツ: ["ミスタードーナツ", "クリスピークリーム", "アイムドーナツ"],
   粉物: ["築地銀だこ", "たこ家道頓堀くくる", "道とん堀"],
   コンビニ: ["セブンイレブン", "ファミリーマート", "ローソン", "ミニストップ"],
@@ -5295,6 +5302,7 @@ function FoodTab(props: {
   const [foodAddStep, setFoodAddStep] = useState<FoodAddStep>("size");
   const [portionMultiplier, setPortionMultiplier] = useState(1);
   const [portionQuantity, setPortionQuantity] = useState(1);
+  const [baskinRobbinsContainerId, setBaskinRobbinsContainerId] = useState<BaskinRobbinsContainerId>("cup");
   const [staplePortionMultipliers, setStaplePortionMultipliers] = useState<StaplePortionMultipliers>({});
   const [manual, setManual] = useState({ ...emptyManual, savePreset: true });
   const [manualWizardStep, setManualWizardStep] = useState<ManualFoodWizardStep>("basic");
@@ -5457,6 +5465,7 @@ function FoodTab(props: {
   const selectFoodItem = (item: MenuItem) => {
     setPortionMultiplier(isMisoSoupSwitchItem(item) ? 0 : 1);
     setPortionQuantity(1);
+    setBaskinRobbinsContainerId("cup");
     setStaplePortionMultipliers({});
     setMealType(item.default_meal_type ?? mealType);
     setFoodAddStep("size");
@@ -5465,6 +5474,7 @@ function FoodTab(props: {
   const selectChainComboCandidate = (candidate: ChainComboCandidate) => {
     setPortionMultiplier(candidate.portionMultiplier);
     setPortionQuantity(1);
+    setBaskinRobbinsContainerId("cup");
     setStaplePortionMultipliers(candidate.staplePortionMultipliers ?? {});
     setMealType(candidate.item.default_meal_type ?? mealType);
     setFoodAddStep("size");
@@ -5575,6 +5585,13 @@ function FoodTab(props: {
   const portionOptions = selected ? getPortionOptions(selected) : [];
   const selectedSizeVariants = useMemo(() => selected ? getMenuSizeVariants(selected, menuSizeVariantIndex) : [], [selected?.id, menuSizeVariantIndex]);
   const hasSelectedSizeVariants = selectedSizeVariants.length > 1;
+  const hasBaskinRobbinsContainerOptions = isBaskinRobbinsFlavor(selected);
+  const baskinRobbinsContainer = baskinRobbinsContainerOptions.find((option) => option.id === baskinRobbinsContainerId) ?? baskinRobbinsContainerOptions[0];
+  const foodAddSteps = hasBaskinRobbinsContainerOptions
+    ? (["size", "container", "quantity", "timing", "confirm"] as FoodAddStep[])
+    : (["size", "quantity", "timing", "confirm"] as FoodAddStep[]);
+  const normalizedFoodAddStep = foodAddStep === "customSize" ? "size" : foodAddStep;
+  const foodAddStepIndex = Math.max(0, foodAddSteps.indexOf(normalizedFoodAddStep));
   const selectedSizeVariantLabel = selectedSizeVariants.find((variant) => variant.item.id === selected?.id)?.label;
   const selectedDisplayName = selected
     ? hasSelectedSizeVariants
@@ -5630,14 +5647,17 @@ function FoodTab(props: {
       ?? (selectedStapleConfig && selectedServingGrams ? `${selectedStapleConfig.label}${formatControlValue(round1(selectedServingGrams * portionMultiplier))}g` : undefined)
       ?? (selectedServingGrams ? `${formatControlValue(round1(selectedServingGrams * portionMultiplier))}g` : "カスタム")
     : "";
-  const selectedPortionLogLabel = selected
+  const selectedBasePortionLogLabel = selected
     ? formatFoodPortionLogLabel({
       portionLabel: selectedPortionLabel,
       quantity: portionQuantity,
       forceSingleQuantity: hasSelectedCustomPortion,
     })
     : undefined;
-  const selectedNutrition = selectedResolvedItem
+  const selectedPortionLogLabel = selectedBasePortionLogLabel && hasBaskinRobbinsContainerOptions
+    ? `${selectedBasePortionLogLabel} / ${baskinRobbinsContainer.label}`
+    : selectedBasePortionLogLabel;
+  const selectedBaseNutrition = selectedResolvedItem
     ? selectedSizeVariantNutrition
       ? {
         calories: Math.round(selectedSizeVariantNutrition.calories * portionQuantity),
@@ -5653,11 +5673,25 @@ function FoodTab(props: {
         selectedExactSizeVariant ? undefined : hasSelectedCompositeStaples ? staplePortionMultipliers : undefined,
       )
     : undefined;
+  const selectedNutrition = selectedBaseNutrition && hasBaskinRobbinsContainerOptions
+    ? addBaskinRobbinsContainerNutrition(selectedBaseNutrition, baskinRobbinsContainer)
+    : selectedBaseNutrition;
   const selectedEntryPortionMultiplier = hasSelectedSoupOptions
     ? Math.max(1, portionQuantity)
     : selectedExactSizeVariant || selectedSizeVariantNutrition || hasSelectedCompositeStaples
       ? Math.max(0, portionQuantity)
       : multiplier;
+  const selectedScaledNutritionMeta = selectedResolvedItem
+    ? scaleNutritionMeta(
+      selectedResolvedItem.nutrition_meta,
+      selectedResolvedItem.calories > 0
+        ? (selectedBaseNutrition?.calories ?? selectedResolvedItem.calories) / selectedResolvedItem.calories
+        : selectedEntryPortionMultiplier,
+    )
+    : undefined;
+  const selectedEntryNutritionMeta = hasBaskinRobbinsContainerOptions
+    ? addBaskinRobbinsContainerMeta(selectedScaledNutritionMeta, baskinRobbinsContainer)
+    : selectedScaledNutritionMeta;
   const selectedCalories = selectedNutrition?.calories ?? 0;
   const selectedProtein = selectedNutrition?.protein_g ?? 0;
   const selectedFat = selectedNutrition?.fat_g ?? 0;
@@ -5787,7 +5821,7 @@ function FoodTab(props: {
       portion_multiplier: selectedEntryPortionMultiplier,
       entry_source: selectedResolvedItem.data_source,
       confidence: selectedResolvedItem.confidence,
-      nutrition_meta: scaleNutritionMeta(selectedResolvedItem.nutrition_meta, selectedResolvedItem.calories > 0 ? nutrition.calories / selectedResolvedItem.calories : selectedEntryPortionMultiplier),
+      nutrition_meta: selectedEntryNutritionMeta,
       menu_item_id: selectedResolvedItem.id,
       note: portionNote,
       created_at: timestamp,
@@ -5796,6 +5830,7 @@ function FoodTab(props: {
     setSelected(undefined);
     setPortionMultiplier(1);
     setPortionQuantity(1);
+    setBaskinRobbinsContainerId("cup");
     setStaplePortionMultipliers({});
     setFoodAddStep("size");
     await props.refresh();
@@ -6605,14 +6640,14 @@ function FoodTab(props: {
               <button className="icon-button h-9 w-9 shrink-0" aria-label="閉じる" onClick={() => setSelected(undefined)}>×</button>
             </div>
             <div className="mt-2 flex items-center justify-between gap-2">
-              <SourceBadge item={selected} source={selected.data_source} confidence={selected.confidence} />
+              <SourceBadge item={selected} source={selected.data_source} confidence={selected.confidence} nutritionMeta={selectedEntryNutritionMeta} />
               <span className="numeric-text rounded-md bg-rice px-2 py-1 text-xs font-bold text-moss">
-                {foodAddStep === "size" || foodAddStep === "customSize" ? "1/4" : foodAddStep === "quantity" ? "2/4" : foodAddStep === "timing" ? "3/4" : "4/4"}
+                {foodAddStepIndex + 1}/{foodAddSteps.length}
               </span>
             </div>
             <div className="food-add-progress mt-4" aria-hidden="true">
-              {(["size", "quantity", "timing", "confirm"] as FoodAddStep[]).map((step) => (
-                <span className={(foodAddStep === step || (foodAddStep === "customSize" && step === "size")) ? "food-add-progress-dot food-add-progress-dot-active" : "food-add-progress-dot"} key={step} />
+              {foodAddSteps.map((step, index) => (
+                <span className={index <= foodAddStepIndex ? "food-add-progress-dot food-add-progress-dot-active" : "food-add-progress-dot"} key={step} />
               ))}
             </div>
 
@@ -6640,7 +6675,7 @@ function FoodTab(props: {
                           setSelected(variant.item);
                           setPortionMultiplier(1);
                           setStaplePortionMultipliers({});
-                          setFoodAddStep("quantity");
+                          setFoodAddStep(isBaskinRobbinsFlavor(variant.item) ? "container" : "quantity");
                         }}
                       >
                         <span>{variant.label}</span>
@@ -6655,7 +6690,7 @@ function FoodTab(props: {
                           onClick={() => {
                             setPortionMultiplier(option.value);
                             setStaplePortionMultipliers({});
-                            setFoodAddStep("quantity");
+                            setFoodAddStep(hasBaskinRobbinsContainerOptions ? "container" : "quantity");
                           }}
                         >
                           {option.label}
@@ -6667,7 +6702,7 @@ function FoodTab(props: {
                         onClick={() => {
                           setPortionMultiplier(defaultPortionOption.value);
                           setStaplePortionMultipliers({});
-                          setFoodAddStep("quantity");
+                          setFoodAddStep(hasBaskinRobbinsContainerOptions ? "container" : "quantity");
                         }}
                       >
                         {hasSelectedCompositeStaples ? "標準量のまま" : defaultPortionOption.label}
@@ -6678,6 +6713,28 @@ function FoodTab(props: {
                       {hasSelectedCompositeStaples ? `${selectedComponentPortionTitle}量をカスタム` : selectedStapleConfig ? `${selectedStapleConfig.label}量をカスタム` : "サイズをカスタム"}
                     </button>
                   )}
+                </div>
+              </div>
+            )}
+
+            {foodAddStep === "container" && hasBaskinRobbinsContainerOptions && (
+              <div className="mt-4">
+                <p className="text-sm font-black text-ink">カップ・コーンを選択</p>
+                <p className="mt-1 text-xs font-semibold text-moss">コーンのカロリーは公式値です。PFCは公開されていないため推定値で記録します。</p>
+                <div className="mt-4 grid gap-2">
+                  {baskinRobbinsContainerOptions.map((option) => (
+                    <button
+                      className={`food-add-choice food-add-choice-size min-h-[3.2rem] ${baskinRobbinsContainerId === option.id ? "food-add-choice-active" : ""}`}
+                      key={option.id}
+                      onClick={() => {
+                        setBaskinRobbinsContainerId(option.id);
+                        setFoodAddStep("quantity");
+                      }}
+                    >
+                      <span>{option.label}</span>
+                      <span className="numeric-text text-xs font-bold text-moss">{option.calories > 0 ? `+${option.calories}kcal` : "追加なし"}</span>
+                    </button>
+                  ))}
                 </div>
               </div>
             )}
@@ -6769,8 +6826,8 @@ function FoodTab(props: {
 
             {foodAddStep === "quantity" && (
               <div className="mt-4">
-                <p className="text-sm font-black text-ink">個数を選択</p>
-                <p className="mt-1 text-xs font-semibold text-moss">{selectedPortionLabel}のメニューを何人前記録するか選びます。</p>
+                <p className="text-sm font-black text-ink">{hasBaskinRobbinsContainerOptions ? "スクープ数を選択" : "個数を選択"}</p>
+                <p className="mt-1 text-xs font-semibold text-moss">{hasBaskinRobbinsContainerOptions ? `${selectedPortionLabel}を何スクープ記録するか選びます。コーンは1個分だけ加算します。` : `${selectedPortionLabel}のメニューを何人前記録するか選びます。`}</p>
                 <div className="mt-4 grid grid-cols-3 gap-2">
                   {[1, 2, 3].map((value) => (
                     <button
@@ -6786,10 +6843,10 @@ function FoodTab(props: {
                   ))}
                 </div>
                 <div className="mt-4">
-                  <Stepper value={portionQuantity} suffix="個数" step={0.5} onChange={(value) => setPortionQuantity(Math.max(0, value))} />
+                  <Stepper value={portionQuantity} suffix={hasBaskinRobbinsContainerOptions ? "スクープ" : "個数"} step={hasBaskinRobbinsContainerOptions ? 1 : 0.5} onChange={(value) => setPortionQuantity(Math.max(0, value))} />
                 </div>
                 <button className="secondary-button mt-3 w-full" onClick={() => setFoodAddStep("timing")}>
-                  この個数で進む
+                  {hasBaskinRobbinsContainerOptions ? "このスクープ数で進む" : "この個数で進む"}
                 </button>
               </div>
             )}
@@ -6822,7 +6879,7 @@ function FoodTab(props: {
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <p className="truncate font-black text-ink">{formatMenuItemName(selected)}</p>
-                      <p className="numeric-text mt-1 text-xs font-bold text-moss">{selectedPortionLabel} × {formatFoodAmountValue(portionQuantity)} / {mealLabels[mealType]}</p>
+                      <p className="numeric-text mt-1 text-xs font-bold text-moss">{selectedPortionLogLabel} / {mealLabels[mealType]}</p>
                     </div>
                     <p className="numeric-text shrink-0 text-xl font-black text-ink">{selectedCalories}kcal</p>
                   </div>
@@ -6847,8 +6904,10 @@ function FoodTab(props: {
                   setFoodAddStep(
                     foodAddStep === "customSize"
                       ? "size"
+                      : foodAddStep === "container"
+                        ? "size"
                       : foodAddStep === "quantity"
-                        ? hasSelectedCustomPortion ? "customSize" : "size"
+                        ? hasBaskinRobbinsContainerOptions ? "container" : hasSelectedCustomPortion ? "customSize" : "size"
                         : foodAddStep === "timing"
                           ? "quantity"
                           : "timing",
@@ -13307,7 +13366,7 @@ function Pictogram({ icon: Icon, tone = "moss" }: { icon: LucideIcon; tone?: Pic
 
 function getFoodPictogram(item: { name: string; brand?: string; category?: string; tags?: string[]; meal_type?: MealType }) {
   const text = [item.name, item.brand, item.category, ...(item.tags ?? [])].filter(Boolean).join(" ");
-  if (/カフェ|コーヒー|ラテ|ドトール|スターバックス|タリーズ|コメダ/.test(text)) return { icon: Coffee, tone: "sky" as PictogramTone };
+  if (/カフェ|コーヒー|ラテ|ドトール|スターバックス|タリーズ|コメダ|サーティワン|アイス/.test(text)) return { icon: Coffee, tone: "sky" as PictogramTone };
   if (/ドリンク|ジュース|プロテインドリンク|ソーダ|牛乳|ミルク/.test(text)) return { icon: CupSoda, tone: "sky" as PictogramTone };
   if (/スイーツ|ケーキ|アイス|チョコ|プリン|デザート|甘味|ドーナツ|クレープ/.test(text)) return { icon: CakeSlice, tone: "blush" as PictogramTone };
   if (/サラダ|野菜|ベジ|キャベツ|トマト/.test(text)) return { icon: Carrot, tone: "leaf" as PictogramTone };
@@ -15778,6 +15837,9 @@ function pickMenuSizeVariantRepresentative(variants: MenuSizeVariant[]) {
 }
 
 function menuSizeRepresentativeRank(label: string) {
+  if (label === "レギュラー") return 0;
+  if (label === "キッズ／スモール") return 2;
+  if (label === "ポップ") return 3;
   if (/^ライスM$/i.test(label)) return 0;
   if (/^ライス(?:S|SS)$/i.test(label)) return 2;
   if (/^ライス(?:L|XL)$/i.test(label)) return 3;
@@ -15821,6 +15883,7 @@ function getMenuSizeVariant(item: MenuItem): MenuSizeVariant | undefined {
 function extractMenuSizeLabel(value: string) {
   const normalized = value.trim();
   if (!normalized || /\d+\s*(?:個|貫|皿|本|杯|枚|切れ|袋|パック)/i.test(normalized)) return undefined;
+  if (/^(?:キッズ／スモール|レギュラー|ポップ)$/.test(normalized)) return normalized;
   const riceSize = normalized.match(/^ライス\s*(SS|XL|S|M|L)$/i)?.[1];
   if (riceSize) return `ライス${riceSize.toUpperCase()}`;
   if (/(?:茹で前|茹で上がり)\s*\d+(?:\.\d+)?\s*g/i.test(normalized)) return normalized;
@@ -15839,7 +15902,7 @@ function matchMenuSizeLabel(value: string) {
   const latinSize = normalized.match(/(?:^|[\s（(])((?:SS|XL|S|M|L))(?:$|[\s（(）)])/i)
     ?? normalized.match(/((?:SS|XL|S|M|L))$/i);
   if (latinSize) return latinSize[1].toUpperCase();
-  if (/^(レギュラー|プラスハーフ|ダブル)$/.test(normalized)) return normalized;
+  if (/^(キッズ／スモール|レギュラー|ポップ|プラスハーフ|ダブル)$/.test(normalized)) return normalized;
   const meatAmountLabel = normalized.match(/お肉(普通|大盛|特盛)/);
   if (meatAmountLabel) return meatAmountLabel[1];
   return menuSizeVariantLabels
@@ -15880,7 +15943,7 @@ function menuSizeVariantRank(label: string) {
   const latinLabel = label.match(/^ライス(SS|XL|S|M|L)$/i)?.[1] ?? label;
   const latinRank = { SS: 0, S: 1, M: 2, L: 3, XL: 4 }[latinLabel.toUpperCase()];
   if (latinRank !== undefined) return 100 + latinRank;
-  const namedRank = { レギュラー: 0, プラスハーフ: 1, ダブル: 2 }[label];
+  const namedRank = { "キッズ／スモール": 0, レギュラー: 1, ポップ: 2, プラスハーフ: 3, ダブル: 4 }[label];
   if (namedRank !== undefined) return 200 + namedRank;
   const shortRank = { 小: 0, 並: 1, 中: 2, 大: 3, 得: 4, 特大: 5 }[label];
   if (shortRank !== undefined) return 300 + shortRank;
