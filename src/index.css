@@ -5470,6 +5470,16 @@ main.theme-dark .chain-combo-card,
   overflow: hidden;
 }
 
+main.theme-dark .chain-combo-panel,
+.theme-dark .chain-combo-panel,
+:root[data-theme="dark"] .chain-combo-panel {
+  border-color: rgba(255, 255, 255, 0.13) !important;
+  background:
+    linear-gradient(135deg, rgba(30, 42, 35, 0.92), rgba(21, 30, 25, 0.86)),
+    rgba(255, 255, 255, 0.06) !important;
+  color: #f8fbf8;
+}
+
 main.theme-dark .chain-combo-action,
 .theme-dark .chain-combo-action,
 :root[data-theme="dark"] .chain-combo-action {
