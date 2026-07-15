@@ -85,6 +85,19 @@ const comprehensiveOfficialCoverageBrands = new Set([
   "いきなりステーキ",
 ]);
 
+const seasonalCatalogMaxAgeMs = 30 * 24 * 60 * 60 * 1000;
+
+export const isStaleSeasonalFood = (item: {
+  name: string;
+  tags?: readonly string[];
+  fetched_at?: string;
+}) => {
+  const seasonal = /期間限定|季節限定|数量限定/.test(`${item.name} ${(item.tags ?? []).join(" ")}`);
+  if (!seasonal || !item.fetched_at) return false;
+  const fetchedAt = Date.parse(item.fetched_at);
+  return Number.isFinite(fetchedAt) && Date.now() - fetchedAt > seasonalCatalogMaxAgeMs;
+};
+
 const legacyFoodSeeds = [
   ...genericFoods,
   ...genericKonamonoFoods,
@@ -145,6 +158,7 @@ const legacyFoodSeeds = [
 export const foodSeeds = [
   ...legacyFoodSeeds.filter((item) => {
     const brand = item.brand ?? "";
+    if (isStaleSeasonalFood(item)) return false;
     if (officialChainReplacementBrands.has(brand)) return false;
     if (comprehensiveOfficialCoverageBrands.has(brand) && item.data_source !== "official") return false;
     return true;
