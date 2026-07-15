@@ -1,4 +1,4 @@
-import { official } from "../helpers";
+import { official } from "../helpers.ts";
 
 const fetchedAt = "2026-06-12T00:00:00.000Z";
 
@@ -2504,23 +2504,25 @@ const rows: Row[] = [
   },
 ];
 
-export const gyudonTeishokuOfficialCoverageFoods = rows.map((row) =>
-  official({
-    brand: row.brand,
-    category: "チェーン店",
-    name: row.name,
-    tags: [
-      ...(row.tags ?? []),
-      ...(row.brand === "やよい軒" && /定食|丼/.test(row.name) ? ["味噌汁カスタム可"] : []),
-    ],
-    calories: row.calories,
-    protein_g: row.protein_g,
-    fat_g: row.fat_g,
-    carbs_g: row.carbs_g,
-    salt_g: row.salt_g,
-    serving_label: row.serving_label,
-    default_meal_type: row.default_meal_type ?? "lunch",
-    source_url: row.source_url,
-    fetched_at: fetchedAt,
-  }),
-);
+export const gyudonTeishokuOfficialCoverageFoods = rows
+  .filter((row) => row.brand !== "すき家")
+  .map((row) =>
+    official({
+      brand: row.brand,
+      category: "チェーン店",
+      name: row.name,
+      tags: [
+        ...(row.tags ?? []),
+        ...(row.brand === "やよい軒" && /定食|丼/.test(row.name) ? ["味噌汁カスタム可"] : []),
+      ],
+      calories: row.calories,
+      protein_g: row.protein_g,
+      fat_g: row.fat_g,
+      carbs_g: row.carbs_g,
+      salt_g: row.salt_g,
+      serving_label: row.serving_label,
+      default_meal_type: row.default_meal_type ?? "lunch",
+      source_url: row.source_url,
+      fetched_at: fetchedAt,
+    }),
+  );

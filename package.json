@@ -10,8 +10,9 @@
     "test:report": "node --experimental-strip-types scripts/test-report-presentation.ts",
     "test:chain-combo": "node --experimental-strip-types scripts/test-chain-combo-availability.ts",
     "test:baskin-robbins": "node --experimental-strip-types scripts/test-baskin-robbins.ts",
+    "test:sukiya": "node --experimental-strip-types scripts/test-sukiya-official.ts",
     "dev": "vite --host 0.0.0.0",
-    "build": "npm run audit:food-seeds && npm run test:goal && npm run test:onboarding && npm run test:report && npm run test:chain-combo && npm run test:baskin-robbins && tsc --noEmit && vite build",
+    "build": "npm run audit:food-seeds && npm run test:goal && npm run test:onboarding && npm run test:report && npm run test:chain-combo && npm run test:baskin-robbins && npm run test:sukiya && tsc --noEmit && vite build",
     "preview": "vite preview --host 0.0.0.0"
   },
   "dependencies": {
