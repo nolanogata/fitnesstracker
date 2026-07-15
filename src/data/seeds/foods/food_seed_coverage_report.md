@@ -1,10 +1,25 @@
 # Food seed coverage report
 
-Generated: 2026-07-10
+Generated: 2026-07-16
 
 ## Summary
 
-The bundled catalog currently contains 5,690 rows: 4,117 official, 1,542 estimated, 11 unofficial, and 20 quick-estimate rows. An item is promoted to `official` only when kcal, protein, fat, carbohydrate, and salt come from the same official source.
+The bundled catalog currently contains 6,290 public rows: 4,674 official, 1,585 estimated, 11 unofficial, and 20 quick-estimate rows. An item is promoted to `official` only when kcal, protein, fat, carbohydrate, and salt come from the same official source.
+
+All 69 brands exposed by the chain selector are now registered in `catalogRegistry.ts`: 20 have full official coverage, 10 have official core coverage, 1 has current names with estimated nutrition, 1 is a verified local-store catalog, and 37 remain explicitly marked for review. The registry prevents unreviewed brands from being silently presented as current. A build test fails when an official catalog is older than its refresh window or drops below its expected row count.
+
+Seasonal, limited-time, and limited-quantity rows are automatically hidden from the public seed catalog after 30 days unless their source is refreshed. This prevents old promotions from remaining indefinitely while retaining a deterministic source record for later re-import.
+
+## 2026-07-16 refresh
+
+| Brand | Public rows | Refresh method |
+| --- | ---: | --- |
+| MOS Burger | 169 | Regenerated from the current official nutrition PDF |
+| KFC | 35 | Regenerated from the current official nutrition PDF |
+| Tully's | 160 | Regenerated from the current official food and drink PDFs |
+| Seven-Eleven / FamilyMart / Lawson / MiniStop | 21 | Retained only products with an individual official product or nutrition source |
+
+Convenience rows such as generic "bento" or "protein drink" entries are no longer published under a convenience-chain brand. They remain available only through generic food categories where appropriate.
 
 ## Official source refresh
 

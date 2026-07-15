@@ -5,6 +5,10 @@ const files = [
   "src/data/seeds/foods/chains/marugameOfficialData.json",
   "src/data/seeds/foods/chains/oliveNoOkaOfficialData.json",
   "src/data/seeds/foods/chains/tondenOfficialData.json",
+  "src/data/seeds/foods/chains/mosOfficialData.json",
+  "src/data/seeds/foods/chains/kfcOfficialData.json",
+  "src/data/seeds/foods/chains/tullysOfficialFoodData.json",
+  "src/data/seeds/foods/chains/tullysOfficialDrinkData.json",
 ];
 
 const rows = files.flatMap((file) => JSON.parse(readFileSync(new URL(`../${file}`, import.meta.url), "utf8")));
@@ -33,6 +37,9 @@ const minimumCoverage = {
   "丸亀製麺": 120,
   "オリーブの丘": 180,
   "とんでん": 300,
+  "モスバーガー": 160,
+  "ケンタッキー": 30,
+  "タリーズ": 120,
 };
 
 for (const [brand, minimum] of Object.entries(minimumCoverage)) {
