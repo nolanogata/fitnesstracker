@@ -13,6 +13,12 @@ import {
   getFoodCoverageReviewDays,
 } from "../src/lib/foodRecordCoverage.ts";
 import { getCalorieOverTone } from "../src/lib/nutritionEstimate.ts";
+import {
+  buildFollowUpAiReport,
+  getAiReportDeliveryContent,
+  latestCopiedAiReport,
+} from "../src/lib/aiReportDelivery.ts";
+import type { AiReport } from "../src/types.ts";
 
 let passed = 0;
 
@@ -336,6 +342,93 @@ const { generateMarkdownReport } = await import(reportModuleUrl) as typeof impor
     assert.match(report, /2026-07-11: 普段よりかなり多く食べた \/ 概算 3500kcal \(P120g\)/);
     assert.match(report, /記録日の平均 kcal: 760/);
     assert.doesNotMatch(report, /記録日の平均 kcal: 4260/);
+  });
+
+  test("初回送信は完全版をそのまま返す", () => {
+    const full = generateMarkdownReport({ ...reportInput, reportCoverage: "partial" });
+    assert.equal(getAiReportDeliveryContent({
+      mode: "full",
+      fullReport: full,
+      generatedAt: "2026-07-12T13:00:00.000Z",
+    }), full);
+  });
+
+  test("同じチャット用は共通指示を圧縮して現在の記録を残す", () => {
+    const previous = generateMarkdownReport({
+      ...reportInput,
+      periodStart: "2026-07-11",
+      periodEnd: "2026-07-11",
+      currentAppDate: "2026-07-11",
+      generatedAt: "2026-07-11T13:00:00.000Z",
+      reportCoverage: "completed",
+      foodEntries: reportInput.foodEntries.map((entry) => ({ ...entry, app_date: "2026-07-11" })),
+    });
+    const current = generateMarkdownReport({ ...reportInput, reportCoverage: "partial" });
+    const followUp = buildFollowUpAiReport({
+      currentFullReport: current,
+      previousFullReport: previous,
+      previousCopiedAt: "2026-07-11T13:10:00.000Z",
+      generatedAt: "2026-07-12T13:00:00.000Z",
+    });
+    assert.match(followUp, /AI相談 更新レポート/);
+    assert.match(followUp, /同じAIチャットへの更新/);
+    assert.match(followUp, /### 当日集計[\s\S]*当日 kcal: 760/);
+    assert.match(followUp, /### その日の食事詳細[\s\S]*テスト食事/);
+    assert.match(followUp, /### 体重トレンド/);
+    assert.doesNotMatch(followUp, /## AIへの依頼/);
+    assert.ok(followUp.length < current.length * 0.8, `更新版が十分に短くありません: ${followUp.length}/${current.length}`);
+  });
+
+  test("ゴール変更は更新版へ再掲する", () => {
+    const previous = generateMarkdownReport({ ...reportInput, reportCoverage: "partial" });
+    const current = generateMarkdownReport({
+      ...reportInput,
+      goal: { ...reportInput.goal, target_calories: 2_600 },
+      generatedAt: "2026-07-13T13:00:00.000Z",
+      reportCoverage: "partial",
+    });
+    const followUp = buildFollowUpAiReport({
+      currentFullReport: current,
+      previousFullReport: previous,
+      generatedAt: "2026-07-13T13:00:00.000Z",
+    });
+    assert.match(followUp, /## 前回から変更された前提[\s\S]*### 現在のゴール[\s\S]*目標 kcal: 2600/);
+    assert.match(followUp, /### 体組成目標/);
+  });
+
+  test("次回基準はコピー済みレポートだけを選ぶ", () => {
+    const reports: AiReport[] = [
+      {
+        id: "generated-only",
+        period_start: "2026-07-13",
+        period_end: "2026-07-13",
+        format: "markdown",
+        content: "not sent",
+        created_at: "2026-07-13T12:00:00.000Z",
+        updated_at: "2026-07-13T12:00:00.000Z",
+      },
+      {
+        id: "copied-old",
+        period_start: "2026-07-11",
+        period_end: "2026-07-11",
+        format: "markdown",
+        content: "sent old",
+        copied_at: "2026-07-11T13:00:00.000Z",
+        created_at: "2026-07-11T12:00:00.000Z",
+        updated_at: "2026-07-11T13:00:00.000Z",
+      },
+      {
+        id: "copied-latest",
+        period_start: "2026-07-12",
+        period_end: "2026-07-12",
+        format: "markdown",
+        content: "sent latest",
+        copied_at: "2026-07-12T13:00:00.000Z",
+        created_at: "2026-07-12T12:00:00.000Z",
+        updated_at: "2026-07-12T13:00:00.000Z",
+      },
+    ];
+    assert.equal(latestCopiedAiReport(reports)?.id, "copied-latest");
   });
 }
 

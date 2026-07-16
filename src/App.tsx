@@ -128,6 +128,7 @@ import type {
   ActivityProfile,
   ActivityProfileDataSource,
   AiReport,
+  AiReportDeliveryMode,
   BackupPayload,
   Confidence,
   DataSource,
@@ -170,6 +171,7 @@ import { makeId } from "./lib/ids";
 import { activityLabels, buildGoal, calculateActivityProfileGoalReference, calculateTargets, phaseLabels } from "./lib/goalCalculator";
 import { downloadText, exportBackup, importBackup, resetLocalData } from "./lib/backup";
 import { generateMarkdownReport } from "./lib/report";
+import { getAiReportDeliveryContent, latestCopiedAiReport } from "./lib/aiReportDelivery";
 import { getWeeklyWorkoutStatus, type WeeklyWorkoutStatus } from "./lib/workoutStatus";
 import { getCalorieOverTone, getDailyNutritionEstimate } from "./lib/nutritionEstimate";
 import { activityDataSourceLabel, getProteinSafetyPresentation } from "./lib/reportPresentation";
@@ -1295,6 +1297,16 @@ const achievementProgressSpecs: Record<string, AchievementProgressSpec> = {
   streak_365: { metric: "streak", target: 365, unit: "日" },
 };
 const appUpdates: AppUpdate[] = [
+  {
+    id: "2026-07-16-ai-report-follow-up",
+    title: "AI相談レポートを同じチャットで続けやすく改善",
+    date: "2026-07-16",
+    items: [
+      "初回は前提を含む完全版、2回目以降は同じAIチャットへ送る更新版を選べるようにしました。",
+      "更新版は当日の記録と体重トレンドを残し、変わっていないゴールや長い共通説明を省いて使用量を抑えます。",
+      "ゴールやプロフィールを変更した場合は、更新版にも変更された前提を自動で含めます。",
+    ],
+  },
   {
     id: "2026-07-16-food-catalog-refresh",
     title: "チェーン・コンビニメニューを更新",
@@ -3318,6 +3330,7 @@ function App() {
             activeSpecialMode={activeSpecialMode}
             isDeveloperTestMode={isDeveloperTestMode}
             achievementProgress={achievementProgress}
+            aiReports={aiReports}
             focus={settingsFocus}
             backupInfo={backupInfo}
             settings={settings}
@@ -8421,6 +8434,7 @@ function SettingsTab(props: {
   activeSpecialMode?: ActiveSpecialMode;
   isDeveloperTestMode: boolean;
   achievementProgress: Record<string, AchievementProgress>;
+  aiReports: AiReport[];
   focus?: SettingsFocus;
   backupInfo: BackupInfo;
   settings?: AppSettings;
@@ -8467,6 +8481,10 @@ function SettingsTab(props: {
   const [question, setQuestion] = useState("");
   const [report, setReport] = useState("");
   const [copiedReport, setCopiedReport] = useState(false);
+  const latestCopiedReport = useMemo(() => latestCopiedAiReport(props.aiReports), [props.aiReports]);
+  const [reportDeliveryMode, setReportDeliveryMode] = useState<AiReportDeliveryMode>(() => latestCopiedAiReport(props.aiReports) ? "follow_up" : "full");
+  const [generatedReportId, setGeneratedReportId] = useState<string>();
+  const [generatedReportMode, setGeneratedReportMode] = useState<AiReportDeliveryMode>();
   const [reportCoverage, setReportCoverage] = useState<ReportCoverage>(() => props.appDate === todayAppDate(props.settings?.day_boundary_hour ?? 3) ? "partial" : "completed");
   const [reportActivity, setReportActivity] = useState<DailyActivityContext>(() => ({ date: props.appDate, relative_activity_level: "unknown", data_source: "unknown" }));
   const [isReportActivityManualOpen, setIsReportActivityManualOpen] = useState(false);
@@ -9428,9 +9446,10 @@ function SettingsTab(props: {
   };
   const generateAiReport = async (foodRecordContexts = Object.values(props.settings?.food_record_contexts ?? {})) => {
     const generatedAt = nowIso();
+    const reportId = makeId("report");
     const { start, end, range, scopedCheatDayDates, scopedSpecialModeDays } = getAiReportScope();
     const scopedFoodRecordContexts = foodRecordContexts.filter((context) => range.includes(context.date));
-    const content = generateMarkdownReport({
+    const fullContent = generateMarkdownReport({
       profile: props.profile,
       goal: props.activeGoal,
       foodEntries: props.allData.foodEntries.filter((entry) => range.includes(entry.app_date)),
@@ -9453,14 +9472,29 @@ function SettingsTab(props: {
       foodRecordContexts: scopedFoodRecordContexts,
       question,
     });
+    const effectiveDeliveryMode: AiReportDeliveryMode = reportDeliveryMode === "follow_up" && latestCopiedReport ? "follow_up" : "full";
+    const content = getAiReportDeliveryContent({
+      mode: effectiveDeliveryMode,
+      fullReport: fullContent,
+      previousReport: latestCopiedReport,
+      generatedAt,
+    });
     setReport(content);
     setCopiedReport(false);
+    setGeneratedReportId(reportId);
+    setGeneratedReportMode(effectiveDeliveryMode);
     await db.ai_reports.put({
-      id: makeId("report"),
+      id: reportId,
       period_start: start,
       period_end: end,
       format: "markdown",
       content,
+      full_content: fullContent,
+      delivery_mode: effectiveDeliveryMode,
+      conversation_anchor_id: effectiveDeliveryMode === "full"
+        ? reportId
+        : latestCopiedReport?.conversation_anchor_id ?? latestCopiedReport?.id,
+      previous_report_id: effectiveDeliveryMode === "follow_up" ? latestCopiedReport?.id : undefined,
       report_coverage: reportMode === "day" ? reportCoverage : undefined,
       activity_context: reportMode === "day" ? { ...reportActivity, date: end } : undefined,
       food_record_contexts: scopedFoodRecordContexts,
@@ -9508,6 +9542,35 @@ function SettingsTab(props: {
         <button className={`mode-button ${reportMode === "month" ? "mode-button-active" : ""}`} onClick={() => setReportMode("month")}>月別</button>
       </div>
       <p className="mt-2 text-xs text-moss">{reportMode === "day" ? "今日1日分を参照します。" : reportMode === "week" ? "直近7日分を週別の相談材料としてまとめます。" : "直近30日分を月別の相談材料としてまとめます。"}</p>
+      <div className="mt-4 rounded-2xl border border-line p-3">
+        <p className="text-sm font-bold">AIへ送る形式</p>
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          <button
+            className={`mode-button min-h-14 px-2 text-xs leading-snug ${reportDeliveryMode === "follow_up" ? "mode-button-active" : ""}`}
+            disabled={!latestCopiedReport}
+            onClick={() => {
+              setReportDeliveryMode("follow_up");
+              setReport("");
+              setGeneratedReportId(undefined);
+            }}
+          >同じチャットに続ける</button>
+          <button
+            className={`mode-button min-h-14 px-2 text-xs leading-snug ${reportDeliveryMode === "full" ? "mode-button-active" : ""}`}
+            onClick={() => {
+              setReportDeliveryMode("full");
+              setReport("");
+              setGeneratedReportId(undefined);
+            }}
+          >新しいチャットで始める</button>
+        </div>
+        <p className="mt-2 text-xs leading-relaxed text-moss">
+          {latestCopiedReport
+            ? reportDeliveryMode === "follow_up"
+              ? `前回コピーした${latestCopiedReport.period_end}までの内容を前提に、今回の更新だけを短くまとめます。`
+              : "初回の前提と詳しい指示を含む完全版を作ります。別のAIや新しいチャットへ移る時に使います。"
+            : "まだ送信済みの前提がないため、最初は完全版を作ります。コピー後から更新版を選べます。"}
+        </p>
+      </div>
       {reportMode === "day" && <div className="mt-4">
         <p className="text-xs font-black text-moss">レポートの範囲</p>
         <div className="mt-2 grid grid-cols-2 gap-2">
@@ -9554,9 +9617,16 @@ function SettingsTab(props: {
       <button className="primary-button mt-3 w-full" onClick={() => void prepareAiReport()}><FileText size={17} />生成</button>
       {report && (
         <>
+          <p className="mt-3 text-xs font-bold text-moss">{generatedReportMode === "follow_up" ? "同じチャット用の更新版" : "新しいチャット用の完全版"}</p>
           <div className="mt-2 grid grid-cols-2 gap-2">
             <button className="primary-button" onClick={async () => {
               await copyText(report);
+              if (generatedReportId) {
+                const copiedAt = nowIso();
+                await db.ai_reports.update(generatedReportId, { copied_at: copiedAt, updated_at: copiedAt });
+                await props.refresh();
+                if (generatedReportMode === "full") setReportDeliveryMode("follow_up");
+              }
               setCopiedReport(true);
             }}><Copy size={17} />{copiedReport ? "コピー済み" : "コピー"}</button>
             <button className="secondary-button" onClick={() => downloadText(`phase-log-report-${Date.now()}.md`, report, "text/markdown")}><FileDown size={17} />MD保存</button>
