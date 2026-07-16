@@ -424,9 +424,16 @@ export type AiReport = {
   report_coverage?: ReportCoverage;
   activity_context?: DailyActivityContext;
   food_record_contexts?: FoodRecordContext[];
+  delivery_mode?: AiReportDeliveryMode;
+  full_content?: string;
+  copied_at?: string;
+  conversation_anchor_id?: string;
+  previous_report_id?: string;
   created_at: string;
   updated_at: string;
 };
+
+export type AiReportDeliveryMode = "full" | "follow_up";
 
 export type BackupPayload = {
   schema_version: number;
