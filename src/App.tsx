@@ -128,6 +128,7 @@ import type {
   ActivityProfile,
   ActivityProfileDataSource,
   AiReport,
+  AiReportContentScope,
   AiReportDeliveryMode,
   BackupPayload,
   Confidence,
@@ -173,7 +174,7 @@ import { downloadText, exportBackup, importBackup, resetLocalData } from "./lib/
 import { generateMarkdownReport } from "./lib/report";
 import { getAiReportDeliveryContent, latestCopiedAiReport } from "./lib/aiReportDelivery";
 import { getWeeklyWorkoutStatus, type WeeklyWorkoutStatus } from "./lib/workoutStatus";
-import { getCalorieOverTone, getDailyNutritionEstimate } from "./lib/nutritionEstimate";
+import { getCalorieOverTone, getDailyNutritionEstimate, getDisplayedMacroProgress } from "./lib/nutritionEstimate";
 import { activityDataSourceLabel, getProteinSafetyPresentation } from "./lib/reportPresentation";
 import { getOnboardingSteps, type OnboardingActivityMode, type OnboardingStepKey } from "./lib/onboarding";
 import { buildFoodCoverageDays, foodRecordContextFromSelection, getFoodCoverageReviewDays, intakeRelativeLevelLabels, type FoodCoverageDay } from "./lib/foodRecordCoverage";
@@ -224,10 +225,6 @@ const homeBodyFatDisplayLabels: Record<HomeBodyFatDisplay, string> = {
 const homeWeightDisplayLabels: Record<HomeWeightDisplay, string> = {
   average7: "7日平均",
   today: "今日の数値",
-};
-const homeNutritionRemainingDisplayLabels: Record<HomeNutritionRemainingDisplay, string> = {
-  recorded: "記録上の残り",
-  safe: "余裕をみた残り",
 };
 const bottomTabs: Tab[] = ["home", "food", "workout", "records", "settings"];
 const themeAccentOptions: Array<{ value: ThemeAccent; label: string; colors: [string, string] }> = [
@@ -402,6 +399,7 @@ type CalendarCell = {
   day?: number;
 };
 type ReportMode = HistoryGrouping;
+type AiReportWizardStep = "period" | "delivery" | "content" | "activity" | "question" | "result";
 type ActivityProfileDraft = {
   activity_level: ActivityLevel;
   average_steps: number | "";
@@ -1297,6 +1295,16 @@ const achievementProgressSpecs: Record<string, AchievementProgressSpec> = {
   streak_365: { metric: "streak", target: 365, unit: "日" },
 };
 const appUpdates: AppUpdate[] = [
+  {
+    id: "2026-07-17-ai-report-wizard",
+    title: "AI相談レポートの作成手順を整理",
+    date: "2026-07-17",
+    items: [
+      "期間、送信先、食事・ワークアウト、活動量、相談内容を1画面ずつ選べるようにしました。",
+      "同じAIチャットへ送る更新版は、基本情報と選んだ記録だけに絞って短くしました。",
+      "Homeの残り表示は、カロリーとPFCを同じ基準で切り替えられるようにしました。",
+    ],
+  },
   {
     id: "2026-07-16-ai-report-follow-up",
     title: "AI相談レポートを同じチャットで続けやすく改善",
@@ -4197,22 +4205,23 @@ function HomeTab(props: {
   const foodSummary = `${props.todayEntries.length}件 / ${props.dayTotals.calories} kcal`;
   const workoutSummary = todayWorkoutCalories > 0 ? `${props.todayWorkouts.length}回 / ${todayWorkoutCalories} kcal` : `${props.todayWorkouts.length}回`;
   const macroStats = [
-    { label: "P", value: props.dayTotals.protein, target: props.goal?.target_protein_g ?? 0 },
-    { label: "F", value: props.dayTotals.fat, target: props.goal?.target_fat_g ?? 0 },
-    { label: "C", value: props.dayTotals.carbs, target: props.goal?.target_carbs_g ?? 0 },
+    { label: "P", adoptedValue: props.dayTotals.protein, remaining: displayedRemaining.protein, uncertainty: dailyEstimate.uncertainty.protein, target: props.goal?.target_protein_g ?? 0 },
+    { label: "F", adoptedValue: props.dayTotals.fat, remaining: displayedRemaining.fat, uncertainty: dailyEstimate.uncertainty.fat, target: props.goal?.target_fat_g ?? 0 },
+    { label: "C", adoptedValue: props.dayTotals.carbs, remaining: displayedRemaining.carbs, uncertainty: dailyEstimate.uncertainty.carbs, target: props.goal?.target_carbs_g ?? 0 },
   ].map((macro) => {
-    const percent = macro.target > 0 ? Math.round((macro.value / macro.target) * 100) : undefined;
-    const remaining = macro.target > 0 ? round1(macro.target - macro.value) : undefined;
-    const macroOver = typeof remaining === "number" && remaining < 0 ? Math.abs(remaining) : 0;
-    const isWithinEstimate = macro.label === "F" && macroOver > 0 && macroOver <= dailyEstimate.uncertainty.fat;
+    const { value, percent } = getDisplayedMacroProgress(macro.target, macro.adoptedValue, macro.remaining);
+    const adoptedRemaining = macro.target > 0 ? round1(macro.target - macro.adoptedValue) : undefined;
+    const adoptedOver = typeof adoptedRemaining === "number" && adoptedRemaining < 0 ? Math.abs(adoptedRemaining) : 0;
+    const displayedOver = macro.remaining < 0 ? Math.abs(macro.remaining) : 0;
+    const isWithinEstimate = displayedOver > 0 && adoptedOver <= macro.uncertainty;
     const tone = shouldMaskGoalProgress
       ? "disabled"
       : typeof percent !== "number"
       ? "neutral"
       : macro.label === "P"
         ? percent < 80 ? "over" : "safe"
-        : isWithinEstimate ? "estimate" : percent > 110 ? "over" : percent >= 80 ? "safe" : "low";
-    return { ...macro, percent, remaining, tone };
+        : isWithinEstimate ? "estimate" : adoptedOver > macro.uncertainty && percent > 110 ? "over" : percent >= 80 ? "safe" : "low";
+    return { ...macro, value, percent, tone };
   });
   const saveCheckIn = async () => {
     const timestamp = nowIso();
@@ -4633,7 +4642,6 @@ function HomeTab(props: {
         <NutritionEstimateDetailSheet
           estimate={dailyEstimate}
           isPastDate={props.isEditingPastDate}
-          calorieDelta={calorieDelta}
           remainingDisplayMode={props.nutritionRemainingDisplayMode}
           onRemainingDisplayChange={saveNutritionRemainingDisplay}
           onClose={() => setIsEstimateDetailOpen(false)}
@@ -4702,15 +4710,14 @@ function GoalSummarySheet({ goal, onClose, onEdit }: { goal?: Goal; onClose: () 
   );
 }
 
-function NutritionEstimateDetailSheet({ estimate, isPastDate, calorieDelta, remainingDisplayMode, onRemainingDisplayChange, onClose }: {
+function NutritionEstimateDetailSheet({ estimate, isPastDate, remainingDisplayMode, onRemainingDisplayChange, onClose }: {
   estimate: ReturnType<typeof getDailyNutritionEstimate>;
   isPastDate: boolean;
-  calorieDelta?: number;
   remainingDisplayMode: HomeNutritionRemainingDisplay;
   onRemainingDisplayChange: (mode: HomeNutritionRemainingDisplay) => void | Promise<void>;
   onClose: () => void;
 }) {
-  const status = isPastDate ? getDailyEstimateStatus(calorieDelta, estimate.uncertainty.calories) : "記録中";
+  const [showEstimateDetails, setShowEstimateDetails] = useState(false);
   const proteinSafety = getProteinSafetyPresentation({
     adoptedProtein: estimate.adoptedTotals.protein,
     safeProteinLowerBound: estimate.safeProteinLowerBound,
@@ -4722,55 +4729,45 @@ function NutritionEstimateDetailSheet({ estimate, isPastDate, calorieDelta, rema
       <div className="home-sheet nutrition-estimate-sheet max-h-[86vh] w-full max-w-[430px] overflow-y-auto p-5" onClick={(event) => event.stopPropagation()}>
         <div className="flex items-start justify-between gap-3">
           <div>
-            <p className="text-lg font-bold">栄養値の確かさ</p>
-            <p className="mt-1 text-xs font-semibold leading-relaxed text-moss">外食や写真から推定した栄養値がある日は、食べられる量を少し控えめに案内します。記録済みの数値は変わりません。</p>
+            <p className="text-lg font-bold">Homeの残り表示</p>
+            <p className="mt-1 text-xs font-semibold leading-relaxed text-moss">保存した栄養値は変えず、Homeで表示する残りの基準を選びます。</p>
           </div>
           <button className="icon-button h-9 w-9 shrink-0" aria-label="閉じる" onClick={onClose}>×</button>
         </div>
 
-        <div className="nutrition-estimate-status mt-4">
-          <span>{status}</span>
-          <strong>{estimate.estimatedEntryCount
-            ? estimate.estimatedCalorieShare > 0 ? `カロリー推定の割合 ${estimate.estimatedCalorieShare}%` : "カロリーへの推定影響なし"
-            : "推定値なし"}</strong>
+        <div className="mt-4 grid gap-2">
+          <NutritionRemainingCard
+            title="記録した値で表示"
+            description="保存したkcalとPFCから、そのまま残りを表示します。"
+            {...estimate.adoptedRemaining}
+            selected={remainingDisplayMode === "recorded"}
+            onClick={() => void onRemainingDisplayChange("recorded")}
+          />
+          <NutritionRemainingCard
+            title="少し余裕を見て表示"
+            description="推定の幅を考慮し、追加できる量を控えめに表示します。"
+            {...estimate.safeRemaining}
+            selected={remainingDisplayMode === "safe"}
+            onClick={() => void onRemainingDisplayChange("safe")}
+          />
         </div>
-
-        <section className="nutrition-display-setting mt-3">
-          <p className="text-sm font-bold">ヒーローカードに表示する残り</p>
-          <p className="mt-1 text-xs leading-relaxed text-moss">推定値の幅を差し引くか選べます。推定値がない日は、どちらも同じ表示です。</p>
-          <div className="mt-3 grid grid-cols-2 gap-2">
-            {(Object.keys(homeNutritionRemainingDisplayLabels) as HomeNutritionRemainingDisplay[]).map((mode) => (
-              <button
-                className={`mode-button min-h-11 px-2 text-xs ${remainingDisplayMode === mode ? "mode-button-active" : ""}`}
-                key={mode}
-                aria-pressed={remainingDisplayMode === mode}
-                onClick={() => void onRemainingDisplayChange(mode)}
-              >
-                {homeNutritionRemainingDisplayLabels[mode]}
-              </button>
-            ))}
-          </div>
-        </section>
-
-        <div className="mt-3 grid grid-cols-2 gap-2">
-          <NutritionRemainingCard title="記録上の残り" {...estimate.adoptedRemaining} selected={remainingDisplayMode === "recorded"} />
-          <NutritionRemainingCard title="安全側の追加上限" calories={estimate.safeRemaining.calories} fat={estimate.safeRemaining.fat} carbs={estimate.safeRemaining.carbs} safe selected={remainingDisplayMode === "safe"} />
-        </div>
-        <section className="nutrition-display-setting mt-3">
-          <p className="text-sm font-bold">Pの安全側評価</p>
-          <p className="numeric-text mt-1 text-xs font-semibold text-moss">{proteinSafety.valueLine}</p>
-          <p className="mt-1 text-xs leading-relaxed text-moss">{proteinSafety.message}</p>
-        </section>
 
         {estimate.estimatedEntryCount > 0 ? (
           <>
-            <div className="nutrition-estimate-buffer mt-3">
-              <span>推定値の幅</span>
-              <strong>{estimate.uncertainty.calories}kcal / P{round1(estimate.uncertainty.protein)}g / F{round1(estimate.uncertainty.fat)}g / C{round1(estimate.uncertainty.carbs)}g</strong>
-            </div>
-            <section className="mt-4">
+            <button className="secondary-button mt-3 w-full" onClick={() => setShowEstimateDetails((current) => !current)}>
+              {showEstimateDetails ? "推定値の内訳を閉じる" : `推定値の内訳を見る（${estimate.estimatedEntryCount}件）`}
+            </button>
+            {showEstimateDetails && <section className="mt-4">
+              <div className="nutrition-estimate-buffer">
+                <span>見込んでいる幅</span>
+                <strong>{estimate.uncertainty.calories}kcal / P{round1(estimate.uncertainty.protein)}g / F{round1(estimate.uncertainty.fat)}g / C{round1(estimate.uncertainty.carbs)}g</strong>
+              </div>
+              <div className="nutrition-display-setting mt-3">
+                <p className="numeric-text text-xs font-semibold text-moss">{proteinSafety.valueLine}</p>
+                <p className="mt-1 text-xs leading-relaxed text-moss">{proteinSafety.message}</p>
+              </div>
               <div className="flex items-center justify-between gap-2">
-                <p className="text-sm font-bold">推定値を含む記録</p>
+                <p className="mt-4 text-sm font-bold">推定を含む記録</p>
                 <span className="mini-chip">{estimate.estimatedEntryCount}件</span>
               </div>
               <p className="mt-1 text-xs font-semibold text-moss">カロリー {estimate.estimatedCalorieEntryCount}件 / PFC {estimate.macroEstimatedEntryCount}件（PFCのみ {estimate.pfcOnlyEstimatedEntryCount}件）/ 総量 {estimate.quantityEstimatedEntryCount}件 / 内訳 {estimate.compositionEstimatedEntryCount}件{estimate.zeroCalorieEstimatedEntryCount ? ` / 0kcal ${estimate.zeroCalorieEstimatedEntryCount}件` : ""}</p>
@@ -4786,7 +4783,7 @@ function NutritionEstimateDetailSheet({ estimate, isPastDate, calorieDelta, rema
                   </div>
                 ))}
               </div>
-            </section>
+            </section>}
           </>
         ) : (
           <p className="nutrition-estimate-empty mt-3">今日の記録は公式値・確認済み入力が中心です。通常残量と安全側残量は同じです。</p>
@@ -4797,16 +4794,17 @@ function NutritionEstimateDetailSheet({ estimate, isPastDate, calorieDelta, rema
   );
 }
 
-function NutritionRemainingCard({ title, calories, protein, fat, carbs, safe = false, selected = false }: { title: string; calories: number; protein?: number; fat: number; carbs: number; safe?: boolean; selected?: boolean }) {
+function NutritionRemainingCard({ title, description, calories, protein, fat, carbs, selected = false, onClick }: { title: string; description: string; calories: number; protein?: number; fat: number; carbs: number; selected?: boolean; onClick: () => void }) {
   return (
-    <div className={`nutrition-remaining-card ${safe ? "nutrition-remaining-card-safe" : ""} ${selected ? "nutrition-remaining-card-selected" : ""}`}>
+    <button type="button" className={`nutrition-remaining-card text-left ${selected ? "nutrition-remaining-card-selected" : ""}`} aria-pressed={selected} onClick={onClick}>
       <div className="flex items-center justify-between gap-2">
         <p>{title}</p>
-        {selected && <span className="nutrition-remaining-selected-label">表示中</span>}
+        {selected && <span className="nutrition-remaining-selected-label"><Check size={11} />選択中</span>}
       </div>
+      <em>{description}</em>
       <strong>{formatSignedRemaining(calories, "kcal")}</strong>
       <span>{typeof protein === "number" ? `P${formatSignedRemaining(protein, "g")} / ` : ""}F{formatSignedRemaining(fat, "g")} / C{formatSignedRemaining(carbs, "g")}</span>
-    </div>
+    </button>
   );
 }
 
@@ -4816,13 +4814,6 @@ function nutritionEstimateEntrySummary(meta: NutritionMeta, estimatedFields: Arr
   if (compositionEstimated) labels.push("内訳");
   const source = meta.nutrient_evidence?.calories?.origin ?? meta.origin;
   return `${nutritionOriginLabel(source)} · ${labels.length ? `${labels.join("/")}推定` : "量推定"} · ${confidenceLabel(meta.nutrient_evidence?.calories?.confidence ?? confidence)}`;
-}
-
-function getDailyEstimateStatus(calorieDelta: number | undefined, uncertaintyCalories: number) {
-  if (typeof calorieDelta !== "number") return "目標未設定";
-  if (calorieDelta > Math.max(100, uncertaintyCalories)) return "目標オーバー";
-  if (calorieDelta > 0 || Math.abs(calorieDelta) <= Math.max(100, uncertaintyCalories)) return "ほぼ目標内";
-  return "目標より少なめ";
 }
 
 function formatSignedRemaining(value: number, unit: string, prefix = "") {
@@ -4952,7 +4943,7 @@ function PerfectFoodModal({ dayTotals, goal, menuItems, foodEntries, onClose, on
               ))}
             </div>
             <div className="perfect-food-panel rounded-md bg-rice p-3">
-              <p className="text-xs font-bold text-moss">計算に使う安全側の追加上限</p>
+              <p className="text-xs font-bold text-moss">余裕を見た食事枠</p>
               <p className="numeric-text mt-2 text-sm font-bold">あと {Math.round(adjusted.calories)}kcal / F{round1(adjusted.fat)} C{round1(adjusted.carbs)}</p>
               <p className="numeric-text mt-1 text-[11px] font-semibold text-moss">P確保の目安: あと{round1(adjusted.protein)}g（追加は必須ではありません）</p>
               {estimate.estimatedEntryCount > 0 && <p className="mt-2 text-[11px] font-semibold text-moss">記録上は残り{Math.max(0, Math.round(remaining.calories))}kcal / P{round1(Math.max(0, remaining.protein))} / F{round1(Math.max(0, remaining.fat))} / C{round1(Math.max(0, remaining.carbs))}。推定幅を考慮して候補を絞っています。</p>}
@@ -8478,6 +8469,8 @@ function SettingsTab(props: {
   const [settingsAiFoodMealType, setSettingsAiFoodMealType] = useState<MealType>("lunch");
   const [activeExportSection, setActiveExportSection] = useState<ExportSection | undefined>(() => props.focus === "backup" ? "backup" : undefined);
   const [reportMode, setReportMode] = useState<ReportMode>("day");
+  const [reportWizardStep, setReportWizardStep] = useState<AiReportWizardStep>("period");
+  const [reportContentScope, setReportContentScope] = useState<AiReportContentScope>("both");
   const [question, setQuestion] = useState("");
   const [report, setReport] = useState("");
   const [copiedReport, setCopiedReport] = useState(false);
@@ -9467,10 +9460,11 @@ function SettingsTab(props: {
       specialModeDays: scopedSpecialModeDays,
       workoutGrouping: reportMode,
       activityProfile: props.settings?.activity_profile,
-      dailyActivity: reportMode === "day" ? { ...reportActivity, date: end } : undefined,
+      dailyActivity: { ...reportActivity, date: end },
       reportCoverage: reportMode === "day" ? reportCoverage : undefined,
       foodRecordContexts: scopedFoodRecordContexts,
       question,
+      contentScope: reportContentScope,
     });
     const effectiveDeliveryMode: AiReportDeliveryMode = reportDeliveryMode === "follow_up" && latestCopiedReport ? "follow_up" : "full";
     const content = getAiReportDeliveryContent({
@@ -9491,12 +9485,13 @@ function SettingsTab(props: {
       content,
       full_content: fullContent,
       delivery_mode: effectiveDeliveryMode,
+      content_scope: reportContentScope,
       conversation_anchor_id: effectiveDeliveryMode === "full"
         ? reportId
         : latestCopiedReport?.conversation_anchor_id ?? latestCopiedReport?.id,
       previous_report_id: effectiveDeliveryMode === "follow_up" ? latestCopiedReport?.id : undefined,
       report_coverage: reportMode === "day" ? reportCoverage : undefined,
-      activity_context: reportMode === "day" ? { ...reportActivity, date: end } : undefined,
+      activity_context: { ...reportActivity, date: end },
       food_record_contexts: scopedFoodRecordContexts,
       created_at: generatedAt,
       updated_at: generatedAt,
@@ -9504,6 +9499,10 @@ function SettingsTab(props: {
     await props.refresh();
   };
   const prepareAiReport = async () => {
+    if (reportContentScope === "workout") {
+      await generateAiReport();
+      return;
+    }
     const { range, scopedCheatDayDates, scopedSpecialModeDays } = getAiReportScope();
     const pauseDayDates = scopedSpecialModeDays.filter((day) => day.kind === "pause").map((day) => day.date);
     const coverageDays = buildFoodCoverageDays({
@@ -9530,77 +9529,101 @@ function SettingsTab(props: {
     await generateAiReport(Object.values(mergedContexts));
   };
 
+  const aiReportWizardSteps: AiReportWizardStep[] = ["period", "delivery", "content", "activity", "question", "result"];
+  const aiReportWizardIndex = aiReportWizardSteps.indexOf(reportWizardStep);
+  const clearGeneratedReport = () => {
+    setReport("");
+    setCopiedReport(false);
+    setGeneratedReportId(undefined);
+    setGeneratedReportMode(undefined);
+  };
+  const moveAiReportWizard = (direction: -1 | 1) => {
+    const next = aiReportWizardSteps[aiReportWizardIndex + direction];
+    if (next) setReportWizardStep(next);
+  };
+  const copyGeneratedAiReport = async () => {
+    await copyText(report);
+    if (generatedReportId) {
+      const copiedAt = nowIso();
+      await db.ai_reports.update(generatedReportId, { copied_at: copiedAt, updated_at: copiedAt });
+      await props.refresh();
+      if (generatedReportMode === "full") setReportDeliveryMode("follow_up");
+    }
+    setCopiedReport(true);
+  };
   const aiReportSection = (
     <section className={`ai-report-section compact-card p-4 ${props.focus === "ai" ? "border-2 border-leaf" : ""}`}>
-      <div className="flex items-center justify-between gap-2">
-        <h2 className="font-bold">AI相談レポート</h2>
-        {props.focus === "ai" && <span className="rounded-md bg-leaf px-2 py-1 text-[11px] font-bold text-white">相談を作成</span>}
-      </div>
-      <div className="mt-3 grid grid-cols-3 gap-2">
-        <button className={`mode-button ${reportMode === "day" ? "mode-button-active" : ""}`} onClick={() => setReportMode("day")}>日別</button>
-        <button className={`mode-button ${reportMode === "week" ? "mode-button-active" : ""}`} onClick={() => setReportMode("week")}>週別</button>
-        <button className={`mode-button ${reportMode === "month" ? "mode-button-active" : ""}`} onClick={() => setReportMode("month")}>月別</button>
-      </div>
-      <p className="mt-2 text-xs text-moss">{reportMode === "day" ? "今日1日分を参照します。" : reportMode === "week" ? "直近7日分を週別の相談材料としてまとめます。" : "直近30日分を月別の相談材料としてまとめます。"}</p>
-      <div className="mt-4 rounded-2xl border border-line p-3">
-        <p className="text-sm font-bold">AIへ送る形式</p>
-        <div className="mt-3 grid grid-cols-2 gap-2">
-          <button
-            className={`mode-button min-h-14 px-2 text-xs leading-snug ${reportDeliveryMode === "follow_up" ? "mode-button-active" : ""}`}
-            disabled={!latestCopiedReport}
-            onClick={() => {
-              setReportDeliveryMode("follow_up");
-              setReport("");
-              setGeneratedReportId(undefined);
-            }}
-          >同じチャットに続ける</button>
-          <button
-            className={`mode-button min-h-14 px-2 text-xs leading-snug ${reportDeliveryMode === "full" ? "mode-button-active" : ""}`}
-            onClick={() => {
-              setReportDeliveryMode("full");
-              setReport("");
-              setGeneratedReportId(undefined);
-            }}
-          >新しいチャットで始める</button>
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <p className="text-xs font-black text-moss">{aiReportWizardIndex + 1} / {aiReportWizardSteps.length}</p>
+          <h2 className="mt-1 font-bold">AI相談レポート</h2>
         </div>
-        <p className="mt-2 text-xs leading-relaxed text-moss">
-          {latestCopiedReport
-            ? reportDeliveryMode === "follow_up"
-              ? `前回コピーした${latestCopiedReport.period_end}までの内容を前提に、今回の更新だけを短くまとめます。`
-              : "初回の前提と詳しい指示を含む完全版を作ります。別のAIや新しいチャットへ移る時に使います。"
-            : "まだ送信済みの前提がないため、最初は完全版を作ります。コピー後から更新版を選べます。"}
-        </p>
+        <span className="mini-chip">{reportMode === "day" ? "今日" : reportMode === "week" ? "週間" : "月間"}</span>
       </div>
-      {reportMode === "day" && <div className="mt-4">
-        <p className="text-xs font-black text-moss">レポートの範囲</p>
-        <div className="mt-2 grid grid-cols-2 gap-2">
-          <button className={`mode-button min-h-12 ${reportCoverage === "partial" ? "mode-button-active" : ""}`} onClick={() => setReportCoverage("partial")}>途中経過</button>
-          <button className={`mode-button min-h-12 ${reportCoverage === "completed" ? "mode-button-active" : ""}`} onClick={() => setReportCoverage("completed")}>1日全体</button>
+      <div className="mt-3 grid grid-cols-6 gap-1.5" aria-hidden="true">
+        {aiReportWizardSteps.map((step, index) => <span className={`h-1.5 rounded-full ${index <= aiReportWizardIndex ? "bg-leaf" : "bg-line"}`} key={step} />)}
+      </div>
+
+      {reportWizardStep === "period" && <div className="mt-5">
+        <h3 className="text-lg font-black">どの期間をまとめますか？</h3>
+        <div className="mt-4 grid gap-2">
+          {([
+            ["day", "今日のレポートを作る", "今日1日分"],
+            ["week", "週間レポートを作る", "今日までの7日間"],
+            ["month", "月間レポートを作る", "今日までの30日間"],
+          ] as Array<[ReportMode, string, string]>).map(([mode, label, detail]) => (
+            <button className={`mode-button min-h-16 justify-between px-4 text-left ${reportMode === mode ? "mode-button-active" : ""}`} key={mode} onClick={() => { setReportMode(mode); clearGeneratedReport(); }}>
+              <span><strong className="block text-sm">{label}</strong><small className="mt-1 block text-xs opacity-70">{detail}</small></span><ChevronRight size={17} />
+            </button>
+          ))}
+        </div>
+        {reportMode === "day" && <div className="mt-4">
+          <p className="text-xs font-black text-moss">1日の状態</p>
+          <div className="mt-2 grid grid-cols-2 gap-2">
+            <button className={`mode-button min-h-11 ${reportCoverage === "partial" ? "mode-button-active" : ""}`} onClick={() => { setReportCoverage("partial"); clearGeneratedReport(); }}>途中経過</button>
+            <button className={`mode-button min-h-11 ${reportCoverage === "completed" ? "mode-button-active" : ""}`} onClick={() => { setReportCoverage("completed"); clearGeneratedReport(); }}>1日全体</button>
+          </div>
+        </div>}
+      </div>}
+
+      {reportWizardStep === "delivery" && <div className="mt-5">
+        <h3 className="text-lg font-black">どのチャットへ送りますか？</h3>
+        <div className="mt-4 grid gap-2">
+          <button className={`mode-button min-h-20 px-4 text-left ${reportDeliveryMode === "full" ? "mode-button-active" : ""}`} onClick={() => { setReportDeliveryMode("full"); clearGeneratedReport(); }}>
+            <span><strong className="block text-sm">新規チャット向け</strong><small className="mt-1 block text-xs leading-relaxed opacity-70">初回に必要な前提とAIへの詳しい指示を含めます。</small></span>
+          </button>
+          <button className={`mode-button min-h-20 px-4 text-left ${reportDeliveryMode === "follow_up" ? "mode-button-active" : ""}`} disabled={!latestCopiedReport} onClick={() => { setReportDeliveryMode("follow_up"); clearGeneratedReport(); }}>
+            <span><strong className="block text-sm">既存チャット向け</strong><small className="mt-1 block text-xs leading-relaxed opacity-70">基本情報と今回の記録だけを短く送ります。</small></span>
+          </button>
+        </div>
+        {!latestCopiedReport && <p className="mt-3 text-xs leading-relaxed text-moss">最初に完全版をコピーすると、次回から既存チャット向けを選べます。</p>}
+      </div>}
+
+      {reportWizardStep === "content" && <div className="mt-5">
+        <h3 className="text-lg font-black">何を送りますか？</h3>
+        <div className="mt-4 grid gap-2">
+          {([
+            ["food", "食事内容だけ送る", "食事の集計・残り・食事ログ"],
+            ["workout", "ワークアウトだけ送る", "種目・セット・有酸素の記録"],
+            ["both", "食事とワークアウトを送る", "両方の記録をまとめる"],
+          ] as Array<[AiReportContentScope, string, string]>).map(([scope, label, detail]) => (
+            <button className={`mode-button min-h-16 px-4 text-left ${reportContentScope === scope ? "mode-button-active" : ""}`} key={scope} onClick={() => { setReportContentScope(scope); clearGeneratedReport(); }}>
+              <span><strong className="block text-sm">{label}</strong><small className="mt-1 block text-xs opacity-70">{detail}</small></span>
+            </button>
+          ))}
         </div>
       </div>}
-      {reportMode === "day" && <div className="mt-4 rounded-2xl border border-line p-3">
-        <p className="text-sm font-bold">{props.appDate === todayAppDate(props.settings?.day_boundary_hour ?? 3) ? "今日の活動量は？" : "対象日の活動量は？"}</p>
-        <p className="mt-1 text-xs text-moss">普段と比べて選びます。ここで目標カロリーが自動変更されることはありません。</p>
-        <div className="mt-3 grid grid-cols-2 gap-2">
+
+      {reportWizardStep === "activity" && <div className="mt-5 min-w-0">
+        <h3 className="text-lg font-black">{props.appDate === todayAppDate(props.settings?.day_boundary_hour ?? 3) ? "今日の活動量は？" : "対象日の活動量は？"}</h3>
+        <p className="mt-2 text-xs leading-relaxed text-moss">普段と比べて選びます。目標カロリーは変わりません。</p>
+        <div className="mt-4 grid grid-cols-2 gap-2">
           {activityRelativeOptions.map((option) => (
-            <button
-              className={`mode-button min-h-11 text-xs ${reportActivity.relative_activity_level === option.value && !isReportActivityManualOpen ? "mode-button-active" : ""}`}
-              key={option.value}
-              onClick={() => {
-                setIsReportActivityManualOpen(false);
-                setReportActivity((current) => ({ ...current, relative_activity_level: option.value }));
-              }}
-            >{option.label}</button>
+            <button className={`mode-button min-h-12 text-xs ${reportActivity.relative_activity_level === option.value && !isReportActivityManualOpen ? "mode-button-active" : ""}`} key={option.value} onClick={() => { setIsReportActivityManualOpen(false); setReportActivity((current) => ({ ...current, relative_activity_level: option.value })); clearGeneratedReport(); }}>{option.label === "いつも通り" ? "いつもと同じくらい" : option.label}</button>
           ))}
-          <button
-            className={`mode-button min-h-11 text-xs ${isReportActivityManualOpen ? "mode-button-active" : ""}`}
-            onClick={() => {
-              setIsReportActivityManualOpen(true);
-              setReportActivity((current) => ({ ...current, relative_activity_level: "unknown" }));
-            }}
-          >手動入力</button>
+          <button className={`mode-button col-span-2 min-h-12 text-xs ${isReportActivityManualOpen ? "mode-button-active" : ""}`} onClick={() => { setIsReportActivityManualOpen(true); setReportActivity((current) => ({ ...current, relative_activity_level: "unknown" })); clearGeneratedReport(); }}>手動で活動量を入力</button>
         </div>
-        {isReportActivityManualOpen && <div className="mt-4 grid min-w-0 gap-3">
+        {isReportActivityManualOpen && <div className="mt-4 grid min-w-0 gap-3 rounded-2xl border border-line p-3">
           <p className="text-xs text-moss">分かる項目だけ入力してください。</p>
           <div className="activity-manual-fields">
             <ActivityOptionalInput label="歩数" value={reportActivity.steps} onChange={(steps) => setReportActivity((current) => ({ ...current, steps }))} />
@@ -9610,30 +9633,39 @@ function SettingsTab(props: {
             <ActivityOptionalInput label="追加の自転車 分" value={reportActivity.cycling_minutes} onChange={(cycling_minutes) => setReportActivity((current) => ({ ...current, cycling_minutes }))} />
             <label className="onboarding-field min-w-0"><span>データソース</span><select className="min-w-0 w-full" value={reportActivity.data_source ?? "unknown"} onChange={(event) => setReportActivity((current) => ({ ...current, data_source: event.target.value as ActivityDataSource }))}>{activityDataSourceOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
           </div>
-          <label className="onboarding-field min-w-0"><span>その他の活動</span><textarea className="min-h-20 min-w-0 w-full" value={reportActivity.notes ?? ""} onChange={(event) => setReportActivity((current) => ({ ...current, notes: event.target.value }))} placeholder="例: 展示会で長時間歩いた、引っ越し作業" /></label>
+          <label className="onboarding-field min-w-0"><span>その他の活動</span><textarea className="min-h-20 min-w-0 w-full" value={reportActivity.notes ?? ""} onChange={(event) => setReportActivity((current) => ({ ...current, notes: event.target.value }))} placeholder="例: 展示会で長時間歩いた" /></label>
         </div>}
       </div>}
-      <textarea className="mt-3 min-h-20 w-full" value={question} onChange={(event) => setQuestion(event.target.value)} placeholder="AIにコピーして相談できるレポートを生成します。特に相談したいことがあれば記入してください。なければそのまま生成を押してください" />
-      <button className="primary-button mt-3 w-full" onClick={() => void prepareAiReport()}><FileText size={17} />生成</button>
-      {report && (
-        <>
-          <p className="mt-3 text-xs font-bold text-moss">{generatedReportMode === "follow_up" ? "同じチャット用の更新版" : "新しいチャット用の完全版"}</p>
+
+      {reportWizardStep === "question" && <div className="mt-5">
+        <h3 className="text-lg font-black">特に相談したいことは？</h3>
+        <p className="mt-2 text-xs leading-relaxed text-moss">なければ空欄のまま進めます。</p>
+        <textarea className="mt-4 min-h-36 w-full" value={question} onChange={(event) => { setQuestion(event.target.value); clearGeneratedReport(); }} placeholder="例: 先週より体重が増えた理由を見てほしい" />
+      </div>}
+
+      {reportWizardStep === "result" && <div className="mt-5">
+        <h3 className="text-lg font-black">レポートを作成</h3>
+        <div className="mt-3 rounded-2xl border border-line p-3 text-xs leading-relaxed text-moss">
+          <p>{reportMode === "day" ? "今日" : reportMode === "week" ? "直近7日" : "直近30日"} / {reportDeliveryMode === "follow_up" ? "既存チャット向け" : "新規チャット向け"}</p>
+          <p className="mt-1">{reportContentScope === "food" ? "食事のみ" : reportContentScope === "workout" ? "ワークアウトのみ" : "食事とワークアウト"}</p>
+        </div>
+        <button className="primary-button mt-4 w-full" onClick={() => void prepareAiReport()}><FileText size={17} />{report ? "作り直す" : "生成"}</button>
+        {report && <>
+          <p className="mt-3 text-xs font-bold text-moss">{generatedReportMode === "follow_up" ? "既存チャット向けの短い更新版" : "新規チャット向けの完全版"}</p>
           <div className="mt-2 grid grid-cols-2 gap-2">
-            <button className="primary-button" onClick={async () => {
-              await copyText(report);
-              if (generatedReportId) {
-                const copiedAt = nowIso();
-                await db.ai_reports.update(generatedReportId, { copied_at: copiedAt, updated_at: copiedAt });
-                await props.refresh();
-                if (generatedReportMode === "full") setReportDeliveryMode("follow_up");
-              }
-              setCopiedReport(true);
-            }}><Copy size={17} />{copiedReport ? "コピー済み" : "コピー"}</button>
+            <button className="primary-button" onClick={() => void copyGeneratedAiReport()}><Copy size={17} />{copiedReport ? "コピー済み" : "コピー"}</button>
             <button className="secondary-button" onClick={() => downloadText(`phase-log-report-${Date.now()}.md`, report, "text/markdown")}><FileDown size={17} />MD保存</button>
           </div>
-          <textarea className="mt-3 min-h-56 w-full font-mono text-xs" value={report} readOnly />
-        </>
-      )}
+          <textarea className="mt-3 min-h-44 w-full font-mono text-xs" value={report} readOnly />
+        </>}
+      </div>}
+
+      <div className="mt-6 grid grid-cols-2 gap-2">
+        <button className="secondary-button" disabled={aiReportWizardIndex === 0} onClick={() => moveAiReportWizard(-1)}><ChevronLeft size={17} />戻る</button>
+        {reportWizardStep !== "result"
+          ? <button className="primary-button" onClick={() => moveAiReportWizard(1)}>次へ<ChevronRight size={17} /></button>
+          : <button className="secondary-button" onClick={() => { setReportWizardStep("period"); clearGeneratedReport(); }}><RotateCcw size={17} />最初から</button>}
+      </div>
     </section>
   );
   const sectionTitles: Record<SettingsSection, { title: string; subtitle: string }> = {
@@ -9649,6 +9681,10 @@ function SettingsTab(props: {
   };
   const activeSectionTitle = activeSettingsSection ? sectionTitles[activeSettingsSection] : undefined;
   const goBackFromSettingsSection = () => {
+    if (activeSettingsSection === "ai" && reportWizardStep !== "period") {
+      moveAiReportWizard(-1);
+      return;
+    }
     if (activeSettingsSection === "activity" && isActivityProfileWizardOpen) {
       setIsActivityProfileWizardOpen(false);
       setActivityProfileStep(0);
@@ -9684,7 +9720,7 @@ function SettingsTab(props: {
       {!activeSettingsSection && (
         <>
           <section className="compact-card divide-y divide-line overflow-hidden">
-            <SettingsMenuRow title="AI相談レポート" description="AIにコピーする日別・週別・月別レポート" icon={<FileText size={18} />} onClick={() => setActiveSettingsSection("ai")} />
+            <SettingsMenuRow title="AI相談レポート" description="期間と送信内容を選んでAI用レポートを作成" icon={<FileText size={18} />} onClick={() => { setReportWizardStep("period"); setActiveSettingsSection("ai"); }} />
             <SettingsMenuRow title="活動量プロフィール" description={props.settings?.activity_profile ? `${activityLabels[props.settings.activity_profile.activity_level]} / 確認済み` : "普段の活動量を確認"} icon={<Activity size={18} />} onClick={() => setActiveSettingsSection("activity")} />
             <SettingsMenuRow title="エクスポート" description="バックアップ保存 / 食事・ワークアウトのログ出力" icon={<Archive size={18} />} onClick={() => setActiveSettingsSection("backup")} />
             <SettingsMenuRow title="ゴール設定" description={`${phaseLabels[goalDraft.phase]} / ${calculated?.target_calories ?? "-"}kcal`} icon={<SlidersHorizontal size={18} />} onClick={() => setActiveSettingsSection("goal")} />

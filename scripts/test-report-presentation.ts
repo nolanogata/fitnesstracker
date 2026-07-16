@@ -12,7 +12,7 @@ import {
   foodRecordContextFromSelection,
   getFoodCoverageReviewDays,
 } from "../src/lib/foodRecordCoverage.ts";
-import { getCalorieOverTone } from "../src/lib/nutritionEstimate.ts";
+import { getCalorieOverTone, getDisplayedMacroProgress } from "../src/lib/nutritionEstimate.ts";
 import {
   buildFollowUpAiReport,
   getAiReportDeliveryContent,
@@ -102,6 +102,11 @@ test("採用値の小幅超過が推定幅内なら推定トーン", () => {
     displayedRemainingCalories: -120,
     uncertaintyCalories: 80,
   }), "estimate");
+});
+
+test("HomeのPFCは選択中の残量基準から表示値と達成率を計算", () => {
+  assert.deepEqual(getDisplayedMacroProgress(70, 50, 12), { value: 58, remaining: 12, percent: 83 });
+  assert.deepEqual(getDisplayedMacroProgress(150, 120, 40), { value: 110, remaining: 40, percent: 73 });
 });
 
 test("平均あり・対象日は定性入力のみ", () => {
@@ -372,11 +377,29 @@ const { generateMarkdownReport } = await import(reportModuleUrl) as typeof impor
     });
     assert.match(followUp, /AI相談 更新レポート/);
     assert.match(followUp, /同じAIチャットへの更新/);
+    assert.match(followUp, /## 基本情報[\s\S]*目標 kcal: 2500/);
     assert.match(followUp, /### 当日集計[\s\S]*当日 kcal: 760/);
     assert.match(followUp, /### その日の食事詳細[\s\S]*テスト食事/);
-    assert.match(followUp, /### 体重トレンド/);
+    assert.doesNotMatch(followUp, /### 体重トレンド/);
+    assert.doesNotMatch(followUp, /### 期間補正の参考/);
     assert.doesNotMatch(followUp, /## AIへの依頼/);
-    assert.ok(followUp.length < current.length * 0.8, `更新版が十分に短くありません: ${followUp.length}/${current.length}`);
+    assert.ok(followUp.length < current.length * 0.55, `更新版が十分に短くありません: ${followUp.length}/${current.length}`);
+  });
+
+  test("食事のみはワークアウト詳細を送らない", () => {
+    const report = generateMarkdownReport({ ...reportInput, contentScope: "food", reportCoverage: "partial" });
+    assert.match(report, /送信内容: 食事/);
+    assert.match(report, /## その日の食事詳細/);
+    assert.doesNotMatch(report, /## その日のワークアウト詳細/);
+  });
+
+  test("ワークアウトのみは食事集計と食事ログを送らない", () => {
+    const report = generateMarkdownReport({ ...reportInput, contentScope: "workout", reportCoverage: "partial" });
+    assert.match(report, /送信内容: ワークアウト/);
+    assert.match(report, /## その日のワークアウト詳細/);
+    assert.doesNotMatch(report, /## 当日集計/);
+    assert.doesNotMatch(report, /## 食事記録カバレッジ/);
+    assert.doesNotMatch(report, /## その日の食事詳細/);
   });
 
   test("ゴール変更は更新版へ再掲する", () => {
@@ -392,8 +415,8 @@ const { generateMarkdownReport } = await import(reportModuleUrl) as typeof impor
       previousFullReport: previous,
       generatedAt: "2026-07-13T13:00:00.000Z",
     });
-    assert.match(followUp, /## 前回から変更された前提[\s\S]*### 現在のゴール[\s\S]*目標 kcal: 2600/);
-    assert.match(followUp, /### 体組成目標/);
+    assert.match(followUp, /## 基本情報[\s\S]*前回からの基本設定変更: あり[\s\S]*目標 kcal: 2600/);
+    assert.doesNotMatch(followUp, /### 体組成目標/);
   });
 
   test("次回基準はコピー済みレポートだけを選ぶ", () => {

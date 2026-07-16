@@ -13,13 +13,10 @@ type ParsedMarkdownReport = {
 const changingBaselineHeadings = ["現在のゴール", "プロフィール"];
 
 const continuingRuleLines = [
-  "- この更新は、同じチャットに送った直前までの完全版・更新版を前提にしてください。",
-  "- 食事の採用値は固定し、推定幅で摂取合計を書き換えないでください。安全側の値は追加提案と解釈にだけ使ってください。",
-  "- 食事未記録日は、明示的な申告がない限り0kcalとして扱わないでください。",
-  "- 当日途中は最終的な不足・未達と判定せず、現時点の残りとして扱ってください。",
-  "- 活動量やムーブを摂取可能カロリーへそのまま加算しないでください。",
-  "- カスタム目標は最終値です。期間補正を二重に適用しないでください。",
-  "- 過去の会話と今回の記録を比較し、前日比や直近の傾向があれば簡潔に示してください。",
+  "- 同じチャットに送った直前までのレポートと会話を前提に、今回の更新を比較してください。",
+  "- 食事の採用値は固定し、安全側の値は追加提案と解釈にだけ使ってください。未記録日は0kcalとみなさないでください。",
+  "- 当日途中は最終評価にせず、活動量やムーブ、期間補正を目標kcalへ直接加算しないでください。",
+  "- 今回の相談へ簡潔に回答し、変化がある時だけ前日比や直近傾向を示してください。",
 ];
 
 export function latestCopiedAiReport(reports: AiReport[]) {
@@ -59,13 +56,10 @@ export function buildFollowUpAiReport(input: {
       ? []
       : [currentSection];
   });
-  const goalChanged = changedBaseline.some((section) => section.heading === "現在のゴール");
-  if (goalChanged) {
-    const composition = findSection(current, "体組成目標");
-    if (composition) changedBaseline.push(composition);
-  }
-
-  const currentSections = current.sections.filter((section) => shouldIncludeCurrentSection(section.heading));
+  const isDaily = /(?:^|\n)対象日:/.test(current.preamble);
+  const currentSections = current.sections
+    .filter((section) => shouldIncludeCurrentSection(section.heading, isDaily))
+    .map((section) => compactCurrentSection(section, isDaily));
   const previousLabel = input.previousCopiedAt ? formatJapaneseDateTime(input.previousCopiedAt) : "前回コピー時";
   const currentLabel = formatJapaneseDateTime(input.generatedAt);
 
@@ -81,11 +75,9 @@ ${current.preamble.replace(/^# .+\n?/, "").trim()}
 
 ${continuingRuleLines.join("\n")}
 
-## 前回から変更された前提
+## 基本情報
 
-${changedBaseline.length
-    ? changedBaseline.map(formatNestedSection).join("\n\n")
-    : "- ゴールとプロフィールの変更なし"}
+${buildCompactBasicInformation(current, changedBaseline.length > 0)}
 
 ## 今回の更新
 
@@ -119,21 +111,63 @@ function findSection(report: ParsedMarkdownReport, heading: string) {
   return report.sections.find((section) => section.heading === heading);
 }
 
-function shouldIncludeCurrentSection(heading: string) {
+function shouldIncludeCurrentSection(heading: string, isDaily: boolean) {
   return heading === "レポート情報"
-    || heading === "体重トレンド"
-    || heading === "期間補正の参考"
     || heading === "活動量情報"
     || heading === "食事記録カバレッジ"
     || heading === "当日集計"
     || heading === "食事平均"
     || heading === "記録日の食事平均"
-    || heading === "目標との差分"
     || heading === "その日の食事詳細"
-    || heading === "食事ログ"
+    || (isDaily && heading === "食事ログ")
     || heading === "その日のワークアウト詳細"
     || heading === "ワークアウト"
     || heading === "相談したいこと";
+}
+
+function compactCurrentSection(section: MarkdownSection, isDaily: boolean): MarkdownSection {
+  if (section.heading === "活動量情報") {
+    return { ...section, body: keepLines(section.body, [
+      "### ", "- 活動区分:", "- 平均期間:", "- 平均歩数:", "- 平均ムーブ:", "- 平均エクササイズ時間:",
+      "- 定性入力:", "- 対象日の歩数:", "- 対象日のムーブ:", "- 対象日のエクササイズ時間:", "- その他の活動:", "- データソース:",
+    ]) };
+  }
+  if (section.heading === "食事記録カバレッジ" && /食事未記録・摂取量不明: 0日/.test(section.body)) {
+    return { ...section, body: keepLines(section.body, ["- 対象日数:", "- 詳細な食事記録あり:", "- 食事記録の信頼度:"]) };
+  }
+  if (["当日集計", "食事平均", "記録日の食事平均"].includes(section.heading)) {
+    return { ...section, body: keepLines(section.body, [
+      "- 記録あり日数:", "- 詳細未記録日:", "- 当日 kcal:", "- 当日 P/F/C:", "- 平均 kcal:", "- 平均 P/F/C:",
+      "- 記録日の平均 kcal:", "- 記録日の平均 P/F/C:", "- 推定を含むログ:", "- 推定カロリー比率:", "- 安全側バッファ:",
+      "- 採用値ベース残量:", "- 安全側の追加上限:", "- Pの安全側評価:",
+    ]) };
+  }
+  if (!isDaily && section.heading === "ワークアウト") {
+    return { ...section, body: section.body.split("### 種目詳細")[0].trim() };
+  }
+  return section;
+}
+
+function keepLines(body: string, prefixes: string[]) {
+  const kept = body.split("\n").filter((line) => prefixes.some((prefix) => line.startsWith(prefix)));
+  return kept.join("\n");
+}
+
+function buildCompactBasicInformation(report: ParsedMarkdownReport, changed: boolean) {
+  const profile = findSection(report, "プロフィール");
+  const goal = findSection(report, "現在のゴール");
+  const profileLines = pickLines(profile?.body, ["- 名前:", "- 身長:", "- 現在体重:", "- 体脂肪率:"]);
+  const goalLines = pickLines(goal?.body, ["- フェーズ:", "- 目標体重:", "- 目標体脂肪率:", "- 目標達成日:", "- 目標 kcal:", "- 目標 P/F/C:", "- 週の運動目標:"]);
+  return [
+    `- 前回からの基本設定変更: ${changed ? "あり" : "なし"}`,
+    ...profileLines,
+    ...goalLines,
+  ].join("\n");
+}
+
+function pickLines(body: string | undefined, prefixes: string[]) {
+  if (!body) return [];
+  return body.split("\n").filter((line) => prefixes.some((prefix) => line.startsWith(prefix)));
 }
 
 function formatNestedSection(section: MarkdownSection) {

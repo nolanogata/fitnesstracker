@@ -425,6 +425,7 @@ export type AiReport = {
   activity_context?: DailyActivityContext;
   food_record_contexts?: FoodRecordContext[];
   delivery_mode?: AiReportDeliveryMode;
+  content_scope?: AiReportContentScope;
   full_content?: string;
   copied_at?: string;
   conversation_anchor_id?: string;
@@ -434,6 +435,7 @@ export type AiReport = {
 };
 
 export type AiReportDeliveryMode = "full" | "follow_up";
+export type AiReportContentScope = "food" | "workout" | "both";
 
 export type BackupPayload = {
   schema_version: number;
