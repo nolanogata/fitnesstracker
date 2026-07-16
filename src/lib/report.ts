@@ -1,4 +1,4 @@
-import type { ActivityProfile, DailyActivityContext, FoodEntry, FoodRecordContext, Goal, MenuItem, Phase, Profile, ReportCoverage, WeightLog, WorkoutExercise, WorkoutSession, WorkoutSet } from "../types";
+import type { ActivityProfile, AiReportContentScope, DailyActivityContext, FoodEntry, FoodRecordContext, Goal, MenuItem, Phase, Profile, ReportCoverage, WeightLog, WorkoutExercise, WorkoutSession, WorkoutSet } from "../types";
 import { dateRange } from "./date";
 import { phaseLabels } from "./goalCalculator";
 import { formatWeeklyWorkoutStatus, type WeeklyWorkoutStatus } from "./workoutStatus";
@@ -48,7 +48,11 @@ export function generateMarkdownReport(input: {
   reportCoverage?: ReportCoverage;
   foodRecordContexts?: FoodRecordContext[];
   question: string;
+  contentScope?: AiReportContentScope;
 }) {
+  const contentScope = input.contentScope ?? "both";
+  const includeFood = contentScope !== "workout";
+  const includeWorkout = contentScope !== "food";
   const dates = dateRange(input.periodStart, input.periodEnd);
   const cheatDayDates = dates.filter((date) => input.cheatDayDates?.includes(date));
   const specialModeDays = (input.specialModeDays ?? []).filter((day) => dates.includes(day.date));
@@ -252,6 +256,7 @@ ${isDaily ? `対象日: ${input.periodStart}` : `期間: ${input.periodStart} - 
 ## レポート情報
 
 - 生成日時: ${formatReportDateTime(input.generatedAt)}
+- 送信内容: ${contentScope === "food" ? "食事" : contentScope === "workout" ? "ワークアウト" : "食事とワークアウト"}
 - 対象範囲の状態: ${isDaily ? reportCoverage === "partial" ? "当日途中" : "1日完了" : "対象期間の記録"}
 - チートデー: ${cheatDayDates.length ? `あり (${cheatDayDates.join(", ")})` : "なし"}
 - 旅行モード: ${travelModeDays.length ? travelModeDays.map((day) => `${day.date} ${day.label}`).join(", ") : "なし"}
@@ -337,7 +342,7 @@ ${formatTargetPeriodReferenceSection({
 
 ${activitySection}
 
-## 食事記録カバレッジ
+${includeFood ? `## 食事記録カバレッジ
 
 ${foodCoverageSection}
 
@@ -364,9 +369,9 @@ ${inProgressDifferenceLines}
 
 ${isDaily ? "## その日の食事詳細" : "## 食事ログ"}
 
-${foodLines.join("\n") || "- 記録なし"}
+${foodLines.join("\n") || "- 記録なし"}` : ""}
 
-${isDaily ? `## その日のワークアウト詳細
+${includeWorkout ? (isDaily ? `## その日のワークアウト詳細
 
 - セッション数: ${input.workoutSessions.length}
 - 種目数: ${scopedExercises.length}
@@ -386,7 +391,7 @@ ${workoutSummaryLines.join("\n") || "- 記録なし"}
 
 ### 種目詳細
 
-${exerciseLines.join("\n") || "- 記録なし"}`}
+${exerciseLines.join("\n") || "- 記録なし"}`) : ""}
 
 ## 相談したいこと
 
@@ -486,7 +491,7 @@ function formatActivitySection(profile: ActivityProfile | undefined, daily: Dail
     `- データソース: ${profilePresentation.sourceLabel}`,
     `- 信頼度: ${profilePresentation.confidenceLabel}`,
     "",
-    `### ${isDaily ? "対象日の活動量" : "対象期間の日別活動量"}`,
+    `### ${isDaily ? "対象日の活動量" : "期間最終日の活動量"}`,
     `- 定性入力: ${daily ? relativeActivityReportLabels[daily.relative_activity_level] : isDaily ? "わからない" : "未入力"}`,
     `- 対象日の歩数: ${typeof daily?.steps === "number" ? `${Math.round(daily.steps).toLocaleString("ja-JP")}歩` : "未入力"}`,
     `- 対象日のムーブ: ${typeof daily?.active_calories === "number" ? `${Math.round(daily.active_calories)}kcal（アクティブカロリー）` : "未入力"}`,
@@ -498,7 +503,7 @@ function formatActivitySection(profile: ActivityProfile | undefined, daily: Dail
     `- 信頼度: ${dailyPresentation.confidenceLabel}`,
   ];
   if (!daily || (daily.relative_activity_level === "unknown" && !dailyPresentation.hasNumericData)) {
-    lines.push(`- 注意: ${isDaily ? "対象日の" : "対象期間の日別"}活動量情報が不足しているため、エネルギー収支には不確実性があります`);
+    lines.push(`- 注意: ${isDaily ? "対象日の" : "期間最終日の"}活動量情報が不足しているため、エネルギー収支には不確実性があります`);
   }
   return lines.join("\n");
 }

@@ -37,6 +37,15 @@ export type DailyNutritionEstimate = {
   entries: EstimatedNutritionEntry[];
 };
 
+export function getDisplayedMacroProgress(target: number, adoptedValue: number, displayedRemaining: number) {
+  const value = target > 0 ? round1(target - displayedRemaining) : adoptedValue;
+  return {
+    value,
+    remaining: target > 0 ? round1(displayedRemaining) : undefined,
+    percent: target > 0 ? Math.round((value / target) * 100) : undefined,
+  };
+}
+
 export function getCalorieOverTone(input: {
   adoptedRemainingCalories: number;
   displayedRemainingCalories: number;
