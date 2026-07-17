@@ -13,6 +13,7 @@ import {
   getFoodCoverageReviewDays,
 } from "../src/lib/foodRecordCoverage.ts";
 import { getCalorieOverTone, getDisplayedMacroProgress } from "../src/lib/nutritionEstimate.ts";
+import { getHeroExceptionDisplay } from "../src/lib/homeHero.ts";
 import {
   buildFollowUpAiReport,
   getAiReportDeliveryContent,
@@ -107,6 +108,20 @@ test("採用値の小幅超過が推定幅内なら推定トーン", () => {
 test("HomeのPFCは選択中の残量基準から表示値と達成率を計算", () => {
   assert.deepEqual(getDisplayedMacroProgress(70, 50, 12), { value: 58, remaining: 12, percent: 83 });
   assert.deepEqual(getDisplayedMacroProgress(150, 120, 40), { value: 110, remaining: 40, percent: 73 });
+});
+
+test("旅行中はラベル操作で数値だけを表示し、評価外と100%バーは維持", () => {
+  assert.deepEqual(getHeroExceptionDisplay({ isExceptionDay: true, isTravelMode: true, showTravelNutrition: false }), {
+    hideGoalValues: true,
+    muteGoalEvaluation: true,
+    forceFullProgress: true,
+  });
+  assert.deepEqual(getHeroExceptionDisplay({ isExceptionDay: true, isTravelMode: true, showTravelNutrition: true }), {
+    hideGoalValues: false,
+    muteGoalEvaluation: true,
+    forceFullProgress: true,
+  });
+  assert.equal(getHeroExceptionDisplay({ isExceptionDay: true, isTravelMode: false, showTravelNutrition: true }).hideGoalValues, true);
 });
 
 test("平均あり・対象日は定性入力のみ", () => {
