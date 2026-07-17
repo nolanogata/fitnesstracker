@@ -20,6 +20,8 @@ import {
   CupSoda,
   Dumbbell,
   EggFried,
+  Eye,
+  EyeOff,
   FileDown,
   FileText,
   Fish,
@@ -175,6 +177,7 @@ import { generateMarkdownReport } from "./lib/report";
 import { getAiReportDeliveryContent, latestCopiedAiReport } from "./lib/aiReportDelivery";
 import { getWeeklyWorkoutStatus, type WeeklyWorkoutStatus } from "./lib/workoutStatus";
 import { getCalorieOverTone, getDailyNutritionEstimate, getDisplayedMacroProgress } from "./lib/nutritionEstimate";
+import { getHeroExceptionDisplay } from "./lib/homeHero";
 import { activityDataSourceLabel, getProteinSafetyPresentation } from "./lib/reportPresentation";
 import { getOnboardingSteps, type OnboardingActivityMode, type OnboardingStepKey } from "./lib/onboarding";
 import { buildFoodCoverageDays, foodRecordContextFromSelection, getFoodCoverageReviewDays, intakeRelativeLevelLabels, type FoodCoverageDay } from "./lib/foodRecordCoverage";
@@ -1295,6 +1298,15 @@ const achievementProgressSpecs: Record<string, AchievementProgressSpec> = {
   streak_365: { metric: "streak", target: 365, unit: "日" },
 };
 const appUpdates: AppUpdate[] = [
+  {
+    id: "2026-07-18-travel-hero-toggle",
+    title: "旅行中のHome表示を切り替え可能に",
+    date: "2026-07-18",
+    items: [
+      "旅行モード中は、ヒーローカードの旅行名をタップしてカロリーとPFCの表示を切り替えられるようにしました。",
+      "旅行中のレインボーバーと目標評価外の扱いはそのまま維持します。",
+    ],
+  },
   {
     id: "2026-07-17-ai-report-wizard",
     title: "AI相談レポートの作成手順を整理",
@@ -4121,6 +4133,7 @@ function HomeTab(props: {
   const [isEstimateDetailOpen, setIsEstimateDetailOpen] = useState(false);
   const [isGoalSummaryOpen, setIsGoalSummaryOpen] = useState(false);
   const [showMacroRemaining, setShowMacroRemaining] = useState(false);
+  const [showTravelNutrition, setShowTravelNutrition] = useState(false);
   const [pullOffset, setPullOffset] = useState(0);
   const [isPullRefreshing, setIsPullRefreshing] = useState(false);
   const pullStartYRef = useRef<number | undefined>(undefined);
@@ -4172,12 +4185,19 @@ function HomeTab(props: {
     : "none";
   const isCalorieOverWithinEstimate = calorieOverTone === "estimate";
   const calorieDeltaText = typeof heroCalorieDelta === "number" ? `${heroCalorieDelta > 0 ? "+" : ""}${Math.round(heroCalorieDelta)}` : "-";
-  const shouldMaskGoalProgress = props.isExceptionDay;
+  const isTravelModeActive = !!props.activeSpecialMode;
+  const heroExceptionDisplay = getHeroExceptionDisplay({
+    isExceptionDay: props.isExceptionDay,
+    isTravelMode: isTravelModeActive,
+    showTravelNutrition,
+  });
+  const shouldMaskGoalProgress = heroExceptionDisplay.hideGoalValues;
+  const shouldMuteGoalEvaluation = heroExceptionDisplay.muteGoalEvaluation;
   const shouldShowRainbowProgress = props.isCheatDay || !!props.activeSpecialMode;
   const shouldShowPausedProgress = !shouldShowRainbowProgress && !!props.activePauseMode;
-  const shouldShowCalorieOverTone = !shouldMaskGoalProgress && !!heroCalorieDelta && heroCalorieDelta > 0;
-  const heroProgressPercent = shouldMaskGoalProgress ? 100 : Math.min(100, developerProgressPercent ?? heroCaloriePercent);
-  const heroGlowPercent = shouldMaskGoalProgress ? 100 : developerProgressPercent ?? heroProgressPercent;
+  const shouldShowCalorieOverTone = !shouldMuteGoalEvaluation && !!heroCalorieDelta && heroCalorieDelta > 0;
+  const heroProgressPercent = heroExceptionDisplay.forceFullProgress ? 100 : Math.min(100, developerProgressPercent ?? heroCaloriePercent);
+  const heroGlowPercent = heroExceptionDisplay.forceFullProgress ? 100 : developerProgressPercent ?? heroProgressPercent;
   const heroBackgroundProgress = Math.max(0, Math.min(100, heroGlowPercent));
   const isDeveloperProgressOver = typeof developerProgressPercent === "number" && developerProgressPercent > 100;
   const shouldUseThemeHeroFrame = !shouldShowRainbowProgress && !shouldShowPausedProgress && !isDeveloperProgressOver && calorieOverTone === "none";
@@ -4214,7 +4234,7 @@ function HomeTab(props: {
     const adoptedOver = typeof adoptedRemaining === "number" && adoptedRemaining < 0 ? Math.abs(adoptedRemaining) : 0;
     const displayedOver = macro.remaining < 0 ? Math.abs(macro.remaining) : 0;
     const isWithinEstimate = displayedOver > 0 && adoptedOver <= macro.uncertainty;
-    const tone = shouldMaskGoalProgress
+    const tone = shouldMuteGoalEvaluation
       ? "disabled"
       : typeof percent !== "number"
       ? "neutral"
@@ -4322,6 +4342,10 @@ function HomeTab(props: {
     setBodyFat(clampBodyFat(props.latestWeight?.body_fat_percentage ?? props.profile?.body_fat_percentage ?? 20));
   }, [props.latestWeight?.weight_kg, props.latestWeight?.body_fat_percentage, props.profile?.current_weight_kg, props.profile?.body_fat_percentage]);
 
+  useEffect(() => {
+    setShowTravelNutrition(false);
+  }, [props.appDate, props.activeSpecialMode?.id]);
+
   return (
     <div
       className={`home-pull-shell ${isPullRefreshing ? "home-pull-refreshing" : ""}`}
@@ -4426,7 +4450,18 @@ function HomeTab(props: {
         <div className="flex items-center justify-between gap-3">
           <p className="text-sm font-semibold text-ink/80">今日のカロリー</p>
           {props.isCheatDay ? <span className="home-cheat-badge">チートデー</span>
-            : props.activeSpecialMode ? <span className="home-cheat-badge home-trip-badge">{props.activeSpecialMode.label}</span>
+            : props.activeSpecialMode ? (
+              <button
+                type="button"
+                className="home-cheat-badge home-trip-badge home-trip-badge-toggle"
+                aria-label={`${props.activeSpecialMode.label}。カロリーとPFCを${showTravelNutrition ? "非表示" : "表示"}にする`}
+                aria-pressed={showTravelNutrition}
+                onClick={() => setShowTravelNutrition((current) => !current)}
+              >
+                <span>{props.activeSpecialMode.label}</span>
+                {showTravelNutrition ? <EyeOff size={13} /> : <Eye size={13} />}
+              </button>
+            )
             : props.activePauseMode ? <span className="home-cheat-badge">{props.activePauseMode.label}</span>
             : (
               <button
@@ -4452,7 +4487,7 @@ function HomeTab(props: {
           {macroStats.map((macro) => (
             <button
               type="button"
-              className={`home-macro-pill home-macro-${macro.tone} ${shouldMaskGoalProgress ? "home-macro-disabled" : ""} ${showMacroRemaining && !shouldMaskGoalProgress ? "home-macro-remaining-active" : ""}`}
+              className={`home-macro-pill home-macro-${macro.tone} ${shouldMuteGoalEvaluation ? "home-macro-disabled" : ""} ${showMacroRemaining && !shouldMaskGoalProgress ? "home-macro-remaining-active" : ""}`}
               key={macro.label}
               onClick={() => {
                 if (!shouldMaskGoalProgress) setShowMacroRemaining((current) => !current);

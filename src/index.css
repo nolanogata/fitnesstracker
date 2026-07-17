@@ -1333,6 +1333,39 @@ button {
   color: #f5fbf7;
 }
 
+.home-trip-badge-toggle {
+  max-width: 58%;
+  gap: 0.35rem;
+  cursor: pointer;
+  transition: transform 140ms ease, background 140ms ease, border-color 140ms ease;
+}
+
+.home-trip-badge-toggle span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.home-trip-badge-toggle svg {
+  flex: 0 0 auto;
+  opacity: 0.86;
+}
+
+.home-trip-badge-toggle:active {
+  transform: scale(0.97);
+}
+
+.home-trip-badge-toggle:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.9);
+  outline-offset: 2px;
+}
+
+.home-trip-badge-toggle[aria-pressed="true"] {
+  border-color: rgba(255, 255, 255, 0.62);
+  background: rgba(255, 255, 255, 0.24);
+}
+
 .home-hero-cheat::before {
   position: absolute;
   inset: 0;
