@@ -1333,8 +1333,18 @@ button {
   color: #f5fbf7;
 }
 
+.home-trip-controls {
+  display: flex;
+  max-width: 68%;
+  min-width: 0;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.35rem;
+}
+
 .home-trip-badge-toggle {
-  max-width: 58%;
+  max-width: 100%;
+  min-width: 0;
   gap: 0.35rem;
   cursor: pointer;
   transition: transform 140ms ease, background 140ms ease, border-color 140ms ease;
@@ -1364,6 +1374,24 @@ button {
 .home-trip-badge-toggle[aria-pressed="true"] {
   border-color: rgba(255, 255, 255, 0.62);
   background: rgba(255, 255, 255, 0.24);
+}
+
+.home-trip-settings-button {
+  width: 1.9rem;
+  height: 1.9rem;
+  flex: 0 0 1.9rem;
+  padding: 0;
+  cursor: pointer;
+  transition: transform 140ms ease, background 140ms ease, border-color 140ms ease;
+}
+
+.home-trip-settings-button:active {
+  transform: scale(0.95);
+}
+
+.home-trip-settings-button:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.9);
+  outline-offset: 2px;
 }
 
 .home-hero-cheat::before {

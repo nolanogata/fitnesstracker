@@ -1299,6 +1299,14 @@ const achievementProgressSpecs: Record<string, AchievementProgressSpec> = {
 };
 const appUpdates: AppUpdate[] = [
   {
+    id: "2026-07-20-travel-nutrition-basis",
+    title: "旅行中の栄養表示を調整可能に",
+    date: "2026-07-20",
+    items: [
+      "旅行中にカロリーとPFCを表示している時も、記録した値と少し余裕を見た値を切り替えられるようにしました。",
+    ],
+  },
+  {
     id: "2026-07-18-travel-hero-toggle",
     title: "旅行中のHome表示を切り替え可能に",
     date: "2026-07-18",
@@ -4451,16 +4459,28 @@ function HomeTab(props: {
           <p className="text-sm font-semibold text-ink/80">今日のカロリー</p>
           {props.isCheatDay ? <span className="home-cheat-badge">チートデー</span>
             : props.activeSpecialMode ? (
-              <button
-                type="button"
-                className="home-cheat-badge home-trip-badge home-trip-badge-toggle"
-                aria-label={`${props.activeSpecialMode.label}。カロリーとPFCを${showTravelNutrition ? "非表示" : "表示"}にする`}
-                aria-pressed={showTravelNutrition}
-                onClick={() => setShowTravelNutrition((current) => !current)}
-              >
-                <span>{props.activeSpecialMode.label}</span>
-                {showTravelNutrition ? <EyeOff size={13} /> : <Eye size={13} />}
-              </button>
+              <div className="home-trip-controls">
+                <button
+                  type="button"
+                  className="home-cheat-badge home-trip-badge home-trip-badge-toggle"
+                  aria-label={`${props.activeSpecialMode.label}。カロリーとPFCを${showTravelNutrition ? "非表示" : "表示"}にする`}
+                  aria-pressed={showTravelNutrition}
+                  onClick={() => setShowTravelNutrition((current) => !current)}
+                >
+                  <span>{props.activeSpecialMode.label}</span>
+                  {showTravelNutrition ? <EyeOff size={13} /> : <Eye size={13} />}
+                </button>
+                {showTravelNutrition && (
+                  <button
+                    type="button"
+                    className="home-cheat-badge home-trip-badge home-trip-settings-button"
+                    aria-label="表示する残りの基準を変更"
+                    onClick={() => setIsEstimateDetailOpen(true)}
+                  >
+                    <Settings size={14} />
+                  </button>
+                )}
+              </div>
             )
             : props.activePauseMode ? <span className="home-cheat-badge">{props.activePauseMode.label}</span>
             : (
