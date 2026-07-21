@@ -2665,6 +2665,10 @@ button {
   font-size: 0.72rem;
 }
 
+.workout-body-recency-row .workout-body-recency-overdue {
+  color: var(--danger-coral);
+}
+
 .workout-body-recency-row small {
   margin-top: 0.1rem;
   color: var(--text-muted);
