@@ -2497,6 +2497,181 @@ button {
   -webkit-backdrop-filter: blur(18px) saturate(118%);
 }
 
+.workout-body-periods {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.35rem;
+  padding: 0.25rem;
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  background: var(--glass-bg-soft);
+}
+
+.workout-body-periods button {
+  min-width: 0;
+  min-height: 2.35rem;
+  border-radius: 6px;
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  font-weight: 800;
+  transition: transform 140ms ease, color 140ms ease, background 140ms ease, box-shadow 140ms ease;
+}
+
+.workout-body-periods button:active {
+  transform: scale(0.97);
+}
+
+.workout-body-periods .workout-body-period-active {
+  color: var(--accent-readable);
+  background: var(--accent-soft);
+  box-shadow: inset 0 0 0 1px var(--accent-border), var(--glass-highlight);
+}
+
+.workout-body-chart-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 8.5rem) minmax(0, 1fr);
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.workout-body-donut {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  box-shadow: 0 10px 24px rgba(44, 56, 48, 0.08), var(--glass-highlight);
+}
+
+.workout-body-donut-empty {
+  background: var(--glass-bg-soft);
+  box-shadow: inset 0 0 0 1px var(--glass-border);
+}
+
+.workout-body-donut-center {
+  position: absolute;
+  inset: 20%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--glass-border);
+  border-radius: 50%;
+  background: var(--glass-bg-strong);
+  color: var(--text-primary);
+  box-shadow: 0 5px 16px rgba(44, 56, 48, 0.08), var(--glass-highlight);
+  text-align: center;
+}
+
+.workout-body-donut-center strong {
+  font-family: var(--rounded-number-font);
+  font-size: 1.55rem;
+  line-height: 1;
+}
+
+.workout-body-donut-center span {
+  margin-top: 0.1rem;
+  color: var(--text-secondary);
+  font-size: 0.62rem;
+  font-weight: 800;
+}
+
+.workout-body-donut-center small {
+  margin-top: 0.15rem;
+  color: var(--text-muted);
+  font-size: 0.58rem;
+  font-weight: 700;
+}
+
+.workout-body-legend {
+  min-width: 0;
+}
+
+.workout-body-legend-row {
+  display: grid;
+  grid-template-columns: 0.55rem minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 0.38rem;
+  min-height: 1.65rem;
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+}
+
+.workout-body-legend-row strong {
+  color: var(--text-primary);
+  font-family: var(--rounded-number-font);
+  font-size: 0.75rem;
+}
+
+.workout-body-legend-row small {
+  min-width: 1.5rem;
+  color: var(--text-muted);
+  font-size: 0.62rem;
+  text-align: right;
+}
+
+.workout-body-color-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  flex: 0 0 0.5rem;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px color-mix(in srgb, currentColor 8%, transparent);
+}
+
+.workout-body-empty-copy {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.6;
+}
+
+.workout-body-recency {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  overflow: hidden;
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  background: var(--glass-bg-soft);
+}
+
+.workout-body-recency-row {
+  display: flex;
+  min-width: 0;
+  min-height: 3.55rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.65rem 0.7rem;
+  border-bottom: 1px solid var(--glass-border);
+  color: var(--text-primary);
+  font-size: 0.76rem;
+}
+
+.workout-body-recency-row:nth-child(odd) {
+  border-right: 1px solid var(--glass-border);
+}
+
+.workout-body-recency-row:nth-last-child(-n + 2) {
+  border-bottom: 0;
+}
+
+.workout-body-recency-row strong,
+.workout-body-recency-row small {
+  display: block;
+  white-space: nowrap;
+}
+
+.workout-body-recency-row strong {
+  font-family: var(--rounded-number-font);
+  font-size: 0.72rem;
+}
+
+.workout-body-recency-row small {
+  margin-top: 0.1rem;
+  color: var(--text-muted);
+  font-size: 0.56rem;
+  font-weight: 700;
+}
+
 .number-stepper {
   display: grid;
   grid-template-columns: 2.5rem minmax(0, 1fr) 2.5rem;
