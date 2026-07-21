@@ -180,6 +180,7 @@ import { getCalorieOverTone, getDailyNutritionEstimate, getDisplayedMacroProgres
 import { getHeroExceptionDisplay } from "./lib/homeHero";
 import {
   getWorkoutBodyPartSummary,
+  isWorkoutBodyPartOverdue,
   type WorkoutBodyPart,
   type WorkoutBodyPartPeriod,
 } from "./lib/workoutBodyPartSummary";
@@ -8583,7 +8584,9 @@ function WorkoutBodyPartSection({ appDate, sessions, exercises, sets }: {
               <span className="font-bold">{stat.bodyPart}</span>
             </div>
             <div className="text-right">
-              <strong>{formatWorkoutDaysSince(stat.daysSince)}</strong>
+              <strong className={isWorkoutBodyPartOverdue(stat.daysSince) ? "workout-body-recency-overdue" : ""}>
+                {formatWorkoutDaysSince(stat.daysSince)}
+              </strong>
               <small>{stat.lastDate ? formatJapaneseDate(stat.lastDate) : "記録なし"}</small>
             </div>
           </div>

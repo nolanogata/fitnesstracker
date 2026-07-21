@@ -20,6 +20,10 @@ export type WorkoutBodyPartSummary = {
   periodEnd: string;
 };
 
+export function isWorkoutBodyPartOverdue(daysSince?: number) {
+  return typeof daysSince === "number" && daysSince >= 4;
+}
+
 export function getWorkoutBodyPartSummary(input: {
   appDate: string;
   period: WorkoutBodyPartPeriod;

@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { getWorkoutBodyPartSummary, normalizeWorkoutBodyPart } from "../src/lib/workoutBodyPartSummary.ts";
+import { getWorkoutBodyPartSummary, isWorkoutBodyPartOverdue, normalizeWorkoutBodyPart } from "../src/lib/workoutBodyPartSummary.ts";
 import type { WorkoutExercise, WorkoutSession, WorkoutSet } from "../src/types.ts";
 
 let passed = 0;
@@ -58,6 +58,12 @@ test("未記録部位も最終実施日一覧に残す", () => {
   const summary = getWorkoutBodyPartSummary({ appDate: "2026-07-21", period: "month", sessions, exercises, sets });
   assert.equal(summary.stats.find((item) => item.bodyPart === "脚")?.lastDate, undefined);
   assert.equal(summary.stats.find((item) => item.bodyPart === "体幹")?.setCount, 0);
+});
+
+test("丸3日を超えた4日前から警告対象にする", () => {
+  assert.equal(isWorkoutBodyPartOverdue(undefined), false);
+  assert.equal(isWorkoutBodyPartOverdue(3), false);
+  assert.equal(isWorkoutBodyPartOverdue(4), true);
 });
 
 process.stdout.write(`Workout body-part summary tests passed: ${passed}\n`);
