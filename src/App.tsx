@@ -178,6 +178,11 @@ import { getAiReportDeliveryContent, latestCopiedAiReport } from "./lib/aiReport
 import { getWeeklyWorkoutStatus, type WeeklyWorkoutStatus } from "./lib/workoutStatus";
 import { getCalorieOverTone, getDailyNutritionEstimate, getDisplayedMacroProgress } from "./lib/nutritionEstimate";
 import { getHeroExceptionDisplay } from "./lib/homeHero";
+import {
+  getWorkoutBodyPartSummary,
+  type WorkoutBodyPart,
+  type WorkoutBodyPartPeriod,
+} from "./lib/workoutBodyPartSummary";
 import { activityDataSourceLabel, getProteinSafetyPresentation } from "./lib/reportPresentation";
 import { getOnboardingSteps, type OnboardingActivityMode, type OnboardingStepKey } from "./lib/onboarding";
 import { buildFoodCoverageDays, foodRecordContextFromSelection, getFoodCoverageReviewDays, intakeRelativeLevelLabels, type FoodCoverageDay } from "./lib/foodRecordCoverage";
@@ -1298,6 +1303,15 @@ const achievementProgressSpecs: Record<string, AchievementProgressSpec> = {
   streak_365: { metric: "streak", target: 365, unit: "日" },
 };
 const appUpdates: AppUpdate[] = [
+  {
+    id: "2026-07-21-workout-body-balance",
+    title: "部位別のトレーニング履歴を追加",
+    date: "2026-07-21",
+    items: [
+      "Historyで胸、肩、腕、背中、脚、体幹を最後に鍛えてからの日数を確認できるようにしました。",
+      "部位ごとのセット割合を、全期間、月間、週間、日別で切り替えて確認できるようにしました。",
+    ],
+  },
   {
     id: "2026-07-20-travel-nutrition-basis",
     title: "旅行中の栄養表示を調整可能に",
@@ -8207,6 +8221,13 @@ function RecordsTab(props: {
         color="#c76f51"
       />
 
+      <WorkoutBodyPartSection
+        appDate={props.appDate}
+        sessions={props.workoutSessions}
+        exercises={props.workoutExercises}
+        sets={props.workoutSets}
+      />
+
       <section className="compact-card p-4">
         <div className="flex items-start justify-between gap-3">
           <div>
@@ -8463,6 +8484,119 @@ function RecordsTab(props: {
       )}
     </div>
   );
+}
+
+const workoutBodyPartColors: Record<WorkoutBodyPart, string> = {
+  "胸": "#d96f5f",
+  "肩": "#d4a447",
+  "腕": "#4f9b83",
+  "背中": "#4f7fb7",
+  "脚": "#7967b0",
+  "体幹": "#81924f",
+  "その他": "#858b88",
+};
+
+function WorkoutBodyPartSection({ appDate, sessions, exercises, sets }: {
+  appDate: string;
+  sessions: WorkoutSession[];
+  exercises: WorkoutExercise[];
+  sets: WorkoutSet[];
+}) {
+  const [period, setPeriod] = useState<WorkoutBodyPartPeriod>("month");
+  const summary = useMemo(
+    () => getWorkoutBodyPartSummary({ appDate, period, sessions, exercises, sets }),
+    [appDate, period, sessions, exercises, sets],
+  );
+  const activeStats = summary.stats.filter((stat) => stat.setCount > 0);
+  let gradientCursor = 0;
+  const chartBackground = activeStats.length
+    ? `conic-gradient(${activeStats.map((stat) => {
+      const start = gradientCursor;
+      gradientCursor += (stat.setCount / summary.totalSets) * 100;
+      return `${workoutBodyPartColors[stat.bodyPart]} ${start.toFixed(2)}% ${gradientCursor.toFixed(2)}%`;
+    }).join(", ")})`
+    : undefined;
+  const periodLabel = period === "all"
+    ? "全期間"
+    : period === "month"
+      ? `${Number(appDate.slice(5, 7))}月`
+      : period === "week"
+        ? "今週"
+        : "今日";
+
+  return (
+    <section className="compact-card workout-body-section p-4">
+      <div>
+        <h2 className="text-sm font-bold">部位別トレーニング</h2>
+        <p className="mt-1 text-xs leading-relaxed text-moss">最後に鍛えた日と、記録セット数の割合を確認できます。</p>
+      </div>
+
+      <div className="workout-body-periods mt-3" role="group" aria-label="集計期間">
+        {([
+          ["all", "全期間"],
+          ["month", "月間"],
+          ["week", "週間"],
+          ["day", "日別"],
+        ] as Array<[WorkoutBodyPartPeriod, string]>).map(([value, label]) => (
+          <button
+            type="button"
+            className={period === value ? "workout-body-period-active" : ""}
+            aria-pressed={period === value}
+            key={value}
+            onClick={() => setPeriod(value)}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      <div className="workout-body-chart-layout mt-4">
+        <div
+          className={`workout-body-donut ${summary.totalSets ? "" : "workout-body-donut-empty"}`}
+          style={chartBackground ? { background: chartBackground } : undefined}
+          role="img"
+          aria-label={`${periodLabel}の部位別トレーニング割合。合計${summary.totalSets}セット`}
+        >
+          <div className="workout-body-donut-center">
+            <strong>{summary.totalSets}</strong>
+            <span>セット</span>
+            <small>{periodLabel}</small>
+          </div>
+        </div>
+        <div className="workout-body-legend">
+          {activeStats.length ? activeStats.map((stat) => (
+            <div className="workout-body-legend-row" key={stat.bodyPart}>
+              <span className="workout-body-color-dot" style={{ background: workoutBodyPartColors[stat.bodyPart] }} />
+              <span>{stat.bodyPart}</span>
+              <strong>{stat.percentage}%</strong>
+              <small>{stat.setCount}</small>
+            </div>
+          )) : <p className="workout-body-empty-copy">この期間の筋トレ記録はありません。</p>}
+        </div>
+      </div>
+
+      <div className="workout-body-recency mt-4">
+        {summary.stats.filter((stat) => stat.bodyPart !== "その他").map((stat) => (
+          <div className="workout-body-recency-row" key={stat.bodyPart}>
+            <div className="flex min-w-0 items-center gap-2">
+              <span className="workout-body-color-dot" style={{ background: workoutBodyPartColors[stat.bodyPart] }} />
+              <span className="font-bold">{stat.bodyPart}</span>
+            </div>
+            <div className="text-right">
+              <strong>{formatWorkoutDaysSince(stat.daysSince)}</strong>
+              <small>{stat.lastDate ? formatJapaneseDate(stat.lastDate) : "記録なし"}</small>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function formatWorkoutDaysSince(daysSince?: number) {
+  if (typeof daysSince !== "number") return "未記録";
+  if (daysSince === 0) return "今日";
+  return `${daysSince}日前`;
 }
 
 function SettingsTab(props: {
