@@ -195,6 +195,21 @@ import {
   type ChainComboServiceMode,
 } from "./lib/chainComboAvailability";
 import {
+  chainKanaGroups,
+  getChainBrandsForKana,
+  getChainCategoryForBrand,
+  getChainKanaGroup,
+  type ChainBrowseMode,
+  type ChainKanaGroup,
+} from "./lib/chainCatalogBrowse";
+import {
+  getChainComboSemanticAdjustment,
+  getChainComboSemanticReason,
+  isPlausibleChainCombo,
+  isSemanticChainComboMain,
+  isSemanticChainComboSide,
+} from "./lib/chainComboSemantics";
+import {
   addBaskinRobbinsContainerMeta,
   addBaskinRobbinsContainerNutrition,
   baskinRobbinsContainerOptions,
@@ -723,6 +738,8 @@ type PersistedFoodSearchState = Partial<{
   query: string;
   brand: string;
   chainCategory: string;
+  chainBrowseMode: ChainBrowseMode;
+  chainKanaGroup: ChainKanaGroup;
   generalCategory: string;
   recommendCategory: RecommendedFoodFilter;
   showGeneralFoodsOnly: boolean;
@@ -1137,6 +1154,10 @@ function readPersistedFoodSearchState(): PersistedFoodSearchState {
       query: typeof parsed.query === "string" ? parsed.query : undefined,
       brand: brand && (!chainCategory || chainCategories[chainCategory]?.includes(brand)) ? brand : undefined,
       chainCategory,
+      chainBrowseMode: parsed.chainBrowseMode === "kana" ? "kana" : "genre",
+      chainKanaGroup: typeof parsed.chainKanaGroup === "string" && chainKanaGroups.includes(parsed.chainKanaGroup as ChainKanaGroup)
+        ? parsed.chainKanaGroup as ChainKanaGroup
+        : undefined,
       generalCategory: typeof parsed.generalCategory === "string" && generalFoodCategoryLabels.includes(parsed.generalCategory) ? parsed.generalCategory : undefined,
       recommendCategory: typeof parsed.recommendCategory === "string" ? parsed.recommendCategory : undefined,
       showGeneralFoodsOnly: typeof parsed.showGeneralFoodsOnly === "boolean" ? parsed.showGeneralFoodsOnly : undefined,
@@ -1304,6 +1325,15 @@ const achievementProgressSpecs: Record<string, AchievementProgressSpec> = {
   streak_365: { metric: "streak", target: 365, unit: "日" },
 };
 const appUpdates: AppUpdate[] = [
+  {
+    id: "2026-07-22-chain-browse-combos",
+    title: "チェーン検索と組み合わせ提案を改善",
+    date: "2026-07-22",
+    items: [
+      "Foodのチェーン一覧を、ジャンル別と50音順で切り替えられるようにしました。",
+      "同じ種類のメインを重ねず、セット、サイド、トッピングを優先して現実的な組み合わせを提案するようにしました。",
+    ],
+  },
   {
     id: "2026-07-21-workout-body-balance",
     title: "部位別のトレーニング履歴を追加",
@@ -5408,6 +5438,7 @@ function FoodTab(props: {
   const todayLogRef = useRef<HTMLElement | null>(null);
   const persistedFoodSearchState = useMemo(() => readPersistedFoodSearchState(), []);
   const initialChainCategory = persistedFoodSearchState.chainCategory ?? "牛丼・丼";
+  const initialChainBrand = persistedFoodSearchState.brand ?? chainCategories[initialChainCategory]?.[0] ?? "松屋";
   const [mode, setMode] = useState<FoodMode>(persistedFoodSearchState.mode ?? "search");
   const [query, setQuery] = useState(persistedFoodSearchState.query ?? "");
   const [selected, setSelected] = useState<MenuItem>();
@@ -5433,7 +5464,9 @@ function FoodTab(props: {
   const [copiedAiFoodPrompt, setCopiedAiFoodPrompt] = useState(false);
   const [aiFoodMealType, setAiFoodMealType] = useState<MealType>("lunch");
   const [chainCategory, setChainCategory] = useState(initialChainCategory);
-  const [brand, setBrand] = useState(persistedFoodSearchState.brand ?? chainCategories[initialChainCategory]?.[0] ?? "松屋");
+  const [brand, setBrand] = useState(initialChainBrand);
+  const [chainBrowseMode, setChainBrowseMode] = useState<ChainBrowseMode>(persistedFoodSearchState.chainBrowseMode ?? "genre");
+  const [chainKanaGroup, setChainKanaGroup] = useState<ChainKanaGroup>(persistedFoodSearchState.chainKanaGroup ?? getChainKanaGroup(initialChainBrand));
   const [generalCategory, setGeneralCategory] = useState(persistedFoodSearchState.generalCategory ?? "ごはん・丼");
   const [recommendCategory, setRecommendCategory] = useState<RecommendedFoodFilter>(persistedFoodSearchState.recommendCategory ?? "all");
   const [isChainComboOpen, setIsChainComboOpen] = useState(false);
@@ -5462,6 +5495,7 @@ function FoodTab(props: {
       menuSizeVariantIndex,
     )
   ), [props.menuItems, brand, menuSizeVariantIndex]);
+  const chainKanaBrands = useMemo(() => getChainBrandsForKana(chainCategories, chainKanaGroup), [chainKanaGroup]);
   const aiFoodMatchCandidates = useMemo(
     () => aiFoodImportItems.map((item) => buildAiFoodImportCandidates(item, props.menuItems)),
     [aiFoodImportItems, props.menuItems],
@@ -5515,6 +5549,8 @@ function FoodTab(props: {
       query,
       brand,
       chainCategory,
+      chainBrowseMode,
+      chainKanaGroup,
       generalCategory,
       recommendCategory,
       showGeneralFoodsOnly,
@@ -5522,7 +5558,7 @@ function FoodTab(props: {
       showFoodBalance,
       sortFoodByFit,
     } satisfies PersistedFoodSearchState));
-  }, [mode, query, brand, chainCategory, generalCategory, recommendCategory, showGeneralFoodsOnly, hideOverGoalItems, showFoodBalance, sortFoodByFit]);
+  }, [mode, query, brand, chainCategory, chainBrowseMode, chainKanaGroup, generalCategory, recommendCategory, showGeneralFoodsOnly, hideOverGoalItems, showFoodBalance, sortFoodByFit]);
   useEffect(() => {
     const update = () => {
       const target = foodSearchFormRef.current;
@@ -6518,28 +6554,91 @@ function FoodTab(props: {
 
       {mode === "chain" && (
         <section className="compact-card scroll-mt-24 p-3" ref={chainSectionRef}>
-          <p className="mb-2 text-xs font-semibold text-moss">ジャンル</p>
-          <div className="grid grid-cols-2 gap-2">
-            {Object.keys(chainCategories).map((item) => (
+          <div className="chain-browser-tabs" role="tablist" aria-label="チェーンの探し方">
+            {([[
+              "genre",
+              "ジャンル",
+            ], [
+              "kana",
+              "50音",
+            ]] as Array<[ChainBrowseMode, string]>).map(([value, label]) => (
               <button
-                className={`tap-tile ${chainCategory === item ? "tap-tile-active" : ""}`}
+                type="button"
+                role="tab"
+                aria-selected={chainBrowseMode === value}
+                className={chainBrowseMode === value ? "chain-browser-tab-active" : ""}
+                key={value}
+                onClick={() => setChainBrowseMode(value)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {chainBrowseMode === "genre" ? (
+            <>
+              <p className="mb-2 mt-3 text-xs font-semibold text-moss">ジャンル</p>
+              <div className="grid grid-cols-2 gap-2">
+                {Object.keys(chainCategories).map((item) => (
+                  <button
+                    className={`tap-tile ${chainCategory === item ? "tap-tile-active" : ""}`}
+                    key={item}
+                    onClick={() => {
+                      const nextBrand = chainCategories[item]?.[0] ?? "";
+                      setChainCategory(item);
+                      setBrand(nextBrand);
+                      if (nextBrand) setChainKanaGroup(getChainKanaGroup(nextBrand));
+                      scrollToChainList();
+                    }}
+                  >
+                    {item}
+                  </button>
+                ))}
+              </div>
+            </>
+          ) : (
+            <>
+              <p className="mb-2 mt-3 text-xs font-semibold text-moss">50音</p>
+              <div className="chain-kana-grid" role="group" aria-label="50音の行">
+                {chainKanaGroups.map((item) => (
+                  <button
+                    type="button"
+                    aria-pressed={chainKanaGroup === item}
+                    className={chainKanaGroup === item ? "chain-kana-button-active" : ""}
+                    key={item}
+                    onClick={() => {
+                      setChainKanaGroup(item);
+                      scrollToChainList();
+                    }}
+                  >
+                    {item === "all" ? "すべて" : item}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+
+          <div className="mb-2 mt-3 flex items-center justify-between gap-2 text-xs font-semibold text-moss">
+            <span>チェーン</span>
+            <span>{chainBrowseMode === "genre" ? chainCategories[chainCategory].length : chainKanaBrands.length}件</span>
+          </div>
+          <div className="grid grid-cols-2 gap-2 scroll-mt-24" ref={chainListRef}>
+            {(chainBrowseMode === "genre" ? chainCategories[chainCategory] : chainKanaBrands).map((item) => (
+              <button
+                className={`tap-tile ${brand === item ? "tap-tile-active" : ""}`}
                 key={item}
                 onClick={() => {
-                  setChainCategory(item);
-                  setBrand(chainCategories[item]?.[0] ?? "");
-                  scrollToChainList();
+                  setBrand(item);
+                  setChainKanaGroup(getChainKanaGroup(item));
+                  const category = getChainCategoryForBrand(chainCategories, item);
+                  if (category) setChainCategory(category);
+                  scrollToFoodResults();
                 }}
               >
                 {item}
               </button>
             ))}
-          </div>
-          <p className="mb-2 mt-3 text-xs font-semibold text-moss">チェーン</p>
-          <div className="grid grid-cols-2 gap-2 scroll-mt-24" ref={chainListRef}>
-            {chainCategories[chainCategory].map((item) => (
-              <button className={`tap-tile ${brand === item ? "tap-tile-active" : ""}`} key={item} onClick={() => { setBrand(item); scrollToFoodResults(); }}>{item}</button>
-            ))}
-            {chainCategories[chainCategory].length === 0 && <p className="col-span-2 px-1 py-2 text-sm text-moss">該当するチェーンはまだ登録されていません。</p>}
+            {(chainBrowseMode === "genre" ? chainCategories[chainCategory].length : chainKanaBrands.length) === 0 && <p className="col-span-2 px-1 py-2 text-sm text-moss">該当するチェーンはまだ登録されていません。</p>}
           </div>
           {brand && chainComboMenuItems.length > 0 && (
             <div className="chain-combo-entry mt-3 rounded-md border border-line bg-rice/60 p-3">
@@ -14015,21 +14114,11 @@ function chainComboUsageBoost(item: MenuItem, usageMap: Map<string, number>) {
 }
 
 function isChainComboSideItem(item: MenuItem) {
-  const text = [item.name, item.category, item.serving_label, ...item.tags].filter(Boolean).join(" ");
-  const mainLike = /ステーキ|ハンバーグ|バーグ|丼|定食|弁当|カレー|ラーメン|油そば|うどん|そば|パスタ|つけ麺|焼きそば|ハンバーガー|バーガー|サンド|プレート|ディッシュ/.test(text);
-  const explicitSide = /ライス・スープセット|ライスセット|スープセット|サラダセット|セットドリンク|トッピング|追加|サイド|単品/.test(text);
-  if (mainLike && item.calories >= 380 && !explicitSide) return false;
-  if (/ライス・スープセット|ライスセット|スープセット|サラダセット|セットドリンク/.test(text)) return true;
-  if (/トッピング|追加|サイド|単品|ライス|ご飯|白米|スープ|味噌汁|みそ汁|サラダ|小鉢|味玉|玉子|卵|チーズ|ポテト|ナゲット|からあげ|唐揚げ|餃子|天ぷら|かしわ天|ちくわ天|かき揚げ|コロッケ|デザート|ドリンク|ソース/.test(text)) return true;
-  return item.calories > 0 && item.calories <= 220 && item.protein_g < 18;
+  return isSemanticChainComboSide(item);
 }
 
 function isChainComboMainItem(item: MenuItem) {
-  if (item.calories <= 0) return false;
-  if (isChainComboSideItem(item) && item.calories < 420) return false;
-  const text = [item.name, item.category, item.serving_label, ...item.tags].filter(Boolean).join(" ");
-  if (/ステーキ|ハンバーグ|バーグ|丼|定食|弁当|カレー|ラーメン|油そば|うどん|そば|パスタ|つけ麺|焼きそば|ハンバーガー|バーガー|サンド|プレート|ディッシュ|セット/.test(text)) return true;
-  return item.calories >= 320;
+  return isSemanticChainComboMain(item);
 }
 
 function buildChainComboSuggestions({ menuItems, variantIndex, remainingNutrition, usageMap, selectedMain }: {
@@ -14072,6 +14161,7 @@ function buildChainComboSuggestions({ menuItems, variantIndex, remainingNutritio
   const seenDisplay = new Set<string>();
   const seenNutritionShape = new Set<string>();
   return combos
+    .filter(isPlausibleChainCombo)
     .map((items) => {
       const nutrition = sumChainComboNutrition(items);
       const remainingAfter = {
@@ -14086,7 +14176,9 @@ function buildChainComboSuggestions({ menuItems, variantIndex, remainingNutritio
       return {
         id,
         title: items.map(formatChainComboCandidateDisplayName).join(" + "),
-        reason: sizeHint ? `${sizeHint.portionLabel}が合いそう` : items.length >= 2 ? "メイン+追加" : "単品で近い",
+        reason: sizeHint
+          ? `${getChainComboSemanticReason(items)}・${sizeHint.portionLabel}`
+          : getChainComboSemanticReason(items),
         score,
         items,
         nutrition,
@@ -14217,6 +14309,7 @@ function scoreChainCombo(items: ChainComboCandidate[], nutrition: NutritionSnaps
   const tooManySidesPenalty = items.length > 2 ? 0.12 : 0;
   const usageBonus = items.reduce((sum, item) => sum + chainComboUsageBoost(item.item, usageMap), 0) * -0.18;
   const sourcePenalty = items.reduce((sum, item) => sum + sourceRank(item.item.data_source) * 0.025, 0);
+  const semanticAdjustment = getChainComboSemanticAdjustment(items);
   return calorieScore * 0.72
     + proteinShortage * 0.62
     + proteinCoverageBonus
@@ -14226,7 +14319,8 @@ function scoreChainCombo(items: ChainComboCandidate[], nutrition: NutritionSnaps
     + comboBonus
     + tooManySidesPenalty
     + usageBonus
-    + sourcePenalty;
+    + sourcePenalty
+    + semanticAdjustment;
 }
 
 function formatChainComboRemainingChips(remaining: { calories: number; protein: number; fat: number; carbs: number }) {
