@@ -34,6 +34,19 @@ assert.ok(kfc.some((food) => food.name === "レッドホットチキン"));
 assert.ok(kfc.some((food) => food.name === "柑橘 鶏竜田バーガー"));
 assert.ok(!kfc.some((food) => food.name === "ケンタの鶏竜田バーガー"));
 
+const ringerHut = foodSeeds.filter((food) => food.brand === "リンガーハット");
+assert.ok(ringerHut.length >= 85);
+assert.ok(ringerHut.every((food) => food.data_source === "official"));
+assert.ok(ringerHut.every((food) => food.source_url === "https://www.ringerhut.jp/quality/allergy-nutrition_value/"));
+assert.ok(ringerHut.some((food) => food.name === "長崎ちゃんぽん 麺増量2倍" && food.calories === 943));
+assert.ok(ringerHut.some((food) => food.name === "低糖質麺 野菜たっぷりちゃんぽん" && food.calories === 750));
+assert.ok(ringerHut.some((food) => food.name === "焼き太めん皿うどん" && food.calories === 774));
+assert.ok(ringerHut.some((food) => food.name === "にんにく竹炭ぎょうざ15個定食" && food.calories === 1164));
+assert.ok(ringerHut.some((food) => food.name === "ちびっこナポリタンセット" && food.calories === 563));
+assert.ok(ringerHut.some((food) => food.name === "豚しゃぶの冷やしちゃんぽん" && food.tags.includes("期間限定")));
+assert.ok(ringerHut.some((food) => food.name === "ピリカラ味噌（1辛・10g）" && food.calories === 28));
+assert.equal(new Set(ringerHut.map((food) => `${food.name}|${food.serving_label ?? ""}`)).size, ringerHut.length);
+
 const tullys = foodSeeds.filter((food) => food.brand === "タリーズ");
 assert.ok(tullys.length >= 120);
 assert.ok(tullys.some((food) => food.name.includes("キャラメルフォームアメリカーノ")));
