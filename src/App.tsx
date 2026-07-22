@@ -1326,6 +1326,16 @@ const achievementProgressSpecs: Record<string, AchievementProgressSpec> = {
 };
 const appUpdates: AppUpdate[] = [
   {
+    id: "2026-07-22-ringerhut-menu-expansion",
+    title: "リンガーハットのメニューを拡充",
+    date: "2026-07-22",
+    items: [
+      "ちゃんぽん・皿うどんの低糖質麺、麺少なめ、麺増量と、しょうゆ・みそ・太めん、掲載中の夏季メニューを公式栄養値で追加しました。",
+      "にんにくぎょうざ、焼売、各種定食、キッズメニュー、ご飯・トッピング・デザートを追加しました。",
+      "同じ麺メニューの量違いは、検索結果を重ねずサイズ選択から記録できるようにしました。",
+    ],
+  },
+  {
     id: "2026-07-22-chain-browse-combos",
     title: "チェーン検索と組み合わせ提案を改善",
     date: "2026-07-22",
@@ -16032,6 +16042,11 @@ function dedupeMenuItemsBySource(items: MenuItem[]) {
 }
 
 const menuSizeVariantLabels = [
+  "標準",
+  "麺少なめ",
+  "麺1.5倍",
+  "麺増量1.5倍",
+  "麺増量2倍",
   "ご飯増量",
   "ごはん増量",
   "ライス増量",
@@ -16273,6 +16288,7 @@ function pickMenuSizeVariantRepresentative(variants: MenuSizeVariant[]) {
 }
 
 function menuSizeRepresentativeRank(label: string) {
+  if (label === "標準") return 0;
   if (label === "レギュラー") return 0;
   if (label === "キッズ／スモール") return 2;
   if (label === "ポップ") return 3;
@@ -16372,6 +16388,8 @@ function stripMenuSizeLabel(name: string, label: string, servingLabel?: string) 
 }
 
 function menuSizeVariantRank(label: string) {
+  const ringerNoodleRank = { 標準: 0, 麺少なめ: 1, "麺1.5倍": 2, "麺増量1.5倍": 2, 麺増量2倍: 3 }[label];
+  if (ringerNoodleRank !== undefined) return 50 + ringerNoodleRank;
   const grams = extractMenuSizeGrams(label);
   if (grams !== undefined) return grams;
   const temperatureSize = label.match(/^(?:温|冷)\s*(並|大|得)$/)?.[1];

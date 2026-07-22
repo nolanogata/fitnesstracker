@@ -50,6 +50,7 @@ const audited: Record<string, Omit<FoodCatalogRegistryItem, "brand" | "group">> 
   CoCo壱番屋: { coverage: "official_full", sourceUrl: "https://www.ichibanya.co.jp/menu/pdf/nutrition.pdf", verifiedAt: "2026-06-13", refreshDays: 60, minimumItems: 160 },
   タリーズ: { coverage: "official_full", sourceUrl: "https://www.tullys.co.jp/menu/allergy.html", verifiedAt: "2026-07-03", refreshDays: 30, minimumItems: 120 },
   サーティワン: { coverage: "official_full", sourceUrl: "https://www.31ice.co.jp/contents/product/", verifiedAt: "2026-07-14", refreshDays: 30, minimumItems: 80 },
+  リンガーハット: { coverage: "official_core", sourceUrl: "https://www.ringerhut.jp/quality/allergy-nutrition_value/", verifiedAt: "2026-07-22", refreshDays: 45, minimumItems: 85, note: "全国定番と掲載中の期間限定品を、公式栄養値・サイズ別で登録" },
   丸亀製麺: { coverage: "official_full", sourceUrl: "https://www.marugame-seimen.com/menu/", verifiedAt: "2026-07-10", refreshDays: 45, minimumItems: 120 },
   びっくりドンキー: { coverage: "official_full", sourceUrl: "https://www.bikkuri-donkey.com/menu/", verifiedAt: "2026-07-10", refreshDays: 45, minimumItems: 300 },
   ポポラマーマ: { coverage: "official_full", sourceUrl: "https://www.popolamama.com/menu/", verifiedAt: "2026-07-10", refreshDays: 45, minimumItems: 190 },
