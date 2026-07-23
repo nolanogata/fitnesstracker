@@ -34,9 +34,15 @@ const breakfast = menu({ id: "breakfast", name: "モーニングセット" });
 const takeout = menu({ id: "takeout", name: "テイクアウト ピッツァ" });
 const dineIn = menu({ id: "dine-in", name: "和風粥（イートイン）" });
 const lunch = menu({ id: "lunch", tags: ["ランチ限定"] });
+const defaultBreakfast = menu({ id: "default-breakfast", name: "ハッシュポテト", default_meal_type: "breakfast" });
+const mcdonaldsBurger = menu({ id: "mcd-burger", brand: "マクドナルド", name: "ビッグマック", tags: ["バーガー"] });
+const mcdonaldsNuggets = menu({ id: "mcd-nuggets", brand: "マクドナルド", name: "チキンマックナゲット 5ピース", tags: ["ナゲット"] });
 const regular = menu({ id: "regular" });
 
 assert.equal(getChainComboMealRestriction(breakfast), "breakfast");
+assert.equal(getChainComboMealRestriction(defaultBreakfast), "breakfast");
+assert.equal(getChainComboMealRestriction(mcdonaldsBurger), "regular");
+assert.equal(getChainComboMealRestriction(mcdonaldsNuggets), "any");
 assert.equal(getChainComboMealRestriction(lunch), "lunch");
 assert.equal(getChainComboServiceRestriction(takeout), "takeout_only");
 assert.equal(getChainComboServiceRestriction(dineIn), "dine_in_only");
@@ -46,10 +52,15 @@ assert.equal(isChainComboItemAvailable(takeout, { serviceMode: "dine_in", mealPe
 assert.equal(isChainComboItemAvailable(dineIn, { serviceMode: "takeout", mealPeriod: "lunch" }), false);
 assert.equal(isChainComboItemAvailable(regular, { serviceMode: "dine_in", mealPeriod: "dinner" }), true);
 assert.equal(isChainComboItemAvailable(breakfast, { serviceMode: "dine_in", mealPeriod: "breakfast" }), true);
+assert.equal(isChainComboItemAvailable(defaultBreakfast, { serviceMode: "dine_in", mealPeriod: "lunch" }), false);
+assert.equal(isChainComboItemAvailable(mcdonaldsBurger, { serviceMode: "dine_in", mealPeriod: "breakfast" }), false);
+assert.equal(isChainComboItemAvailable(mcdonaldsBurger, { serviceMode: "dine_in", mealPeriod: "dinner" }), true);
+assert.equal(isChainComboItemAvailable(mcdonaldsNuggets, { serviceMode: "dine_in", mealPeriod: "breakfast" }), true);
 
 assert.equal(getDefaultChainComboServiceMode(takeout), "takeout");
 assert.equal(getDefaultChainComboServiceMode(regular), "dine_in");
 assert.equal(getDefaultChainComboMealPeriod(breakfast, 14), "breakfast");
+assert.equal(getDefaultChainComboMealPeriod(mcdonaldsBurger, 8), "lunch");
 assert.equal(getDefaultChainComboMealPeriod(regular, 8), "breakfast");
 assert.equal(getDefaultChainComboMealPeriod(regular, 13), "lunch");
 assert.equal(getDefaultChainComboMealPeriod(regular, 20), "dinner");
