@@ -1326,6 +1326,16 @@ const achievementProgressSpecs: Record<string, AchievementProgressSpec> = {
 };
 const appUpdates: AppUpdate[] = [
   {
+    id: "2026-07-23-packaged-snacks",
+    title: "市販のお菓子を追加",
+    date: "2026-07-23",
+    items: [
+      "カルビーと湖池屋のポテトチップス、じゃがりこ、カラムーチョなど、定番のスナックを追加しました。",
+      "明治、ロッテ、森永、ブルボン、グリコ、有楽製菓のチョコレートと焼き菓子を追加しました。",
+      "1袋、1箱、1粒、個包装1パックなど、パッケージに合わせた量から記録できます。",
+    ],
+  },
+  {
     id: "2026-07-23-supermarket-pasta-products",
     title: "市販のパスタとソースを追加",
     date: "2026-07-23",

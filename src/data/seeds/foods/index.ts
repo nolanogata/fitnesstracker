@@ -3,6 +3,7 @@ import { genericKonamonoFoods } from "./genericKonamono";
 import { frozenFoods } from "./frozenFoods";
 import { hokkaidoTravelFoods } from "./hokkaidoTravelFoods";
 import { nutritionCareProductFoods } from "./nutritionCareProducts";
+import { packagedSnackFoods } from "./packagedSnacks";
 import { pantryProductFoods } from "./pantryProducts";
 import { pastaProductFoods } from "./pastaProducts";
 import { proteinProductFoods } from "./proteinProducts";
@@ -107,6 +108,7 @@ const legacyFoodSeeds = [
   ...userMenuImportFoods,
   ...proteinProductFoods,
   ...nutritionCareProductFoods,
+  ...packagedSnackFoods,
   ...pantryProductFoods,
   ...pastaProductFoods,
   ...snackDrinkFoods,
