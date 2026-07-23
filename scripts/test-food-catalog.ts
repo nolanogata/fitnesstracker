@@ -52,6 +52,18 @@ assert.ok(tullys.length >= 120);
 assert.ok(tullys.some((food) => food.name.includes("キャラメルフォームアメリカーノ")));
 assert.ok(tullys.every((food) => food.data_source === "official"));
 
+const supermarketPastaBrands = new Set(["キユーピー", "S&B", "マ・マー", "青の洞窟", "バリラ", "ディ・チェコ"]);
+const supermarketPasta = foodSeeds.filter((food) => supermarketPastaBrands.has(food.brand ?? "") && (food.tags.includes("パスタソース") || food.tags.includes("乾麺")));
+assert.equal(supermarketPasta.length, 32);
+assert.equal(new Set(supermarketPasta.map((food) => `${food.brand}|${food.name}|${food.serving_label ?? ""}`)).size, supermarketPasta.length);
+assert.ok(supermarketPasta.every((food) => food.source_url?.startsWith("https://")));
+assert.ok(supermarketPasta.some((food) => food.brand === "キユーピー" && food.name.includes("ペペロンチーノ") && food.calories === 130));
+assert.ok(supermarketPasta.some((food) => food.brand === "S&B" && food.name.includes("生風味たらこ") && food.calories === 107 && food.tags.includes("メーカー糖質表示")));
+assert.ok(supermarketPasta.some((food) => food.brand === "青の洞窟" && food.name === "ボロネーゼ" && food.calories === 260));
+assert.ok(supermarketPasta.some((food) => food.brand === "マ・マー" && food.name === "スパゲティ 1.6mm" && food.serving_label === "乾麺100g" && food.calories === 350));
+assert.ok(supermarketPasta.some((food) => food.brand === "バリラ" && food.name.includes("No.5") && food.calories === 359));
+assert.ok(supermarketPasta.some((food) => food.brand === "ディ・チェコ" && food.name.includes("No.11") && food.protein_g === 14));
+
 assert.equal(isStaleSeasonalFood({
   name: "過去の期間限定メニュー",
   fetched_at: "2026-01-01T00:00:00.000Z",

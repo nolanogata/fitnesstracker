@@ -1326,6 +1326,16 @@ const achievementProgressSpecs: Record<string, AchievementProgressSpec> = {
 };
 const appUpdates: AppUpdate[] = [
   {
+    id: "2026-07-23-supermarket-pasta-products",
+    title: "市販のパスタとソースを追加",
+    date: "2026-07-23",
+    items: [
+      "マ・マー、キユーピー、S&B、青の洞窟の定番パスタソースを、1食分の栄養値で追加しました。",
+      "バリラ、マ・マー、ディ・チェコの乾麺を、太さや形を選び、乾麺100gを基準に記録できるようにしました。",
+      "麺とソースは別々に記録し、食べた乾麺量や使ったソースの食数に合わせて正しく合計できます。",
+    ],
+  },
+  {
     id: "2026-07-22-ringerhut-menu-expansion",
     title: "リンガーハットのメニューを拡充",
     date: "2026-07-22",
