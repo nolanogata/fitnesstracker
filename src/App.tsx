@@ -1326,6 +1326,15 @@ const achievementProgressSpecs: Record<string, AchievementProgressSpec> = {
 };
 const appUpdates: AppUpdate[] = [
   {
+    id: "2026-07-23-chain-combo-context",
+    title: "組み合わせ提案の注文条件を改善",
+    date: "2026-07-23",
+    items: [
+      "ドレッシングやソースなどの付属品を、対応するサラダやサイドがない状態では提案しないようにしました。",
+      "朝限定メニューを昼・夜の候補から除外し、セット内容と重なる追加や食べ合わせが不自然な候補を減らしました。",
+    ],
+  },
+  {
     id: "2026-07-23-packaged-snacks",
     title: "市販のお菓子を追加",
     date: "2026-07-23",

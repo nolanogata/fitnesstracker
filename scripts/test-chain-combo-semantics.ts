@@ -19,6 +19,12 @@ const shareNuggets = menu("nuggets-15", "チキンナゲット 15ピース", 786
 const gyudon = menu("gyudon", "牛丼（並盛）", 730);
 const secondDon = menu("second-don", "ねぎとろ丼", 610);
 const cheese = menu("cheese", "チーズトッピング", 180, ["トッピング"]);
+const salad = menu("salad", "サイドサラダ", 20, ["サイド", "サラダ"]);
+const dressedSalad = menu("dressed-salad", "シーザーサラダ（ドレッシングあり）", 111, ["サイド", "サラダ"]);
+const dressing = menu("dressing", "焙煎胡麻ドレッシング", 27, ["ドレッシング", "サラダ"]);
+const nuggetSauce = menu("nugget-sauce", "バーベキューソース", 26, ["ソース"]);
+const nuggets = menu("nuggets", "チキンナゲット 5ピース", 262, ["サイド"]);
+const gumSyrup = menu("gum-syrup", "ガムシロップ", 25, ["その他"]);
 
 assert.equal(getChainComboMenuProfile(wontonNoodle).mainFamily, "noodle");
 assert.equal(isSemanticChainComboMain(ramen), true);
@@ -26,6 +32,9 @@ assert.equal(isSemanticChainComboSide(wontonNoodle), false);
 assert.equal(isSemanticChainComboSide(gyoza), true);
 assert.equal(isSemanticChainComboSide(friedRice), true);
 assert.equal(getChainComboMenuProfile(burgerSet).completeSet, true);
+assert.equal(getChainComboMenuProfile(dressing).companionRequirement, "salad");
+assert.equal(getChainComboMenuProfile(nuggetSauce).companionRequirement, "fried_side");
+assert.equal(getChainComboMenuProfile(gumSyrup).recommendationBlocked, true);
 
 const ramenGyoza = combo(ramen, gyoza);
 const ramenRice = combo(ramen, friedRice);
@@ -40,6 +49,12 @@ assert.ok(getChainComboSemanticAdjustment([{ item: burgerSet, role: "main" }]) <
 
 assert.equal(isPlausibleChainCombo(combo(gyudon, secondDon)), false);
 assert.equal(isPlausibleChainCombo(combo(gyudon, cheese)), true);
+assert.equal(isPlausibleChainCombo(combo(burger, dressing)), false);
+assert.equal(isPlausibleChainCombo([{ item: burger, role: "main" }, { item: salad, role: "side" }, { item: dressing, role: "side" }]), true);
+assert.equal(isPlausibleChainCombo([{ item: burger, role: "main" }, { item: dressedSalad, role: "side" }, { item: dressing, role: "side" }]), false);
+assert.equal(isPlausibleChainCombo(combo(burger, nuggetSauce)), false);
+assert.equal(isPlausibleChainCombo([{ item: burger, role: "main" }, { item: nuggets, role: "side" }, { item: nuggetSauce, role: "side" }]), true);
+assert.equal(isSemanticChainComboSide(gumSyrup), false);
 
 process.stdout.write("chain combo semantics tests passed\n");
 

@@ -23,7 +23,7 @@ const products = [
   ["2200", "サイドサラダ", 10, 0.5, 0.1, 2.3, 0.0, "サラダ"],
   ["2220", "えだまめコーン", 83, 5.2, 3.0, 9.6, 0.2, "サイド"],
   ["9014", "シャカチキ", 246, 14.7, 13.3, 16.9, 1.7, "チキン"],
-  ["5010", "ハッシュポテト", 157, 1.4, 10.2, 14.8, 0.8, "ポテト"],
+  ["5010", "ハッシュポテト", 157, 1.4, 10.2, 14.8, 0.8, "朝マック", "1個"],
 ] as const;
 
 export const mcdonaldsOfficialFoods = products.map(([id, name, calories, protein_g, fat_g, carbs_g, salt_g, tag, serving_label]) =>
@@ -38,7 +38,7 @@ export const mcdonaldsOfficialFoods = products.map(([id, name, calories, protein
     carbs_g,
     salt_g,
     serving_label: serving_label ?? "1個",
-    default_meal_type: tag === "ポテト" || tag === "ナゲット" || tag === "サイド" || tag === "チキン" ? "snack" : "lunch",
+    default_meal_type: tag === "朝マック" ? "breakfast" : tag === "ポテト" || tag === "ナゲット" || tag === "サイド" || tag === "チキン" ? "snack" : "lunch",
     source_url: `https://www.mcdonalds.co.jp/products/${id}/`,
     fetched_at: fetchedAt,
   }),
