@@ -4,6 +4,7 @@ import { frozenFoods } from "./frozenFoods";
 import { hokkaidoTravelFoods } from "./hokkaidoTravelFoods";
 import { nutritionCareProductFoods } from "./nutritionCareProducts";
 import { pantryProductFoods } from "./pantryProducts";
+import { pastaProductFoods } from "./pastaProducts";
 import { proteinProductFoods } from "./proteinProducts";
 import { quickEstimateFoods } from "./quickEstimates";
 import { snackDrinkFoods } from "./snacksDrinks";
@@ -107,6 +108,7 @@ const legacyFoodSeeds = [
   ...proteinProductFoods,
   ...nutritionCareProductFoods,
   ...pantryProductFoods,
+  ...pastaProductFoods,
   ...snackDrinkFoods,
   ...quickEstimateFoods,
   ...burgerKingMenuFoods,
