@@ -64,6 +64,18 @@ assert.ok(supermarketPasta.some((food) => food.brand === "マ・マー" && food.
 assert.ok(supermarketPasta.some((food) => food.brand === "バリラ" && food.name.includes("No.5") && food.calories === 359));
 assert.ok(supermarketPasta.some((food) => food.brand === "ディ・チェコ" && food.name.includes("No.11") && food.protein_g === 14));
 
+const packagedSnacks = foodSeeds.filter((food) => food.tags.includes("定番お菓子"));
+assert.equal(packagedSnacks.length, 29);
+assert.equal(new Set(packagedSnacks.map((food) => `${food.brand}|${food.name}|${food.serving_label ?? ""}`)).size, packagedSnacks.length);
+assert.ok(packagedSnacks.every((food) => food.data_source === "official" && food.source_url?.startsWith("https://")));
+assert.ok(packagedSnacks.every((food) => food.default_meal_type === "snack"));
+assert.ok(packagedSnacks.some((food) => food.brand === "カルビー" && food.name === "ポテトチップス コンソメパンチ" && food.calories === 306));
+assert.ok(packagedSnacks.some((food) => food.brand === "湖池屋" && food.name === "カラムーチョチップス ホットチリ味" && food.tags.includes("ポテチ")));
+assert.ok(packagedSnacks.some((food) => food.brand === "明治" && food.name === "チョコレート効果 カカオ72%" && food.serving_label === "1枚 5g"));
+assert.ok(packagedSnacks.some((food) => food.brand === "森永製菓" && food.name === "DARS ミルク" && food.serving_label === "1粒 3.9g"));
+assert.ok(packagedSnacks.some((food) => food.brand === "ブルボン" && food.name === "ルマンド" && food.serving_label === "1本 7.4g"));
+assert.ok(packagedSnacks.some((food) => food.brand === "有楽製菓" && food.name === "ブラックサンダー" && food.calories === 111));
+
 assert.equal(isStaleSeasonalFood({
   name: "過去の期間限定メニュー",
   fetched_at: "2026-01-01T00:00:00.000Z",
