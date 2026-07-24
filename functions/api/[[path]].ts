@@ -556,12 +556,11 @@ async function handleGeminiPhoto(context: PagesContext, user: AppUser) {
       data: bytesToBase64(evidenceImage.bytes),
     });
   }
-  const response = await fetch("https://generativelanguage.googleapis.com/v1beta/interactions", {
+  const response = await fetch("https://generativelanguage.googleapis.com/v1/interactions", {
     method: "POST",
     headers: {
       "content-type": "application/json",
       "x-goog-api-key": context.env.GEMINI_API_KEY,
-      "Api-Revision": "2026-05-20",
     },
     body: JSON.stringify({
       model,
@@ -580,6 +579,7 @@ async function handleGeminiPhoto(context: PagesContext, user: AppUser) {
       status: response.status,
       error_status: upstream.status,
       reason: upstream.reason,
+      message: upstream.message,
     }));
     await recordAiUsage(context.env.DB, user.id, usageDate, model, false);
     await audit(
@@ -592,6 +592,7 @@ async function handleGeminiPhoto(context: PagesContext, user: AppUser) {
         status: response.status,
         error_status: upstream.status,
         reason: upstream.reason,
+        message: upstream.message,
       },
     ).catch(() => undefined);
     if (response.status === 429) throw new HttpError(429, "gemini_quota_exhausted", "本日のアプリ内写真判定枠を使い切った可能性があります。");
@@ -644,8 +645,13 @@ async function handleGeminiPhoto(context: PagesContext, user: AppUser) {
 async function readGeminiApiError(response: Response) {
   try {
     const payload = await response.json() as {
+      code?: number;
+      status?: string;
+      message?: string;
       error?: {
+        code?: number;
         status?: string;
+        message?: string;
         details?: Array<{
           reason?: string;
           metadata?: { reason?: string };
@@ -657,11 +663,12 @@ async function readGeminiApiError(response: Response) {
       .map((detail) => detail.reason || detail.metadata?.reason)
       .find((value): value is string => Boolean(value));
     return {
-      status: cleanText(payload.error?.status, 80) || "unknown",
+      status: cleanText(payload.error?.status || payload.status, 80) || "unknown",
       reason: cleanText(reason, 120) || "unknown",
+      message: cleanText(payload.error?.message || payload.message, 240) || "unknown",
     };
   } catch {
-    return { status: "unknown", reason: "unparseable_response" };
+    return { status: "unknown", reason: "unparseable_response", message: "unparseable_response" };
   }
 }
 
