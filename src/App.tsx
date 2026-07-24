@@ -5792,6 +5792,18 @@ function FoodTab(props: {
     setAiFoodImportError("");
     setAiFoodImportStep("read");
   };
+  const acceptGeminiFoodResult = (payload: Record<string, unknown>) => {
+    const result = parseAiFoodBridgeText(JSON.stringify(payload));
+    if (!result.items.length) {
+      setAiFoodImportError(result.error || "Geminiの判定結果を読み取れませんでした。");
+      return;
+    }
+    setAiFoodImportItems(result.items);
+    setAiFoodImportSelections({});
+    setAiFoodMealType(inferAiFoodMealType(result.items));
+    setAiFoodImportError("");
+    setAiFoodImportStep("read");
+  };
   const logRecentFoodEntry = async (entry: FoodEntry) => {
     const timestamp = nowIso();
     await db.food_entries.put({
@@ -7257,6 +7269,7 @@ function FoodTab(props: {
             await copyText(aiFoodImportPrompt);
             setCopiedAiFoodPrompt(true);
           }}
+          onAppResult={acceptGeminiFoodResult}
           onParse={parseAiFoodImport}
           onSave={saveAiFoodImport}
           onReset={resetAiFoodImport}
@@ -9208,6 +9221,18 @@ function SettingsTab(props: {
     setSettingsAiFoodImportError("");
     setSettingsAiFoodImportStep("read");
   };
+  const acceptSettingsGeminiFoodResult = (payload: Record<string, unknown>) => {
+    const result = parseAiFoodBridgeText(JSON.stringify(payload));
+    if (!result.items.length) {
+      setSettingsAiFoodImportError(result.error || "Geminiの判定結果を読み取れませんでした。");
+      return;
+    }
+    setSettingsAiFoodImportItems(result.items);
+    setSettingsAiFoodImportSelections({});
+    setSettingsAiFoodMealType(inferAiFoodMealType(result.items));
+    setSettingsAiFoodImportError("");
+    setSettingsAiFoodImportStep("read");
+  };
   const saveSettingsAiFoodImport = async () => {
     const timestamp = nowIso();
     const menuItemsById = new Map(props.menuItems.map((item) => [item.id, item]));
@@ -11089,6 +11114,7 @@ function SettingsTab(props: {
             await copyText(aiFoodImportPrompt);
             setSettingsCopiedAiFoodPrompt(true);
           }}
+          onAppResult={acceptSettingsGeminiFoodResult}
           onParse={parseSettingsAiFoodImport}
           onSave={saveSettingsAiFoodImport}
           onReset={resetSettingsAiFoodImport}
@@ -11865,7 +11891,7 @@ function RecentFoodEntryRow({ entry, displayName, onLog }: { entry: FoodEntry; d
   );
 }
 
-function AiFoodImportModal({ intent = "log", step, setStep, text, setText, items, menuItems, candidates, selections, setSelections, mealType, setMealType, error, copiedPrompt, onCopyPrompt, onParse, onSave, onReset, onClose }: {
+function AiFoodImportModal({ intent = "log", step, setStep, text, setText, items, menuItems, candidates, selections, setSelections, mealType, setMealType, error, copiedPrompt, onCopyPrompt, onAppResult, onParse, onSave, onReset, onClose }: {
   intent?: AiFoodImportIntent;
   step: AiFoodImportStep;
   setStep: (step: AiFoodImportStep) => void;
@@ -11881,6 +11907,7 @@ function AiFoodImportModal({ intent = "log", step, setStep, text, setText, items
   error: string;
   copiedPrompt: boolean;
   onCopyPrompt: () => void | Promise<void>;
+  onAppResult: (result: Record<string, unknown>) => void;
   onParse: () => void;
   onSave: () => void | Promise<void>;
   onReset: () => void;
@@ -11892,14 +11919,17 @@ function AiFoodImportModal({ intent = "log", step, setStep, text, setText, items
     return source !== "skip" && source !== "ai_menu_only";
   };
   const hasLoggableSelections = (nextSelections = selections) => items.some((_, index) => selectionCreatesFoodLog(nextSelections[index]));
+  const [startMode, setStartMode] = useState<"choose" | "gemini" | "external">("choose");
+  const [importSource, setImportSource] = useState<"gemini" | "external">();
   const stepUsesTiming = intent === "log" && (step !== "confirm" || hasLoggableSelections());
-  const aiFoodSteps: AiFoodImportStep[] = stepUsesTiming ? ["prompt", "paste", "read", "match", "timing", "confirm"] : ["prompt", "paste", "read", "match", "confirm"];
+  const aiFoodSteps: AiFoodImportStep[] = importSource === "gemini"
+    ? (stepUsesTiming ? ["prompt", "read", "match", "timing", "confirm"] : ["prompt", "read", "match", "confirm"])
+    : (stepUsesTiming ? ["prompt", "paste", "read", "match", "timing", "confirm"] : ["prompt", "paste", "read", "match", "confirm"]);
   const stepIndex = aiFoodSteps.indexOf(step);
   const [matchIndex, setMatchIndex] = useState(0);
   const [matchStage, setMatchStage] = useState<"candidate" | "usage">("candidate");
   const [isManualSearchOpen, setIsManualSearchOpen] = useState(false);
   const [manualSearchQuery, setManualSearchQuery] = useState("");
-  const [startMode, setStartMode] = useState<"choose" | "gemini" | "external">("choose");
   const menuItemsById = useMemo(() => new Map(menuItems.map((item) => [item.id, item])), [menuItems]);
   const goToNextMatchItem = (index: number, nextSelections = selections) => {
     setMatchStage("candidate");
@@ -11996,12 +12026,16 @@ function AiFoodImportModal({ intent = "log", step, setStep, text, setText, items
               : startMode === "gemini"
                 ? "1. アプリ内AIで判定"
                 : "1. 自分のAIを使う"
-            : step === "paste" ? "2. AI出力を貼り付け" : step === "read" ? "3. 読み取り結果" : step === "match" ? `4. ${currentMatchIndex + 1}件目を確認` : step === "timing" ? `${aiFoodSteps.length - 1}. 記録タイミングを選択` : `${aiFoodSteps.length}. ${intent === "menu" ? "保存内容を確認" : "記録内容を確認"}`}
+            : step === "paste" ? `${stepIndex + 1}. AI出力を貼り付け` : step === "read" ? `${stepIndex + 1}. 読み取り結果` : step === "match" ? `${stepIndex + 1}. ${currentMatchIndex + 1}件目を確認` : step === "timing" ? `${stepIndex + 1}. 記録タイミングを選択` : `${stepIndex + 1}. ${intent === "menu" ? "保存内容を確認" : "記録内容を確認"}`}
         </p>
 
         {step === "prompt" && startMode === "choose" && (
           <div className="mt-4 space-y-2">
-            <button className="food-filter-option ai-food-start-option" onClick={() => setStartMode("gemini")}>
+            <button className="food-filter-option ai-food-start-option" onClick={() => {
+              setImportSource("gemini");
+              setStartMode("gemini");
+              setText("");
+            }}>
               <span className="ai-food-start-icon"><Sparkles size={19} /></span>
               <span className="min-w-0 flex-1">
                 <span className="block text-sm font-black">アプリ内AIで判定</span>
@@ -12009,7 +12043,10 @@ function AiFoodImportModal({ intent = "log", step, setStep, text, setText, items
               </span>
               <ChevronRight className="shrink-0 text-moss" size={18} />
             </button>
-            <button className="food-filter-option ai-food-start-option" onClick={() => setStartMode("external")}>
+            <button className="food-filter-option ai-food-start-option" onClick={() => {
+              setImportSource("external");
+              setStartMode("external");
+            }}>
               <span className="ai-food-start-icon"><Copy size={19} /></span>
               <span className="min-w-0 flex-1">
                 <span className="block text-sm font-black">自分のAIを使う</span>
@@ -12023,10 +12060,7 @@ function AiFoodImportModal({ intent = "log", step, setStep, text, setText, items
         {step === "prompt" && startMode === "gemini" && (
           <div className="mt-4">
             <GeminiPhotoAnalyzer
-              onResult={(result) => {
-                setText(JSON.stringify(result, null, 2));
-                setStep("paste");
-              }}
+              onResult={onAppResult}
             />
           </div>
         )}
@@ -12311,7 +12345,10 @@ function AiFoodImportModal({ intent = "log", step, setStep, text, setText, items
             className="secondary-button mt-5 w-full"
             onClick={() => {
               if (startMode === "choose") onClose();
-              else setStartMode("choose");
+              else {
+                setImportSource(undefined);
+                setStartMode("choose");
+              }
             }}
           >
             {startMode === "choose" ? "閉じる" : <><ChevronLeft size={17} />判定方法に戻る</>}
@@ -12322,7 +12359,7 @@ function AiFoodImportModal({ intent = "log", step, setStep, text, setText, items
             <button
               className="secondary-button"
               onClick={() => {
-                setStep(step === "paste" ? "prompt" : step === "read" ? "paste" : step === "timing" ? "match" : hasLoggableSelections() ? "timing" : "match");
+                setStep(step === "paste" ? "prompt" : step === "read" ? (importSource === "gemini" ? "prompt" : "paste") : step === "timing" ? "match" : hasLoggableSelections() ? "timing" : "match");
               }}
             >
               <ChevronLeft size={17} />戻る
@@ -12349,7 +12386,11 @@ function AiFoodImportModal({ intent = "log", step, setStep, text, setText, items
           </button>
         )}
         {step !== "prompt" && (
-          <button className="secondary-button mt-2 w-full" onClick={onReset}><RotateCcw size={17} />最初からやり直す</button>
+          <button className="secondary-button mt-2 w-full" onClick={() => {
+            setImportSource(undefined);
+            setStartMode("choose");
+            onReset();
+          }}><RotateCcw size={17} />最初からやり直す</button>
         )}
       </div>
     </div>
