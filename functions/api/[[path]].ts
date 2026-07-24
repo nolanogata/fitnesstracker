@@ -554,7 +554,7 @@ async function handleGeminiPhoto(context: PagesContext, user: AppUser) {
       generationConfig: {
         maxOutputTokens: 4096,
         responseMimeType: "application/json",
-        responseSchema: geminiResponseSchema,
+        responseJsonSchema: geminiResponseSchema,
       },
     }),
   });
@@ -674,37 +674,37 @@ async function recordAiUsage(db: D1Database, userId: string, usageDate: string, 
 }
 
 const geminiResponseSchema = {
-  type: "OBJECT",
+  type: "object",
   properties: {
-    type: { type: "STRING", enum: ["food_ai_bridge_v3"] },
+    type: { type: "string", enum: ["food_ai_bridge_v3"] },
     items: {
-      type: "ARRAY",
+      type: "array",
       maxItems: 12,
       items: {
-        type: "OBJECT",
+        type: "object",
         properties: {
-          observed_name: { type: "STRING" },
-          possible_brand: { type: "STRING" },
-          possible_menu_name: { type: "STRING" },
-          food_type: { type: "STRING" },
-          quantity: { type: "STRING" },
+          observed_name: { type: "string" },
+          possible_brand: { type: "string" },
+          possible_menu_name: { type: "string" },
+          food_type: { type: "string" },
+          quantity: { type: "string" },
           nutrition_candidate: {
-            type: "OBJECT",
+            type: "object",
             properties: {
-              calories: { type: "NUMBER" },
-              protein_g: { type: "NUMBER" },
-              fat_g: { type: "NUMBER" },
-              carbs_g: { type: "NUMBER" },
-              salt_g: { type: "NUMBER" },
+              calories: { type: "number" },
+              protein_g: { type: "number" },
+              fat_g: { type: "number" },
+              carbs_g: { type: "number" },
+              salt_g: { type: "number" },
             },
             required: ["calories", "protein_g", "fat_g", "carbs_g"],
           },
-          confidence: { type: "STRING", enum: ["high", "medium", "low"] },
-          match_keywords: { type: "ARRAY", items: { type: "STRING" } },
-          needs_confirmation: { type: "ARRAY", items: { type: "STRING" } },
-          note: { type: "STRING" },
+          confidence: { type: "string", enum: ["high", "medium", "low"] },
+          match_keywords: { type: "array", items: { type: "string" } },
+          needs_confirmation: { type: "array", items: { type: "string" } },
+          note: { type: "string" },
           evidence_origin: {
-            type: "STRING",
+            type: "string",
             enum: ["package_label", "receipt_read", "ai_photo_estimate", "brand_match", "unknown"],
           },
         },

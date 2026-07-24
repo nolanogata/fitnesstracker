@@ -49,15 +49,23 @@ export async function analyzeWithGemini(input: {
       use_fallback: input.useFallback,
     }),
   });
-  const data = await response.json().catch(() => ({})) as {
-    error?: string;
-    message?: string;
-    result?: Record<string, unknown>;
-    model?: string;
-    cached?: boolean;
-  };
+  const responseText = await response.text();
+  const data = (() => {
+    try {
+      return JSON.parse(responseText) as {
+        error?: string;
+        message?: string;
+        result?: Record<string, unknown>;
+        model?: string;
+        cached?: boolean;
+      };
+    } catch {
+      return {};
+    }
+  })();
   if (!response.ok || !data.result || !data.model) {
-    const error = new Error(data.message || "アプリ内写真判定に失敗しました。") as GeminiPhotoError;
+    const statusHint = response.status ? `（HTTP ${response.status}）` : "";
+    const error = new Error(data.message || `アプリ内写真判定に失敗しました。${statusHint}`) as GeminiPhotoError;
     error.code = data.error;
     error.fallbackAvailable = [
       "gemini_quota_exhausted",
