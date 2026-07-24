@@ -37,6 +37,10 @@ const expectedResult = {
   type: "food_ai_bridge_v3",
   items: [{
     observed_name: "テスト食品",
+    possible_brand: "テスト店",
+    possible_menu_name: "テストメニュー",
+    food_type: "unknown",
+    quantity: "1食",
     nutrition_candidate: {
       calories: 1,
       protein_g: 0,
@@ -46,7 +50,24 @@ const expectedResult = {
     confidence: "low",
     match_keywords: [],
     needs_confirmation: [],
+    note: "",
     evidence_origin: "ai_photo_estimate",
+  }],
+};
+
+const aliasedUpstreamResult = {
+  foods: [{
+    name: "テスト食品",
+    store_name: "テスト店",
+    product_name: "テストメニュー",
+    amount: "1食",
+    nutrition: {
+      kcal: 1,
+      protein: 0,
+      fat: 0,
+      carbohydrates: 0,
+    },
+    certainty: "low",
   }],
 };
 
@@ -55,7 +76,7 @@ const upstreamBodies: unknown[] = [];
 globalThis.fetch = async (_input, init) => {
   upstreamBodies.push(JSON.parse(String(init?.body)));
   return Response.json({
-    candidates: [{ content: { parts: [{ text: JSON.stringify(expectedResult) }] } }],
+    candidates: [{ content: { parts: [{ text: JSON.stringify(aliasedUpstreamResult) }] } }],
   });
 };
 
@@ -104,6 +125,8 @@ try {
   assert.equal(payload.model, "gemini-primary");
   assert.equal(payload.cached, false);
   assert.equal(upstreamBodies.length, 1);
+  assert.match(JSON.stringify(upstreamBodies[0]), /food_ai_bridge_v3/);
+  assert.match(JSON.stringify(upstreamBodies[0]), /nutrition_candidate/);
   assert.ok(statements.some((entry) => entry.sql.includes("INSERT INTO ai_usage_daily")));
   assert.ok(statements.some((entry) => entry.sql.includes("INSERT INTO ai_result_cache")));
 } finally {

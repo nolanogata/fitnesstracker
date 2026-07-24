@@ -571,7 +571,7 @@ async function handleGeminiPhoto(context: PagesContext, user: AppUser) {
       models: body.use_fallback ? [fallbackModel] : [model, fallbackModel],
       parts,
       parse: (text) => {
-        const result = JSON.parse(text) as Record<string, unknown>;
+        const result = normalizeGeminiPhotoResult(JSON.parse(text));
         validateGeminiResult(result);
         return result;
       },
@@ -682,46 +682,27 @@ async function recordAiUsage(db: D1Database, userId: string, usageDate: string, 
   `).bind(userId, usageDate, model, success ? 1 : 0, success ? 0 : 1, now).run();
 }
 
-const geminiResponseSchema = {
-  type: "object",
-  properties: {
-    type: { type: "string", enum: ["food_ai_bridge_v3"] },
-    items: {
-      type: "array",
-      maxItems: 12,
-      items: {
-        type: "object",
-        properties: {
-          observed_name: { type: "string" },
-          possible_brand: { type: "string" },
-          possible_menu_name: { type: "string" },
-          food_type: { type: "string" },
-          quantity: { type: "string" },
-          nutrition_candidate: {
-            type: "object",
-            properties: {
-              calories: { type: "number" },
-              protein_g: { type: "number" },
-              fat_g: { type: "number" },
-              carbs_g: { type: "number" },
-              salt_g: { type: "number" },
-            },
-            required: ["calories", "protein_g", "fat_g", "carbs_g"],
-          },
-          confidence: { type: "string", enum: ["high", "medium", "low"] },
-          match_keywords: { type: "array", items: { type: "string" } },
-          needs_confirmation: { type: "array", items: { type: "string" } },
-          note: { type: "string" },
-          evidence_origin: {
-            type: "string",
-            enum: ["package_label", "receipt_read", "ai_photo_estimate", "brand_match", "unknown"],
-          },
-        },
-        required: ["observed_name", "nutrition_candidate", "confidence", "match_keywords", "needs_confirmation", "evidence_origin"],
-      },
+const geminiResponseExample = {
+  type: "food_ai_bridge_v3",
+  items: [{
+    observed_name: "判定した品目名",
+    possible_brand: "候補の店名・ブランド名。不明なら空文字",
+    possible_menu_name: "候補のメニュー・商品名。不明なら空文字",
+    food_type: "chain_menu",
+    quantity: "写真から推定した量",
+    nutrition_candidate: {
+      calories: 0,
+      protein_g: 0,
+      fat_g: 0,
+      carbs_g: 0,
+      salt_g: 0,
     },
-  },
-  required: ["type", "items"],
+    confidence: "medium",
+    match_keywords: ["照合に使える語句"],
+    needs_confirmation: ["ユーザーに確認が必要な点"],
+    note: "短い補足",
+    evidence_origin: "ai_photo_estimate",
+  }],
 };
 
 function geminiFoodPrompt(brandHint?: string) {
@@ -737,11 +718,106 @@ ${brandHint ? `ユーザーが入力した店名・メニュー名などのヒ�
 - 写真推定は evidence_origin=ai_photo_estimate とする。
 - 不明な商品を断定せず、候補名と確認事項を返す。
 - kcal/P/F/Cは0以上の有限値にする。
-- JSON Schemaに一致するJSONだけを返す。`;
+- 説明文やMarkdownのコードフェンスを付けず、次の形のJSONオブジェクトだけを返す。
+- typeは必ず "food_ai_bridge_v3" に固定し、itemsは最大12件にする。
+- food_typeは chain_menu / packaged_food / home_cooked / general / unknown のいずれかにする。
+- confidenceは high / medium / low、evidence_originは package_label / receipt_read / ai_photo_estimate / brand_match / unknown のいずれかにする。
+
+出力形式:
+${JSON.stringify(geminiResponseExample, null, 2)}`;
+}
+
+function normalizeGeminiPhotoResult(value: unknown): Record<string, unknown> {
+  const root = asRecord(value);
+  const nested = root && (asRecord(root.result) || asRecord(root.data) || asRecord(root.response));
+  const source = nested || root;
+  const rawItems = Array.isArray(value)
+    ? value
+    : source
+      ? firstArray(source, ["items", "foods", "food_items", "dishes", "results", "menu_items"])
+        ?? (looksLikeGeminiFoodItem(source) ? [source] : undefined)
+      : undefined;
+  if (!rawItems) {
+    const keys = source ? Object.keys(source).slice(0, 12).join(", ") : typeof value;
+    throw new Error(`写真判定結果に品目一覧がありません。返却項目: ${keys || "なし"}`);
+  }
+
+  return {
+    type: "food_ai_bridge_v3",
+    items: rawItems.map((raw) => normalizeGeminiFoodItem(raw)),
+  };
+}
+
+function normalizeGeminiFoodItem(value: unknown): Record<string, unknown> {
+  const item = asRecord(value) ?? {};
+  const nutrition = asRecord(firstValue(item, ["nutrition_candidate", "nutrition_estimate", "nutrition", "nutrients", "macros"])) ?? {};
+  const normalizedNutrition: Record<string, unknown> = {
+    calories: finiteNumber(firstValue(nutrition, ["calories", "kcal", "energy_kcal", "energy"])),
+    protein_g: finiteNumber(firstValue(nutrition, ["protein_g", "protein", "proteins"])),
+    fat_g: finiteNumber(firstValue(nutrition, ["fat_g", "fat", "fats"])),
+    carbs_g: finiteNumber(firstValue(nutrition, ["carbs_g", "carbs", "carbohydrates", "carbohydrate"])),
+  };
+  const salt = finiteNumber(firstValue(nutrition, ["salt_g", "salt", "sodium_g"]));
+  if (salt !== undefined) normalizedNutrition.salt_g = salt;
+
+  const foodType = cleanText(firstValue(item, ["food_type", "category", "type"]), 40);
+  const confidence = cleanText(firstValue(item, ["confidence", "certainty"]), 20);
+  const evidenceOrigin = cleanText(firstValue(item, ["evidence_origin", "evidence", "source"]), 40);
+  return {
+    observed_name: cleanText(firstValue(item, ["observed_name", "name", "food_name", "dish_name", "title"]), 120),
+    possible_brand: cleanText(firstValue(item, ["possible_brand", "brand", "store_name", "restaurant_name"]), 120),
+    possible_menu_name: cleanText(firstValue(item, ["possible_menu_name", "menu_name", "product_name"]), 120),
+    food_type: ["chain_menu", "packaged_food", "home_cooked", "general", "unknown"].includes(foodType) ? foodType : "unknown",
+    quantity: cleanText(firstValue(item, ["quantity", "amount", "serving", "portion"]), 120),
+    nutrition_candidate: normalizedNutrition,
+    confidence: ["high", "medium", "low"].includes(confidence) ? confidence : "low",
+    match_keywords: textArray(firstValue(item, ["match_keywords", "keywords", "search_keywords"]), 12, 80),
+    needs_confirmation: textArray(firstValue(item, ["needs_confirmation", "confirmation_needed", "questions", "uncertainties"]), 12, 160),
+    note: cleanText(firstValue(item, ["note", "notes", "comment"]), 300),
+    evidence_origin: ["package_label", "receipt_read", "ai_photo_estimate", "brand_match", "unknown"].includes(evidenceOrigin)
+      ? evidenceOrigin
+      : "ai_photo_estimate",
+  };
+}
+
+function asRecord(value: unknown): Record<string, unknown> | undefined {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : undefined;
+}
+
+function firstValue(record: Record<string, unknown>, keys: string[]) {
+  for (const key of keys) {
+    if (record[key] !== undefined && record[key] !== null) return record[key];
+  }
+  return undefined;
+}
+
+function firstArray(record: Record<string, unknown>, keys: string[]) {
+  const value = firstValue(record, keys);
+  return Array.isArray(value) ? value : undefined;
+}
+
+function looksLikeGeminiFoodItem(record: Record<string, unknown>) {
+  return ["observed_name", "name", "food_name", "dish_name", "nutrition_candidate", "nutrition"].some((key) => key in record);
+}
+
+function finiteNumber(value: unknown) {
+  if (typeof value === "string" && !value.trim()) return undefined;
+  const number = Number(value);
+  return Number.isFinite(number) ? number : undefined;
+}
+
+function textArray(value: unknown, maxItems: number, maxLength: number) {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item) => cleanText(item, maxLength))
+    .filter(Boolean)
+    .slice(0, maxItems);
 }
 
 function validateGeminiResult(result: Record<string, unknown>) {
-  if (result.type !== "food_ai_bridge_v3" || !Array.isArray(result.items) || result.items.length > 12) {
+  if (result.type !== "food_ai_bridge_v3" || !Array.isArray(result.items) || !result.items.length || result.items.length > 12) {
     throw new HttpError(502, "gemini_invalid_response", "写真判定結果の構造が不正です。");
   }
   for (const raw of result.items) {

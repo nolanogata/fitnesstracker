@@ -3107,6 +3107,60 @@ button {
   line-height: 1.65;
 }
 
+.ai-food-start-option {
+  min-height: 5rem;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  text-align: left;
+}
+
+.ai-food-start-icon {
+  display: inline-flex;
+  width: 2.5rem;
+  height: 2.5rem;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--accent-border);
+  border-radius: 999px;
+  background: var(--accent-faint);
+  color: var(--accent-readable);
+}
+
+.ai-photo-step-card {
+  padding: 0.9rem;
+  border: 1px solid rgba(111, 143, 125, 0.24);
+  border-radius: 1.25rem;
+  background: rgba(255, 255, 255, 0.54);
+  box-shadow: var(--glass-highlight), 0 8px 18px rgba(44, 56, 48, 0.05);
+}
+
+.ai-photo-upload-choice {
+  display: flex;
+  min-height: 5.5rem;
+  cursor: pointer;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 0.5rem;
+  border: 1px solid var(--glass-border);
+  border-radius: 1rem;
+  background: var(--glass-bg);
+  color: var(--ink);
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-align: center;
+  transition: border-color 160ms ease, transform 160ms ease;
+}
+
+.ai-photo-upload-choice:hover {
+  border-color: var(--accent-border);
+}
+
+.ai-photo-upload-choice:active {
+  transform: scale(0.98);
+}
+
 .ai-photo-privacy-warning {
   border: 1px solid rgba(86, 110, 97, 0.22);
   background: rgba(248, 247, 243, 0.9);
@@ -4951,6 +5005,20 @@ main[data-accent]:not([data-accent="classic"]) .ai-report-section .text-moss {
 .theme-dark .ai-food-helper-card,
 :root[data-theme="dark"] .ai-food-helper-card {
   color: #d8e4db;
+}
+
+.theme-dark .ai-photo-step-card,
+:root[data-theme="dark"] .ai-photo-step-card {
+  border-color: rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.07);
+  box-shadow: var(--glass-highlight), 0 10px 22px rgba(0, 0, 0, 0.2);
+}
+
+.theme-dark .ai-photo-upload-choice,
+:root[data-theme="dark"] .ai-photo-upload-choice {
+  border-color: rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.08);
+  color: #edf4ee;
 }
 
 .theme-dark .ai-photo-privacy-warning,

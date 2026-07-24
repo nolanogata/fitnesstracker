@@ -11899,6 +11899,7 @@ function AiFoodImportModal({ intent = "log", step, setStep, text, setText, items
   const [matchStage, setMatchStage] = useState<"candidate" | "usage">("candidate");
   const [isManualSearchOpen, setIsManualSearchOpen] = useState(false);
   const [manualSearchQuery, setManualSearchQuery] = useState("");
+  const [startMode, setStartMode] = useState<"choose" | "gemini" | "external">("choose");
   const menuItemsById = useMemo(() => new Map(menuItems.map((item) => [item.id, item])), [menuItems]);
   const goToNextMatchItem = (index: number, nextSelections = selections) => {
     setMatchStage("candidate");
@@ -11925,6 +11926,9 @@ function AiFoodImportModal({ intent = "log", step, setStep, text, setText, items
     setMatchStage("candidate");
     setIsManualSearchOpen(false);
     setManualSearchQuery("");
+  }, [step]);
+  useEffect(() => {
+    if (step !== "prompt") setStartMode("choose");
   }, [step]);
   const selectedSummary = items.map((item, index) => {
     const selection = selections[index] ?? { source: "skip" };
@@ -11986,24 +11990,56 @@ function AiFoodImportModal({ intent = "log", step, setStep, text, setText, items
           ))}
         </div>
         <p className="mt-2 text-xs font-bold text-moss">
-          {step === "prompt" ? "1. プロンプトをコピー" : step === "paste" ? "2. AI出力を貼り付け" : step === "read" ? "3. 読み取り結果" : step === "match" ? `4. ${currentMatchIndex + 1}件目を確認` : step === "timing" ? `${aiFoodSteps.length - 1}. 記録タイミングを選択` : `${aiFoodSteps.length}. ${intent === "menu" ? "保存内容を確認" : "記録内容を確認"}`}
+          {step === "prompt"
+            ? startMode === "choose"
+              ? "1. 判定方法を選択"
+              : startMode === "gemini"
+                ? "1. アプリ内AIで判定"
+                : "1. 自分のAIを使う"
+            : step === "paste" ? "2. AI出力を貼り付け" : step === "read" ? "3. 読み取り結果" : step === "match" ? `4. ${currentMatchIndex + 1}件目を確認` : step === "timing" ? `${aiFoodSteps.length - 1}. 記録タイミングを選択` : `${aiFoodSteps.length}. ${intent === "menu" ? "保存内容を確認" : "記録内容を確認"}`}
         </p>
 
-        {step === "prompt" && (
-          <div className="mt-4 space-y-3">
+        {step === "prompt" && startMode === "choose" && (
+          <div className="mt-4 space-y-2">
+            <button className="food-filter-option ai-food-start-option" onClick={() => setStartMode("gemini")}>
+              <span className="ai-food-start-icon"><Sparkles size={19} /></span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm font-black">アプリ内AIで判定</span>
+                <span className="mt-1 block text-xs font-semibold text-moss">写真とヒントを送って、そのまま候補を作ります。</span>
+              </span>
+              <ChevronRight className="shrink-0 text-moss" size={18} />
+            </button>
+            <button className="food-filter-option ai-food-start-option" onClick={() => setStartMode("external")}>
+              <span className="ai-food-start-icon"><Copy size={19} /></span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm font-black">自分のAIを使う</span>
+                <span className="mt-1 block text-xs font-semibold text-moss">プロンプトをコピーし、任意のAIで判定します。</span>
+              </span>
+              <ChevronRight className="shrink-0 text-moss" size={18} />
+            </button>
+          </div>
+        )}
+
+        {step === "prompt" && startMode === "gemini" && (
+          <div className="mt-4">
             <GeminiPhotoAnalyzer
               onResult={(result) => {
                 setText(JSON.stringify(result, null, 2));
                 setStep("paste");
               }}
             />
+          </div>
+        )}
+
+        {step === "prompt" && startMode === "external" && (
+          <div className="mt-4 space-y-3">
             <div className="ai-food-helper-card">
-              <p className="font-black text-ink">任意のAIを使う場合</p>
-              <p>1. 下のプロンプトをコピーボタンを押してください。</p>
-              <p className="mt-1">2. 初回のみお好きなAIを開いて（Gemini推奨）新規チャットにペーストしてください。次回以降は同じチャットに写真を貼るだけで使えます。</p>
-              <p className="mt-1">3. AIが返してきたコードを丸ごとコピーして次の画面で貼り付けてください。</p>
+              <p className="font-black text-ink">使い方</p>
+              <p className="mt-1">1. プロンプトをコピーし、写真と一緒にお好きなAIへ送ります。</p>
+              <p className="mt-1">2. 返ってきたJSONをコピーして、次の画面に貼り付けます。</p>
             </div>
             <button className="primary-button w-full" onClick={onCopyPrompt}><Copy size={17} />{copiedPrompt ? "コピー済み" : "プロンプトをコピー"}</button>
+            <button className="secondary-button w-full" onClick={() => setStep("paste")}>AIの回答を貼り付ける<ChevronRight size={17} /></button>
           </div>
         )}
 
@@ -12270,21 +12306,27 @@ function AiFoodImportModal({ intent = "log", step, setStep, text, setText, items
           </div>
         )}
 
-        {step !== "match" && (
+        {step === "prompt" && (
+          <button
+            className="secondary-button mt-5 w-full"
+            onClick={() => {
+              if (startMode === "choose") onClose();
+              else setStartMode("choose");
+            }}
+          >
+            {startMode === "choose" ? "閉じる" : <><ChevronLeft size={17} />判定方法に戻る</>}
+          </button>
+        )}
+        {step !== "prompt" && step !== "match" && (
           <div className="mt-5 grid grid-cols-2 gap-2">
             <button
               className="secondary-button"
               onClick={() => {
-                if (step === "prompt") {
-                  onClose();
-                  return;
-                }
                 setStep(step === "paste" ? "prompt" : step === "read" ? "paste" : step === "timing" ? "match" : hasLoggableSelections() ? "timing" : "match");
               }}
             >
-              {step === "prompt" ? "閉じる" : <><ChevronLeft size={17} />戻る</>}
+              <ChevronLeft size={17} />戻る
             </button>
-            {step === "prompt" && <button className="primary-button" onClick={() => setStep("paste")}>貼り付けへ<ChevronRight size={17} /></button>}
             {step === "paste" && <button className="primary-button" onClick={onParse}>読み取る<ChevronRight size={17} /></button>}
             {step === "read" && <button className="primary-button" disabled={!items.length} onClick={beginItemReview}>1件目を確認<ChevronRight size={17} /></button>}
             {step === "timing" && <button className="primary-button" disabled={!activeSummary.length} onClick={() => setStep("confirm")}>確認へ<ChevronRight size={17} /></button>}
@@ -12322,6 +12364,7 @@ function GeminiPhotoAnalyzer({ onResult }: { onResult: (result: Record<string, u
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [error, setError] = useState<GeminiPhotoError>();
   const [lastModel, setLastModel] = useState("");
+  const [inputStep, setInputStep] = useState<"images" | "details">("images");
 
   useEffect(() => {
     let cancelled = false;
@@ -12361,6 +12404,7 @@ function GeminiPhotoAnalyzer({ onResult }: { onResult: (result: Record<string, u
       });
     }
     setConsent("accepted");
+    setInputStep("images");
   };
 
   const revokeConsent = async () => {
@@ -12371,6 +12415,7 @@ function GeminiPhotoAnalyzer({ onResult }: { onResult: (result: Record<string, u
     });
     setFoodImage(undefined);
     setEvidenceImage(undefined);
+    setInputStep("images");
     setConsent("required");
   };
 
@@ -12426,44 +12471,75 @@ function GeminiPhotoAnalyzer({ onResult }: { onResult: (result: Record<string, u
     );
   }
 
-  return (
-    <section className="rounded-2xl border border-leaf/30 bg-leaf/10 p-3">
-      <div className="flex items-start justify-between gap-2">
-        <div>
-          <p className="font-black">アプリ内Gemini写真判定</p>
-          <p className="mt-1 text-xs font-semibold text-moss">写真だけ、レシートだけ、または2枚を組み合わせて判定できます。</p>
+  if (inputStep === "images") {
+    return (
+      <section className="ai-photo-step-card">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="font-black">写真を選ぶ</p>
+            <p className="mt-1 text-xs font-semibold text-moss">食事、レシート・ラベルのどちらか1枚でも使えます。</p>
+          </div>
+          <button className="text-[11px] font-bold text-moss underline" onClick={revokeConsent}>同意を取り消す</button>
         </div>
-        <button className="text-[11px] font-bold text-moss underline" onClick={revokeConsent}>同意を取り消す</button>
+        <div className="mt-4 grid grid-cols-2 gap-2">
+          <label className="ai-photo-upload-choice">
+            <Utensils size={20} />
+            <span>{foodImage ? "食事写真を変更" : "食事写真を選ぶ"}</span>
+            <input className="hidden" type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => {
+              void chooseImage(event.target.files?.[0], "food");
+              event.target.value = "";
+            }} />
+          </label>
+          <label className="ai-photo-upload-choice">
+            <FileText size={20} />
+            <span>{evidenceImage ? "補助画像を変更" : "レシート・ラベル"}</span>
+            <input className="hidden" type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => {
+              void chooseImage(event.target.files?.[0], "evidence");
+              event.target.value = "";
+            }} />
+          </label>
+        </div>
+        {(foodImage || evidenceImage) && (
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            {foodImage && <img className="h-32 w-full rounded-xl object-cover" src={foodImage} alt="送信する食事写真のプレビュー" />}
+            {evidenceImage && <img className="h-32 w-full rounded-xl object-cover" src={evidenceImage} alt="送信するレシートまたはラベルのプレビュー" />}
+          </div>
+        )}
+        {error && <p className="mt-3 rounded-xl border border-clay/30 bg-clay/10 px-3 py-2 text-xs font-semibold text-clay">{error.message}</p>}
+        <button
+          className="primary-button mt-4 w-full"
+          disabled={!foodImage && !evidenceImage}
+          onClick={() => {
+            setError(undefined);
+            setInputStep("details");
+          }}
+        >
+          ヒント入力へ<ChevronRight size={17} />
+        </button>
+      </section>
+    );
+  }
+
+  return (
+    <section className="ai-photo-step-card">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <p className="font-black">ヒントを入力して送信</p>
+          <p className="mt-1 text-xs font-semibold text-moss">店名やメニュー名が分かれば、判定精度が上がります。</p>
+        </div>
+        <button className="secondary-button h-9 shrink-0 px-3 text-xs" disabled={isAnalyzing} onClick={() => setInputStep("images")}><ChevronLeft size={15} />写真</button>
       </div>
+      <label className="mt-4 block text-xs font-bold text-moss">
+        店名やメニュー名などのヒント（任意）
+        <input className="mt-1 w-full" value={brandHint} onChange={(event) => setBrandHint(event.target.value)} placeholder="例: しんぱち食堂、銀鮭定食" maxLength={100} />
+      </label>
       <p className="ai-photo-privacy-warning mt-3 rounded-xl px-3 py-2 text-xs font-semibold">
         送信前に人物・車両ナンバー・氏名・会員番号・決済情報が写っていないか確認してください。
       </p>
-      <label className="mt-3 block text-xs font-bold text-moss">
-        店名やメニュー名などのヒントを入力（任意）
-        <input className="mt-1 w-full" value={brandHint} onChange={(event) => setBrandHint(event.target.value)} placeholder="例: マクドナルド、てりやきマックバーガー" maxLength={100} />
-      </label>
-      <div className="mt-3 grid grid-cols-2 gap-2">
-        <label className="secondary-button min-h-12 cursor-pointer px-2 text-xs">
-          <Utensils size={16} />{foodImage ? "食事写真を変更" : "食事写真"}
-          <input className="hidden" type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => {
-            void chooseImage(event.target.files?.[0], "food");
-            event.target.value = "";
-          }} />
-        </label>
-        <label className="secondary-button min-h-12 cursor-pointer px-2 text-xs">
-          <FileText size={16} />{evidenceImage ? "補助画像を変更" : "レシート・ラベル"}
-          <input className="hidden" type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => {
-            void chooseImage(event.target.files?.[0], "evidence");
-            event.target.value = "";
-          }} />
-        </label>
+      <div className="mt-3 flex gap-2">
+        {foodImage && <img className="h-16 w-20 rounded-lg object-cover" src={foodImage} alt="送信する食事写真" />}
+        {evidenceImage && <img className="h-16 w-20 rounded-lg object-cover" src={evidenceImage} alt="送信するレシートまたはラベル" />}
       </div>
-      {(foodImage || evidenceImage) && (
-        <div className="mt-3 grid grid-cols-2 gap-2">
-          {foodImage && <img className="h-28 w-full rounded-xl object-cover" src={foodImage} alt="送信する食事写真のプレビュー" />}
-          {evidenceImage && <img className="h-28 w-full rounded-xl object-cover" src={evidenceImage} alt="送信するレシートまたはラベルのプレビュー" />}
-        </div>
-      )}
       {error && (
         <div className="mt-3 rounded-xl border border-clay/30 bg-clay/10 px-3 py-2 text-xs font-semibold text-clay">
           <p>{error.message}</p>
@@ -12473,13 +12549,13 @@ function GeminiPhotoAnalyzer({ onResult }: { onResult: (result: Record<string, u
             </button>
           )}
           {["user_ai_limit", "global_ai_limit", "gemini_quota_exhausted"].includes(error.code ?? "") && (
-            <p className="mt-2 text-moss">下の「プロンプトをコピー」から、これまでどおり任意のAIを利用できます。</p>
+            <p className="mt-2 text-moss">判定方法に戻ると「自分のAIを使う」を選べます。</p>
           )}
         </div>
       )}
       {lastModel && <p className="mt-2 text-[11px] font-semibold text-moss">前回の判定モデル: {lastModel}</p>}
-      <button className="primary-button mt-3 w-full" disabled={isAnalyzing || (!foodImage && !evidenceImage)} onClick={() => void analyze(false)}>
-        <Sparkles size={17} />{isAnalyzing ? "写真を判定中…" : "この画像をGeminiへ送信"}
+      <button className="primary-button mt-4 w-full" disabled={isAnalyzing} onClick={() => void analyze(false)}>
+        <Sparkles size={17} />{isAnalyzing ? "写真を判定中…" : "Geminiへ送信"}
       </button>
     </section>
   );
