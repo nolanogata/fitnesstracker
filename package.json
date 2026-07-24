@@ -7,6 +7,7 @@
     "audit:food-seeds": "node scripts/audit-food-seed-data.mjs",
     "test:goal": "node --experimental-strip-types scripts/test-goal-activity-profile.ts",
     "test:onboarding": "node --experimental-strip-types scripts/test-onboarding.ts",
+    "test:theme-nav": "node --experimental-strip-types scripts/test-theme-character-navigation.ts",
     "test:report": "node --experimental-strip-types scripts/test-report-presentation.ts",
     "test:history": "node --experimental-strip-types scripts/test-workout-body-part-summary.ts",
     "test:chain-combo": "node --experimental-strip-types scripts/test-chain-combo-availability.ts",
@@ -21,7 +22,7 @@
     "test:food-catalog": "esbuild scripts/test-food-catalog.ts --bundle --platform=node --format=esm --outfile=/tmp/phase-log-food-catalog-test.mjs && node /tmp/phase-log-food-catalog-test.mjs",
     "dev": "vite --host 0.0.0.0",
     "typecheck:functions": "tsc -p tsconfig.functions.json",
-    "build": "npm run audit:food-seeds && npm run test:goal && npm run test:onboarding && npm run test:report && npm run test:history && npm run test:chain-combo && npm run test:chain-browse && npm run test:chain-semantics && npm run test:chain-catalog && npm run test:baskin-robbins && npm run test:sukiya && npm run test:gemini && npm run test:advice && npm run test:cloud-safety && npm run test:food-catalog && tsc --noEmit && npm run typecheck:functions && vite build",
+    "build": "npm run audit:food-seeds && npm run test:goal && npm run test:onboarding && npm run test:theme-nav && npm run test:report && npm run test:history && npm run test:chain-combo && npm run test:chain-browse && npm run test:chain-semantics && npm run test:chain-catalog && npm run test:baskin-robbins && npm run test:sukiya && npm run test:gemini && npm run test:advice && npm run test:cloud-safety && npm run test:food-catalog && tsc --noEmit && npm run typecheck:functions && vite build",
     "preview": "vite preview --host 0.0.0.0"
   },
   "dependencies": {

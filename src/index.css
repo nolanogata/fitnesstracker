@@ -688,7 +688,7 @@ button {
     var(--theme-character-image);
 }
 
-.app-shell[data-character]:not([data-character="none"]) > * {
+.app-shell[data-character]:not([data-character="none"]) > section {
   position: relative;
   z-index: 1;
 }
