@@ -3107,6 +3107,12 @@ button {
   line-height: 1.65;
 }
 
+.ai-photo-privacy-warning {
+  border: 1px solid rgba(86, 110, 97, 0.22);
+  background: rgba(248, 247, 243, 0.9);
+  color: #3f5147;
+}
+
 .ai-food-read-result {
   display: flex;
   align-items: center;
@@ -4945,6 +4951,13 @@ main[data-accent]:not([data-accent="classic"]) .ai-report-section .text-moss {
 .theme-dark .ai-food-helper-card,
 :root[data-theme="dark"] .ai-food-helper-card {
   color: #d8e4db;
+}
+
+.theme-dark .ai-photo-privacy-warning,
+:root[data-theme="dark"] .ai-photo-privacy-warning {
+  border-color: rgba(198, 222, 207, 0.28);
+  background: rgba(237, 244, 238, 0.12);
+  color: #f1f7f2;
 }
 
 .theme-dark .ai-food-note,

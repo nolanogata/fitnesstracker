@@ -564,7 +564,8 @@ async function handleGeminiPhoto(context: PagesContext, user: AppUser) {
     },
     body: JSON.stringify({
       model,
-      input,
+      input: [{ type: "user_input", content: input }],
+      store: false,
       response_format: {
         type: "text",
         mime_type: "application/json",
@@ -761,7 +762,7 @@ const geminiResponseSchema = {
 function geminiFoodPrompt(brandHint?: string) {
   return `あなたは食事記録アプリ「100% トラッカー」の画像判定器です。
 日本のチェーン店・コンビニ・市販食品を優先して、食事写真と任意のレシート／パッケージを照合してください。
-${brandHint ? `ユーザーのブランド候補: ${cleanText(brandHint, 100)}` : "ブランド候補は指定されていません。"}
+${brandHint ? `ユーザーが入力した店名・メニュー名などのヒント: ${cleanText(brandHint, 100)}` : "店名・メニュー名などのヒントは指定されていません。"}
 
 必須ルール:
 - 写真内の食べ物を1品ずつ分ける。

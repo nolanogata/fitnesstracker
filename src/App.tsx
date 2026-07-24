@@ -28,6 +28,7 @@ import {
   GripVertical,
   Heart,
   Home,
+  LogOut,
   Minus,
   Palette,
   Pencil,
@@ -8843,6 +8844,7 @@ function SettingsTab(props: {
   const [editingUserMenuItemId, setEditingUserMenuItemId] = useState<string>();
   const [sharingOfficialMenuItem, setSharingOfficialMenuItem] = useState<MenuItem>();
   const [cloudRole, setCloudRole] = useState<"user" | "admin">();
+  const [cloudEmail, setCloudEmail] = useState<string>();
   const [adminCatalogReviewOpen, setAdminCatalogReviewOpen] = useState(false);
   const [activeMyMenuSection, setActiveMyMenuSection] = useState<MyMenuSection | undefined>(() => props.focus === "myMenu" ? "method" : undefined);
   const [myMenuWizardStep, setMyMenuWizardStep] = useState<ManualFoodWizardStep>("basic");
@@ -8875,8 +8877,11 @@ function SettingsTab(props: {
     let active = true;
     fetch("/api/session", { headers: { accept: "application/json" } })
       .then(async (response) => response.ok ? response.json() : undefined)
-      .then((data: { user?: { role?: "user" | "admin" } } | undefined) => {
-        if (active) setCloudRole(data?.user?.role);
+      .then((data: { user?: { email?: string; role?: "user" | "admin" } } | undefined) => {
+        if (active) {
+          setCloudRole(data?.user?.role);
+          setCloudEmail(data?.user?.email);
+        }
       })
       .catch(() => undefined);
     return () => {
@@ -10582,6 +10587,30 @@ function SettingsTab(props: {
             const result = await props.syncCloud();
             props.showToast(result.state === "synced" ? "クラウドと同期しました" : result.message);
           }}><RotateCcw size={17} />今すぐ同期</button>
+          {cloudEmail && (
+            <div className="mt-4 border-t border-line pt-4">
+              <p className="text-xs font-bold text-ink">ログイン中: {cloudEmail}</p>
+              <button className="secondary-button mt-2 w-full" onClick={async () => {
+                const confirmed = window.confirm(
+                  "現在の記録をクラウドへ同期してから、この端末の表示用データを消去し、ログアウトします。続けますか？",
+                );
+                if (!confirmed) return;
+                const result = await props.syncCloud();
+                if (result.state !== "synced") {
+                  props.showToast(`ログアウトを中止しました。${result.message}`);
+                  return;
+                }
+                await db.delete();
+                for (const key of Object.keys(localStorage)) {
+                  if (key.startsWith("phase-log-")) localStorage.removeItem(key);
+                }
+                window.location.assign("/cdn-cgi/access/logout");
+              }}><LogOut size={17} />ログアウト／ユーザー切替</button>
+              <p className="mt-2 text-[11px] font-semibold leading-relaxed text-moss">
+                Cloudflare Access全体からログアウトします。別のメールで再ログインすると、そのユーザーの記録だけが読み込まれます。
+              </p>
+            </div>
+          )}
         </section>
       )}
 
@@ -12406,12 +12435,12 @@ function GeminiPhotoAnalyzer({ onResult }: { onResult: (result: Record<string, u
         </div>
         <button className="text-[11px] font-bold text-moss underline" onClick={revokeConsent}>同意を取り消す</button>
       </div>
-      <p className="mt-3 rounded-xl bg-rice/80 px-3 py-2 text-xs font-semibold text-moss">
+      <p className="ai-photo-privacy-warning mt-3 rounded-xl px-3 py-2 text-xs font-semibold">
         送信前に人物・車両ナンバー・氏名・会員番号・決済情報が写っていないか確認してください。
       </p>
       <label className="mt-3 block text-xs font-bold text-moss">
-        店名・ブランドのヒント（任意）
-        <input className="mt-1 w-full" value={brandHint} onChange={(event) => setBrandHint(event.target.value)} placeholder="例: マクドナルド" maxLength={100} />
+        店名やメニュー名などのヒントを入力（任意）
+        <input className="mt-1 w-full" value={brandHint} onChange={(event) => setBrandHint(event.target.value)} placeholder="例: マクドナルド、てりやきマックバーガー" maxLength={100} />
       </label>
       <div className="mt-3 grid grid-cols-2 gap-2">
         <label className="secondary-button min-h-12 cursor-pointer px-2 text-xs">
