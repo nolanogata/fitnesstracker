@@ -76,13 +76,28 @@ const env = {
       aiInputs.push(input);
       if (aiInputs.length === 1) return { response: adviceResult };
       if (aiInputs.length === 2) return { response: JSON.stringify(adviceResult) };
-      return { choices: [{ message: { content: `\`\`\`json\n${JSON.stringify(adviceResult)}\n\`\`\`` } }] };
+      if (aiInputs.length === 3) return { choices: [{ message: { content: `\`\`\`json\n${JSON.stringify(adviceResult)}\n\`\`\`` } }] };
+      if (aiInputs.length === 4) return {
+        response: `【結論】
+次回は下半身の回復を見ながら上半身を進めましょう。
+【記録から見えること】
+- 今週は3回ワークアウトを記録しています。
+【根拠】
+- 実施回数: 3回
+【まず試すこと】
+- 次回は上半身を中心にする
+【注意】
+- 痛みがある場合は中止する
+【追加で確認】
+- 筋肉痛が残っている部位はありますか？`,
+      };
+      return { response: "今週の記録を基準に、無理のない範囲で次回の負荷を調整してください。" };
     },
   },
   ACCESS_TEAM_DOMAIN: "example.cloudflareaccess.com",
   ACCESS_AUD: "test-audience",
   WORKERS_AI_ADVICE_MODEL: "@cf/meta/llama-3.1-8b-instruct-fast",
-  AI_ADVICE_PER_USER_DAILY_LIMIT: "3",
+  AI_ADVICE_PER_USER_DAILY_LIMIT: "5",
   AI_ADVICE_GLOBAL_DAILY_LIMIT: "30",
   DEV_AUTH_BYPASS: "1",
 };
@@ -114,23 +129,28 @@ async function advise(index: number) {
   });
 }
 
-for (let index = 0; index < 3; index += 1) {
+for (let index = 0; index < 5; index += 1) {
   const response = await advise(index);
   assert.equal(response.status, 200);
-  const payload = await response.json() as { result: { headline: string }; model: string };
-  assert.equal(payload.result.headline, "今週は記録の安定を優先");
+  const payload = await response.json() as { result: { headline: string; actions: string[] }; model: string };
+  assert.equal(
+    payload.result.headline,
+    index === 3
+      ? "次回は下半身の回復を見ながら上半身を進めましょう。"
+      : index === 4
+        ? "AIアドバイス"
+        : "今週は記録の安定を優先",
+  );
+  if (index === 3) assert.deepEqual(payload.result.actions, ["次回は上半身を中心にする"]);
   assert.equal(payload.model, "@cf/meta/llama-3.1-8b-instruct-fast");
 }
 
-const limited = await advise(4);
+const limited = await advise(6);
 assert.equal(limited.status, 429);
 assert.equal((await limited.json() as { error: string }).error, "user_advice_limit");
-assert.equal(aiInputs.length, 3);
+assert.equal(aiInputs.length, 5);
 assert.ok(aiInputs.every((input) => !JSON.stringify(input).includes("tester@example.com")));
-assert.ok(aiInputs.every((input) => (
-  (input.response_format as { type?: string } | undefined)?.type === "json_object"
-)));
-assert.ok(aiInputs.every((input) => !("json_schema" in ((input.response_format as Record<string, unknown> | undefined) ?? {}))));
+assert.ok(aiInputs.every((input) => !("response_format" in input)));
 assert.ok(statements.some((statement) => statement.sql.includes("INSERT INTO ai_usage_daily")));
 assert.ok(statements.some((statement) => statement.sql.includes("INSERT INTO ai_result_cache")));
 

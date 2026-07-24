@@ -784,8 +784,13 @@ async function handleWorkersAiAdvice(context: PagesContext, user: AppUser) {
     "医療診断、薬の指示、極端なカロリー制限、危険な減量を提案しないでください。",
     "根拠は与えられた期間と値だけを使い、存在しない数値を作らないでください。",
     "回答は日本語で、実行案は最大3つに絞ってください。",
-    "説明文やMarkdownを付けず、次の形のJSONオブジェクトだけを返してください。",
-    JSON.stringify(aiAdviceResponseExample),
+    "JSONは使わず、次の見出しを順番に使って短く答えてください。",
+    "【結論】1〜3文",
+    "【記録から見えること】箇条書き",
+    "【根拠】「項目: 値」の箇条書き",
+    "【まず試すこと】最大3つの箇条書き",
+    "【注意】必要な場合だけ箇条書き",
+    "【追加で確認】必要な場合だけ1つの質問",
   ].join("\n");
   let result: AiAdviceApiResponse;
   try {
@@ -795,12 +800,9 @@ async function handleWorkersAiAdvice(context: PagesContext, user: AppUser) {
         { role: "user", content: `${adviceContext}\n\n## 今回の質問\n${question}` },
       ],
       temperature: 0.2,
-      max_tokens: 900,
-      response_format: {
-        type: "json_object",
-      },
+      max_tokens: 700,
     });
-    result = normalizeAiAdviceResponse(parseWorkersAiAdviceValue(raw));
+    result = parseWorkersAiAdviceResult(raw);
   } catch (error) {
     await recordAiUsage(context.env.DB, user.id, usageDate, model, false, "advice");
     console.error("workers_ai_advice_error", error instanceof Error ? error.message : String(error));
@@ -894,29 +896,26 @@ type AiAdviceApiResponse = {
   }>;
 };
 
-const aiAdviceResponseExample = {
-  headline: "短い見出し",
-  summary: "記録を踏まえた結論",
-  observations: ["記録から確認できる事実"],
-  evidence: [{ label: "根拠名", value: "記録内の値", period: "対象期間" }],
-  actions: ["次に試す具体策"],
-  cautions: ["断定を避ける点や安全上の注意"],
-  follow_up_question: "必要なら追加で確認する質問。なければ空文字",
-  memory_updates: [{ category: "focus", text: "次回へ引き継ぐ短い要点" }],
-};
-
-function parseWorkersAiAdviceValue(raw: unknown): unknown {
+function parseWorkersAiAdviceResult(raw: unknown): AiAdviceApiResponse {
   const root = asRecord(raw);
   const response = root?.response;
-  if (response && typeof response === "object") return response;
-  if (typeof response === "string") return parseJsonObjectText(response);
+  if (response && typeof response === "object") return normalizeAiAdviceResponse(response);
+  if (typeof response === "string") return parseWorkersAiAdviceTextOrJson(response);
   const choices = Array.isArray(root?.choices) ? root.choices : [];
   const firstChoice = asRecord(choices[0]);
   const message = asRecord(firstChoice?.message);
-  if (message?.content && typeof message.content === "object") return message.content;
-  if (typeof message?.content === "string") return parseJsonObjectText(message.content);
-  if (raw && typeof raw === "object" && !root?.response && choices.length === 0) return raw;
+  if (message?.content && typeof message.content === "object") return normalizeAiAdviceResponse(message.content);
+  if (typeof message?.content === "string") return parseWorkersAiAdviceTextOrJson(message.content);
+  if (raw && typeof raw === "object" && !root?.response && choices.length === 0) return normalizeAiAdviceResponse(raw);
   throw new Error("invalid_advice_response_shape");
+}
+
+function parseWorkersAiAdviceTextOrJson(text: string): AiAdviceApiResponse {
+  try {
+    return normalizeAiAdviceResponse(parseJsonObjectText(text));
+  } catch {
+    return normalizePlainAiAdviceResponse(text);
+  }
 }
 
 function parseJsonObjectText(text: string): unknown {
@@ -931,6 +930,56 @@ function parseJsonObjectText(text: string): unknown {
     if (start >= 0 && end > start) return JSON.parse(trimmed.slice(start, end + 1));
     throw new Error("invalid_advice_json");
   }
+}
+
+function normalizePlainAiAdviceResponse(text: string): AiAdviceApiResponse {
+  const cleaned = text
+    .replace(/<think>[\s\S]*?<\/think>/gi, "")
+    .replace(/^```(?:markdown|md|text)?\s*/i, "")
+    .replace(/\s*```$/i, "")
+    .replace(/\r/g, "")
+    .trim();
+  if (!cleaned) throw new Error("empty_advice_response");
+  const sections = new Map<string, string[]>();
+  let activeSection = "本文";
+  sections.set(activeSection, []);
+  for (const rawLine of cleaned.split("\n")) {
+    const line = rawLine.trim();
+    if (!line) continue;
+    const heading = line.match(/^(?:#{1,4}\s*)?【?([^【】]+?)】?[:：]?\s*$/);
+    const normalizedHeading = heading?.[1]?.replace(/\s+/g, "");
+    if (normalizedHeading && ["結論", "記録から見えること", "根拠", "まず試すこと", "注意", "追加で確認"].includes(normalizedHeading)) {
+      activeSection = normalizedHeading;
+      if (!sections.has(activeSection)) sections.set(activeSection, []);
+      continue;
+    }
+    sections.get(activeSection)?.push(line);
+  }
+  const sectionText = (name: string) => (sections.get(name) ?? [])
+    .map((line) => line.replace(/^[-*・]\s*/, ""))
+    .filter(Boolean);
+  const conclusion = sectionText("結論");
+  const fallback = [...sections.values()].flat().map((line) => line.replace(/^[-*・]\s*/, "")).filter(Boolean);
+  const summaryLines = conclusion.length ? conclusion : fallback;
+  const summary = cleanText(summaryLines.join(" "), 1_200);
+  if (!summary) throw new Error("empty_advice_response");
+  const evidence = sectionText("根拠").slice(0, 8).map((line, index) => {
+    const separator = line.search(/[:：]/);
+    return separator > 0
+      ? { label: cleanText(line.slice(0, separator), 80), value: cleanText(line.slice(separator + 1), 120) }
+      : { label: `根拠${index + 1}`, value: cleanText(line, 120) };
+  }).filter((item) => item.label && item.value);
+  const actions = sectionText("まず試すこと").slice(0, 5).map((line) => cleanText(line, 300)).filter(Boolean);
+  return {
+    headline: cleanText(conclusion[0], 100) || "AIアドバイス",
+    summary,
+    observations: sectionText("記録から見えること").slice(0, 6).map((line) => cleanText(line, 300)).filter(Boolean),
+    evidence,
+    actions,
+    cautions: sectionText("注意").slice(0, 5).map((line) => cleanText(line, 300)).filter(Boolean),
+    follow_up_question: cleanText(sectionText("追加で確認")[0], 240) || undefined,
+    memory_updates: actions[0] ? [{ category: "focus", text: cleanText(actions[0], 240) }] : [],
+  };
 }
 
 function normalizeAiAdviceResponse(value: unknown): AiAdviceApiResponse {
