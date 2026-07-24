@@ -17,6 +17,8 @@ const context = buildAnonymousAdviceContext({
 ## 食事ログ
 - 鮭定食`,
   appDate: "2026-07-24",
+  contentScope: "food",
+  topicLabel: "食事内容について",
   foodEntries: [{
     id: "food_1",
     app_date: "2026-07-24",
@@ -42,6 +44,45 @@ assert.doesNotMatch(context, /Alex|private@example\.com/);
 assert.match(context, /鮭定食/);
 assert.match(context, /直近7日/);
 assert.ok(context.length <= 24_000);
+
+const workoutContext = buildAnonymousAdviceContext({
+  fullReport: `# レポート
+
+## AIへの依頼
+- 現在の目標に対する適正な目標カロリーとP/F/Cを算定してください。
+
+## ワークアウト
+- ベンチプレス 60kg 10回 3セット
+
+## 相談したいこと
+ワークアウト内容を評価してください。`,
+  appDate: "2026-07-24",
+  contentScope: "workout",
+  topicLabel: "ワークアウト内容について",
+  foodEntries: [{
+    id: "food_2",
+    app_date: "2026-07-24",
+    logged_at: timestamp,
+    meal_type: "dinner",
+    name: "非表示にする食事",
+    calories: 900,
+    protein_g: 20,
+    fat_g: 40,
+    carbs_g: 90,
+    portion_multiplier: 1,
+    entry_source: "estimated",
+    confidence: "medium",
+    created_at: timestamp,
+    updated_at: timestamp,
+  }],
+  weightLogs: [],
+  workoutSessions: [],
+  workoutExercises: [],
+  workoutSets: [],
+});
+assert.match(workoutContext, /ワークアウト内容について/);
+assert.match(workoutContext, /ベンチプレス 60kg 10回 3セット/);
+assert.doesNotMatch(workoutContext, /適正な目標カロリー|AIへの依頼|相談したいこと|非表示にする食事|食事記録日/);
 
 const parsed = parseExternalAiHandoff(`回答本文
 \`\`\`phase_log_handoff_v1

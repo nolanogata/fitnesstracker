@@ -10254,6 +10254,8 @@ function SettingsTab(props: {
     const anonymousContext = buildAnonymousAdviceContext({
       fullReport: fullContent,
       appDate: props.appDate,
+      contentScope: reportContentScope,
+      topicLabel: aiAdviceTopic ? aiAdviceTopicPresets[aiAdviceTopic].label : "自由相談",
       foodEntries: props.allData.foodEntries,
       weightLogs: props.allData.weightLogs,
       workoutSessions: props.allData.workoutSessions,
@@ -10595,7 +10597,9 @@ function SettingsTab(props: {
               </div>
               <div className="rounded-2xl border border-line p-4">
                 <h3 className="mt-1 text-lg font-black">{aiAdviceResponse.headline}</h3>
-                <p className="mt-3 text-sm leading-relaxed">{aiAdviceResponse.summary}</p>
+                {aiAdviceResponse.summary.trim() !== aiAdviceResponse.headline.trim() && (
+                  <p className="mt-3 text-sm leading-relaxed">{aiAdviceResponse.summary}</p>
+                )}
                 {aiAdviceResponse.observations.length > 0 && <AdviceList title="記録から見えること" items={aiAdviceResponse.observations} />}
                 {aiAdviceResponse.evidence.length > 0 && (
                   <div className="mt-4 grid gap-2">

@@ -91,13 +91,29 @@ const env = {
 【追加で確認】
 - 筋肉痛が残っている部位はありますか？`,
       };
+      if (aiInputs.length === 6) return {
+        response: `【結論】
+今週の改善点は？
+【記録から見えること】
+- ワークアウトは3回です。
+- ワークアウトは3回です。
+【根拠】
+- 実施回数: 3回
+- 実施回数: 3回
+【まず試すこと】
+1. 次回は上半身を中心にする
+2. 次回は上半身を中心にする
+【注意】
+- 次回は上半身を中心にする
+- 痛みがある場合は中止する`,
+      };
       return { response: "今週の記録を基準に、無理のない範囲で次回の負荷を調整してください。" };
     },
   },
   ACCESS_TEAM_DOMAIN: "example.cloudflareaccess.com",
   ACCESS_AUD: "test-audience",
   WORKERS_AI_ADVICE_MODEL: "@cf/meta/llama-3.1-8b-instruct-fast",
-  AI_ADVICE_PER_USER_DAILY_LIMIT: "5",
+  AI_ADVICE_PER_USER_DAILY_LIMIT: "6",
   AI_ADVICE_GLOBAL_DAILY_LIMIT: "30",
   DEV_AUTH_BYPASS: "1",
 };
@@ -117,7 +133,7 @@ async function advise(index: number) {
         turn_index: 0,
         period_start: "2026-07-18",
         period_end: "2026-07-24",
-        content_scope: "both",
+        content_scope: index === 5 ? "workout" : "both",
         question: "今週の改善点は？",
         context: "# 匿名化された相談コンテキスト\n- 食事記録: 5/7日",
         presentation_style: "neutral",
@@ -129,28 +145,40 @@ async function advise(index: number) {
   });
 }
 
-for (let index = 0; index < 5; index += 1) {
+for (let index = 0; index < 6; index += 1) {
   const response = await advise(index);
   assert.equal(response.status, 200);
-  const payload = await response.json() as { result: { headline: string; actions: string[] }; model: string };
+  const payload = await response.json() as {
+    result: { headline: string; observations: string[]; evidence: unknown[]; actions: string[]; cautions: string[] };
+    model: string;
+  };
   assert.equal(
     payload.result.headline,
     index === 3
       ? "次回は下半身の回復を見ながら上半身を進めましょう。"
+      : index === 5
+        ? "ワークアウト記録の振り返り"
       : index === 4
         ? "AIアドバイス"
         : "今週は記録の安定を優先",
   );
   if (index === 3) assert.deepEqual(payload.result.actions, ["次回は上半身を中心にする"]);
+  if (index === 5) {
+    assert.deepEqual(payload.result.observations, ["ワークアウトは3回です。"]);
+    assert.equal(payload.result.evidence.length, 1);
+    assert.deepEqual(payload.result.actions, ["次回は上半身を中心にする"]);
+    assert.deepEqual(payload.result.cautions, ["痛みがある場合は中止する"]);
+  }
   assert.equal(payload.model, "@cf/meta/llama-3.1-8b-instruct-fast");
 }
 
-const limited = await advise(6);
+const limited = await advise(7);
 assert.equal(limited.status, 429);
 assert.equal((await limited.json() as { error: string }).error, "user_advice_limit");
-assert.equal(aiInputs.length, 5);
+assert.equal(aiInputs.length, 6);
 assert.ok(aiInputs.every((input) => !JSON.stringify(input).includes("tester@example.com")));
 assert.ok(aiInputs.every((input) => !("response_format" in input)));
+assert.ok(aiInputs.every((input) => JSON.stringify(input).includes("同じ内容を複数の節に繰り返さず")));
 assert.ok(statements.some((statement) => statement.sql.includes("INSERT INTO ai_usage_daily")));
 assert.ok(statements.some((statement) => statement.sql.includes("INSERT INTO ai_result_cache")));
 

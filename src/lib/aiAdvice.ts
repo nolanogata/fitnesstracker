@@ -84,6 +84,8 @@ export type AiAdviceError = Error & {
 export function buildAnonymousAdviceContext(input: {
   fullReport: string;
   appDate: string;
+  contentScope: "food" | "workout" | "both";
+  topicLabel: string;
   foodEntries: FoodEntry[];
   weightLogs: WeightLog[];
   workoutSessions: WorkoutSession[];
@@ -103,14 +105,15 @@ export function buildAnonymousAdviceContext(input: {
         ...input.previousConsultation.response.actions.slice(0, 4).map((action) => `- 前回の行動案: ${sanitizeFreeText(action, 240)}`),
       ]
     : [];
-  const report = input.fullReport
-    .split("\n")
-    .filter((line) => !/^- (名前|メール|ユーザーID|生年月日):/.test(line.trim()))
-    .join("\n");
+  const report = sanitizeAdviceReport(input.fullReport);
   return [
     "# 匿名化された相談コンテキスト",
     "",
-    "## 長期傾向",
+    "## 今回の相談テーマ",
+    `- ${sanitizeFreeText(input.topicLabel, 80)}`,
+    `- 参照対象: ${input.contentScope === "food" ? "食事" : input.contentScope === "workout" ? "ワークアウト" : "食事とワークアウト"}`,
+    "",
+    "## 長期集計",
     ...trends,
     "",
     "## 引継ぎメモ",
@@ -124,8 +127,27 @@ export function buildAnonymousAdviceContext(input: {
   ].join("\n").slice(0, 24_000);
 }
 
+function sanitizeAdviceReport(report: string) {
+  const excludedSections = new Set(["AIへの依頼", "相談したいこと"]);
+  let excludeCurrentSection = false;
+  return report
+    .split("\n")
+    .filter((line) => {
+      const heading = line.match(/^##\s+(.+?)\s*$/);
+      if (heading) {
+        excludeCurrentSection = excludedSections.has(heading[1]);
+        return !excludeCurrentSection;
+      }
+      if (excludeCurrentSection) return false;
+      return !/^- (名前|メール|ユーザーID|生年月日):/.test(line.trim());
+    })
+    .join("\n")
+    .trim();
+}
+
 function buildTrendWindow(input: {
   appDate: string;
+  contentScope: "food" | "workout" | "both";
   foodEntries: FoodEntry[];
   weightLogs: WeightLog[];
   workoutSessions: WorkoutSession[];
@@ -150,12 +172,18 @@ function buildTrendWindow(input: {
   const firstWeight = [...weights].sort((a, b) => a.app_date.localeCompare(b.app_date))[0]?.weight_kg;
   const lastWeight = [...weights].sort((a, b) => b.app_date.localeCompare(a.app_date))[0]?.weight_kg;
   const divisor = Math.max(foodDays, 1);
+  const includeFood = input.contentScope !== "workout";
+  const includeWorkout = input.contentScope !== "food";
   return [
     `### 直近${days}日`,
-    `- 食事記録日: ${foodDays}/${days}日`,
-    `- 記録日の平均: ${Math.round(totals.calories / divisor)} kcal / P ${round1(totals.protein / divisor)}g / F ${round1(totals.fat / divisor)}g / C ${round1(totals.carbs / divisor)}g`,
-    `- 体重記録: ${weights.length}件${firstWeight !== undefined && lastWeight !== undefined ? ` / 期間変化 ${signed(round1(lastWeight - firstWeight))}kg` : ""}`,
-    `- ワークアウト: ${sessions.length}回 / 種目 ${exercises.length}件 / 本セット ${sets.length}件`,
+    ...(includeFood ? [
+      `- 食事記録日: ${foodDays}/${days}日`,
+      `- 記録日の平均: ${Math.round(totals.calories / divisor)} kcal / P ${round1(totals.protein / divisor)}g / F ${round1(totals.fat / divisor)}g / C ${round1(totals.carbs / divisor)}g`,
+      `- 体重記録: ${weights.length}件${firstWeight !== undefined && lastWeight !== undefined ? ` / 期間変化 ${signed(round1(lastWeight - firstWeight))}kg` : ""}`,
+    ] : []),
+    ...(includeWorkout ? [
+      `- ワークアウト: ${sessions.length}回 / 種目 ${exercises.length}件 / 本セット ${sets.length}件`,
+    ] : []),
   ].join("\n");
 }
 
