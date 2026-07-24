@@ -10254,6 +10254,7 @@ function SettingsTab(props: {
     const anonymousContext = buildAnonymousAdviceContext({
       fullReport: fullContent,
       appDate: props.appDate,
+      topic: aiAdviceTopic ?? "custom",
       contentScope: reportContentScope,
       topicLabel: aiAdviceTopic ? aiAdviceTopicPresets[aiAdviceTopic].label : "自由相談",
       foodEntries: props.allData.foodEntries,
@@ -10272,6 +10273,7 @@ function SettingsTab(props: {
         requestId: makeId("advice_request"),
         threadId,
         turnIndex,
+        topic: aiAdviceTopic ?? "custom",
         periodStart: start,
         periodEnd: end,
         contentScope: reportContentScope,
@@ -10485,10 +10487,10 @@ function SettingsTab(props: {
                     {aiAdviceTopicOrder.map((topic) => {
                       const preset = aiAdviceTopicPresets[topic];
                       return (
-                        <button className="mode-button min-h-16 justify-between px-4 text-left" key={topic} onClick={() => selectAiAdviceTopic(topic)}>
-                          <span className="flex min-w-0 items-center gap-3">
+                        <button className="mode-button ai-advice-topic-button min-h-16 px-4 text-left" key={topic} onClick={() => selectAiAdviceTopic(topic)}>
+                          <span className="ai-advice-topic-button-content">
                             <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-rice">{aiAdviceTopicIcons[topic]}</span>
-                            <span className="min-w-0">
+                            <span className="ai-advice-topic-copy">
                               <strong className="block text-sm">{preset.label}</strong>
                               <small className="mt-1 block text-xs leading-relaxed opacity-70">{preset.description}</small>
                             </span>

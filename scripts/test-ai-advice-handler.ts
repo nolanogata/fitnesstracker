@@ -122,6 +122,8 @@ const env = {
 };
 
 async function advise(index: number) {
+  const topics = ["food", "remaining", "goal", "custom", "custom", "workout"] as const;
+  const scopes = ["food", "food", "both", "both", "both", "workout"] as const;
   return onRequest({
     request: new Request("https://tracker.test/api/ai/advice", {
       method: "POST",
@@ -134,9 +136,10 @@ async function advise(index: number) {
         request_id: `request_${index}`,
         thread_id: `thread_${index}`,
         turn_index: 0,
+        topic: topics[index] ?? "custom",
         period_start: "2026-07-18",
         period_end: "2026-07-24",
-        content_scope: index === 5 ? "workout" : "both",
+        content_scope: scopes[index] ?? "both",
         question: "今週の改善点は？",
         context: "# 匿名化された相談コンテキスト\n- 食事記録: 5/7日",
         presentation_style: "neutral",
@@ -175,6 +178,23 @@ for (let index = 0; index < 6; index += 1) {
   assert.equal(payload.model, "@cf/meta/llama-3.1-8b-instruct-fast");
 }
 
+const usageResponse = await onRequest({
+  request: new Request("https://tracker.test/api/ai/usage", {
+    headers: {
+      origin: "https://tracker.test",
+      "x-dev-user-email": "tester@example.com",
+    },
+  }),
+  env,
+  params: { path: ["ai", "usage"] },
+  waitUntil() {},
+});
+assert.equal(usageResponse.status, 200);
+assert.deepEqual((await usageResponse.json() as { advice: { used: number; per_user_limit: number } }).advice, {
+  used: 6,
+  per_user_limit: 6,
+});
+
 const limited = await advise(7);
 assert.equal(limited.status, 429);
 assert.equal((await limited.json() as { error: string }).error, "user_advice_limit");
@@ -182,6 +202,10 @@ assert.equal(aiInputs.length, 6);
 assert.ok(aiInputs.every((input) => !JSON.stringify(input).includes("tester@example.com")));
 assert.ok(aiInputs.every((input) => !("response_format" in input)));
 assert.ok(aiInputs.every((input) => JSON.stringify(input).includes("同じ内容を複数の節に繰り返さず")));
+assert.match(JSON.stringify(aiInputs[0]), /実際の食品・メニューと数値/);
+assert.match(JSON.stringify(aiInputs[1]), /選択日の摂取済み量と残りkcal/);
+assert.match(JSON.stringify(aiInputs[2]), /現在値、目標値、期限、体重推移/);
+assert.match(JSON.stringify(aiInputs[3]), /今回の質問へ直接答え/);
 assert.match(JSON.stringify(aiInputs[5]), /異なる種目同士の重量・回数・セット数は比較せず/);
 assert.ok(statements.some((statement) => statement.sql.includes("INSERT INTO ai_usage_daily")));
 assert.ok(statements.some((statement) => statement.sql.includes("INSERT INTO ai_result_cache")));

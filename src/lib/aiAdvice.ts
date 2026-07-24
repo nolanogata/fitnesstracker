@@ -84,6 +84,7 @@ export type AiAdviceError = Error & {
 export function buildAnonymousAdviceContext(input: {
   fullReport: string;
   appDate: string;
+  topic: AiAdviceTopic;
   contentScope: "food" | "workout" | "both";
   topicLabel: string;
   foodEntries: FoodEntry[];
@@ -94,8 +95,9 @@ export function buildAnonymousAdviceContext(input: {
   memory?: AiAdviceMemory;
   previousConsultation?: AiConsultation;
 }) {
+  const includeFoodComparison = input.contentScope !== "workout" && input.topic !== "remaining";
   const trends = [
-    ...(input.contentScope !== "workout" ? [7, 28, 90].map((days) => buildTrendWindow(input, days)) : []),
+    ...(includeFoodComparison ? buildFoodComparison(input) : []),
     ...(input.contentScope !== "food" ? buildWorkoutComparison(input) : []),
   ];
   const memoryLines = (input.memory?.items ?? [])
@@ -139,7 +141,7 @@ function sanitizeAdviceReport(report: string) {
   return report
     .split("\n")
     .filter((line) => {
-      const heading = line.match(/^##\s+(.+?)\s*$/);
+      const heading = line.match(/^\s*##\s+(.+?)\s*$/);
       if (heading) {
         excludeCurrentSection = excludedSections.has(heading[1]);
         return !excludeCurrentSection;
@@ -151,16 +153,31 @@ function sanitizeAdviceReport(report: string) {
     .trim();
 }
 
-function buildTrendWindow(input: {
+function buildFoodComparison(input: {
   appDate: string;
-  contentScope: "food" | "workout" | "both";
   foodEntries: FoodEntry[];
   weightLogs: WeightLog[];
-  workoutSessions: WorkoutSession[];
-  workoutExercises: WorkoutExercise[];
-  workoutSets: WorkoutSet[];
-}, days: number) {
-  const dates = new Set(dateRange(addDays(input.appDate, -(days - 1)), input.appDate));
+}) {
+  const recent = summarizeFoodWindow(input, addDays(input.appDate, -6), input.appDate);
+  const previous = summarizeFoodWindow(input, addDays(input.appDate, -13), addDays(input.appDate, -7));
+  const baseline = summarizeFoodWindow(input, addDays(input.appDate, -27), input.appDate);
+  return [
+    "### 食事比較",
+    formatFoodWindow("直近7日", recent),
+    formatFoodWindow("直前7日（直近7日と重複なし）", previous),
+    formatFoodWindow("直近28日の参考平均（直近7日を含むため独立した増減比較には使わない）", baseline),
+  ];
+}
+
+function summarizeFoodWindow(
+  input: {
+    foodEntries: FoodEntry[];
+    weightLogs: WeightLog[];
+  },
+  start: string,
+  end: string,
+) {
+  const dates = new Set(dateRange(start, end));
   const foods = input.foodEntries.filter((entry) => dates.has(entry.app_date));
   const weights = input.weightLogs.filter((entry) => dates.has(entry.app_date));
   const foodDays = new Set(foods.map((entry) => entry.app_date)).size;
@@ -173,12 +190,33 @@ function buildTrendWindow(input: {
   const firstWeight = [...weights].sort((a, b) => a.app_date.localeCompare(b.app_date))[0]?.weight_kg;
   const lastWeight = [...weights].sort((a, b) => b.app_date.localeCompare(a.app_date))[0]?.weight_kg;
   const divisor = Math.max(foodDays, 1);
-  return [
-    `### 直近${days}日`,
-    `- 食事記録日: ${foodDays}/${days}日`,
-    `- 記録日の平均: ${Math.round(totals.calories / divisor)} kcal / P ${round1(totals.protein / divisor)}g / F ${round1(totals.fat / divisor)}g / C ${round1(totals.carbs / divisor)}g`,
-    `- 体重記録: ${weights.length}件${firstWeight !== undefined && lastWeight !== undefined ? ` / 期間変化 ${signed(round1(lastWeight - firstWeight))}kg` : ""}`,
-  ].join("\n");
+  return {
+    start,
+    end,
+    totalDays: dates.size,
+    foodDays,
+    average: {
+      calories: Math.round(totals.calories / divisor),
+      protein: round1(totals.protein / divisor),
+      fat: round1(totals.fat / divisor),
+      carbs: round1(totals.carbs / divisor),
+    },
+    weightCount: weights.length,
+    weightChange: firstWeight !== undefined && lastWeight !== undefined ? round1(lastWeight - firstWeight) : undefined,
+  };
+}
+
+function formatFoodWindow(
+  label: string,
+  summary: ReturnType<typeof summarizeFoodWindow>,
+) {
+  const nutrition = summary.foodDays
+    ? `${summary.average.calories}kcal / P${summary.average.protein}g F${summary.average.fat}g C${summary.average.carbs}g`
+    : "算出不可";
+  const weight = summary.weightCount
+    ? `${summary.weightCount}件${summary.weightChange !== undefined ? ` / 期間変化 ${signed(summary.weightChange)}kg` : ""}`
+    : "記録なし";
+  return `- ${label} (${summary.start}〜${summary.end}): 食事記録 ${summary.foodDays}/${summary.totalDays}日 / 記録日の平均 ${nutrition} / 体重 ${weight}`;
 }
 
 function buildWorkoutComparison(input: {
@@ -326,6 +364,7 @@ export async function requestAiAdvice(input: {
   requestId: string;
   threadId: string;
   turnIndex: number;
+  topic: AiAdviceTopic;
   periodStart: string;
   periodEnd: string;
   contentScope: "food" | "workout" | "both";
@@ -339,6 +378,7 @@ export async function requestAiAdvice(input: {
       request_id: input.requestId,
       thread_id: input.threadId,
       turn_index: input.turnIndex,
+      topic: input.topic,
       period_start: input.periodStart,
       period_end: input.periodEnd,
       content_scope: input.contentScope,

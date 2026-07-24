@@ -17,6 +17,7 @@ const context = buildAnonymousAdviceContext({
 ## 食事ログ
 - 鮭定食`,
   appDate: "2026-07-24",
+  topic: "food",
   contentScope: "food",
   topicLabel: "食事内容について",
   foodEntries: [{
@@ -42,7 +43,10 @@ const context = buildAnonymousAdviceContext({
 });
 assert.doesNotMatch(context, /Alex|private@example\.com/);
 assert.match(context, /鮭定食/);
-assert.match(context, /直近7日/);
+assert.match(context, /食事比較/);
+assert.match(context, /直前7日（直近7日と重複なし）/);
+assert.match(context, /直近28日の参考平均/);
+assert.doesNotMatch(context, /直近90日/);
 assert.ok(context.length <= 24_000);
 
 const workoutContext = buildAnonymousAdviceContext({
@@ -54,9 +58,10 @@ const workoutContext = buildAnonymousAdviceContext({
 ## ワークアウト
 - ベンチプレス 60kg 10回 3セット
 
-## 相談したいこと
+  ## 相談したいこと
 ワークアウト内容を評価してください。`,
   appDate: "2026-07-24",
+  topic: "workout",
   contentScope: "workout",
   topicLabel: "ワークアウト内容について",
   foodEntries: [{
@@ -158,6 +163,47 @@ assert.match(workoutContext, /直近28日の週平均/);
 assert.match(workoutContext, /ベンチプレス: 2026-07-20 1セット \/ best 60kg×10 → 2026-07-24 1セット \/ best 62.5kg×8/);
 assert.doesNotMatch(workoutContext, /種目ごとの重量を均一/);
 
+const remainingContext = buildAnonymousAdviceContext({
+  fullReport: `# レポート
+
+## 現在のゴール
+- 目標 kcal: 2200
+- 目標 P/F/C: 160g / 60g / 240g
+
+## 当日集計
+- 当日 kcal: 1800
+- 採用値ベース残量: 400kcal
+
+## 食事ログ
+- おにぎり`,
+  appDate: "2026-07-24",
+  topic: "remaining",
+  contentScope: "food",
+  topicLabel: "残りで何を食べられるか",
+  foodEntries: [],
+  weightLogs: [],
+  workoutSessions: [],
+  workoutExercises: [],
+  workoutSets: [],
+});
+assert.match(remainingContext, /採用値ベース残量: 400kcal/);
+assert.doesNotMatch(remainingContext, /食事比較|ワークアウト比較/);
+
+const goalContext = buildAnonymousAdviceContext({
+  fullReport: "# レポート\n\n## 現在のゴール\n- 目標体重: 70kg",
+  appDate: "2026-07-24",
+  topic: "goal",
+  contentScope: "both",
+  topicLabel: "ゴール設定について",
+  foodEntries: [],
+  weightLogs: [],
+  workoutSessions: [],
+  workoutExercises: [],
+  workoutSets: [],
+});
+assert.match(goalContext, /食事比較/);
+assert.match(goalContext, /ワークアウト比較/);
+
 const parsed = parseExternalAiHandoff(`回答本文
 \`\`\`phase_log_handoff_v1
 {"type":"phase_log_handoff_v1","headline":"継続","summary":"食事記録を続ける","observations":[],"evidence":[],"actions":["夕食を記録"],"cautions":[],"memory_updates":[{"category":"focus","text":"夕食記録を優先"}]}
@@ -184,11 +230,17 @@ assert.ok(memory.items.some((item) => item.id === "manual"));
 assert.ok(memory.items.some((item) => item.text === "夕食記録を優先"));
 
 assert.deepEqual(
+  Object.fromEntries(Object.entries(aiAdviceTopicPresets).map(([topic, preset]) => [topic, {
+    mode: preset.mode,
+    scope: preset.contentScope,
+  }])),
   {
-    mode: aiAdviceTopicPresets.remaining.mode,
-    scope: aiAdviceTopicPresets.remaining.contentScope,
+    food: { mode: "week", scope: "food" },
+    remaining: { mode: "day", scope: "food" },
+    workout: { mode: "week", scope: "workout" },
+    goal: { mode: "month", scope: "both" },
+    custom: { mode: "week", scope: "both" },
   },
-  { mode: "day", scope: "food" },
 );
 assert.match(buildAiAdviceQuestion("remaining", "コンビニで買いたい"), /残りカロリーとPFC/);
 assert.match(buildAiAdviceQuestion("remaining", "コンビニで買いたい"), /補足: コンビニで買いたい/);
