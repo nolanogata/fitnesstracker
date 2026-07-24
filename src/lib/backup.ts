@@ -18,6 +18,8 @@ export async function exportBackup(): Promise<BackupPayload> {
     workout_exercises: await db.workout_exercises.toArray(),
     workout_sets: await db.workout_sets.toArray(),
     ai_reports: await db.ai_reports.toArray(),
+    ai_consultations: await db.ai_consultations.toArray(),
+    ai_advice_memory: await db.ai_advice_memory.toArray(),
   };
 }
 
@@ -38,6 +40,8 @@ export async function importBackup(payload: BackupPayload) {
       db.workout_exercises,
       db.workout_sets,
       db.ai_reports,
+      db.ai_consultations,
+      db.ai_advice_memory,
     ],
     async () => {
       await Promise.all([
@@ -53,6 +57,8 @@ export async function importBackup(payload: BackupPayload) {
         db.workout_exercises.clear(),
         db.workout_sets.clear(),
         db.ai_reports.clear(),
+        db.ai_consultations.clear(),
+        db.ai_advice_memory.clear(),
       ]);
       await Promise.all([
         db.profile.bulkPut(payload.profile ?? []),
@@ -67,13 +73,15 @@ export async function importBackup(payload: BackupPayload) {
         db.workout_exercises.bulkPut(payload.workout_exercises ?? []),
         db.workout_sets.bulkPut(payload.workout_sets ?? []),
         db.ai_reports.bulkPut(payload.ai_reports ?? []),
+        db.ai_consultations.bulkPut(payload.ai_consultations ?? []),
+        db.ai_advice_memory.bulkPut(payload.ai_advice_memory ?? []),
       ]);
     },
   );
 }
 
 function validateBackupPayload(payload: BackupPayload) {
-  if (!payload || payload.schema_version !== SCHEMA_VERSION) {
+  if (!payload || ![1, SCHEMA_VERSION].includes(payload.schema_version)) {
     throw new Error(`対応していないバックアップ形式です: schema_version ${payload?.schema_version ?? "unknown"}`);
   }
 
@@ -90,10 +98,12 @@ function validateBackupPayload(payload: BackupPayload) {
     "workout_exercises",
     "workout_sets",
     "ai_reports",
+    "ai_consultations",
+    "ai_advice_memory",
   ] as const;
 
   tables.forEach((table) => {
-    const rows = payload[table];
+    const rows = payload[table] ?? [];
     if (!Array.isArray(rows)) {
       throw new Error(`バックアップ内の ${table} が壊れています`);
     }

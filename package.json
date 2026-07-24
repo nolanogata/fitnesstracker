@@ -16,11 +16,12 @@
     "test:baskin-robbins": "node --experimental-strip-types scripts/test-baskin-robbins.ts",
     "test:sukiya": "node --experimental-strip-types scripts/test-sukiya-official.ts",
     "test:gemini": "node --experimental-strip-types scripts/test-gemini-generate-content.ts && node --experimental-strip-types scripts/test-gemini-photo-handler.ts",
+    "test:advice": "esbuild scripts/test-ai-advice.ts --bundle --platform=node --format=esm --outfile=/tmp/phase-log-ai-advice-test.mjs && node /tmp/phase-log-ai-advice-test.mjs && node --experimental-strip-types scripts/test-ai-advice-handler.ts",
     "test:cloud-safety": "node --experimental-strip-types scripts/test-cloud-safety.ts",
     "test:food-catalog": "esbuild scripts/test-food-catalog.ts --bundle --platform=node --format=esm --outfile=/tmp/phase-log-food-catalog-test.mjs && node /tmp/phase-log-food-catalog-test.mjs",
     "dev": "vite --host 0.0.0.0",
     "typecheck:functions": "tsc -p tsconfig.functions.json",
-    "build": "npm run audit:food-seeds && npm run test:goal && npm run test:onboarding && npm run test:report && npm run test:history && npm run test:chain-combo && npm run test:chain-browse && npm run test:chain-semantics && npm run test:chain-catalog && npm run test:baskin-robbins && npm run test:sukiya && npm run test:gemini && npm run test:cloud-safety && npm run test:food-catalog && tsc --noEmit && npm run typecheck:functions && vite build",
+    "build": "npm run audit:food-seeds && npm run test:goal && npm run test:onboarding && npm run test:report && npm run test:history && npm run test:chain-combo && npm run test:chain-browse && npm run test:chain-semantics && npm run test:chain-catalog && npm run test:baskin-robbins && npm run test:sukiya && npm run test:gemini && npm run test:advice && npm run test:cloud-safety && npm run test:food-catalog && tsc --noEmit && npm run typecheck:functions && vite build",
     "preview": "vite preview --host 0.0.0.0"
   },
   "dependencies": {

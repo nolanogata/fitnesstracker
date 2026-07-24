@@ -1,5 +1,7 @@
 import Dexie, { type Table } from "dexie";
 import type {
+  AiAdviceMemory,
+  AiConsultation,
   AiReport,
   ExercisePreset,
   FoodEntry,
@@ -14,7 +16,7 @@ import type {
   WorkoutTemplate,
 } from "./types";
 
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 
 class PhaseLogDb extends Dexie {
   settings!: Table<Settings, string>;
@@ -29,6 +31,8 @@ class PhaseLogDb extends Dexie {
   workout_exercises!: Table<WorkoutExercise, string>;
   workout_sets!: Table<WorkoutSet, string>;
   ai_reports!: Table<AiReport, string>;
+  ai_consultations!: Table<AiConsultation, string>;
+  ai_advice_memory!: Table<AiAdviceMemory, string>;
 
   constructor() {
     super("phase_log_local");
@@ -45,6 +49,8 @@ class PhaseLogDb extends Dexie {
       workout_exercises: "id, session_id, exercise_id, order",
       workout_sets: "id, workout_exercise_id, set_order",
       ai_reports: "id, period_start, period_end",
+      ai_consultations: "id, thread_id, created_at",
+      ai_advice_memory: "id",
     });
   }
 }

@@ -1,6 +1,7 @@
 # 100% トラッカー
 
-Mobile-first local-only PWA for food, workout, body weight, goal, and AI-ready report logging.
+Mobile-first local-first PWA for food, workout, body weight, goals, AI photo
+analysis, and privacy-minimized in-app AI advice.
 
 ## Local Development
 

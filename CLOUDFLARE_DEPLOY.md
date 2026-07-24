@@ -19,7 +19,7 @@ available. A GitHub Pages deployment continues to work in local-only mode.
    `phase-log-catalog-evidence-preview` R2 buckets.
 6. Put each D1 database ID in the matching production or preview binding in
    `wrangler.toml`. R2 bindings use bucket names rather than IDs.
-7. Apply `migrations/0001_cloud_sync.sql` to both D1 databases.
+7. Apply all files under `migrations/` to both D1 databases.
 
 Both R2 buckets must remain private. Do not add a public development URL or a
 public custom domain to either bucket. Keep the Workers usage model on Free
@@ -62,7 +62,20 @@ Studio, then set:
 The global app limit should be no more than 80% of the displayed Google RPD
 quota. The app never moves to a paid model automatically.
 
-## 4. R2 lifecycle
+## 4. Configure Workers AI advice
+
+The `AI` binding in `wrangler.toml` runs the in-app text advice feature on
+Cloudflare Workers AI. It does not use the Gemini API key or Gemini quota.
+
+- Production: 3 advice calls per user and 30 total per UTC day.
+- Preview: 1 advice call per user and 5 total per UTC day.
+- Model: `@cf/qwen/qwen3-30b-a3b-fp8`.
+
+Keep the account on Workers Free. When the Workers AI free allocation or the
+app limit is reached, the API fails closed and the UI offers the external-AI
+report flow. Do not configure automatic paid-provider failover.
+
+## 5. R2 lifecycle
 
 On both evidence buckets, create an enabled Object Lifecycle Rule for prefix
 `catalog-evidence/` that expires objects after 180 days.
@@ -71,10 +84,11 @@ The D1 approval record and SHA-256 evidence fingerprint remain after object
 deletion. Meal photos and receipt photos used for Gemini analysis are never
 written to R2.
 
-## 5. Migrate existing data
+## 6. Migrate existing data
 
 1. Keep GitHub Pages available during validation.
-2. Export one schema-v1 JSON backup from the old origin.
+2. Export one JSON backup from the old origin. Schema v1 and v2 backups are
+   accepted.
 3. Sign in to the Cloudflare Worker deployment.
 4. Import the JSON under Settings > Export > Backup JSON.
 5. Confirm that the screen reports cloud migration and run “Sync now”.
@@ -83,7 +97,7 @@ written to R2.
 Browser origin isolation prevents a new Cloudflare URL from directly reading
 the old GitHub Pages IndexedDB, so the one-time JSON transfer is required.
 
-## 6. Local development
+## 7. Local development
 
 Copy `.dev.vars.example` to `.dev.vars`, keep it untracked, and run:
 

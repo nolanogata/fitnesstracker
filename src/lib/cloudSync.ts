@@ -47,6 +47,8 @@ const entityTypes: SyncEntityType[] = [
   "workout_exercises",
   "workout_sets",
   "ai_reports",
+  "ai_consultations",
+  "ai_advice_memory",
 ];
 
 let activeSync: Promise<CloudSyncStatus> | undefined;

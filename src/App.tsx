@@ -133,6 +133,10 @@ import type {
   ActivityLevel,
   ActivityProfile,
   ActivityProfileDataSource,
+  AiAdviceMemory,
+  AiAdviceMemoryCategory,
+  AiAdviceResponse,
+  AiConsultation,
   AiReport,
   AiReportContentScope,
   AiReportDeliveryMode,
@@ -181,6 +185,17 @@ import { cloudSyncLastAt, registerCloudMigration, syncCloudNow, type CloudSyncSt
 import { analyzeWithGemini, geminiConsentVersion, prepareAiImage, type GeminiPhotoError } from "./lib/geminiPhoto";
 import { generateMarkdownReport } from "./lib/report";
 import { getAiReportDeliveryContent, latestCopiedAiReport } from "./lib/aiReportDelivery";
+import {
+  appendExternalAiHandoffInstruction,
+  applyAdviceMemoryUpdates,
+  buildAnonymousAdviceContext,
+  fetchAiAdviceUsage,
+  parseExternalAiHandoff,
+  requestAiAdvice,
+  workersAiAdviceConsentVersion,
+  type AiAdviceError,
+  type AiAdviceUsage,
+} from "./lib/aiAdvice";
 import { getWeeklyWorkoutStatus, type WeeklyWorkoutStatus } from "./lib/workoutStatus";
 import { getCalorieOverTone, getDailyNutritionEstimate, getDisplayedMacroProgress } from "./lib/nutritionEstimate";
 import { getHeroExceptionDisplay } from "./lib/homeHero";
@@ -430,6 +445,7 @@ type CalendarCell = {
 };
 type ReportMode = HistoryGrouping;
 type AiReportWizardStep = "period" | "delivery" | "content" | "activity" | "question" | "result";
+type AiConsultationView = "menu" | "app" | "external" | "history" | "memory";
 type ActivityProfileDraft = {
   activity_level: ActivityLevel;
   average_steps: number | "";
@@ -1337,6 +1353,16 @@ const achievementProgressSpecs: Record<string, AchievementProgressSpec> = {
   streak_365: { metric: "streak", target: 365, unit: "日" },
 };
 const appUpdates: AppUpdate[] = [
+  {
+    id: "2026-07-24-workers-ai-advice",
+    title: "アプリ内AI相談と引継ぎメモを追加",
+    date: "2026-07-24",
+    items: [
+      "Cloudflare Workers AIから、食事・体重傾向・運動記録に基づく短いアドバイスを受け取れるようにしました。",
+      "相談の要点だけを引継ぎメモへ保存し、新しい相談でも以前の取り組みを短い文脈で参照できるようにしました。",
+      "従来の自分のAI用レポートを残し、無料枠や接続の問題がある場合もワンタップで切り替えられます。",
+    ],
+  },
   {
     id: "2026-07-24-account-pause-display-settings",
     title: "アカウントと表示設定を調整",
@@ -9003,6 +9029,34 @@ function SettingsTab(props: {
   const [generatedReportMode, setGeneratedReportMode] = useState<AiReportDeliveryMode>();
   const [reportCoverage, setReportCoverage] = useState<ReportCoverage>(() => props.appDate === todayAppDate(props.settings?.day_boundary_hour ?? 3) ? "partial" : "completed");
   const [reportActivity, setReportActivity] = useState<DailyActivityContext>(() => ({ date: props.appDate, relative_activity_level: "unknown", data_source: "unknown" }));
+  const [aiConsultationView, setAiConsultationView] = useState<AiConsultationView>("menu");
+  const [aiConsultations, setAiConsultations] = useState<AiConsultation[]>([]);
+  const [aiAdviceMemory, setAiAdviceMemory] = useState<AiAdviceMemory>();
+  const [aiAdviceUsage, setAiAdviceUsage] = useState<AiAdviceUsage>();
+  const [aiAdviceResponse, setAiAdviceResponse] = useState<AiAdviceResponse>();
+  const [aiAdviceThreadId, setAiAdviceThreadId] = useState<string>();
+  const [aiAdviceTurnIndex, setAiAdviceTurnIndex] = useState(0);
+  const [aiAdviceLoading, setAiAdviceLoading] = useState(false);
+  const [aiAdviceError, setAiAdviceError] = useState("");
+  const [aiFollowUp, setAiFollowUp] = useState("");
+  const [externalAiPaste, setExternalAiPaste] = useState("");
+  const [memoryDraft, setMemoryDraft] = useState("");
+  const [memoryDraftCategory, setMemoryDraftCategory] = useState<AiAdviceMemoryCategory>("user_note");
+
+  const loadAiConsultationData = async () => {
+    const [consultations, memory, usage] = await Promise.all([
+      db.ai_consultations.orderBy("created_at").reverse().toArray(),
+      db.ai_advice_memory.get("default"),
+      fetchAiAdviceUsage().catch(() => undefined),
+    ]);
+    setAiConsultations(consultations);
+    setAiAdviceMemory(memory);
+    setAiAdviceUsage(usage);
+  };
+
+  useEffect(() => {
+    if (activeSettingsSection === "ai") void loadAiConsultationData();
+  }, [activeSettingsSection]);
 
   useEffect(() => {
     let active = true;
@@ -10009,12 +10063,14 @@ function SettingsTab(props: {
     ];
     return { start, end, range, scopedCheatDayDates, scopedSpecialModeDays };
   };
-  const generateAiReport = async (foodRecordContexts = Object.values(props.settings?.food_record_contexts ?? {})) => {
-    const generatedAt = nowIso();
-    const reportId = makeId("report");
+  const buildFullAiReport = (
+    foodRecordContexts = Object.values(props.settings?.food_record_contexts ?? {}),
+    generatedAt = nowIso(),
+    reportQuestion = question,
+  ) => {
     const { start, end, range, scopedCheatDayDates, scopedSpecialModeDays } = getAiReportScope();
     const scopedFoodRecordContexts = foodRecordContexts.filter((context) => range.includes(context.date));
-    const fullContent = generateMarkdownReport({
+    return generateMarkdownReport({
       profile: props.profile,
       goal: props.activeGoal,
       foodEntries: props.allData.foodEntries.filter((entry) => range.includes(entry.app_date)),
@@ -10035,16 +10091,23 @@ function SettingsTab(props: {
       dailyActivity: { ...reportActivity, date: end },
       reportCoverage: reportMode === "day" ? reportCoverage : undefined,
       foodRecordContexts: scopedFoodRecordContexts,
-      question,
+      question: reportQuestion,
       contentScope: reportContentScope,
     });
+  };
+  const generateAiReport = async (foodRecordContexts = Object.values(props.settings?.food_record_contexts ?? {})) => {
+    const generatedAt = nowIso();
+    const reportId = makeId("report");
+    const { start, end, range } = getAiReportScope();
+    const scopedFoodRecordContexts = foodRecordContexts.filter((context) => range.includes(context.date));
+    const fullContent = buildFullAiReport(foodRecordContexts, generatedAt);
     const effectiveDeliveryMode: AiReportDeliveryMode = reportDeliveryMode === "follow_up" && latestCopiedReport ? "follow_up" : "full";
-    const content = getAiReportDeliveryContent({
+    const content = appendExternalAiHandoffInstruction(getAiReportDeliveryContent({
       mode: effectiveDeliveryMode,
       fullReport: fullContent,
       previousReport: latestCopiedReport,
       generatedAt,
-    });
+    }));
     setReport(content);
     setCopiedReport(false);
     setGeneratedReportId(reportId);
@@ -10123,6 +10186,368 @@ function SettingsTab(props: {
     }
     setCopiedReport(true);
   };
+  const adviceConsentGranted = props.settings?.workers_ai_advice_consent_version === workersAiAdviceConsentVersion
+    && !props.settings.workers_ai_advice_consent_revoked_at;
+  const grantAdviceConsent = async () => {
+    const timestamp = nowIso();
+    await saveSettingsPatch({
+      workers_ai_advice_consent_version: workersAiAdviceConsentVersion,
+      workers_ai_advice_consent_at: timestamp,
+      workers_ai_advice_consent_revoked_at: undefined,
+    });
+    props.showToast("アプリ内AI相談を有効にしました");
+  };
+  const submitAiAdvice = async (nextQuestion = question) => {
+    if (!adviceConsentGranted) {
+      setAiAdviceError("最初にデータ送信について確認してください。");
+      return;
+    }
+    const trimmedQuestion = nextQuestion.trim();
+    if (!trimmedQuestion) {
+      setAiAdviceError("相談したいことを入力してください。");
+      return;
+    }
+    const threadId = aiAdviceThreadId ?? makeId("advice_thread");
+    const turnIndex = aiAdviceThreadId ? aiAdviceTurnIndex : 0;
+    if (turnIndex > 2) {
+      setAiAdviceError("このテーマの追加質問は2回までです。新しい相談を始めてください。");
+      return;
+    }
+    const timestamp = nowIso();
+    const { start, end } = getAiReportScope();
+    const previousConsultation = aiConsultations
+      .filter((entry) => entry.thread_id === threadId)
+      .sort((a, b) => b.turn_index - a.turn_index)[0];
+    const fullContent = buildFullAiReport(undefined, timestamp, trimmedQuestion);
+    const anonymousContext = buildAnonymousAdviceContext({
+      fullReport: fullContent,
+      appDate: props.appDate,
+      foodEntries: props.allData.foodEntries,
+      weightLogs: props.allData.weightLogs,
+      workoutSessions: props.allData.workoutSessions,
+      workoutExercises: props.allData.workoutExercises,
+      workoutSets: props.allData.workoutSets,
+      memory: aiAdviceMemory,
+      previousConsultation,
+    });
+    setAiAdviceLoading(true);
+    setAiAdviceError("");
+    try {
+      const response = await requestAiAdvice({
+        requestId: makeId("advice_request"),
+        threadId,
+        turnIndex,
+        periodStart: start,
+        periodEnd: end,
+        contentScope: reportContentScope,
+        question: trimmedQuestion,
+        context: anonymousContext,
+      });
+      const consultation: AiConsultation = {
+        id: makeId("consultation"),
+        thread_id: threadId,
+        turn_index: turnIndex,
+        source: "workers_ai",
+        period_start: start,
+        period_end: end,
+        content_scope: reportContentScope,
+        question: trimmedQuestion,
+        response: response.result,
+        model: response.model,
+        presentation_style: "neutral",
+        created_at: timestamp,
+        updated_at: timestamp,
+      };
+      const nextMemory = applyAdviceMemoryUpdates(aiAdviceMemory, response.result, timestamp);
+      await db.transaction("rw", [db.ai_consultations, db.ai_advice_memory], async () => {
+        await db.ai_consultations.put(consultation);
+        await db.ai_advice_memory.put(nextMemory);
+      });
+      setAiAdviceThreadId(threadId);
+      setAiAdviceTurnIndex(turnIndex + 1);
+      setAiAdviceResponse(response.result);
+      setAiAdviceMemory(nextMemory);
+      setAiFollowUp("");
+      await loadAiConsultationData();
+    } catch (error) {
+      const adviceError = error as AiAdviceError;
+      setAiAdviceError(adviceError.message);
+    } finally {
+      setAiAdviceLoading(false);
+    }
+  };
+  const startNewAiAdvice = () => {
+    setAiAdviceThreadId(undefined);
+    setAiAdviceTurnIndex(0);
+    setAiAdviceResponse(undefined);
+    setAiAdviceError("");
+    setAiFollowUp("");
+  };
+  const importExternalAiHandoff = async () => {
+    const parsed = parseExternalAiHandoff(externalAiPaste);
+    if (!parsed) {
+      setAiAdviceError("引継ぎブロックを読み取れませんでした。AI回答をコードブロックごと貼り付けてください。");
+      return;
+    }
+    const timestamp = nowIso();
+    const { start, end } = getAiReportScope();
+    const consultation: AiConsultation = {
+      id: makeId("consultation"),
+      thread_id: makeId("external_thread"),
+      turn_index: 0,
+      source: "external_ai",
+      period_start: start,
+      period_end: end,
+      content_scope: reportContentScope,
+      question,
+      response: parsed,
+      presentation_style: "neutral",
+      created_at: timestamp,
+      updated_at: timestamp,
+    };
+    const nextMemory = applyAdviceMemoryUpdates(aiAdviceMemory, parsed, timestamp);
+    await db.transaction("rw", [db.ai_consultations, db.ai_advice_memory], async () => {
+      await db.ai_consultations.put(consultation);
+      await db.ai_advice_memory.put(nextMemory);
+    });
+    setExternalAiPaste("");
+    setAiAdviceMemory(nextMemory);
+    setAiAdviceError("");
+    props.showToast("相談の要点を引き継ぎました");
+    await loadAiConsultationData();
+  };
+  const setMemoryItemActive = async (id: string, active: boolean) => {
+    if (!aiAdviceMemory) return;
+    const timestamp = nowIso();
+    const next = {
+      ...aiAdviceMemory,
+      items: aiAdviceMemory.items.map((item) => item.id === id ? { ...item, active, updated_at: timestamp } : item),
+      updated_at: timestamp,
+    };
+    await db.ai_advice_memory.put(next);
+    setAiAdviceMemory(next);
+  };
+  const addManualMemory = async () => {
+    const text = memoryDraft.trim().slice(0, 240);
+    if (!text) return;
+    const timestamp = nowIso();
+    const next: AiAdviceMemory = {
+      id: aiAdviceMemory?.id ?? "default",
+      items: [...(aiAdviceMemory?.items ?? []), {
+        id: makeId("memory"),
+        category: memoryDraftCategory,
+        text,
+        source: "user" as const,
+        active: true,
+        created_at: timestamp,
+        updated_at: timestamp,
+      }].slice(-40),
+      created_at: aiAdviceMemory?.created_at ?? timestamp,
+      updated_at: timestamp,
+    };
+    await db.ai_advice_memory.put(next);
+    setAiAdviceMemory(next);
+    setMemoryDraft("");
+  };
+  const activeMemoryItems = aiAdviceMemory?.items.filter((item) => item.active) ?? [];
+  const aiConsultationSection = (
+    <div className="space-y-4">
+      {aiConsultationView === "menu" && (
+        <>
+          <section className="compact-card divide-y divide-line overflow-hidden">
+            <SettingsMenuRow
+              title="アプリ内AIに相談"
+              description={`Cloudflare AIで回答 · 本日 ${aiAdviceUsage?.advice.used ?? 0}/${aiAdviceUsage?.advice.per_user_limit ?? 3}回`}
+              icon={<Sparkles size={18} />}
+              onClick={() => {
+                startNewAiAdvice();
+                setAiConsultationView("app");
+              }}
+            />
+            <SettingsMenuRow
+              title="自分のAIを使う"
+              description="従来のレポートを作成して、好きなAIへコピー"
+              icon={<Copy size={18} />}
+              onClick={() => {
+                setReportWizardStep("period");
+                setAiConsultationView("external");
+              }}
+            />
+          </section>
+          <section className="compact-card divide-y divide-line overflow-hidden">
+            <SettingsMenuRow
+              title="相談履歴"
+              description={`${aiConsultations.length}件 · 回答全文を次回へ送り直さず保存`}
+              icon={<FileText size={18} />}
+              onClick={() => setAiConsultationView("history")}
+            />
+            <SettingsMenuRow
+              title="引継ぎメモ"
+              description={`${activeMemoryItems.length}件 · 次回相談へ短く引き継ぐ情報`}
+              icon={<Save size={18} />}
+              onClick={() => setAiConsultationView("memory")}
+            />
+          </section>
+          <p className="px-2 text-xs leading-relaxed text-moss">写真判定はGemini、ここでの相談はCloudflare Workers AIを使用します。利用枠は別々です。</p>
+        </>
+      )}
+
+      {aiConsultationView === "app" && (
+        <section className="compact-card p-4">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-xs font-black text-moss">アプリ内AI</p>
+              <h2 className="mt-1 text-lg font-black">記録について相談</h2>
+            </div>
+            <span className="mini-chip">{aiAdviceUsage?.advice.used ?? 0}/{aiAdviceUsage?.advice.per_user_limit ?? 3}回</span>
+          </div>
+          {!adviceConsentGranted && (
+            <div className="mt-4 rounded-2xl border border-line p-4">
+              <p className="font-black">初回のみ確認</p>
+              <p className="mt-2 text-xs leading-relaxed text-moss">氏名・メール・ユーザーIDを除いた食事、体重傾向、運動集計、質問をCloudflare Workers AIへ送信します。Cloudflareは明示的な同意なしに入力・出力をモデル学習やサービス改善へ使用しない方針です。</p>
+              <button className="primary-button mt-4 w-full" onClick={() => void grantAdviceConsent()}><Check size={17} />同意して利用する</button>
+            </div>
+          )}
+          {adviceConsentGranted && !aiAdviceResponse && (
+            <div className="mt-4 space-y-4">
+              <div>
+                <p className="text-xs font-black text-moss">期間</p>
+                <div className="mt-2 grid grid-cols-3 gap-2">
+                  {(["day", "week", "month"] as ReportMode[]).map((mode) => (
+                    <button className={`mode-button min-h-10 text-xs ${reportMode === mode ? "mode-button-active" : ""}`} key={mode} onClick={() => setReportMode(mode)}>
+                      {mode === "day" ? "今日" : mode === "week" ? "7日" : "30日"}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <p className="text-xs font-black text-moss">相談に含める記録</p>
+                <div className="mt-2 grid grid-cols-3 gap-2">
+                  {([
+                    ["food", "食事"],
+                    ["workout", "運動"],
+                    ["both", "両方"],
+                  ] as Array<[AiReportContentScope, string]>).map(([scope, label]) => (
+                    <button className={`mode-button min-h-10 text-xs ${reportContentScope === scope ? "mode-button-active" : ""}`} key={scope} onClick={() => setReportContentScope(scope)}>{label}</button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <p className="text-xs font-black text-moss">普段と比べた活動量</p>
+                <div className="mt-2 grid grid-cols-3 gap-2">
+                  {([
+                    ["low", "少ない"],
+                    ["normal", "いつも通り"],
+                    ["high", "多い"],
+                  ] as Array<[RelativeActivityLevel, string]>).map(([level, label]) => (
+                    <button className={`mode-button min-h-10 text-xs ${reportActivity.relative_activity_level === level ? "mode-button-active" : ""}`} key={level} onClick={() => setReportActivity((current) => ({ ...current, relative_activity_level: level }))}>{label}</button>
+                  ))}
+                </div>
+              </div>
+              <label className="onboarding-field">
+                <span>相談したいこと</span>
+                <textarea className="min-h-32" value={question} onChange={(event) => setQuestion(event.target.value)} placeholder="例: 最近体重が停滞している原因と、今週試すことを教えて" />
+              </label>
+              <button className="primary-button w-full" disabled={aiAdviceLoading} onClick={() => void submitAiAdvice()}>
+                <Sparkles size={17} />{aiAdviceLoading ? "回答を作成中…" : "アプリ内AIに相談"}
+              </button>
+            </div>
+          )}
+          {aiAdviceResponse && (
+            <div className="mt-4 space-y-4">
+              <div className="rounded-2xl border border-line p-4">
+                <p className="text-xs font-black text-moss">AIアドバイス</p>
+                <h3 className="mt-1 text-lg font-black">{aiAdviceResponse.headline}</h3>
+                <p className="mt-3 text-sm leading-relaxed">{aiAdviceResponse.summary}</p>
+                {aiAdviceResponse.observations.length > 0 && <AdviceList title="記録から見えること" items={aiAdviceResponse.observations} />}
+                {aiAdviceResponse.evidence.length > 0 && (
+                  <div className="mt-4 grid gap-2">
+                    {aiAdviceResponse.evidence.map((item, index) => (
+                      <div className="rounded-xl bg-rice px-3 py-2 text-xs" key={`${item.label}-${index}`}>
+                        <strong>{item.label}</strong><span className="ml-2 text-moss">{item.value}{item.period ? ` · ${item.period}` : ""}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {aiAdviceResponse.actions.length > 0 && <AdviceList title="まず試すこと" items={aiAdviceResponse.actions} />}
+                {aiAdviceResponse.cautions.length > 0 && <AdviceList title="注意" items={aiAdviceResponse.cautions} />}
+              </div>
+              {aiAdviceTurnIndex <= 2 && (
+                <label className="onboarding-field">
+                  <span>追加で聞く（あと{3 - aiAdviceTurnIndex}回）</span>
+                  <textarea className="min-h-24" value={aiFollowUp} onChange={(event) => setAiFollowUp(event.target.value)} placeholder={aiAdviceResponse.follow_up_question || "この回答について追加で聞きたいこと"} />
+                </label>
+              )}
+              {aiAdviceTurnIndex <= 2 && <button className="primary-button w-full" disabled={aiAdviceLoading} onClick={() => void submitAiAdvice(aiFollowUp)}><Sparkles size={17} />追加で質問</button>}
+              <button className="secondary-button w-full" onClick={startNewAiAdvice}><Plus size={17} />新しい相談を始める</button>
+            </div>
+          )}
+          {aiAdviceError && (
+            <div className="mt-4 rounded-2xl border border-line p-3 text-sm">
+              <p className="font-bold">{aiAdviceError}</p>
+              <button className="secondary-button mt-3 w-full" onClick={() => {
+                setAiAdviceError("");
+                setReportWizardStep("period");
+                setAiConsultationView("external");
+              }}><Copy size={17} />自分のAIで相談する</button>
+            </div>
+          )}
+        </section>
+      )}
+
+      {aiConsultationView === "external" && (
+        <section className="compact-card p-4">
+          <h3 className="font-black">AI回答の要点を引き継ぐ</h3>
+          <p className="mt-2 text-xs leading-relaxed text-moss">回答末尾の `phase_log_handoff_v1` コードブロックを含めて貼り付けると、次回相談用の要点だけ保存します。</p>
+          <textarea className="mt-3 min-h-32 w-full font-mono text-xs" value={externalAiPaste} onChange={(event) => setExternalAiPaste(event.target.value)} placeholder="AIの回答を貼り付け" />
+          <button className="secondary-button mt-3 w-full" onClick={() => void importExternalAiHandoff()}><Save size={17} />引継ぎメモを取り込む</button>
+        </section>
+      )}
+
+      {aiConsultationView === "history" && (
+        <section className="compact-card p-4">
+          <h2 className="font-black">相談履歴</h2>
+          <div className="mt-4 space-y-3">
+            {aiConsultations.map((entry) => (
+              <article className="rounded-2xl border border-line p-3" key={entry.id}>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="mini-chip">{entry.source === "workers_ai" ? "アプリ内AI" : "自分のAI"}</span>
+                  <time className="text-xs text-moss">{new Date(entry.created_at).toLocaleString("ja-JP")}</time>
+                </div>
+                <p className="mt-3 text-xs font-bold text-moss">{entry.question || "相談内容なし"}</p>
+                <h3 className="mt-2 font-black">{entry.response.headline}</h3>
+                <p className="mt-2 text-sm leading-relaxed">{entry.response.summary}</p>
+              </article>
+            ))}
+            {aiConsultations.length === 0 && <EmptyLine text="相談履歴はまだありません" />}
+          </div>
+        </section>
+      )}
+
+      {aiConsultationView === "memory" && (
+        <section className="compact-card p-4">
+          <h2 className="font-black">引継ぎメモ</h2>
+          <p className="mt-2 text-xs leading-relaxed text-moss">有効な項目だけを次回相談へ送ります。いつでも無効化できます。</p>
+          <div className="mt-4 grid gap-2">
+            {(aiAdviceMemory?.items ?? []).map((item) => (
+              <button className={`mode-button min-h-14 justify-between px-3 text-left ${item.active ? "mode-button-active" : ""}`} key={item.id} onClick={() => void setMemoryItemActive(item.id, !item.active)}>
+                <span><strong className="block text-xs">{adviceMemoryCategoryLabel(item.category)}</strong><small className="mt-1 block leading-relaxed">{item.text}</small></span>
+                <span className="ml-2 shrink-0 text-xs">{item.active ? "使用中" : "停止中"}</span>
+              </button>
+            ))}
+          </div>
+          <div className="mt-5 border-t border-line pt-4">
+            <p className="text-sm font-black">自分でメモを追加</p>
+            <select className="mt-3 w-full" value={memoryDraftCategory} onChange={(event) => setMemoryDraftCategory(event.target.value as AiAdviceMemoryCategory)}>
+              {(["user_note", "constraint", "focus", "experiment", "pattern", "unresolved"] as AiAdviceMemoryCategory[]).map((category) => <option key={category} value={category}>{adviceMemoryCategoryLabel(category)}</option>)}
+            </select>
+            <textarea className="mt-2 min-h-24 w-full" value={memoryDraft} onChange={(event) => setMemoryDraft(event.target.value)} placeholder="例: 夜勤の日は夕食が遅くなりやすい" />
+            <button className="secondary-button mt-3 w-full" onClick={() => void addManualMemory()}><Plus size={17} />追加</button>
+          </div>
+        </section>
+      )}
+    </div>
+  );
   const aiReportSection = (
     <section className={`ai-report-section compact-card p-4 ${props.focus === "ai" ? "border-2 border-leaf" : ""}`}>
       <div className="flex items-center justify-between gap-3">
@@ -10242,7 +10667,7 @@ function SettingsTab(props: {
   );
   const sectionTitles: Record<SettingsSection, { title: string; subtitle: string }> = {
     profile: { title: "プロフィール", subtitle: "基本情報、ゴール、活動量をまとめて管理します。" },
-    ai: { title: "AI相談レポート", subtitle: "AIに渡す相談材料を生成します。" },
+    ai: { title: "AI相談", subtitle: "アプリ内AIまたは自分のAIで記録を振り返ります。" },
     activity: { title: "活動量プロフィール", subtitle: "普段の生活でどの程度動いているかを設定します。" },
     backup: { title: "エクスポート", subtitle: "バックアップ保存とログ出力を管理します。" },
     goal: { title: "ゴール設定", subtitle: "目標体重、PFC、運動目標を調整します。" },
@@ -10254,8 +10679,12 @@ function SettingsTab(props: {
   };
   const activeSectionTitle = activeSettingsSection ? sectionTitles[activeSettingsSection] : undefined;
   const goBackFromSettingsSection = () => {
-    if (activeSettingsSection === "ai" && reportWizardStep !== "period") {
+    if (activeSettingsSection === "ai" && aiConsultationView === "external" && reportWizardStep !== "period") {
       moveAiReportWizard(-1);
+      return;
+    }
+    if (activeSettingsSection === "ai" && aiConsultationView !== "menu") {
+      setAiConsultationView("menu");
       return;
     }
     if (activeSettingsSection === "activity" && isActivityProfileWizardOpen) {
@@ -10299,7 +10728,7 @@ function SettingsTab(props: {
         <>
           <section className="compact-card divide-y divide-line overflow-hidden">
             <SettingsMenuRow title="プロフィール" description={`${props.profile?.name || "ユーザー名 未設定"} / ${phaseLabels[goalDraft.phase]}`} icon={<CircleUserRound size={18} />} onClick={() => setActiveSettingsSection("profile")} />
-            <SettingsMenuRow title="AI相談レポート" description="期間と送信内容を選んでAI用レポートを作成" icon={<FileText size={18} />} onClick={() => { setReportWizardStep("period"); setActiveSettingsSection("ai"); }} />
+            <SettingsMenuRow title="AI相談" description="アプリ内AI / 自分のAI / 相談の引継ぎ" icon={<Sparkles size={18} />} onClick={() => { setAiConsultationView("menu"); setActiveSettingsSection("ai"); }} />
             <SettingsMenuRow title="エクスポート" description="バックアップ保存 / 食事・ワークアウトのログ出力" icon={<Archive size={18} />} onClick={() => setActiveSettingsSection("backup")} />
             <SettingsMenuRow title="表示・テーマ設定" description={`${props.resolvedTheme === "dark" ? "ダーク" : "ライト"} / Home表示 / ${themeAccentLabels[props.themeAccent]}`} icon={<Palette size={18} />} onClick={() => setActiveSettingsSection("theme")} />
           </section>
@@ -10719,7 +11148,8 @@ function SettingsTab(props: {
         </section>
       )}
 
-      {activeSettingsSection === "ai" && aiReportSection}
+      {activeSettingsSection === "ai" && aiConsultationView === "external" && aiReportSection}
+      {activeSettingsSection === "ai" && aiConsultationSection}
       {activeSettingsSection === "activity" && activityProfileSection}
 
       {activeSettingsSection === "backup" && !activeExportSection && (
@@ -14678,6 +15108,28 @@ function SettingsMenuRow({ title, description, icon, onClick }: {
       <ChevronRight className="shrink-0 text-muted" size={17} />
     </button>
   );
+}
+
+function AdviceList({ title, items }: { title: string; items: string[] }) {
+  return (
+    <div className="mt-4">
+      <p className="text-xs font-black text-moss">{title}</p>
+      <ul className="mt-2 space-y-2 text-sm leading-relaxed">
+        {items.map((item, index) => <li className="rounded-xl bg-rice px-3 py-2" key={`${title}-${index}`}>{item}</li>)}
+      </ul>
+    </div>
+  );
+}
+
+function adviceMemoryCategoryLabel(category: AiAdviceMemoryCategory) {
+  return ({
+    constraint: "制約・注意点",
+    focus: "現在の重点",
+    experiment: "試していること",
+    pattern: "分かった傾向",
+    unresolved: "未解決の相談",
+    user_note: "自分のメモ",
+  } satisfies Record<AiAdviceMemoryCategory, string>)[category];
 }
 
 type PictogramTone = "moss" | "leaf" | "clay" | "sun" | "sky" | "blush" | "ink";

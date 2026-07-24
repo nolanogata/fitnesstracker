@@ -206,6 +206,9 @@ export type Settings = {
   gemini_photo_consent_version?: string;
   gemini_photo_consent_at?: string;
   gemini_photo_consent_revoked_at?: string;
+  workers_ai_advice_consent_version?: string;
+  workers_ai_advice_consent_at?: string;
+  workers_ai_advice_consent_revoked_at?: string;
   created_at: string;
   updated_at: string;
 };
@@ -440,6 +443,68 @@ export type AiReport = {
 export type AiReportDeliveryMode = "full" | "follow_up";
 export type AiReportContentScope = "food" | "workout" | "both";
 
+export type AiAdviceSource = "workers_ai" | "external_ai";
+export type AiAdviceMemoryCategory =
+  | "constraint"
+  | "focus"
+  | "experiment"
+  | "pattern"
+  | "unresolved"
+  | "user_note";
+
+export type AiAdviceMemoryItem = {
+  id: string;
+  category: AiAdviceMemoryCategory;
+  text: string;
+  source: "ai" | "user";
+  active: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type AiAdviceMemory = {
+  id: string;
+  items: AiAdviceMemoryItem[];
+  created_at: string;
+  updated_at: string;
+};
+
+export type AiAdviceEvidence = {
+  label: string;
+  value: string;
+  period?: string;
+};
+
+export type AiAdviceResponse = {
+  headline: string;
+  summary: string;
+  observations: string[];
+  evidence: AiAdviceEvidence[];
+  actions: string[];
+  cautions: string[];
+  follow_up_question?: string;
+  memory_updates: Array<{
+    category: Exclude<AiAdviceMemoryCategory, "user_note">;
+    text: string;
+  }>;
+};
+
+export type AiConsultation = {
+  id: string;
+  thread_id: string;
+  turn_index: number;
+  source: AiAdviceSource;
+  period_start: string;
+  period_end: string;
+  content_scope: AiReportContentScope;
+  question: string;
+  response: AiAdviceResponse;
+  model?: string;
+  presentation_style: "neutral";
+  created_at: string;
+  updated_at: string;
+};
+
 export type BackupPayload = {
   schema_version: number;
   exported_at: string;
@@ -455,4 +520,6 @@ export type BackupPayload = {
   workout_exercises: WorkoutExercise[];
   workout_sets: WorkoutSet[];
   ai_reports: AiReport[];
+  ai_consultations: AiConsultation[];
+  ai_advice_memory: AiAdviceMemory[];
 };
