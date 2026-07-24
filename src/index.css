@@ -2502,8 +2502,49 @@ button {
   transform: scale(0.985);
 }
 
-.home-link-actions {
-  margin-block: -0.1rem 0;
+.home-quick-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.55rem;
+}
+
+.home-quick-action {
+  display: inline-flex;
+  min-width: 0;
+  min-height: 2.8rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.36rem;
+  border: 1px solid var(--glass-border);
+  border-radius: 18px;
+  padding: 0.55rem 0.48rem;
+  color: var(--text-secondary);
+  background: var(--glass-bg);
+  box-shadow: 0 10px 24px rgba(44, 56, 48, 0.08), var(--glass-highlight);
+  font-size: 0.68rem;
+  font-weight: 850;
+  line-height: 1.15;
+  white-space: nowrap;
+  backdrop-filter: blur(22px) saturate(140%);
+  -webkit-backdrop-filter: blur(22px) saturate(140%);
+  transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+}
+
+.home-quick-action svg {
+  flex: 0 0 auto;
+}
+
+.home-quick-action:active {
+  transform: scale(0.98);
+}
+
+.home-quick-action-ai {
+  border-color: color-mix(in srgb, var(--accent-primary) 44%, var(--glass-border));
+  color: var(--accent-readable);
+  background:
+    radial-gradient(circle at 18% 10%, rgba(255, 255, 255, 0.62), transparent 34%),
+    linear-gradient(135deg, var(--accent-soft), color-mix(in srgb, var(--accent-secondary) 18%, var(--glass-bg)));
+  box-shadow: 0 12px 28px var(--accent-faint), var(--glass-highlight);
 }
 
 .home-checkin-card,
@@ -2513,6 +2554,72 @@ button {
 
 .home-sheet {
   border-radius: 28px;
+}
+
+@media (min-height: 840px) and (max-width: 500px) {
+  .app-shell-home > section {
+    padding-top: 0.5rem;
+  }
+
+  .home-pull-shell .home-dashboard {
+    gap: 0.72rem;
+  }
+
+  .home-hero-card {
+    padding: 1rem 1.1rem 0.95rem;
+  }
+
+  .home-hero-main {
+    margin-top: 0.8rem;
+  }
+
+  .home-hero-main > p:first-child {
+    font-size: 3.5rem;
+  }
+
+  .home-hero-progress {
+    margin-top: 0.85rem;
+  }
+
+  .home-hero-macros {
+    margin-top: 0.75rem;
+  }
+
+  .home-primary-action,
+  .home-secondary-action {
+    min-height: 3rem;
+    padding-block: 0.55rem;
+  }
+
+  .home-quick-action {
+    min-height: 2.65rem;
+    padding-block: 0.45rem;
+  }
+
+  .home-checkin-card,
+  .home-mini-card {
+    padding: 0.8rem;
+  }
+
+  .home-checkin-edit {
+    top: 0.75rem;
+    right: 0.75rem;
+    width: 1.8rem;
+    height: 1.8rem;
+  }
+
+  .home-checkin-weight {
+    margin-top: 0.7rem;
+    font-size: 2.15rem;
+  }
+
+  .home-checkin-body-fat {
+    font-size: 1.85rem;
+  }
+
+  .home-mini-content {
+    margin-top: 0.7rem;
+  }
 }
 
 .app-bottom-nav {
@@ -2627,6 +2734,7 @@ button {
   .home-sheet,
   .home-secondary-action,
   .home-primary-action,
+  .home-quick-action,
   .compact-card,
   .calorie-card,
   .icon-button,
@@ -5530,11 +5638,21 @@ main[data-accent]:not([data-accent="classic"]) .ai-report-section .text-moss {
 .theme-dark .choice-button,
 .theme-dark .mode-button,
 .theme-dark .tap-tile,
-.theme-dark .home-secondary-action {
+.theme-dark .home-secondary-action,
+.theme-dark .home-quick-action {
   border-color: var(--glass-border);
   background: var(--glass-bg-soft);
   color: var(--text-secondary);
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.2), var(--glass-highlight);
+}
+
+.theme-dark .home-quick-action-ai {
+  border-color: color-mix(in srgb, var(--accent-primary) 48%, var(--glass-border));
+  color: var(--accent-readable);
+  background:
+    radial-gradient(circle at 18% 10%, rgba(255, 255, 255, 0.12), transparent 34%),
+    linear-gradient(135deg, var(--accent-soft), color-mix(in srgb, var(--accent-secondary) 16%, var(--glass-bg-soft)));
+  box-shadow: 0 12px 28px color-mix(in srgb, var(--accent-primary) 16%, transparent), var(--glass-highlight);
 }
 
 .theme-dark .home-header-announcements,
@@ -6362,6 +6480,7 @@ main.theme-dark .chain-combo-item-title,
   .home-glass-card,
   .home-notice,
   .home-secondary-action,
+  .home-quick-action,
   .home-checkin-edit,
   .compact-card,
   .calorie-card,
@@ -6463,6 +6582,15 @@ main.theme-dark .chain-combo-item-title,
   -webkit-backdrop-filter: blur(22px) saturate(122%);
 }
 
+.app-shell[data-character]:not([data-character="none"]) .home-quick-action-ai {
+  border-color: color-mix(in srgb, var(--character-accent-bright) 46%, rgba(255, 255, 255, 0.14));
+  color: #fff;
+  background:
+    radial-gradient(circle at 18% 10%, rgba(255, 255, 255, 0.16), transparent 34%),
+    linear-gradient(135deg, color-mix(in srgb, var(--character-accent) 34%, transparent), rgba(8, 11, 13, 0.34));
+  box-shadow: 0 12px 28px color-mix(in srgb, var(--character-accent) 18%, rgba(0, 0, 0, 0.2)), var(--glass-highlight);
+}
+
 .app-shell[data-character]:not([data-character="none"]) .home-reminder-notice {
   border-color: color-mix(in srgb, var(--character-accent-bright) 38%, transparent);
   background:
@@ -6481,9 +6609,12 @@ main.theme-dark .chain-combo-item-title,
     0 0 18px color-mix(in srgb, var(--character-accent) 12%, transparent);
 }
 
-.app-shell[data-character]:not([data-character="none"]) .home-link-actions,
-.app-shell[data-character]:not([data-character="none"]) .home-link-actions button {
+.app-shell[data-character]:not([data-character="none"]) .home-quick-action {
   color: var(--character-accent-text);
+}
+
+.app-shell[data-character]:not([data-character="none"]) .home-quick-action-ai {
+  color: #fff;
 }
 
 .app-shell[data-character]:not([data-character="none"]) .app-bottom-nav {

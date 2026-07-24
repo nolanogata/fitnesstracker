@@ -116,14 +116,14 @@ const env = {
   ACCESS_TEAM_DOMAIN: "example.cloudflareaccess.com",
   ACCESS_AUD: "test-audience",
   WORKERS_AI_ADVICE_MODEL: "@cf/meta/llama-3.1-8b-instruct-fast",
-  AI_ADVICE_PER_USER_DAILY_LIMIT: "6",
+  AI_ADVICE_PER_USER_DAILY_LIMIT: "7",
   AI_ADVICE_GLOBAL_DAILY_LIMIT: "30",
   DEV_AUTH_BYPASS: "1",
 };
 
 async function advise(index: number) {
-  const topics = ["food", "remaining", "goal", "custom", "custom", "workout"] as const;
-  const scopes = ["food", "food", "both", "both", "both", "workout"] as const;
+  const topics = ["food", "remaining", "goal", "custom", "custom", "workout", "daily_review"] as const;
+  const scopes = ["food", "food", "both", "both", "both", "workout", "both"] as const;
   return onRequest({
     request: new Request("https://tracker.test/api/ai/advice", {
       method: "POST",
@@ -151,7 +151,7 @@ async function advise(index: number) {
   });
 }
 
-for (let index = 0; index < 6; index += 1) {
+for (let index = 0; index < 7; index += 1) {
   const response = await advise(index);
   assert.equal(response.status, 200);
   const payload = await response.json() as {
@@ -164,7 +164,7 @@ for (let index = 0; index < 6; index += 1) {
       ? "次回は下半身の回復を見ながら上半身を進めましょう。"
       : index === 5
         ? "ワークアウト記録の振り返り"
-      : index === 4
+      : index === 4 || index === 6
         ? "AIアドバイス"
         : "今週は記録の安定を優先",
   );
@@ -191,14 +191,14 @@ const usageResponse = await onRequest({
 });
 assert.equal(usageResponse.status, 200);
 assert.deepEqual((await usageResponse.json() as { advice: { used: number; per_user_limit: number } }).advice, {
-  used: 6,
-  per_user_limit: 6,
+  used: 7,
+  per_user_limit: 7,
 });
 
-const limited = await advise(7);
+const limited = await advise(8);
 assert.equal(limited.status, 429);
 assert.equal((await limited.json() as { error: string }).error, "user_advice_limit");
-assert.equal(aiInputs.length, 6);
+assert.equal(aiInputs.length, 7);
 assert.ok(aiInputs.every((input) => !JSON.stringify(input).includes("tester@example.com")));
 assert.ok(aiInputs.every((input) => !("response_format" in input)));
 assert.ok(aiInputs.every((input) => JSON.stringify(input).includes("同じ内容を複数の節に繰り返さず")));
@@ -207,6 +207,7 @@ assert.match(JSON.stringify(aiInputs[1]), /選択日の摂取済み量と残りk
 assert.match(JSON.stringify(aiInputs[2]), /現在値、目標値、期限、体重推移/);
 assert.match(JSON.stringify(aiInputs[3]), /今回の質問へ直接答え/);
 assert.match(JSON.stringify(aiInputs[5]), /異なる種目同士の重量・回数・セット数は比較せず/);
+assert.match(JSON.stringify(aiInputs[6]), /今日の食事は、目標kcalとP\/F\/Cの数値だけでなく/);
 assert.ok(statements.some((statement) => statement.sql.includes("INSERT INTO ai_usage_daily")));
 assert.ok(statements.some((statement) => statement.sql.includes("INSERT INTO ai_result_cache")));
 

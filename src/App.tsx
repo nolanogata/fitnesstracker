@@ -191,6 +191,7 @@ import {
   aiAdviceTopicOrder,
   aiAdviceTopicPresets,
   buildAiAdviceQuestion,
+  buildDailyReviewQuestion,
   buildAnonymousAdviceContext,
   fetchAiAdviceUsage,
   parseExternalAiHandoff,
@@ -1362,6 +1363,16 @@ const achievementProgressSpecs: Record<string, AchievementProgressSpec> = {
   streak_365: { metric: "streak", target: 365, unit: "日" },
 };
 const appUpdates: AppUpdate[] = [
+  {
+    id: "2026-07-25-daily-ai-review-home-actions",
+    title: "今日1日のAI評価とHomeの操作を改善",
+    date: "2026-07-25",
+    items: [
+      "アプリ内AI相談に「今日1日の評価」を追加し、途中経過・1日のまとめと、食事のみ・トレーニングを含む評価を選べるようにしました。",
+      "今日トレーニングを記録していない場合は、直前4日間の内容から次のトレーニング案を考えます。",
+      "Homeのぴったりフード、ゴール確認、AI相談を押しやすいボタンに変更し、AI相談だけ色で見分けられるようにしました。",
+    ],
+  },
   {
     id: "2026-07-24-chain-combo-bulk-log",
     title: "おすすめの組み合わせを一括記録",
@@ -4665,16 +4676,16 @@ function HomeTab(props: {
               </button>
             )}
         </div>
-        <div className="mt-5">
+        <div className="home-hero-main mt-5">
           <p className={`numeric-text text-[4.25rem] font-semibold leading-none tracking-normal ${shouldShowCalorieOverTone ? (isCalorieOverWithinEstimate ? "text-estimate" : "text-clay") : "text-ink"}`}>
             {calorieDisplayText}<span className="ml-2 text-xl font-semibold">kcal</span>
           </p>
           {!shouldMaskGoalProgress && <p className="numeric-text mt-2 text-sm text-moss">摂取 {props.dayTotals.calories} / 目標 {props.goal?.target_calories ?? "-"} kcal</p>}
-          <div className="home-progress-track mt-5 h-2 overflow-hidden rounded-full bg-white/55">
+          <div className="home-hero-progress home-progress-track mt-5 h-2 overflow-hidden rounded-full bg-white/55">
             <div className={`home-progress-fill h-full rounded-full ${heroProgressClass}`} style={{ width: `${heroProgressPercent}%` }} />
           </div>
         </div>
-        <div className="home-macro-row mt-4">
+        <div className="home-macro-row home-hero-macros mt-4">
           {macroStats.map((macro) => (
             <button
               type="button"
@@ -4725,13 +4736,13 @@ function HomeTab(props: {
         <button className="home-primary-action" onClick={() => props.setTab("food")}>食事を記録 <ChevronRight size={17} /></button>
         <button className="home-secondary-action" onClick={() => props.setTab("workout")}>ワークアウト記録 <ChevronRight size={17} /></button>
       </div>
-      <div className="home-link-actions flex justify-center gap-3 text-xs font-semibold text-moss/80">
-        <button className="px-1.5 py-1" onClick={() => {
+      <div className="home-quick-actions">
+        <button className="home-quick-action" onClick={() => {
           props.unlockAchievement("used_perfect_food");
           setIsPerfectFoodOpen(true);
-        }}>ぴったりフード</button>
-        <button className="px-2 py-1" onClick={() => setIsGoalSummaryOpen(true)}>ゴールを確認</button>
-        <button className="px-2 py-1" onClick={props.openAiReport}>AIレポート</button>
+        }}><Soup size={16} /><span>ぴったりフード</span></button>
+        <button className="home-quick-action" onClick={() => setIsGoalSummaryOpen(true)}><Trophy size={16} /><span>ゴールを確認</span></button>
+        <button className="home-quick-action home-quick-action-ai" onClick={props.openAiReport}><Sparkles size={16} /><span>AI相談</span></button>
       </div>
 
       <button className="home-glass-card home-checkin-card relative w-full p-4 text-left" onClick={() => setIsCheckInOpen(true)}>
@@ -4739,7 +4750,7 @@ function HomeTab(props: {
         <div className={`grid items-end gap-3 ${shouldShowBodyFat ? "grid-cols-2" : "grid-cols-1"}`}>
           <div>
             <p className="text-sm font-bold">今日のチェックイン</p>
-            <p className="numeric-text mt-4 flex items-end gap-1 text-[2.45rem] font-semibold leading-none tracking-normal">
+            <p className="home-checkin-weight numeric-text mt-4 flex items-end gap-1 text-[2.45rem] font-semibold leading-none tracking-normal">
               <span>{typeof displayedWeight === "number" ? round1(displayedWeight) : "-"}</span>
               <span className="mb-1 text-base font-semibold">kg</span>
               {average7Trend && (
@@ -4755,7 +4766,7 @@ function HomeTab(props: {
           </div>
           {shouldShowBodyFat && (
             <div className="text-right">
-              <p className="numeric-text text-[2.05rem] font-semibold leading-none tracking-normal">
+              <p className="home-checkin-body-fat numeric-text text-[2.05rem] font-semibold leading-none tracking-normal">
                 {typeof displayedBodyFat === "number" ? (
                   <>{round1(displayedBodyFat)}<span className="ml-1 text-sm font-semibold">%</span></>
                 ) : (
@@ -4771,7 +4782,7 @@ function HomeTab(props: {
       <div className="grid grid-cols-2 gap-3">
         <section className="home-glass-card home-mini-card p-4">
           <p className="text-sm font-bold">{props.isEditingPastDate ? "この日の記録" : "今日の記録"}</p>
-          <div className="mt-4 space-y-2">
+          <div className="home-mini-content mt-4 space-y-2">
             <button className="flex w-full items-center justify-between gap-2 rounded-2xl px-1 py-1 text-left transition active:scale-[0.98]" onClick={props.openTodayFoodLog}>
               <span className="text-sm text-moss">食事</span>
               <span className="numeric-text min-w-0 truncate text-right text-sm font-semibold">{foodSummary}</span>
@@ -4786,7 +4797,7 @@ function HomeTab(props: {
         <section className="home-glass-card home-mini-card p-4">
           <button className="w-full text-left" onClick={() => props.setTab("workout")}>
             <p className="text-sm font-bold">今週の運動</p>
-            <div className="mt-4 space-y-3">
+            <div className="home-mini-content mt-4 space-y-3">
               <WorkoutGoalProgress
                 label="筋トレ"
                 done={props.weeklyWorkoutStatus.strengthDone}
@@ -10269,12 +10280,23 @@ function SettingsTab(props: {
     setAiAdviceDetail("");
     setReportMode(preset.mode);
     setReportContentScope(preset.contentScope);
+    if (topic === "daily_review") {
+      setReportCoverage(props.appDate === todayAppDate(props.settings?.day_boundary_hour ?? 3) ? "partial" : "completed");
+    }
     setAiAdviceError("");
     setAiAdviceNotice("");
     setAiAdviceStep("details");
   };
+  const hasWorkoutOnAdviceDate = props.allData.workoutSessions.some((session) => session.app_date === props.appDate);
   const currentAiAdviceQuestion = aiAdviceTopic
-    ? buildAiAdviceQuestion(aiAdviceTopic, aiAdviceDetail)
+    ? aiAdviceTopic === "daily_review"
+      ? buildDailyReviewQuestion({
+          coverage: reportCoverage,
+          includeWorkout: reportContentScope === "both",
+          hasWorkoutToday: hasWorkoutOnAdviceDate,
+          detail: aiAdviceDetail,
+        })
+      : buildAiAdviceQuestion(aiAdviceTopic, aiAdviceDetail)
     : "";
   const submitAiAdvice = async (nextQuestion?: string) => {
     if (!adviceConsentGranted) {
@@ -10452,6 +10474,7 @@ function SettingsTab(props: {
   };
   const activeMemoryItems = aiAdviceMemory?.items.filter((item) => item.active) ?? [];
   const aiAdviceTopicIcons: Record<AiAdviceTopic, ReactNode> = {
+    daily_review: <Sparkles size={19} />,
     food: <Utensils size={19} />,
     remaining: <Soup size={19} />,
     workout: <Dumbbell size={19} />,
@@ -10558,7 +10581,7 @@ function SettingsTab(props: {
                     <p className="mt-2 text-xs leading-relaxed text-moss">{aiAdviceTopicPresets[aiAdviceTopic].description}</p>
                   </div>
 
-                  {aiAdviceTopic !== "remaining" && (
+                  {aiAdviceTopic !== "remaining" && aiAdviceTopic !== "daily_review" && (
                     <div>
                       <p className="text-xs font-black text-moss">見る期間</p>
                       <div className="mt-2 grid grid-cols-3 gap-2">
@@ -10575,6 +10598,38 @@ function SettingsTab(props: {
                     <div className="rounded-2xl border border-line bg-rice p-3 text-xs leading-relaxed text-moss">
                       今日の食事記録、目標、残りカロリー・PFCを使って候補を考えます。
                     </div>
+                  )}
+
+                  {aiAdviceTopic === "daily_review" && (
+                    <>
+                      <div>
+                        <p className="text-xs font-black text-moss">今日の状態</p>
+                        <div className="mt-2 grid grid-cols-2 gap-2">
+                          <button className={`mode-button min-h-11 text-xs ${reportCoverage === "partial" ? "mode-button-active" : ""}`} onClick={() => setReportCoverage("partial")}>
+                            途中経過
+                          </button>
+                          <button className={`mode-button min-h-11 text-xs ${reportCoverage === "completed" ? "mode-button-active" : ""}`} onClick={() => setReportCoverage("completed")}>
+                            1日のまとめ
+                          </button>
+                        </div>
+                      </div>
+                      <div>
+                        <p className="text-xs font-black text-moss">評価に含める内容</p>
+                        <div className="mt-2 grid grid-cols-2 gap-2">
+                          <button className={`mode-button min-h-11 text-xs ${reportContentScope === "food" ? "mode-button-active" : ""}`} onClick={() => setReportContentScope("food")}>
+                            食事内容
+                          </button>
+                          <button className={`mode-button min-h-11 text-xs ${reportContentScope === "both" ? "mode-button-active" : ""}`} onClick={() => setReportContentScope("both")}>
+                            食事＋トレーニング
+                          </button>
+                        </div>
+                        {reportContentScope === "both" && !hasWorkoutOnAdviceDate && (
+                          <p className="mt-2 rounded-xl bg-rice px-3 py-2 text-xs leading-relaxed text-moss">
+                            今日のトレーニング記録がないため、直前4日間を見て次の内容を提案します。
+                          </p>
+                        )}
+                      </div>
+                    </>
                   )}
 
                   {aiAdviceTopic === "custom" && (

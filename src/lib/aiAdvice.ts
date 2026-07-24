@@ -20,9 +20,9 @@ export type AiAdviceUsage = {
   photo: { used: number; per_user_limit: number };
 };
 
-export type AiAdviceTopic = "food" | "remaining" | "workout" | "goal" | "custom";
+export type AiAdviceTopic = "daily_review" | "food" | "remaining" | "workout" | "goal" | "custom";
 
-export const aiAdviceTopicOrder: AiAdviceTopic[] = ["food", "remaining", "workout", "goal", "custom"];
+export const aiAdviceTopicOrder: AiAdviceTopic[] = ["daily_review", "food", "remaining", "workout", "goal", "custom"];
 
 export const aiAdviceTopicPresets: Record<AiAdviceTopic, {
   label: string;
@@ -31,6 +31,13 @@ export const aiAdviceTopicPresets: Record<AiAdviceTopic, {
   contentScope: "food" | "workout" | "both";
   prompt: string;
 }> = {
+  daily_review: {
+    label: "今日1日の評価",
+    description: "今日の食事と、必要ならトレーニングもまとめて見る",
+    mode: "day",
+    contentScope: "both",
+    prompt: "今日の記録を評価してください。",
+  },
   food: {
     label: "食事内容について",
     description: "食事の傾向、良い点、改善できる点を見る",
@@ -76,6 +83,29 @@ export function buildAiAdviceQuestion(topic: AiAdviceTopic, detail: string) {
     : aiAdviceTopicPresets[topic].prompt;
 }
 
+export function buildDailyReviewQuestion(input: {
+  coverage: "partial" | "completed";
+  includeWorkout: boolean;
+  hasWorkoutToday: boolean;
+  detail: string;
+}) {
+  const timingInstruction = input.coverage === "partial"
+    ? "今日はまだ途中経過です。未摂取分を不足と断定せず、この後の食事で調整できる点を示してください。"
+    : "今日は1日分の記録が完了しています。1日全体として評価してください。";
+  const workoutInstruction = !input.includeWorkout
+    ? "今回は食事だけを評価してください。"
+    : input.hasWorkoutToday
+      ? "今日のトレーニング内容も含め、食事との組み合わせと次回への短い助言を加えてください。"
+      : "今日はトレーニング記録がないため、直前4日間の記録を参照し、回復や部位の重なりを考慮して次に何を行うとよいか提案してください。休養日が不適切だとは決めつけないでください。";
+  const base = [
+    "今日の食事を、目標カロリーとP/F/Cの達成状況だけでなく、実際の食品・料理の組み合わせ、主食・主菜・副菜など食事全体の構成から評価してください。",
+    "記録だけでは分からない野菜・果物・食物繊維・微量栄養素などは、摂れていないと断定せず、確認または補足候補として扱ってください。",
+    timingInstruction,
+    workoutInstruction,
+  ].join("\n");
+  return input.detail.trim() ? `${base}\n\n補足: ${input.detail.trim()}` : base;
+}
+
 export type AiAdviceError = Error & {
   code?: string;
   fallbackAvailable?: boolean;
@@ -95,11 +125,17 @@ export function buildAnonymousAdviceContext(input: {
   memory?: AiAdviceMemory;
   previousConsultation?: AiConsultation;
 }) {
-  const includeFoodComparison = input.contentScope !== "workout" && input.topic !== "remaining";
+  const includeFoodComparison = input.contentScope !== "workout"
+    && input.topic !== "remaining"
+    && input.topic !== "daily_review";
+  const includeWorkoutComparison = input.contentScope !== "food" && input.topic !== "daily_review";
   const trends = [
     ...(includeFoodComparison ? buildFoodComparison(input) : []),
-    ...(input.contentScope !== "food" ? buildWorkoutComparison(input) : []),
+    ...(includeWorkoutComparison ? buildWorkoutComparison(input) : []),
   ];
+  const dailyReviewContext = input.topic === "daily_review"
+    ? buildDailyReviewContext(input)
+    : [];
   const memoryLines = (input.memory?.items ?? [])
     .filter((item) => item.active && !isInvalidWorkoutUniformityAdvice(item.text))
     .slice(-20)
@@ -122,7 +158,8 @@ export function buildAnonymousAdviceContext(input: {
     `- 参照対象: ${input.contentScope === "food" ? "食事" : input.contentScope === "workout" ? "ワークアウト" : "食事とワークアウト"}`,
     "",
     "## 長期集計",
-    ...trends,
+    ...(trends.length ? trends : ["- 今回は日別評価のため長期比較なし"]),
+    ...(dailyReviewContext.length ? ["", ...dailyReviewContext] : []),
     "",
     "## 引継ぎメモ",
     ...(memoryLines.length ? memoryLines : ["- なし"]),
@@ -133,6 +170,63 @@ export function buildAnonymousAdviceContext(input: {
     "## 今回選択した期間のレポート",
     report,
   ].join("\n").slice(0, 24_000);
+}
+
+function buildDailyReviewContext(input: {
+  appDate: string;
+  contentScope: "food" | "workout" | "both";
+  foodEntries: FoodEntry[];
+  workoutSessions: WorkoutSession[];
+  workoutExercises: WorkoutExercise[];
+  workoutSets: WorkoutSet[];
+}) {
+  const rows = ["## 今日1日の評価用データ"];
+  if (input.contentScope !== "workout") {
+    const foods = input.foodEntries.filter((entry) => entry.app_date === input.appDate);
+    const mealCounts = new Map<string, number>();
+    foods.forEach((entry) => {
+      mealCounts.set(entry.meal_type, (mealCounts.get(entry.meal_type) ?? 0) + 1);
+    });
+    rows.push(`- 今日の食事記録: ${foods.length}件${mealCounts.size ? ` / ${[...mealCounts.entries()].map(([meal, count]) => `${meal} ${count}件`).join(" / ")}` : ""}`);
+  }
+  if (input.contentScope === "food") return rows;
+
+  const todaySessions = input.workoutSessions.filter((session) => session.app_date === input.appDate);
+  if (todaySessions.length) {
+    rows.push(`- 今日のトレーニング記録: ${todaySessions.length}セッション`);
+    rows.push(...todaySessions.map((session) => formatDailyReviewWorkoutSession(session, input)));
+    return rows;
+  }
+
+  const fallbackStart = addDays(input.appDate, -4);
+  const fallbackEnd = addDays(input.appDate, -1);
+  const fallbackSessions = input.workoutSessions
+    .filter((session) => session.app_date >= fallbackStart && session.app_date <= fallbackEnd)
+    .sort((a, b) => b.app_date.localeCompare(a.app_date) || b.logged_at.localeCompare(a.logged_at));
+  rows.push(`- 今日のトレーニング記録: なし`);
+  rows.push(`- 次回提案用の参照期間: ${fallbackStart}〜${fallbackEnd}（直前4日間）`);
+  rows.push(...(fallbackSessions.length
+    ? fallbackSessions.map((session) => formatDailyReviewWorkoutSession(session, input))
+    : ["- 直前4日間のトレーニング記録もなし"]));
+  return rows;
+}
+
+function formatDailyReviewWorkoutSession(
+  session: WorkoutSession,
+  input: {
+    workoutExercises: WorkoutExercise[];
+    workoutSets: WorkoutSet[];
+  },
+) {
+  const exercises = input.workoutExercises.filter((exercise) => exercise.session_id === session.id);
+  const exerciseIds = new Set(exercises.map((exercise) => exercise.id));
+  const workingSets = input.workoutSets.filter((set) => exerciseIds.has(set.workout_exercise_id) && !set.is_warmup);
+  const exerciseSummary = exercises.map((exercise) => {
+    const sets = workingSets.filter((set) => set.workout_exercise_id === exercise.id);
+    return `${exercise.exercise_name} ${sets.length}セット`;
+  }).join(" / ");
+  const parts = session.body_parts.length ? session.body_parts.join("・") : "部位未設定";
+  return `- ${session.app_date} ${sanitizeFreeText(session.title, 80) || "ワークアウト"}: ${parts} / ${exerciseSummary || "種目詳細なし"}`;
 }
 
 function sanitizeAdviceReport(report: string) {

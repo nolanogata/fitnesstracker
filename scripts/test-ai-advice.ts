@@ -4,6 +4,7 @@ import {
   aiAdviceTopicPresets,
   buildAiAdviceQuestion,
   buildAnonymousAdviceContext,
+  buildDailyReviewQuestion,
   parseExternalAiHandoff,
 } from "../src/lib/aiAdvice.ts";
 
@@ -204,6 +205,74 @@ const goalContext = buildAnonymousAdviceContext({
 assert.match(goalContext, /食事比較/);
 assert.match(goalContext, /ワークアウト比較/);
 
+const dailyReviewContext = buildAnonymousAdviceContext({
+  fullReport: `# レポート
+
+## レポート状態
+- 1日の途中経過
+
+## 食事ログ
+- 朝食: オートミール、ヨーグルト
+- 昼食: 鮭定食`,
+  appDate: "2026-07-24",
+  topic: "daily_review",
+  contentScope: "both",
+  topicLabel: "今日1日の評価",
+  foodEntries: [{
+    id: "food_daily",
+    app_date: "2026-07-24",
+    logged_at: timestamp,
+    meal_type: "breakfast",
+    name: "オートミール",
+    calories: 300,
+    protein_g: 12,
+    fat_g: 6,
+    carbs_g: 50,
+    portion_multiplier: 1,
+    entry_source: "user",
+    confidence: "high",
+    created_at: timestamp,
+    updated_at: timestamp,
+  }],
+  weightLogs: [],
+  workoutSessions: [{
+    id: "daily_previous_session",
+    app_date: "2026-07-22",
+    logged_at: "2026-07-22T09:00:00.000Z",
+    title: "脚",
+    workout_type: "strength",
+    body_parts: ["脚"],
+    created_at: timestamp,
+    updated_at: timestamp,
+  }],
+  workoutExercises: [{
+    id: "daily_previous_exercise",
+    session_id: "daily_previous_session",
+    exercise_id: "squat",
+    exercise_name: "スクワット",
+    body_part: "脚",
+    equipment_type: "バーベル",
+    order: 0,
+    created_at: timestamp,
+    updated_at: timestamp,
+  }],
+  workoutSets: [{
+    id: "daily_previous_set",
+    workout_exercise_id: "daily_previous_exercise",
+    set_order: 1,
+    weight_kg: 80,
+    reps: 8,
+    is_warmup: false,
+    created_at: timestamp,
+    updated_at: timestamp,
+  }],
+});
+assert.match(dailyReviewContext, /今日1日の評価用データ/);
+assert.match(dailyReviewContext, /今日のトレーニング記録: なし/);
+assert.match(dailyReviewContext, /2026-07-20〜2026-07-23（直前4日間）/);
+assert.match(dailyReviewContext, /2026-07-22 脚: 脚 \/ スクワット 1セット/);
+assert.doesNotMatch(dailyReviewContext, /食事比較|ワークアウト比較/);
+
 const parsed = parseExternalAiHandoff(`回答本文
 \`\`\`phase_log_handoff_v1
 {"type":"phase_log_handoff_v1","headline":"継続","summary":"食事記録を続ける","observations":[],"evidence":[],"actions":["夕食を記録"],"cautions":[],"memory_updates":[{"category":"focus","text":"夕食記録を優先"}]}
@@ -235,6 +304,7 @@ assert.deepEqual(
     scope: preset.contentScope,
   }])),
   {
+    daily_review: { mode: "day", scope: "both" },
     food: { mode: "week", scope: "food" },
     remaining: { mode: "day", scope: "food" },
     workout: { mode: "week", scope: "workout" },
@@ -245,5 +315,29 @@ assert.deepEqual(
 assert.match(buildAiAdviceQuestion("remaining", "コンビニで買いたい"), /残りカロリーとPFC/);
 assert.match(buildAiAdviceQuestion("remaining", "コンビニで買いたい"), /補足: コンビニで買いたい/);
 assert.equal(buildAiAdviceQuestion("custom", "  今週の改善点は？  "), "今週の改善点は？");
+assert.match(buildDailyReviewQuestion({
+  coverage: "partial",
+  includeWorkout: true,
+  hasWorkoutToday: false,
+  detail: "夕食は外食予定",
+}), /まだ途中経過/);
+assert.match(buildDailyReviewQuestion({
+  coverage: "partial",
+  includeWorkout: true,
+  hasWorkoutToday: false,
+  detail: "夕食は外食予定",
+}), /直前4日間/);
+assert.match(buildDailyReviewQuestion({
+  coverage: "partial",
+  includeWorkout: true,
+  hasWorkoutToday: false,
+  detail: "夕食は外食予定",
+}), /補足: 夕食は外食予定/);
+assert.doesNotMatch(buildDailyReviewQuestion({
+  coverage: "completed",
+  includeWorkout: false,
+  hasWorkoutToday: false,
+  detail: "",
+}), /直前4日間/);
 
 console.log("AI advice context and memory tests passed");

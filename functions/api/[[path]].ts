@@ -762,7 +762,7 @@ async function handleWorkersAiAdvice(context: PagesContext, user: AppUser) {
   const question = cleanText(body.question, 1_000);
   const adviceContext = typeof body.context === "string" ? body.context.trim().slice(0, 24_000) : "";
   const requestedContentScope = body.content_scope;
-  const adviceTopics = ["food", "remaining", "workout", "goal", "custom"] as const;
+  const adviceTopics = ["daily_review", "food", "remaining", "workout", "goal", "custom"] as const;
   const topic = adviceTopics.includes(body.topic as typeof adviceTopics[number])
     ? body.topic as typeof adviceTopics[number]
     : "custom";
@@ -803,6 +803,7 @@ async function handleWorkersAiAdvice(context: PagesContext, user: AppUser) {
     "カロリーとP/F/Cだけで食品の質、微量栄養素、健康状態を断定しないでください。",
   ].join("\n") : "";
   const topicInstruction = ({
+    daily_review: "今日の食事は、目標kcalとP/F/Cの数値だけでなく、記録された食品・料理の組み合わせと食事全体の構成も評価してください。途中経過なら未摂取分を不足と断定せず、1日のまとめなら1日全体を評価してください。トレーニングを含む場合、今日の記録がなければコンテキストの「直前4日間」だけを参照し、回復と部位の重なりを考慮した次回案を示してください。休養日自体を問題扱いしないでください。",
     food: "実際の食品・メニューと数値から良い点、改善点、次の一手を示してください。「バランスを整える」だけの一般論は禁止です。",
     remaining: "選択日の摂取済み量と残りkcal/P/F/Cだけを基準に、具体的な食品・料理と量の候補を2〜4個示してください。長期目標の変更や体重傾向の評価は不要です。",
     workout: "頻度、同一種目の推移、部位別本セット、回復の観点から評価し、記録にある具体値を最低2点使ってください。",
@@ -1028,7 +1029,7 @@ function finalizeAiAdviceResponse(
   response: AiAdviceApiResponse,
   question: string,
   contentScope: "food" | "workout" | "both",
-  topic: "food" | "remaining" | "workout" | "goal" | "custom",
+  topic: "daily_review" | "food" | "remaining" | "workout" | "goal" | "custom",
 ): AiAdviceApiResponse {
   const questionKey = normalizeAdviceTextKey(question);
   const isInvalidWorkoutAdvice = (value: string) => {
@@ -1067,6 +1068,7 @@ function finalizeAiAdviceResponse(
   const actions = uniqueStrings(response.actions, observations);
   const cautions = uniqueStrings(response.cautions, [...observations, ...actions]);
   const defaultHeadline = ({
+    daily_review: "今日1日の評価",
     food: "食事記録の振り返り",
     remaining: "今日の残りに合わせた食事候補",
     workout: "ワークアウト記録の振り返り",
