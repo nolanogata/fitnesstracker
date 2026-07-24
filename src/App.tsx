@@ -173,6 +173,8 @@ import { addDays, dateRange, formatJapaneseDate, nowIso, todayAppDate } from "./
 import { makeId } from "./lib/ids";
 import { activityLabels, buildGoal, calculateActivityProfileGoalReference, calculateTargets, phaseLabels } from "./lib/goalCalculator";
 import { downloadText, exportBackup, importBackup, resetLocalData } from "./lib/backup";
+import { cloudSyncLastAt, registerCloudMigration, syncCloudNow, type CloudSyncStatus } from "./lib/cloudSync";
+import { analyzeWithGemini, geminiConsentVersion, prepareAiImage, type GeminiPhotoError } from "./lib/geminiPhoto";
 import { generateMarkdownReport } from "./lib/report";
 import { getAiReportDeliveryContent, latestCopiedAiReport } from "./lib/aiReportDelivery";
 import { getWeeklyWorkoutStatus, type WeeklyWorkoutStatus } from "./lib/workoutStatus";
@@ -232,7 +234,7 @@ type MyMenuSection = "list" | "method" | "new" | "edit";
 type MyTrainingSection = "list";
 type GoalSettingsSection = "guided" | "manual" | "custom";
 type HistoryGrouping = "day" | "week" | "month";
-type ExportSection = "backup" | "logs";
+type ExportSection = "cloud" | "backup" | "logs";
 type LogExportStep = "type" | "grouping" | "period" | "output";
 type LogExportType = "food" | "workout" | "food_workout";
 type LogExportDateTarget = "start" | "end";
@@ -637,6 +639,8 @@ type ManualFoodDraft = {
   savePreset: boolean;
   favorite: boolean;
   officialVerified: boolean;
+  officialEvidenceType: "official_url" | "package_label" | "official_document" | "in_store_display";
+  officialSourceUrl: string;
 };
 type MenuOverwriteTarget = {
   item: MenuItem;
@@ -850,6 +854,8 @@ const emptyManual: ManualFoodDraft = {
   savePreset: false,
   favorite: false,
   officialVerified: false,
+  officialEvidenceType: "package_label",
+  officialSourceUrl: "",
 };
 
 const manualFoodWizardSteps: Array<{ key: ManualFoodWizardStep; label: string }> = [
@@ -889,6 +895,8 @@ function manualFoodDraftFromMenuItem(item: MenuItem): ManualFoodDraft {
     savePreset: true,
     favorite: !!item.is_favorite,
     officialVerified: item.data_source === "official",
+    officialEvidenceType: item.nutrition_meta?.origin === "package_label" ? "package_label" : "official_url",
+    officialSourceUrl: item.source_url ?? "",
   };
 }
 
@@ -2509,6 +2517,12 @@ function App() {
   const [achievementCelebration, setAchievementCelebration] = useState<AchievementCelebration>();
   const [pendingAchievementIds, setPendingAchievementIds] = useState<string[]>([]);
   const [isTrophyOpen, setIsTrophyOpen] = useState(false);
+  const [cloudSyncStatus, setCloudSyncStatus] = useState<CloudSyncStatus>(() => {
+    const syncedAt = cloudSyncLastAt();
+    return syncedAt
+      ? { state: "synced", syncedAt, uploaded: 0, downloaded: 0 }
+      : { state: "disabled", message: "Cloudflare版でログインすると自動同期が始まります。" };
+  });
   const [prefersDarkTheme, setPrefersDarkTheme] = useState(() => (
     typeof window !== "undefined" && typeof window.matchMedia === "function" && window.matchMedia("(prefers-color-scheme: dark)").matches
   ));
@@ -2614,8 +2628,34 @@ function App() {
     setAiReports(nextReports);
   };
 
+  const runCloudSync = async () => {
+    const result = await syncCloudNow();
+    setCloudSyncStatus(result);
+    if (result.state === "synced" && (result.downloaded > 0 || result.uploaded > 0)) await refresh();
+    return result;
+  };
+
   useEffect(() => {
-    initializeSeeds().then(refresh);
+    let cancelled = false;
+    const initialize = async () => {
+      await initializeSeeds();
+      await refresh();
+      const result = await syncCloudNow();
+      if (cancelled) return;
+      setCloudSyncStatus(result);
+      if (result.state === "synced" && result.downloaded > 0) await refresh();
+    };
+    void initialize();
+    const handleOnline = () => void runCloudSync();
+    window.addEventListener("online", handleOnline);
+    const interval = window.setInterval(() => {
+      if (navigator.onLine) void runCloudSync();
+    }, 5 * 60 * 1000);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("online", handleOnline);
+      window.clearInterval(interval);
+    };
   }, []);
 
   useEffect(() => {
@@ -3452,6 +3492,8 @@ function App() {
             themeCharacterVariant={themeCharacterVariant}
             resolvedTheme={resolvedTheme}
             markBackupNow={markBackupNow}
+            cloudSyncStatus={cloudSyncStatus}
+            syncCloud={runCloudSync}
             openUpdateNotes={openUpdateNotes}
             refresh={refresh}
             showToast={showToast}
@@ -6209,10 +6251,20 @@ function FoodTab(props: {
       manual.entry_kind === "ingredient" ? `材料入力: ${ingredientServingLabel ?? "g未入力"} / 栄養値は100gあたりから換算` : "",
       nutrition.unknown.length ? `未入力: ${nutrition.unknown.join("/")}` : "",
     ]).join(" / ") || undefined;
+    const officialOrigin: NutritionOrigin = manual.officialEvidenceType === "package_label" ? "package_label" : "official_website";
     const nutritionMeta: NutritionMeta = manual.officialVerified
-      ? { origin: "official_website", estimation_policy: "exact", uncertainty: { calories: 0, protein_g: 0, fat_g: 0, carbs_g: 0 }, explicit_uncertainty: true }
+      ? {
+          origin: officialOrigin,
+          estimation_policy: "exact",
+          evidence_note: manual.officialEvidenceType === "package_label" ? "商品パッケージの栄養表示を確認" : "公式資料を確認",
+          uncertainty: { calories: 0, protein_g: 0, fat_g: 0, carbs_g: 0 },
+          explicit_uncertainty: true,
+        }
       : { origin: "user_entered", estimation_policy: "exact", uncertainty: { calories: 0, protein_g: 0, fat_g: 0, carbs_g: 0 }, explicit_uncertainty: true };
-    return { nutrition, baseName, ingredientGrams, ingredientServingLabel, displayName, brand, tags, note, dataSource, confidence, nutritionMeta };
+    const sourceUrl = manual.officialVerified && manual.officialEvidenceType === "official_url" && manual.officialSourceUrl.trim()
+      ? manual.officialSourceUrl.trim()
+      : undefined;
+    return { nutrition, baseName, ingredientGrams, ingredientServingLabel, displayName, brand, tags, note, dataSource, confidence, nutritionMeta, sourceUrl };
   };
 
   const resetManualRegistration = () => {
@@ -6248,6 +6300,7 @@ function FoodTab(props: {
       data_source: payload.dataSource,
       confidence: payload.confidence,
       nutrition_meta: payload.nutritionMeta,
+      source_url: payload.sourceUrl,
       is_public_preset: false,
       is_user_created: true,
       is_favorite: manual.favorite,
@@ -6288,7 +6341,7 @@ function FoodTab(props: {
   const saveManual = async () => {
     const timestamp = nowIso();
     let menuItemId: string | undefined;
-    const { nutrition, baseName, ingredientGrams, ingredientServingLabel, displayName, brand, tags, note, dataSource, confidence, nutritionMeta } = getManualSavePayload();
+    const { nutrition, baseName, ingredientGrams, ingredientServingLabel, displayName, brand, tags, note, dataSource, confidence, nutritionMeta, sourceUrl } = getManualSavePayload();
     if (menuOverwriteTarget) {
       const sourceItem = menuOverwriteTarget.item;
       const logMultiplier = Math.max(0, menuOverwriteTarget.logMultiplier ?? 1);
@@ -6309,6 +6362,7 @@ function FoodTab(props: {
         data_source: dataSource,
         confidence,
         nutrition_meta: nutritionMeta,
+        source_url: sourceUrl,
         is_favorite: manual.favorite,
         updated_at: timestamp,
       });
@@ -6361,6 +6415,7 @@ function FoodTab(props: {
         data_source: dataSource,
         confidence,
         nutrition_meta: nutritionMeta,
+        source_url: sourceUrl,
         is_public_preset: false,
         is_user_created: true,
         is_favorite: manual.favorite,
@@ -8765,6 +8820,8 @@ function SettingsTab(props: {
   themeCharacterVariant: string;
   resolvedTheme: "light" | "dark";
   markBackupNow: () => void;
+  cloudSyncStatus: CloudSyncStatus;
+  syncCloud: () => Promise<CloudSyncStatus>;
   openUpdateNotes: () => void;
   refresh: () => Promise<void>;
   showToast: (text: string) => void;
@@ -8784,6 +8841,9 @@ function SettingsTab(props: {
   const [goalWizardStep, setGoalWizardStep] = useState(0);
   const [presetDraft, setPresetDraft] = useState({ ...emptyManual, name: "", savePreset: true });
   const [editingUserMenuItemId, setEditingUserMenuItemId] = useState<string>();
+  const [sharingOfficialMenuItem, setSharingOfficialMenuItem] = useState<MenuItem>();
+  const [cloudRole, setCloudRole] = useState<"user" | "admin">();
+  const [adminCatalogReviewOpen, setAdminCatalogReviewOpen] = useState(false);
   const [activeMyMenuSection, setActiveMyMenuSection] = useState<MyMenuSection | undefined>(() => props.focus === "myMenu" ? "method" : undefined);
   const [myMenuWizardStep, setMyMenuWizardStep] = useState<ManualFoodWizardStep>("basic");
   const [activeMyTrainingSection, setActiveMyTrainingSection] = useState<MyTrainingSection | undefined>();
@@ -8810,6 +8870,19 @@ function SettingsTab(props: {
   const [generatedReportMode, setGeneratedReportMode] = useState<AiReportDeliveryMode>();
   const [reportCoverage, setReportCoverage] = useState<ReportCoverage>(() => props.appDate === todayAppDate(props.settings?.day_boundary_hour ?? 3) ? "partial" : "completed");
   const [reportActivity, setReportActivity] = useState<DailyActivityContext>(() => ({ date: props.appDate, relative_activity_level: "unknown", data_source: "unknown" }));
+
+  useEffect(() => {
+    let active = true;
+    fetch("/api/session", { headers: { accept: "application/json" } })
+      .then(async (response) => response.ok ? response.json() : undefined)
+      .then((data: { user?: { role?: "user" | "admin" } } | undefined) => {
+        if (active) setCloudRole(data?.user?.role);
+      })
+      .catch(() => undefined);
+    return () => {
+      active = false;
+    };
+  }, []);
   const [isReportActivityManualOpen, setIsReportActivityManualOpen] = useState(false);
   const [foodCoverageReviewDays, setFoodCoverageReviewDays] = useState<FoodCoverageDay[]>([]);
   const [activityProfileStep, setActivityProfileStep] = useState(0);
@@ -9237,6 +9310,21 @@ function SettingsTab(props: {
     const ingredientServingLabel = ingredientGrams === undefined ? undefined : `${formatControlValue(ingredientGrams)}g`;
     const dataSource: DataSource = presetDraft.officialVerified ? "official" : "user";
     const confidence: Confidence = presetDraft.officialVerified ? "high" : nutrition.unknown.length ? "low" : "high";
+    const officialOrigin: NutritionOrigin = presetDraft.officialEvidenceType === "package_label" ? "package_label" : "official_website";
+    const nutritionMeta: NutritionMeta = presetDraft.officialVerified
+      ? {
+          origin: officialOrigin,
+          estimation_policy: "exact",
+          evidence_note: presetDraft.officialEvidenceType === "package_label" ? "商品パッケージの栄養表示を確認" : "公式資料を確認",
+          uncertainty: { calories: 0, protein_g: 0, fat_g: 0, carbs_g: 0 },
+          explicit_uncertainty: true,
+        }
+      : {
+          origin: "user_entered",
+          estimation_policy: "exact",
+          uncertainty: { calories: 0, protein_g: 0, fat_g: 0, carbs_g: 0 },
+          explicit_uncertainty: true,
+        };
     const tags = unique([
       presetDraft.category,
       presetDraft.subcategory,
@@ -9246,8 +9334,9 @@ function SettingsTab(props: {
       ...(nutrition.unknown.length ? ["栄養素一部不明"] : []),
     ]);
     const editingItem = editingUserMenuItemId ? userMenuItems.find((item) => item.id === editingUserMenuItemId) : undefined;
-    await db.menu_items.put({
-      id: editingItem?.id ?? makeId("menu_user"),
+    const savedId = editingItem?.id ?? makeId("menu_user");
+    const savedItem: MenuItem = {
+      id: savedId,
       name: presetDraft.name.trim(),
       brand: presetDraft.brand || undefined,
       category: presetDraft.category,
@@ -9261,14 +9350,18 @@ function SettingsTab(props: {
       weight_g: ingredientGrams,
       data_source: dataSource,
       confidence,
-      source_url: dataSource === "official" ? editingItem?.source_url : undefined,
+      nutrition_meta: nutritionMeta,
+      source_url: dataSource === "official" && presetDraft.officialEvidenceType === "official_url"
+        ? presetDraft.officialSourceUrl.trim() || undefined
+        : undefined,
       fetched_at: dataSource === "official" ? editingItem?.fetched_at : undefined,
       is_public_preset: false,
       is_user_created: true,
       is_favorite: presetDraft.favorite,
       created_at: editingItem?.created_at ?? timestamp,
       updated_at: timestamp,
-    });
+    };
+    await db.menu_items.put(savedItem);
     const savedName = presetDraft.name.trim();
     setEditingUserMenuItemId(undefined);
     setPresetDraft({ ...emptyManual, savePreset: true });
@@ -9276,6 +9369,7 @@ function SettingsTab(props: {
     setMyMenuWizardStep("basic");
     await props.refresh();
     props.showToast(editingItem ? `${savedName}を更新しました` : `${savedName}をマイメニューに保存しました`);
+    if (savedItem.data_source === "official") setSharingOfficialMenuItem(savedItem);
   };
   const saveSpecialModeSettings = async (nextModes: SpecialModeSettings[]) => {
     const timestamp = nowIso();
@@ -10315,6 +10409,9 @@ function SettingsTab(props: {
         <section className={`compact-card divide-y divide-line overflow-hidden scroll-mt-24 ${props.focus === "myMenu" ? "border-2 border-leaf" : ""}`}>
           <SettingsMenuRow title="登録済みのマイメニュー" description={`一覧の表示、編集、削除 · ${userMenuItems.length}件`} icon={<Store size={18} />} onClick={() => setActiveMyMenuSection("list")} />
           <SettingsMenuRow title="新規マイメニューの登録" description="手動入力またはAI写真から登録" icon={<Plus size={18} />} onClick={startNewUserMenuItem} />
+          {cloudRole === "admin" && (
+            <SettingsMenuRow title="共有公式値の審査" description="提出された一次資料と栄養値を確認" icon={<Check size={18} />} onClick={() => setAdminCatalogReviewOpen(true)} />
+          )}
         </section>
       )}
 
@@ -10359,6 +10456,9 @@ function SettingsTab(props: {
                   <p className="settings-record-meta">{item.brand || item.category} · {item.serving_label ? `${item.serving_label} · ` : ""}{item.calories}kcal · P{item.protein_g} F{item.fat_g} C{item.carbs_g}</p>
                 </div>
                 <div className="flex shrink-0 gap-1">
+                  {item.data_source === "official" && (
+                    <button className="icon-button settings-record-action" aria-label={`${formatMenuItemName(item)}の公式値を共有申請`} onClick={() => setSharingOfficialMenuItem(item)}><FileText size={14} /></button>
+                  )}
                   <button className="icon-button settings-record-action" aria-label={`${formatMenuItemName(item)}を編集`} onClick={() => editUserMenuItem(item)}><Pencil size={14} /></button>
                   <button className="icon-button settings-record-action settings-record-action-danger" aria-label={`${formatMenuItemName(item)}を削除`} onClick={() => deleteUserMenuItem(item)}><Trash2 size={14} /></button>
                 </div>
@@ -10443,11 +10543,45 @@ function SettingsTab(props: {
 
       {activeSettingsSection === "backup" && !activeExportSection && (
         <section className={`compact-card divide-y divide-line overflow-hidden scroll-mt-24 ${props.focus === "backup" ? "border-2 border-leaf" : ""}`}>
+          <SettingsMenuRow
+            title="クラウド同期"
+            description={props.cloudSyncStatus.state === "synced"
+              ? `自動保存中 · 最終同期 ${new Date(props.cloudSyncStatus.syncedAt).toLocaleString("ja-JP")}`
+              : props.cloudSyncStatus.message}
+            icon={<RotateCcw size={18} />}
+            onClick={() => setActiveExportSection("cloud")}
+          />
           <SettingsMenuRow title="バックアップJSON" description={backupMessage(props.backupInfo)} icon={<Archive size={18} />} onClick={() => setActiveExportSection("backup")} />
           <SettingsMenuRow title="タイプ別ログ出力" description="食事・ワークアウトを期間指定して出力" icon={<FileDown size={18} />} onClick={() => {
             resetLogExportWizard();
             setActiveExportSection("logs");
           }} />
+        </section>
+      )}
+
+      {activeSettingsSection === "backup" && activeExportSection === "cloud" && (
+        <section className={`compact-card scroll-mt-24 p-4 ${props.focus === "backup" ? "border-2 border-leaf" : ""}`}>
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h2 className="font-bold">クラウド同期</h2>
+              <p className="mt-1 text-xs font-semibold text-moss">Cloudflare版では、この端末の変更をログイン中の自分の領域へ自動保存します。</p>
+            </div>
+            <span className={`mini-chip ${props.cloudSyncStatus.state === "error" ? "text-clay" : ""}`}>
+              {props.cloudSyncStatus.state === "synced" ? "同期済み" : props.cloudSyncStatus.state === "error" ? "要確認" : "待機中"}
+            </span>
+          </div>
+          <div className="mt-4 rounded-md bg-rice p-3 text-xs leading-relaxed text-moss">
+            {props.cloudSyncStatus.state === "synced" ? (
+              <>
+                <p className="font-bold text-ink">最終同期 {new Date(props.cloudSyncStatus.syncedAt).toLocaleString("ja-JP")}</p>
+                <p className="mt-1">オフライン中の記録は端末に残り、接続後に送信されます。JSON保存は非常用として引き続き利用できます。</p>
+              </>
+            ) : <p>{props.cloudSyncStatus.message}</p>}
+          </div>
+          <button className="primary-button mt-4 w-full" onClick={async () => {
+            const result = await props.syncCloud();
+            props.showToast(result.state === "synced" ? "クラウドと同期しました" : result.message);
+          }}><RotateCcw size={17} />今すぐ同期</button>
         </section>
       )}
 
@@ -10471,12 +10605,19 @@ function SettingsTab(props: {
               const file = event.target.files?.[0];
               if (!file) return;
               try {
-                const payload = JSON.parse(await file.text()) as BackupPayload;
+                const fileText = await file.text();
+                const payload = JSON.parse(fileText) as BackupPayload;
                 if (!confirm("バックアップを読み込むと、現在この端末にあるローカルデータをバックアップ内容で置き換えます。続けますか？")) return;
                 await importBackup(payload);
                 props.markBackupNow();
-                setBackupImportMessage("読み込みました。現在のデータはバックアップ内容に置き換わっています。");
                 await props.refresh();
+                const syncResult = await props.syncCloud();
+                if (syncResult.state === "synced") {
+                  await registerCloudMigration(fileText, payload).catch(() => undefined);
+                  setBackupImportMessage("旧データを読み込み、クラウドへ移行しました。");
+                } else {
+                  setBackupImportMessage(`端末へ読み込みました。${syncResult.message}`);
+                }
               } catch (error) {
                 setBackupImportMessage(error instanceof Error ? error.message : "読み込みに失敗しました。JSONファイルを確認してください。");
               } finally {
@@ -10932,6 +11073,22 @@ function SettingsTab(props: {
           weightPresetStore={settingsWorkoutWeightPresetStore}
           onClose={closeSettingsMyTrainingModal}
           onSave={saveSettingsMyTrainingDraft}
+        />
+      )}
+      {sharingOfficialMenuItem && (
+        <OfficialEvidenceSubmitModal
+          item={sharingOfficialMenuItem}
+          onClose={() => setSharingOfficialMenuItem(undefined)}
+          onSubmitted={() => {
+            setSharingOfficialMenuItem(undefined);
+            props.showToast("公式値を管理者確認へ提出しました");
+          }}
+        />
+      )}
+      {adminCatalogReviewOpen && (
+        <AdminCatalogReviewModal
+          onClose={() => setAdminCatalogReviewOpen(false)}
+          onReviewed={() => void props.syncCloud()}
         />
       )}
       {goalHelpTopic && <GoalHelpModal topic={goalHelpTopic} onClose={() => setGoalHelpTopic(undefined)} />}
@@ -11504,8 +11661,30 @@ function ManualFoodForm({ manual, setManual, onSave, compact = false, mode = "lo
               />
               公式値として登録
             </label>
+            {manual.officialVerified && (
+              <div className="grid gap-2 rounded-2xl border border-line bg-rice/60 p-3">
+                <label className="text-xs font-bold text-moss">
+                  確認した一次資料
+                  <select className="mt-1 w-full" value={manual.officialEvidenceType} onChange={(event) => setManual({
+                    ...manual,
+                    officialEvidenceType: event.target.value as ManualFoodDraft["officialEvidenceType"],
+                  })}>
+                    <option value="package_label">商品パッケージの栄養表示</option>
+                    <option value="official_url">公式Web・公式PDF</option>
+                    <option value="official_document">公式メニュー・メーカー資料</option>
+                    <option value="in_store_display">店頭の公式栄養表示</option>
+                  </select>
+                </label>
+                {manual.officialEvidenceType === "official_url" && (
+                  <label className="text-xs font-bold text-moss">
+                    公式URL
+                    <input className="mt-1 w-full" type="url" value={manual.officialSourceUrl} onChange={(event) => setManual({ ...manual, officialSourceUrl: event.target.value })} placeholder="https://..." />
+                  </label>
+                )}
+              </div>
+            )}
             <p className="rounded-2xl border border-line bg-rice/60 px-3 py-2 text-xs font-semibold text-moss">
-              公式サイト・パッケージ等で栄養値を確認できている場合だけONにします。保存後は「公式値・信用度 高」として扱います。
+              公式Web、商品パッケージ、公式資料、店頭表示のいずれかで確認できている場合だけONにします。URLがなくても、パッケージ表示は公式値の根拠になります。
             </p>
             <button className="primary-button w-full" disabled={!manual.name.trim()} onClick={onSave}><Save size={17} />{submitLabel}</button>
             {onSecondarySave && (
@@ -11584,6 +11763,19 @@ function ManualFoodForm({ manual, setManual, onSave, compact = false, mode = "lo
         <label className="chip"><input type="checkbox" checked={manual.favorite} onChange={(event) => setManual({ ...manual, favorite: event.target.checked })} />お気に入り</label>
         <label className="chip"><input type="checkbox" checked={manual.officialVerified} onChange={(event) => setManual({ ...manual, officialVerified: event.target.checked })} />公式値として登録</label>
       </div>
+      {manual.officialVerified && (
+        <div className="mt-3 grid gap-2 rounded-2xl border border-line bg-rice/60 p-3">
+          <select value={manual.officialEvidenceType} onChange={(event) => setManual({ ...manual, officialEvidenceType: event.target.value as ManualFoodDraft["officialEvidenceType"] })}>
+            <option value="package_label">商品パッケージの栄養表示</option>
+            <option value="official_url">公式Web・公式PDF</option>
+            <option value="official_document">公式メニュー・メーカー資料</option>
+            <option value="in_store_display">店頭の公式栄養表示</option>
+          </select>
+          {manual.officialEvidenceType === "official_url" && (
+            <input type="url" value={manual.officialSourceUrl} onChange={(event) => setManual({ ...manual, officialSourceUrl: event.target.value })} placeholder="公式URL https://..." />
+          )}
+        </div>
+      )}
       <button className="primary-button mt-3 w-full" onClick={onSave}><Save size={17} />保存</button>
     </section>
   );
@@ -11770,7 +11962,14 @@ function AiFoodImportModal({ intent = "log", step, setStep, text, setText, items
 
         {step === "prompt" && (
           <div className="mt-4 space-y-3">
+            <GeminiPhotoAnalyzer
+              onResult={(result) => {
+                setText(JSON.stringify(result, null, 2));
+                setStep("paste");
+              }}
+            />
             <div className="ai-food-helper-card">
+              <p className="font-black text-ink">任意のAIを使う場合</p>
               <p>1. 下のプロンプトをコピーボタンを押してください。</p>
               <p className="mt-1">2. 初回のみお好きなAIを開いて（Gemini推奨）新規チャットにペーストしてください。次回以降は同じチャットに写真を貼るだけで使えます。</p>
               <p className="mt-1">3. AIが返してきたコードを丸ごとコピーして次の画面で貼り付けてください。</p>
@@ -12086,6 +12285,177 @@ function AiFoodImportModal({ intent = "log", step, setStep, text, setText, items
   );
 }
 
+function GeminiPhotoAnalyzer({ onResult }: { onResult: (result: Record<string, unknown>) => void }) {
+  const [consent, setConsent] = useState<"loading" | "required" | "accepted">("loading");
+  const [foodImage, setFoodImage] = useState<string>();
+  const [evidenceImage, setEvidenceImage] = useState<string>();
+  const [brandHint, setBrandHint] = useState("");
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [error, setError] = useState<GeminiPhotoError>();
+  const [lastModel, setLastModel] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+    db.settings.get("local").then((settings) => {
+      if (cancelled) return;
+      setConsent(
+        settings?.gemini_photo_consent_version === geminiConsentVersion
+          && !settings.gemini_photo_consent_revoked_at
+          ? "accepted"
+          : "required",
+      );
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const acceptConsent = async () => {
+    const timestamp = nowIso();
+    const settings = await db.settings.get("local");
+    if (settings) {
+      await db.settings.update("local", {
+        gemini_photo_consent_version: geminiConsentVersion,
+        gemini_photo_consent_at: timestamp,
+        gemini_photo_consent_revoked_at: undefined,
+        updated_at: timestamp,
+      });
+    } else {
+      await db.settings.put({
+        id: "local",
+        day_boundary_hour: 3,
+        onboarding_completed: false,
+        gemini_photo_consent_version: geminiConsentVersion,
+        gemini_photo_consent_at: timestamp,
+        created_at: timestamp,
+        updated_at: timestamp,
+      });
+    }
+    setConsent("accepted");
+  };
+
+  const revokeConsent = async () => {
+    const timestamp = nowIso();
+    await db.settings.update("local", {
+      gemini_photo_consent_revoked_at: timestamp,
+      updated_at: timestamp,
+    });
+    setFoodImage(undefined);
+    setEvidenceImage(undefined);
+    setConsent("required");
+  };
+
+  const chooseImage = async (file: File | undefined, kind: "food" | "evidence") => {
+    if (!file) return;
+    setError(undefined);
+    try {
+      const prepared = await prepareAiImage(file);
+      if (kind === "food") setFoodImage(prepared);
+      else setEvidenceImage(prepared);
+    } catch (nextError) {
+      setError(nextError instanceof Error ? nextError as GeminiPhotoError : new Error("画像を処理できませんでした。"));
+    }
+  };
+
+  const analyze = async (useFallback = false) => {
+    if (!foodImage && !evidenceImage) {
+      setError(new Error("食事写真、レシート、商品ラベルのいずれかを選んでください。"));
+      return;
+    }
+    setIsAnalyzing(true);
+    setError(undefined);
+    try {
+      const response = await analyzeWithGemini({ foodImage, evidenceImage, brandHint, useFallback });
+      setLastModel(response.model);
+      onResult(response.result);
+    } catch (nextError) {
+      setError(nextError instanceof Error ? nextError as GeminiPhotoError : new Error("写真判定に失敗しました。"));
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  if (consent === "loading") {
+    return <div className="ai-food-helper-card"><p>アプリ内写真判定を準備しています。</p></div>;
+  }
+
+  if (consent === "required") {
+    return (
+      <section className="rounded-2xl border border-leaf/30 bg-leaf/10 p-3">
+        <div className="flex items-center gap-2">
+          <Sparkles size={17} />
+          <p className="font-black">アプリ内Gemini写真判定</p>
+        </div>
+        <div className="mt-2 space-y-1 text-xs leading-relaxed text-moss">
+          <p>写真・レシート・商品ラベルをGoogle Gemini APIへ送って候補を作ります。</p>
+          <p>無料枠では入力と応答がGoogle製品の改善や人による確認に使われる場合があります。</p>
+          <p>人物、車両ナンバー、氏名、会員番号、決済情報などが写った画像は送らないでください。店名・商品名が載った通常のレシートは利用できます。</p>
+          <p>画像は送信前に再生成して位置情報を除去し、100%トラッカー側には保存しません。</p>
+        </div>
+        <button className="primary-button mt-3 w-full" onClick={acceptConsent}><Check size={17} />内容を確認して利用する</button>
+      </section>
+    );
+  }
+
+  return (
+    <section className="rounded-2xl border border-leaf/30 bg-leaf/10 p-3">
+      <div className="flex items-start justify-between gap-2">
+        <div>
+          <p className="font-black">アプリ内Gemini写真判定</p>
+          <p className="mt-1 text-xs font-semibold text-moss">写真だけ、レシートだけ、または2枚を組み合わせて判定できます。</p>
+        </div>
+        <button className="text-[11px] font-bold text-moss underline" onClick={revokeConsent}>同意を取り消す</button>
+      </div>
+      <p className="mt-3 rounded-xl bg-rice/80 px-3 py-2 text-xs font-semibold text-moss">
+        送信前に人物・車両ナンバー・氏名・会員番号・決済情報が写っていないか確認してください。
+      </p>
+      <label className="mt-3 block text-xs font-bold text-moss">
+        店名・ブランドのヒント（任意）
+        <input className="mt-1 w-full" value={brandHint} onChange={(event) => setBrandHint(event.target.value)} placeholder="例: マクドナルド" maxLength={100} />
+      </label>
+      <div className="mt-3 grid grid-cols-2 gap-2">
+        <label className="secondary-button min-h-12 cursor-pointer px-2 text-xs">
+          <Utensils size={16} />{foodImage ? "食事写真を変更" : "食事写真"}
+          <input className="hidden" type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => {
+            void chooseImage(event.target.files?.[0], "food");
+            event.target.value = "";
+          }} />
+        </label>
+        <label className="secondary-button min-h-12 cursor-pointer px-2 text-xs">
+          <FileText size={16} />{evidenceImage ? "補助画像を変更" : "レシート・ラベル"}
+          <input className="hidden" type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => {
+            void chooseImage(event.target.files?.[0], "evidence");
+            event.target.value = "";
+          }} />
+        </label>
+      </div>
+      {(foodImage || evidenceImage) && (
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          {foodImage && <img className="h-28 w-full rounded-xl object-cover" src={foodImage} alt="送信する食事写真のプレビュー" />}
+          {evidenceImage && <img className="h-28 w-full rounded-xl object-cover" src={evidenceImage} alt="送信するレシートまたはラベルのプレビュー" />}
+        </div>
+      )}
+      {error && (
+        <div className="mt-3 rounded-xl border border-clay/30 bg-clay/10 px-3 py-2 text-xs font-semibold text-clay">
+          <p>{error.message}</p>
+          {error.fallbackAvailable && (
+            <button className="secondary-button mt-2 h-9 w-full text-xs" disabled={isAnalyzing} onClick={() => void analyze(true)}>
+              簡易モデルで試す
+            </button>
+          )}
+          {["user_ai_limit", "global_ai_limit", "gemini_quota_exhausted"].includes(error.code ?? "") && (
+            <p className="mt-2 text-moss">下の「プロンプトをコピー」から、これまでどおり任意のAIを利用できます。</p>
+          )}
+        </div>
+      )}
+      {lastModel && <p className="mt-2 text-[11px] font-semibold text-moss">前回の判定モデル: {lastModel}</p>}
+      <button className="primary-button mt-3 w-full" disabled={isAnalyzing || (!foodImage && !evidenceImage)} onClick={() => void analyze(false)}>
+        <Sparkles size={17} />{isAnalyzing ? "写真を判定中…" : "この画像をGeminiへ送信"}
+      </button>
+    </section>
+  );
+}
+
 function WorkoutTemplateRow({ template, canReorder, isEditing, isDragging, onStart, onEdit, onDelete, onDragStart, onDragEnter, onDragEnd }: {
   template: WorkoutTemplate;
   canReorder: boolean;
@@ -12140,6 +12510,203 @@ function WorkoutTemplateRow({ template, canReorder, isEditing, isDragging, onSta
         <button className="icon-button h-8 w-8 text-clay" aria-label={`${template.name}を削除`} onClick={onDelete}><Trash2 size={14} /></button>
         <button className="workout-template-record secondary-button h-8 px-2 py-1 text-xs" aria-label={`${template.name}を今日の記録に追加`} onClick={() => onStart(template)}><Plus size={13} />記録</button>
       </div>
+    </div>
+  );
+}
+
+type CatalogReviewSubmission = {
+  id: string;
+  menu: Partial<MenuItem>;
+  evidence_type: string;
+  source_url?: string | null;
+  has_evidence_image: boolean;
+  created_at: string;
+};
+
+function AdminCatalogReviewModal({ onClose, onReviewed }: {
+  onClose: () => void;
+  onReviewed: () => void;
+}) {
+  const [submissions, setSubmissions] = useState<CatalogReviewSubmission[]>([]);
+  const [message, setMessage] = useState("読み込み中…");
+  const [busyId, setBusyId] = useState<string>();
+
+  const load = async () => {
+    try {
+      const response = await fetch("/api/admin/catalog/submissions", { headers: { accept: "application/json" } });
+      const data = await response.json().catch(() => ({})) as { submissions?: CatalogReviewSubmission[]; message?: string };
+      if (!response.ok) throw new Error(data.message || "審査一覧を読み込めませんでした。");
+      setSubmissions(data.submissions ?? []);
+      setMessage(data.submissions?.length ? "" : "審査待ちの申請はありません。");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "審査一覧を読み込めませんでした。");
+    }
+  };
+
+  useEffect(() => {
+    void load();
+  }, []);
+
+  const review = async (submission: CatalogReviewSubmission, action: "approve" | "reject") => {
+    const verb = action === "approve" ? "承認" : "却下";
+    const note = prompt(`${verb}メモ（任意）`) ?? "";
+    setBusyId(submission.id);
+    try {
+      const response = await fetch(`/api/admin/catalog/submissions/${encodeURIComponent(submission.id)}/${action}`, {
+        method: "POST",
+        headers: { "content-type": "application/json", accept: "application/json" },
+        body: JSON.stringify({ note }),
+      });
+      const data = await response.json().catch(() => ({})) as { message?: string };
+      if (!response.ok) throw new Error(data.message || `${verb}できませんでした。`);
+      setSubmissions((current) => current.filter((item) => item.id !== submission.id));
+      setMessage("審査結果を保存しました。");
+      onReviewed();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : `${verb}できませんでした。`);
+    } finally {
+      setBusyId(undefined);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink/30 px-4 pb-4" onClick={onClose}>
+      <section className="compact-card max-h-[90vh] w-full max-w-[560px] overflow-y-auto p-4" onClick={(event) => event.stopPropagation()}>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-lg font-black">共有公式値の審査</p>
+            <p className="mt-1 text-xs font-semibold text-moss">URLまたは非公開の一次資料画像と、登録値を照合します。</p>
+          </div>
+          <button className="icon-button h-9 w-9" aria-label="閉じる" onClick={onClose}>×</button>
+        </div>
+        <div className="mt-4 grid gap-3">
+          {submissions.map((submission) => (
+            <article className="rounded-xl border border-line p-3" key={submission.id}>
+              <p className="font-bold">{submission.menu.brand ? `${submission.menu.brand} ` : ""}{submission.menu.name ?? "名称未設定"}</p>
+              <p className="mt-1 text-xs text-moss">
+                {submission.menu.calories ?? 0}kcal · P{submission.menu.protein_g ?? 0} F{submission.menu.fat_g ?? 0} C{submission.menu.carbs_g ?? 0}
+              </p>
+              <p className="mt-2 text-xs text-moss">確認元: {submission.evidence_type}</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {submission.source_url && (
+                  <a className="secondary-button px-3 py-2 text-xs" href={submission.source_url} target="_blank" rel="noreferrer">公式資料を開く</a>
+                )}
+                {submission.has_evidence_image && (
+                  <a className="secondary-button px-3 py-2 text-xs" href={`/api/admin/catalog/evidence/${encodeURIComponent(submission.id)}`} target="_blank" rel="noreferrer">証拠画像を開く</a>
+                )}
+                <button className="primary-button px-3 py-2 text-xs" disabled={busyId === submission.id} onClick={() => void review(submission, "approve")}><Check size={14} />承認</button>
+                <button className="secondary-button px-3 py-2 text-xs text-clay" disabled={busyId === submission.id} onClick={() => void review(submission, "reject")}>却下</button>
+              </div>
+            </article>
+          ))}
+          {message && <p className="rounded-xl bg-rice px-3 py-2 text-xs font-semibold text-moss">{message}</p>}
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function OfficialEvidenceSubmitModal({ item, onClose, onSubmitted }: {
+  item: MenuItem;
+  onClose: () => void;
+  onSubmitted: () => void;
+}) {
+  type EvidenceType = "official_url" | "package_label" | "official_document" | "in_store_display";
+  const inferredType: EvidenceType = item.nutrition_meta?.origin === "package_label" ? "package_label" : "official_url";
+  const [evidenceType, setEvidenceType] = useState<EvidenceType>(inferredType);
+  const [sourceUrl, setSourceUrl] = useState(item.source_url ?? "");
+  const [evidenceImage, setEvidenceImage] = useState<string>();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [message, setMessage] = useState("");
+  const requiresImage = evidenceType !== "official_url";
+
+  const submit = async () => {
+    if (evidenceType === "official_url" && !sourceUrl.trim()) {
+      setMessage("公式URLを入力してください。");
+      return;
+    }
+    if (requiresImage && !evidenceImage) {
+      setMessage("確認に使うパッケージまたは公式資料の画像を選んでください。");
+      return;
+    }
+    setIsSubmitting(true);
+    setMessage("");
+    try {
+      const response = await fetch("/api/catalog/submissions", {
+        method: "POST",
+        headers: { "content-type": "application/json", accept: "application/json" },
+        body: JSON.stringify({
+          evidence_type: evidenceType,
+          source_url: evidenceType === "official_url" ? sourceUrl.trim() : undefined,
+          evidence_image: evidenceImage,
+          menu: item,
+        }),
+      });
+      const data = await response.json().catch(() => ({})) as { message?: string };
+      if (!response.ok) throw new Error(data.message || "共有申請に失敗しました。");
+      onSubmitted();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "共有申請に失敗しました。");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink/30 px-4 pb-4" onClick={onClose}>
+      <section className="compact-card max-h-[86vh] w-full max-w-[430px] overflow-y-auto p-4" onClick={(event) => event.stopPropagation()}>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-lg font-black">公式値を共有申請</p>
+            <p className="mt-1 text-xs font-semibold text-moss">{formatMenuItemName(item)}</p>
+          </div>
+          <button className="icon-button h-9 w-9" aria-label="閉じる" onClick={onClose}>×</button>
+        </div>
+        <p className="mt-3 rounded-xl bg-rice px-3 py-2 text-xs leading-relaxed text-moss">
+          自分の記録ではすでに公式値として使えます。全員への共有は、管理者が一次資料と数値を確認した後に行われます。
+        </p>
+        <label className="mt-3 block text-xs font-bold text-moss">
+          確認した一次資料
+          <select className="mt-1 w-full" value={evidenceType} onChange={(event) => {
+            setEvidenceType(event.target.value as EvidenceType);
+            setMessage("");
+          }}>
+            <option value="package_label">商品パッケージの栄養表示</option>
+            <option value="official_url">公式Web・公式PDF</option>
+            <option value="official_document">公式メニュー・メーカー資料</option>
+            <option value="in_store_display">店頭の公式栄養表示</option>
+          </select>
+        </label>
+        {evidenceType === "official_url" ? (
+          <label className="mt-3 block text-xs font-bold text-moss">
+            公式URL
+            <input className="mt-1 w-full" type="url" value={sourceUrl} onChange={(event) => setSourceUrl(event.target.value)} placeholder="https://..." />
+          </label>
+        ) : (
+          <div className="mt-3">
+            <label className="secondary-button cursor-pointer">
+              <FileText size={17} />{evidenceImage ? "証拠画像を変更" : "ラベル・資料画像を選択"}
+              <input className="hidden" type="file" accept="image/jpeg,image/png,image/webp" onChange={async (event) => {
+                const file = event.target.files?.[0];
+                event.target.value = "";
+                if (!file) return;
+                try {
+                  setEvidenceImage(await prepareAiImage(file, 1000, 0.72));
+                  setMessage("");
+                } catch (error) {
+                  setMessage(error instanceof Error ? error.message : "画像を処理できませんでした。");
+                }
+              }} />
+            </label>
+            {evidenceImage && <img className="mt-2 h-40 w-full rounded-xl object-contain bg-rice" src={evidenceImage} alt="管理者確認へ提出する証拠画像" />}
+            <p className="mt-2 text-xs leading-relaxed text-moss">位置情報は自動で除去します。証拠画像は非公開で、管理者確認にだけ使用します。</p>
+          </div>
+        )}
+        {message && <p className="mt-3 rounded-xl border border-clay/30 bg-clay/10 px-3 py-2 text-xs font-semibold text-clay">{message}</p>}
+        <button className="primary-button mt-4 w-full" disabled={isSubmitting} onClick={() => void submit()}>
+          <Check size={17} />{isSubmitting ? "提出中…" : "管理者確認へ提出"}
+        </button>
+      </section>
     </div>
   );
 }
@@ -15878,6 +16445,8 @@ function toManualDraft(item: MenuItem, mealType: MealType = "lunch"): ManualFood
     savePreset: true,
     favorite: item.is_favorite,
     officialVerified: item.data_source === "official",
+    officialEvidenceType: item.nutrition_meta?.origin === "package_label" ? "package_label" : "official_url",
+    officialSourceUrl: item.source_url ?? "",
   };
 }
 

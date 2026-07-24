@@ -1,0 +1,55 @@
+name = "fitnesstracker"
+main = "./worker/index.ts"
+compatibility_date = "2026-07-24"
+workers_dev = true
+preview_urls = true
+
+[assets]
+directory = "./dist"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
+run_worker_first = ["/api/*"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "phase-log-production"
+database_id = "673304e1-090a-4f5e-aecf-71352939f894"
+migrations_dir = "migrations"
+
+[[r2_buckets]]
+binding = "EVIDENCE"
+bucket_name = "phase-log-catalog-evidence"
+
+[vars]
+ACCESS_TEAM_DOMAIN = "qsfactory.cloudflareaccess.com"
+ACCESS_AUD = "f8b7cdae989166d8797a4097d65dada694ff94e6be62826ab77d5868f7322850"
+GEMINI_PRIMARY_MODEL = "gemini-3.6-flash"
+GEMINI_FALLBACK_MODEL = "gemini-3.5-flash-lite"
+GEMINI_PER_USER_DAILY_LIMIT = "5"
+GEMINI_GLOBAL_DAILY_LIMIT = "40"
+ADMIN_EMAILS = "[redacted-admin-email]"
+
+[env.preview]
+name = "fitnesstracker"
+
+[[env.preview.d1_databases]]
+binding = "DB"
+database_name = "phase-log-preview"
+database_id = "c0b29482-b125-4a5e-9a1c-7364165d79b2"
+migrations_dir = "migrations"
+
+[[env.preview.r2_buckets]]
+binding = "EVIDENCE"
+bucket_name = "phase-log-catalog-evidence-preview"
+
+[env.preview.vars]
+ACCESS_TEAM_DOMAIN = "qsfactory.cloudflareaccess.com"
+ACCESS_AUD = "0d8e5f7f29b27b39566d1639f101aef6258416537035159843b80a7e7baa7f8f"
+GEMINI_PRIMARY_MODEL = "gemini-3.6-flash"
+GEMINI_FALLBACK_MODEL = "gemini-3.5-flash-lite"
+GEMINI_PER_USER_DAILY_LIMIT = "3"
+GEMINI_GLOBAL_DAILY_LIMIT = "10"
+ADMIN_EMAILS = "[redacted-admin-email]"
+
+# Add GEMINI_API_KEY with:
+# npx wrangler secret put GEMINI_API_KEY

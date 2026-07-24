@@ -1,5 +1,5 @@
 const CACHE_PREFIX = "phase-log-local";
-const CACHE_NAME = `${CACHE_PREFIX}-v4`;
+const CACHE_NAME = `${CACHE_PREFIX}-v5`;
 const APP_SHELL = ["./manifest.webmanifest"];
 
 self.addEventListener("message", (event) => {
@@ -27,6 +27,10 @@ self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
   const requestUrl = new URL(event.request.url);
   if (requestUrl.origin !== self.location.origin) return;
+  if (requestUrl.pathname.startsWith("/api/")) {
+    event.respondWith(fetch(event.request, { cache: "no-store" }));
+    return;
+  }
 
   if (event.request.mode === "navigate" || event.request.headers.get("accept")?.includes("text/html")) {
     event.respondWith(

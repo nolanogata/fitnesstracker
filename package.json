@@ -17,7 +17,8 @@
     "test:sukiya": "node --experimental-strip-types scripts/test-sukiya-official.ts",
     "test:food-catalog": "esbuild scripts/test-food-catalog.ts --bundle --platform=node --format=esm --outfile=/tmp/phase-log-food-catalog-test.mjs && node /tmp/phase-log-food-catalog-test.mjs",
     "dev": "vite --host 0.0.0.0",
-    "build": "npm run audit:food-seeds && npm run test:goal && npm run test:onboarding && npm run test:report && npm run test:history && npm run test:chain-combo && npm run test:chain-browse && npm run test:chain-semantics && npm run test:chain-catalog && npm run test:baskin-robbins && npm run test:sukiya && npm run test:food-catalog && tsc --noEmit && vite build",
+    "typecheck:functions": "tsc -p tsconfig.functions.json",
+    "build": "npm run audit:food-seeds && npm run test:goal && npm run test:onboarding && npm run test:report && npm run test:history && npm run test:chain-combo && npm run test:chain-browse && npm run test:chain-semantics && npm run test:chain-catalog && npm run test:baskin-robbins && npm run test:sukiya && npm run test:food-catalog && tsc --noEmit && npm run typecheck:functions && vite build",
     "preview": "vite preview --host 0.0.0.0"
   },
   "dependencies": {

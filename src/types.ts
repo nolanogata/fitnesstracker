@@ -203,6 +203,9 @@ export type Settings = {
   activity_profile_prompt_dismissed_at?: string;
   activity_profile_prompt_next_at?: string;
   food_record_contexts?: Record<string, FoodRecordContext>;
+  gemini_photo_consent_version?: string;
+  gemini_photo_consent_at?: string;
+  gemini_photo_consent_revoked_at?: string;
   created_at: string;
   updated_at: string;
 };

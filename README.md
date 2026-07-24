@@ -17,8 +17,10 @@ npm run build
 
 ## Deploy
 
-This repo includes a GitHub Pages workflow at `.github/workflows/pages.yml`.
+The production target is Cloudflare Workers with Static Assets, Access, D1,
+private R2 evidence storage, and an optional Gemini photo-analysis secret.
+See [CLOUDFLARE_DEPLOY.md](./CLOUDFLARE_DEPLOY.md).
 
-In the GitHub repository settings, set Pages source to **GitHub Actions**.
-
-All user logs are stored in each device's IndexedDB. If multiple people open the same deployed URL, each iPhone keeps separate local data.
+GitHub Pages can remain enabled during migration. On that origin the app keeps
+working in local-only mode. On the protected Cloudflare origin, D1 is the cloud
+source of truth and IndexedDB is the offline cache.
