@@ -11,6 +11,7 @@
     "test:report": "node --experimental-strip-types scripts/test-report-presentation.ts",
     "test:history": "node --experimental-strip-types scripts/test-workout-body-part-summary.ts",
     "test:chain-combo": "node --experimental-strip-types scripts/test-chain-combo-availability.ts",
+    "test:chain-log": "node --experimental-strip-types scripts/test-chain-combo-logging.ts",
     "test:chain-browse": "node --experimental-strip-types scripts/test-chain-catalog-browse.ts",
     "test:chain-semantics": "node --experimental-strip-types scripts/test-chain-combo-semantics.ts",
     "test:chain-catalog": "esbuild scripts/test-chain-combo-catalog.ts --bundle --platform=node --format=esm --outfile=/tmp/phase-log-chain-combo-catalog-test.mjs && node /tmp/phase-log-chain-combo-catalog-test.mjs",
@@ -22,7 +23,7 @@
     "test:food-catalog": "esbuild scripts/test-food-catalog.ts --bundle --platform=node --format=esm --outfile=/tmp/phase-log-food-catalog-test.mjs && node /tmp/phase-log-food-catalog-test.mjs",
     "dev": "vite --host 0.0.0.0",
     "typecheck:functions": "tsc -p tsconfig.functions.json",
-    "build": "npm run audit:food-seeds && npm run test:goal && npm run test:onboarding && npm run test:theme-nav && npm run test:report && npm run test:history && npm run test:chain-combo && npm run test:chain-browse && npm run test:chain-semantics && npm run test:chain-catalog && npm run test:baskin-robbins && npm run test:sukiya && npm run test:gemini && npm run test:advice && npm run test:cloud-safety && npm run test:food-catalog && tsc --noEmit && npm run typecheck:functions && vite build",
+    "build": "npm run audit:food-seeds && npm run test:goal && npm run test:onboarding && npm run test:theme-nav && npm run test:report && npm run test:history && npm run test:chain-combo && npm run test:chain-log && npm run test:chain-browse && npm run test:chain-semantics && npm run test:chain-catalog && npm run test:baskin-robbins && npm run test:sukiya && npm run test:gemini && npm run test:advice && npm run test:cloud-safety && npm run test:food-catalog && tsc --noEmit && npm run typecheck:functions && vite build",
     "preview": "vite preview --host 0.0.0.0"
   },
   "dependencies": {

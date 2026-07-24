@@ -4147,6 +4147,10 @@ button {
   min-height: 3rem;
 }
 
+.chain-combo-log-button {
+  min-height: 3rem;
+}
+
 .chain-combo-main-chip {
   display: inline-flex;
   min-width: 10.5rem;
@@ -4196,20 +4200,6 @@ button {
 .chain-combo-item-title {
   -webkit-line-clamp: 1;
   line-clamp: 1;
-}
-
-.chain-combo-record-button {
-  display: inline-flex;
-  min-height: 2.7rem;
-  min-width: 2.7rem;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid var(--glass-border);
-  border-radius: 999px;
-  background: var(--glass-bg-soft);
-  color: var(--accent-text);
-  font-weight: 900;
-  box-shadow: var(--glass-highlight);
 }
 
 :root:not([data-accent="classic"]) .perfect-food-item .text-moss,
@@ -6210,24 +6200,6 @@ main.theme-dark .chain-combo-action,
     linear-gradient(135deg, rgba(30, 42, 35, 0.96), rgba(21, 30, 25, 0.9)),
     rgba(255, 255, 255, 0.08) !important;
   color: #f8fbf8;
-}
-
-main.theme-dark .chain-combo-record-button,
-.theme-dark .chain-combo-record-button,
-:root[data-theme="dark"] .chain-combo-record-button {
-  border-color: rgba(221, 236, 182, 0.36);
-  background:
-    linear-gradient(135deg, rgba(156, 181, 56, 0.24), rgba(255, 255, 255, 0.08)),
-    rgba(255, 255, 255, 0.08);
-  color: #f3ffc4;
-}
-
-main.theme-dark .chain-combo-action .chain-combo-record-button,
-.theme-dark .chain-combo-action .chain-combo-record-button,
-:root[data-theme="dark"] .chain-combo-action .chain-combo-record-button {
-  background:
-    linear-gradient(135deg, rgba(156, 181, 56, 0.28), rgba(255, 255, 255, 0.08)),
-    rgba(255, 255, 255, 0.08) !important;
 }
 
 main.theme-dark .chain-combo-main-chip,

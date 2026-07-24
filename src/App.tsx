@@ -220,6 +220,10 @@ import {
   type ChainComboServiceMode,
 } from "./lib/chainComboAvailability";
 import {
+  buildChainComboFoodEntries,
+  chainComboMealPeriodLabels,
+} from "./lib/chainComboLogging";
+import {
   chainKanaGroups,
   getChainBrandsForKana,
   getChainCategoryForBrand,
@@ -1358,6 +1362,15 @@ const achievementProgressSpecs: Record<string, AchievementProgressSpec> = {
   streak_365: { metric: "streak", target: 365, unit: "日" },
 };
 const appUpdates: AppUpdate[] = [
+  {
+    id: "2026-07-24-chain-combo-bulk-log",
+    title: "おすすめの組み合わせを一括記録",
+    date: "2026-07-24",
+    items: [
+      "おすすめの組み合わせから、すべての品を1回の操作でまとめて記録できるようにしました。",
+      "選択中の朝・昼・夜を食事区分に使い、各品はあとから個別に編集できます。",
+    ],
+  },
   {
     id: "2026-07-24-ai-advice-topics",
     title: "アプリ内AI相談を選びやすく改善",
@@ -5227,7 +5240,7 @@ function PerfectFoodModal({ dayTotals, goal, menuItems, foodEntries, onClose, on
   );
 }
 
-function ChainComboModal({ brand, menuItems, variantIndex, remainingNutrition, adoptedRemainingNutrition, foodEntries, initialMainItem, onClose, onPick }: {
+function ChainComboModal({ brand, menuItems, variantIndex, remainingNutrition, adoptedRemainingNutrition, foodEntries, initialMainItem, onClose, onLog }: {
   brand: string;
   menuItems: MenuItem[];
   variantIndex: MenuSizeVariantIndex;
@@ -5236,12 +5249,14 @@ function ChainComboModal({ brand, menuItems, variantIndex, remainingNutrition, a
   foodEntries: FoodEntry[];
   initialMainItem?: MenuItem;
   onClose: () => void;
-  onPick: (candidate: ChainComboCandidate) => void;
+  onLog: (suggestion: ChainComboSuggestion, context: { serviceMode: ChainComboServiceMode; mealPeriod: ChainComboMealPeriod }) => Promise<void>;
 }) {
   const [mode, setMode] = useState<ChainComboMode>(initialMainItem ? "main" : "auto");
   const [selectedMainId, setSelectedMainId] = useState(initialMainItem?.id);
   const [serviceMode, setServiceMode] = useState<ChainComboServiceMode>(() => getDefaultChainComboServiceMode(initialMainItem));
   const [mealPeriod, setMealPeriod] = useState<ChainComboMealPeriod>(() => getDefaultChainComboMealPeriod(initialMainItem, new Date().getHours()));
+  const [loggingSuggestionId, setLoggingSuggestionId] = useState<string>();
+  const loggingSuggestionRef = useRef(false);
   const usageMap = useMemo(() => buildFoodUsageMap(foodEntries), [foodEntries]);
   const availableMenuItems = useMemo(
     () => menuItems.filter((item) => isChainComboItemAvailable(item, { serviceMode, mealPeriod })),
@@ -5267,6 +5282,19 @@ function ChainComboModal({ brand, menuItems, variantIndex, remainingNutrition, a
     || round1(adoptedRemainingNutrition.protein) !== round1(remainingNutrition.protein)
     || round1(adoptedRemainingNutrition.fat) !== round1(remainingNutrition.fat)
     || round1(adoptedRemainingNutrition.carbs) !== round1(remainingNutrition.carbs);
+  const logSuggestion = async (suggestion: ChainComboSuggestion) => {
+    if (loggingSuggestionRef.current) return;
+    loggingSuggestionRef.current = true;
+    setLoggingSuggestionId(suggestion.id);
+    try {
+      await onLog(suggestion, { serviceMode, mealPeriod });
+    } catch (error) {
+      console.error("chain_combo_log_error", error);
+    } finally {
+      loggingSuggestionRef.current = false;
+      setLoggingSuggestionId(undefined);
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink/30 px-4 pb-4" onClick={onClose}>
@@ -5379,14 +5407,11 @@ function ChainComboModal({ brand, menuItems, variantIndex, remainingNutrition, a
               <div className="mt-3 grid gap-2">
                 {suggestion.items.map((candidate) => (
                   <div className="chain-combo-action rounded-xl border border-line p-3" key={`${suggestion.id}-${candidate.item.id}-${candidate.portionLabel ?? "base"}`}>
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="chain-combo-item-title text-sm font-bold">{formatChainComboCandidateDisplayName(candidate)}</p>
-                        <p className="numeric-text mt-1 text-xs text-moss">
-                          {candidate.role === "main" ? "メイン" : "追加"}{candidate.portionLabel ? ` · ${candidate.portionLabel}` : ""} · {candidate.nutrition.calories}kcal
-                        </p>
-                      </div>
-                      <button className="chain-combo-record-button shrink-0 px-3 py-2 text-xs" onClick={() => onPick(candidate)}>記録</button>
+                    <div className="min-w-0">
+                      <p className="chain-combo-item-title text-sm font-bold">{formatChainComboCandidateDisplayName(candidate)}</p>
+                      <p className="numeric-text mt-1 text-xs text-moss">
+                        {candidate.role === "main" ? "メイン" : "追加"}{candidate.portionLabel ? ` · ${candidate.portionLabel}` : ""} · {candidate.nutrition.calories}kcal
+                      </p>
                     </div>
                   </div>
                 ))}
@@ -5399,6 +5424,16 @@ function ChainComboModal({ brand, menuItems, variantIndex, remainingNutrition, a
                   ))}
                 </div>
               </div>
+              <button
+                className="primary-button chain-combo-log-button mt-3 w-full"
+                disabled={Boolean(loggingSuggestionId)}
+                onClick={() => void logSuggestion(suggestion)}
+              >
+                <Check size={17} />
+                {loggingSuggestionId === suggestion.id
+                  ? "まとめて記録中…"
+                  : `この組み合わせを${chainComboMealPeriodLabels[mealPeriod]}に記録`}
+              </button>
             </section>
           )) : (
             <p className="perfect-food-panel rounded-md bg-rice p-4 text-center text-sm font-semibold text-moss">
@@ -5863,15 +5898,6 @@ function FoodTab(props: {
     setFoodAddStep("size");
     setSelected(item);
   };
-  const selectChainComboCandidate = (candidate: ChainComboCandidate) => {
-    setPortionMultiplier(candidate.portionMultiplier);
-    setPortionQuantity(1);
-    setBaskinRobbinsContainerId("cup");
-    setStaplePortionMultipliers(candidate.staplePortionMultipliers ?? {});
-    setMealType(candidate.item.default_meal_type ?? mealType);
-    setFoodAddStep("size");
-    setSelected(candidate.item);
-  };
   const openChainCombo = (seedItem?: MenuItem) => {
     setChainComboSeedItem(seedItem);
     setIsChainComboOpen(true);
@@ -6198,6 +6224,31 @@ function FoodTab(props: {
     remainingNutrition.carbs,
   ]);
   const shouldShowFoodResults = mode !== "ai" && (mode !== "search" || isGlobalSearch);
+  const logChainComboSuggestion = async (
+    suggestion: ChainComboSuggestion,
+    context: { serviceMode: ChainComboServiceMode; mealPeriod: ChainComboMealPeriod },
+  ) => {
+    const timestamp = nowIso();
+    const entries = buildChainComboFoodEntries({
+      suggestion,
+      appDate: props.appDate,
+      timestamp,
+      mealPeriod: context.mealPeriod,
+      serviceMode: context.serviceMode,
+    });
+    try {
+      await db.transaction("rw", [db.food_entries], async () => {
+        await db.food_entries.bulkPut(entries);
+      });
+      setIsChainComboOpen(false);
+      setChainComboSeedItem(undefined);
+      await props.refresh();
+      props.showToast(`${suggestion.items.length}品の組み合わせを${chainComboMealPeriodLabels[context.mealPeriod]}に一括記録しました`);
+    } catch (error) {
+      props.showToast("組み合わせを記録できませんでした");
+      throw error;
+    }
+  };
 
   const saveSelected = async () => {
     if (!selectedResolvedItem) return;
@@ -7101,11 +7152,7 @@ function FoodTab(props: {
             setIsChainComboOpen(false);
             setChainComboSeedItem(undefined);
           }}
-          onPick={(candidate) => {
-            setIsChainComboOpen(false);
-            setChainComboSeedItem(undefined);
-            selectChainComboCandidate(candidate);
-          }}
+          onLog={logChainComboSuggestion}
         />
       )}
 
