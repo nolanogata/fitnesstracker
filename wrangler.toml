@@ -4,6 +4,9 @@ compatibility_date = "2026-07-24"
 workers_dev = true
 preview_urls = true
 
+[secrets]
+required = ["GEMINI_API_KEY", "ADMIN_EMAILS"]
+
 [assets]
 directory = "./dist"
 binding = "ASSETS"
@@ -29,10 +32,12 @@ GEMINI_PER_USER_DAILY_LIMIT = "5"
 GEMINI_GLOBAL_DAILY_LIMIT = "40"
 CATALOG_EVIDENCE_PER_USER_DAILY_LIMIT = "3"
 CATALOG_EVIDENCE_GLOBAL_DAILY_LIMIT = "12"
-ADMIN_EMAILS = "[redacted-admin-email]"
 
 [env.preview]
 name = "fitnesstracker"
+
+[env.preview.secrets]
+required = ["GEMINI_API_KEY", "ADMIN_EMAILS"]
 
 [[env.preview.d1_databases]]
 binding = "DB"
@@ -53,7 +58,7 @@ GEMINI_PER_USER_DAILY_LIMIT = "3"
 GEMINI_GLOBAL_DAILY_LIMIT = "10"
 CATALOG_EVIDENCE_PER_USER_DAILY_LIMIT = "2"
 CATALOG_EVIDENCE_GLOBAL_DAILY_LIMIT = "4"
-ADMIN_EMAILS = "[redacted-admin-email]"
 
-# Add GEMINI_API_KEY with:
+# Add required secrets with:
 # npx wrangler secret put GEMINI_API_KEY
+# npx wrangler secret put ADMIN_EMAILS
