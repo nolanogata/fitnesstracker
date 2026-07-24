@@ -3,6 +3,7 @@ import { initializeSeeds } from "../data/seedInit";
 import type { BackupPayload } from "../types";
 import type { MenuItem } from "../types";
 import { exportBackup } from "./backup";
+import { recordsUpdatedAfter } from "./syncDelta";
 
 const syncCursorKey = "phase-log-cloud-sync-cursor";
 const syncDeviceKey = "phase-log-cloud-sync-device";
@@ -64,6 +65,8 @@ export async function syncCloudNow(): Promise<CloudSyncStatus> {
 
 async function performSync(): Promise<CloudSyncStatus> {
   if (!navigator.onLine) return { state: "disabled", message: "オフラインのため、接続後に同期します。" };
+  const syncStartedAt = new Date().toISOString();
+  const previousSyncAt = localStorage.getItem(syncLastAtKey) || undefined;
   try {
     const sessionResponse = await fetch("/api/session", { headers: { accept: "application/json" } });
     if (sessionResponse.status === 404) {
@@ -88,10 +91,11 @@ async function performSync(): Promise<CloudSyncStatus> {
 
     const backup = await exportBackup();
     const records = flattenBackup(backup);
+    const changedRecords = recordsUpdatedAfter(records, previousSyncAt);
     const deviceId = syncDeviceId();
     let uploaded = 0;
-    for (let offset = 0; offset < records.length; offset += 100) {
-      const batch = records.slice(offset, offset + 100);
+    for (let offset = 0; offset < changedRecords.length; offset += 100) {
+      const batch = changedRecords.slice(offset, offset + 100);
       const response = await apiJson<{ accepted: number; cursor: number }>("/api/sync/push", {
         method: "POST",
         body: JSON.stringify({ device_id: deviceId, records: batch }),
@@ -115,7 +119,7 @@ async function performSync(): Promise<CloudSyncStatus> {
     downloaded += finalPull.changes.length;
     cursor = finalPull.cursor;
     localStorage.setItem(syncCursorKey, String(cursor));
-    const syncedAt = new Date().toISOString();
+    const syncedAt = syncStartedAt;
     localStorage.setItem(syncLastAtKey, syncedAt);
     return { state: "synced", syncedAt, uploaded, downloaded };
   } catch (error) {

@@ -7,7 +7,7 @@ import {
 type D1Result<T = unknown> = {
   results?: T[];
   success: boolean;
-  meta?: { last_row_id?: number };
+  meta?: { last_row_id?: number; changes?: number };
 };
 
 type D1Statement = {
@@ -38,6 +38,8 @@ type Env = {
   GEMINI_FALLBACK_MODEL?: string;
   GEMINI_PER_USER_DAILY_LIMIT?: string;
   GEMINI_GLOBAL_DAILY_LIMIT?: string;
+  CATALOG_EVIDENCE_PER_USER_DAILY_LIMIT?: string;
+  CATALOG_EVIDENCE_GLOBAL_DAILY_LIMIT?: string;
   ADMIN_EMAILS?: string;
   DEV_AUTH_BYPASS?: string;
   DEV_USER_EMAIL?: string;
@@ -99,24 +101,24 @@ export const onRequest = async (context: PagesContext): Promise<Response> => {
     if (method === "GET" && path === "session") {
       return json({ user: { email: user.email, role: user.role }, cloud_sync: true });
     }
-    if (method === "GET" && path === "sync/pull") return handleSyncPull(context, user);
-    if (method === "POST" && path === "sync/push") return handleSyncPush(context, user);
-    if (method === "POST" && path === "sync/inventory") return handleSyncInventory(context, user);
-    if (method === "POST" && path === "migrations/register") return handleMigrationRegister(context, user);
-    if (method === "GET" && path === "catalog") return handleCatalog(context);
-    if (method === "POST" && path === "catalog/submissions") return handleCatalogSubmission(context, user);
-    if (method === "GET" && path === "admin/catalog/submissions") return handleAdminSubmissions(context, user);
+    if (method === "GET" && path === "sync/pull") return await handleSyncPull(context, user);
+    if (method === "POST" && path === "sync/push") return await handleSyncPush(context, user);
+    if (method === "POST" && path === "sync/inventory") return await handleSyncInventory(context, user);
+    if (method === "POST" && path === "migrations/register") return await handleMigrationRegister(context, user);
+    if (method === "GET" && path === "catalog") return await handleCatalog(context);
+    if (method === "POST" && path === "catalog/submissions") return await handleCatalogSubmission(context, user);
+    if (method === "GET" && path === "admin/catalog/submissions") return await handleAdminSubmissions(context, user);
     if (method === "POST" && /^admin\/catalog\/submissions\/[^/]+\/approve$/.test(path)) {
-      return handleAdminReview(context, user, path.split("/")[3], "approved");
+      return await handleAdminReview(context, user, path.split("/")[3], "approved");
     }
     if (method === "POST" && /^admin\/catalog\/submissions\/[^/]+\/reject$/.test(path)) {
-      return handleAdminReview(context, user, path.split("/")[3], "rejected");
+      return await handleAdminReview(context, user, path.split("/")[3], "rejected");
     }
     if (method === "GET" && /^admin\/catalog\/evidence\/[^/]+$/.test(path)) {
-      return handleEvidenceDownload(context, user, path.split("/")[3]);
+      return await handleEvidenceDownload(context, user, path.split("/")[3]);
     }
-    if (method === "POST" && path === "ai/photo-analyze") return handleGeminiPhoto(context, user);
-    if (method === "GET" && path === "ai/usage") return handleAiUsage(context, user);
+    if (method === "POST" && path === "ai/photo-analyze") return await handleGeminiPhoto(context, user);
+    if (method === "GET" && path === "ai/usage") return await handleAiUsage(context, user);
 
     return json({ error: "not_found" }, 404);
   } catch (error) {
@@ -411,6 +413,7 @@ async function handleCatalogSubmission(context: PagesContext, user: AppUser) {
   if (body.evidence_image) {
     const image = parseDataImage(body.evidence_image, 2_000_000);
     evidenceSha = await sha256Hex(image.bytes);
+    await reserveCatalogEvidenceQuota(context.env, user.id);
     evidenceObjectKey = `catalog-evidence/${crypto.randomUUID()}.${image.extension}`;
     await context.env.EVIDENCE.put(evidenceObjectKey, image.bytes, {
       httpMetadata: { contentType: image.contentType },
@@ -420,14 +423,77 @@ async function handleCatalogSubmission(context: PagesContext, user: AppUser) {
   if (!sourceUrl && !evidenceObjectKey) throw new HttpError(400, "evidence_required", "公式URLまたは確認できるラベル画像が必要です。");
   const id = `submission_${crypto.randomUUID()}`;
   const now = new Date().toISOString();
-  await context.env.DB.prepare(`
-    INSERT INTO catalog_submissions (
-      id, submitter_user_id, status, menu_payload_json, evidence_type,
-      source_url, evidence_object_key, evidence_sha256, created_at, updated_at
-    ) VALUES (?, ?, 'pending', ?, ?, ?, ?, ?, ?, ?)
-  `).bind(id, user.id, JSON.stringify(body.menu), evidenceType, sourceUrl, evidenceObjectKey, evidenceSha, now, now).run();
+  try {
+    await context.env.DB.prepare(`
+      INSERT INTO catalog_submissions (
+        id, submitter_user_id, status, menu_payload_json, evidence_type,
+        source_url, evidence_object_key, evidence_sha256, created_at, updated_at
+      ) VALUES (?, ?, 'pending', ?, ?, ?, ?, ?, ?, ?)
+    `).bind(id, user.id, JSON.stringify(body.menu), evidenceType, sourceUrl, evidenceObjectKey, evidenceSha, now, now).run();
+  } catch (error) {
+    if (evidenceObjectKey) await context.env.EVIDENCE.delete(evidenceObjectKey).catch(() => undefined);
+    throw error;
+  }
   await audit(context.env.DB, user.id, "catalog_submission_created", "catalog_submission", id, { evidence_type: evidenceType });
   return json({ id, status: "pending" }, 201);
+}
+
+async function reserveCatalogEvidenceQuota(env: Env, userId: string) {
+  const usageDate = tokyoDate();
+  const feature = "catalog_evidence";
+  const userScope = `user:${userId}`;
+  const globalScope = "global";
+  const perUserLimit = numericLimit(env.CATALOG_EVIDENCE_PER_USER_DAILY_LIMIT, 3);
+  const globalLimit = numericLimit(env.CATALOG_EVIDENCE_GLOBAL_DAILY_LIMIT, 12);
+  const [userUsed, globalUsed] = await Promise.all([
+    dailyUsageCount(env.DB, userScope, usageDate, feature),
+    dailyUsageCount(env.DB, globalScope, usageDate, feature),
+  ]);
+  if (userUsed >= perUserLimit) {
+    throw new HttpError(429, "user_evidence_limit", "本日の確認画像の送信上限に達しました。公式URLを利用するか、明日お試しください。");
+  }
+  if (globalUsed >= globalLimit) {
+    throw new HttpError(429, "global_evidence_limit", "本日の確認画像の受付上限に達しました。公式URLを利用するか、明日お試しください。");
+  }
+  const now = new Date().toISOString();
+  const results = await env.DB.batch([
+    dailyUsageIncrement(env.DB, userScope, usageDate, feature, now, perUserLimit),
+    dailyUsageIncrement(env.DB, globalScope, usageDate, feature, now, globalLimit),
+  ]);
+  if (results.some((result) => !result.success)) {
+    throw new HttpError(503, "evidence_quota_unavailable", "確認画像の受付状況を確認できませんでした。時間をおいてお試しください。");
+  }
+  if (results[0]?.meta?.changes !== 1) {
+    throw new HttpError(429, "user_evidence_limit", "本日の確認画像の送信上限に達しました。公式URLを利用するか、明日お試しください。");
+  }
+  if (results[1]?.meta?.changes !== 1) {
+    throw new HttpError(429, "global_evidence_limit", "本日の確認画像の受付上限に達しました。公式URLを利用するか、明日お試しください。");
+  }
+}
+
+async function dailyUsageCount(db: D1Database, scope: string, usageDate: string, feature: string) {
+  return Number(await db.prepare(`
+    SELECT usage_count FROM daily_usage_counters
+    WHERE scope = ? AND usage_date = ? AND feature = ?
+  `).bind(scope, usageDate, feature).first<number>("usage_count") ?? 0);
+}
+
+function dailyUsageIncrement(
+  db: D1Database,
+  scope: string,
+  usageDate: string,
+  feature: string,
+  now: string,
+  limit: number,
+) {
+  return db.prepare(`
+    INSERT INTO daily_usage_counters (scope, usage_date, feature, usage_count, updated_at)
+    VALUES (?, ?, ?, 1, ?)
+    ON CONFLICT(scope, usage_date, feature) DO UPDATE SET
+      usage_count = daily_usage_counters.usage_count + 1,
+      updated_at = excluded.updated_at
+    WHERE daily_usage_counters.usage_count < ?
+  `).bind(scope, usageDate, feature, now, limit);
 }
 
 async function handleAdminSubmissions(context: PagesContext, user: AppUser) {
@@ -854,6 +920,15 @@ function bytesToBase64(bytes: Uint8Array) {
 function pacificDate() {
   return new Intl.DateTimeFormat("en-CA", {
     timeZone: "America/Los_Angeles",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
+}
+
+function tokyoDate() {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Tokyo",
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
