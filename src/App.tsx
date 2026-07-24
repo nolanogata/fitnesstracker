@@ -1338,6 +1338,16 @@ const achievementProgressSpecs: Record<string, AchievementProgressSpec> = {
 };
 const appUpdates: AppUpdate[] = [
   {
+    id: "2026-07-24-account-pause-display-settings",
+    title: "アカウントと表示設定を調整",
+    date: "2026-07-24",
+    items: [
+      "アカウントメニューから使う一時停止を、チートデーと同じく選択中の1日だけに変更しました。",
+      "Homeのチェックイン表示をプロフィールから「表示・テーマ設定」へ移動しました。",
+      "ログアウト画面の技術的な説明を減らし、操作を分かりやすくしました。",
+    ],
+  },
+  {
     id: "2026-07-24-home-account-announcements",
     title: "Homeの操作とプロフィール設定を整理",
     date: "2026-07-24",
@@ -2571,7 +2581,7 @@ function App() {
   const pauseModeSettings = useMemo(() => getPauseModeSettings(settings), [settings]);
   const activeSpecialMode = useMemo(() => getActiveSpecialMode(appDate, specialModeSettings), [appDate, specialModeSettings]);
   const activePauseMode = useMemo(() => getActivePauseMode(appDate, pauseModeSettings), [appDate, pauseModeSettings]);
-  const isPauseModeEnabled = pauseModeSettings.some((mode) => mode.enabled);
+  const isPauseModeEnabled = !!activePauseMode;
   const isDeveloperTestMode = useMemo(() => isDeveloperTestModeActive(settings, currentTime), [settings?.developer_test_active_until, currentTime]);
   const shouldForceTrophyAnimation = isDeveloperTestMode && !!settings?.developer_force_trophy_animation;
   const developerProgressPercent = isDeveloperTestMode ? settings?.developer_progress_percent : undefined;
@@ -3107,24 +3117,47 @@ function App() {
   const togglePauseModeFromAccount = async () => {
     if (!settings) return;
     const timestamp = nowIso();
-    const pause_modes = isPauseModeEnabled
-      ? pauseModeSettings.map((mode) => ({ ...mode, enabled: false, updated_at: timestamp }))
-      : [{
-          ...(pauseModeSettings[0] ?? { id: "pause_default" }),
-          enabled: true,
-          label: pauseModeSettings[0]?.label ?? "一時停止",
-          short_label: pauseModeSettings[0]?.short_label ?? "PAUSE",
-          start_date: appDate,
-          end_date: addDays(appDate, 6),
-          updated_at: timestamp,
-        }, ...pauseModeSettings.slice(1).map((mode) => ({ ...mode, enabled: false, updated_at: timestamp }))];
+    const quickModeId = `pause_quick_${appDate}`;
+    let pause_modes: SpecialModeSettings[];
+    if (activePauseMode) {
+      pause_modes = pauseModeSettings.flatMap((mode) => {
+        const startDate = mode.start_date;
+        const endDate = mode.end_date;
+        if (!mode.enabled || !startDate || !endDate || appDate < startDate || appDate > endDate) {
+          return [{ ...mode, updated_at: timestamp }];
+        }
+        if (startDate < appDate && appDate < endDate) {
+          return [
+            { ...mode, end_date: addDays(appDate, -1), updated_at: timestamp },
+            { ...mode, id: `${mode.id}_after_${appDate}`, start_date: addDays(appDate, 1), updated_at: timestamp },
+          ];
+        }
+        if (startDate < appDate) return [{ ...mode, end_date: addDays(appDate, -1), updated_at: timestamp }];
+        if (appDate < endDate) return [{ ...mode, start_date: addDays(appDate, 1), updated_at: timestamp }];
+        return [{ ...mode, enabled: false, updated_at: timestamp }];
+      });
+    } else {
+      const existingQuickMode = pauseModeSettings.find((mode) => mode.id === quickModeId);
+      const quickMode: SpecialModeSettings = {
+        ...(existingQuickMode ?? { id: quickModeId }),
+        enabled: true,
+        label: "一時停止",
+        short_label: "PAUSE",
+        start_date: appDate,
+        end_date: appDate,
+        updated_at: timestamp,
+      };
+      pause_modes = existingQuickMode
+        ? pauseModeSettings.map((mode) => mode.id === quickModeId ? quickMode : mode)
+        : [...pauseModeSettings, quickMode];
+    }
     await db.settings.update("local", { pause_modes, updated_at: timestamp });
     await refresh();
-    showToast(isPauseModeEnabled ? "一時停止モードをOFFにしました" : "今日から7日間、一時停止モードをONにしました");
+    showToast(isPauseModeEnabled ? `${formatJapaneseDate(appDate)}の一時停止を解除しました` : `${formatJapaneseDate(appDate)}を一時停止にしました`);
   };
   const logoutAndSwitchUser = async () => {
     const confirmed = window.confirm(
-      "現在の記録をクラウドへ同期してから、この端末の表示用データを消去し、ログアウトします。続けますか？",
+      "最新の記録を保存してログアウトします。続けますか？",
     );
     if (!confirmed) return;
     const result = await runCloudSync();
@@ -5502,7 +5535,7 @@ function AccountMenuModal({ profileName, email, role, appDate, isCheatDay, isPau
             <span className="account-toggle-icon"><CirclePause size={18} /></span>
             <span className="min-w-0 flex-1">
               <strong>一時停止モード</strong>
-              <small>{isPauseModeEnabled ? "設定中の期間をOFFにします" : "今日から7日間を例外扱い"}</small>
+              <small>{formatJapaneseDate(appDate)} だけ評価を一時停止</small>
             </span>
             <button
               className={`special-mode-toggle account-switch ${isPauseModeEnabled ? "special-mode-toggle-on" : ""}`}
@@ -5518,10 +5551,7 @@ function AccountMenuModal({ profileName, email, role, appDate, isCheatDay, isPau
         </section>
 
         {onLogout ? (
-          <>
-            <button className="secondary-button mt-4 w-full" onClick={onLogout}><LogOut size={17} />ログアウト／ユーザー切替</button>
-            <p className="mt-2 text-[11px] font-semibold leading-relaxed text-moss">同期後、この端末の表示用データを消去してCloudflare Accessからログアウトします。</p>
-          </>
+          <button className="secondary-button mt-4 w-full" onClick={onLogout}><LogOut size={17} />ログアウト／ユーザー切替</button>
         ) : (
           <p className="mt-4 rounded-2xl bg-rice px-3 py-2 text-xs font-semibold leading-relaxed text-moss">
             Cloudflare版でログインすると、ここにメールアドレスとログアウト操作が表示されます。
@@ -10216,11 +10246,11 @@ function SettingsTab(props: {
     activity: { title: "活動量プロフィール", subtitle: "普段の生活でどの程度動いているかを設定します。" },
     backup: { title: "エクスポート", subtitle: "バックアップ保存とログ出力を管理します。" },
     goal: { title: "ゴール設定", subtitle: "目標体重、PFC、運動目標を調整します。" },
-    theme: { title: "テーマ設定", subtitle: "表示モード、テーマカラー、テーマキャラクターを選びます。" },
+    theme: { title: "表示・テーマ設定", subtitle: "Homeの表示、表示モード、テーマカラー、テーマキャラクターを選びます。" },
     records: { title: "記録設定", subtitle: "旅行や休養など、通常評価と分けたい期間を管理します。" },
     myMenu: { title: "マイメニュー", subtitle: "自分用の食事メニューを登録・編集します。" },
     myTraining: { title: "マイトレ", subtitle: "自分用のワークアウト種目を登録・編集します。" },
-    general: { title: "基本情報・表示", subtitle: "ユーザー名とHomeのチェックイン表示を管理します。" },
+    general: { title: "基本情報", subtitle: "ユーザー名などの基本情報を管理します。" },
   };
   const activeSectionTitle = activeSettingsSection ? sectionTitles[activeSettingsSection] : undefined;
   const goBackFromSettingsSection = () => {
@@ -10271,7 +10301,7 @@ function SettingsTab(props: {
             <SettingsMenuRow title="プロフィール" description={`${props.profile?.name || "ユーザー名 未設定"} / ${phaseLabels[goalDraft.phase]}`} icon={<CircleUserRound size={18} />} onClick={() => setActiveSettingsSection("profile")} />
             <SettingsMenuRow title="AI相談レポート" description="期間と送信内容を選んでAI用レポートを作成" icon={<FileText size={18} />} onClick={() => { setReportWizardStep("period"); setActiveSettingsSection("ai"); }} />
             <SettingsMenuRow title="エクスポート" description="バックアップ保存 / 食事・ワークアウトのログ出力" icon={<Archive size={18} />} onClick={() => setActiveSettingsSection("backup")} />
-            <SettingsMenuRow title="テーマ設定" description={`${props.resolvedTheme === "dark" ? "ダーク" : "ライト"} / ${themeAccentLabels[props.themeAccent]} / ${themeCharacterLabels[props.themeCharacter]}`} icon={<Palette size={18} />} onClick={() => setActiveSettingsSection("theme")} />
+            <SettingsMenuRow title="表示・テーマ設定" description={`${props.resolvedTheme === "dark" ? "ダーク" : "ライト"} / Home表示 / ${themeAccentLabels[props.themeAccent]}`} icon={<Palette size={18} />} onClick={() => setActiveSettingsSection("theme")} />
           </section>
           <section className="compact-card divide-y divide-line overflow-hidden">
             <SettingsMenuRow title="記録設定" description={`旅行 ${isTravelModeEnabled ? "ON" : "OFF"} / 一時停止 ${isPauseModeEnabled ? "ON" : "OFF"}`} icon={<CalendarDays size={18} />} onClick={() => setActiveSettingsSection("records")} />
@@ -10294,8 +10324,8 @@ function SettingsTab(props: {
       {activeSettingsSection === "profile" && (
         <section className="compact-card divide-y divide-line overflow-hidden">
           <SettingsMenuRow
-            title="基本情報・表示"
-            description={`ユーザー名 ${props.profile?.name || "未設定"} / Homeの表示`}
+            title="基本情報"
+            description={`ユーザー名 ${props.profile?.name || "未設定"}`}
             icon={<CircleUserRound size={18} />}
             onClick={() => {
               setSettingsParent("profile");
@@ -10339,6 +10369,36 @@ function SettingsTab(props: {
               <option key={option.value} value={option.value}>{option.label}</option>
             ))}
           </select>
+        </div>
+        <div className="mt-5 border-t border-line pt-5">
+          <p className="text-sm font-black">Homeのチェックイン表示</p>
+          <p className="mt-1 text-xs text-moss">Homeに表示する体重と体脂肪率の見せ方を選べます。記録内容は変わりません。</p>
+          <p className="mt-3 text-xs font-black text-moss">体重</p>
+          <div className="mt-2 grid grid-cols-2 gap-2">
+            {(Object.keys(homeWeightDisplayLabels) as HomeWeightDisplay[]).map((mode) => (
+              <button
+                className={`mode-button min-h-10 text-xs ${homeWeightDisplay === mode ? "mode-button-active" : ""}`}
+                key={mode}
+                aria-pressed={homeWeightDisplay === mode}
+                onClick={() => saveSettingsPatch({ home_weight_display: mode })}
+              >
+                {homeWeightDisplayLabels[mode]}
+              </button>
+            ))}
+          </div>
+          <p className="mt-3 text-xs font-black text-moss">体脂肪率</p>
+          <div className="mt-2 grid grid-cols-3 gap-2">
+            {(Object.keys(homeBodyFatDisplayLabels) as HomeBodyFatDisplay[]).map((mode) => (
+              <button
+                className={`mode-button min-h-10 text-xs ${homeBodyFatDisplay === mode ? "mode-button-active" : ""}`}
+                key={mode}
+                aria-pressed={homeBodyFatDisplay === mode}
+                onClick={() => saveSettingsPatch({ home_body_fat_display: mode })}
+              >
+                {homeBodyFatDisplayLabels[mode]}
+              </button>
+            ))}
+          </div>
         </div>
         <div className="mt-5">
           <p className="text-xs font-black text-moss">テーマカラー</p>
@@ -10415,39 +10475,6 @@ function SettingsTab(props: {
           ))}
         </div>
         <button className="secondary-button mt-4 w-full" onClick={() => setThemeCharacterCandidate(undefined)}><ChevronLeft size={17} />キャラクターを選び直す</button>
-      </section>}
-
-      {activeSettingsSection === "general" && <section className="compact-card p-4">
-        <div>
-          <p className="text-sm font-black">Homeのチェックイン</p>
-          <p className="mt-1 text-xs text-moss">Homeに大きく表示する数値を選べます。記録内容は変わりません。</p>
-          <p className="mt-3 text-xs font-black text-moss">体重</p>
-          <div className="mt-2 grid grid-cols-2 gap-2">
-            {(Object.keys(homeWeightDisplayLabels) as HomeWeightDisplay[]).map((mode) => (
-              <button
-                className={`mode-button min-h-10 text-xs ${homeWeightDisplay === mode ? "mode-button-active" : ""}`}
-                key={mode}
-                aria-pressed={homeWeightDisplay === mode}
-                onClick={() => saveSettingsPatch({ home_weight_display: mode })}
-              >
-                {homeWeightDisplayLabels[mode]}
-              </button>
-            ))}
-          </div>
-          <p className="mt-3 text-xs font-black text-moss">体脂肪率</p>
-          <div className="mt-2 grid grid-cols-3 gap-2">
-            {(Object.keys(homeBodyFatDisplayLabels) as HomeBodyFatDisplay[]).map((mode) => (
-              <button
-                className={`mode-button min-h-10 text-xs ${homeBodyFatDisplay === mode ? "mode-button-active" : ""}`}
-                key={mode}
-                aria-pressed={homeBodyFatDisplay === mode}
-                onClick={() => saveSettingsPatch({ home_body_fat_display: mode })}
-              >
-                {homeBodyFatDisplayLabels[mode]}
-              </button>
-            ))}
-          </div>
-        </div>
       </section>}
 
       {activeSettingsSection === "goal" && !activeGoalSettingsSection && (
