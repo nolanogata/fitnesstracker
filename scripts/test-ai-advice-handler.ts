@@ -97,14 +97,17 @@ const env = {
 【記録から見えること】
 - ワークアウトは3回です。
 - ワークアウトは3回です。
+- 種目ごとの重量が均一ではありません。
 【根拠】
 - 実施回数: 3回
 - 実施回数: 3回
 【まず試すこと】
-1. 次回は上半身を中心にする
+1. 種目ごとの重量を均一にする
 2. 次回は上半身を中心にする
+3. 次回は上半身を中心にする
 【注意】
 - 次回は上半身を中心にする
+- セット数を一定にする必要があります。
 - 痛みがある場合は中止する`,
       };
       return { response: "今週の記録を基準に、無理のない範囲で次回の負荷を調整してください。" };
@@ -179,6 +182,7 @@ assert.equal(aiInputs.length, 6);
 assert.ok(aiInputs.every((input) => !JSON.stringify(input).includes("tester@example.com")));
 assert.ok(aiInputs.every((input) => !("response_format" in input)));
 assert.ok(aiInputs.every((input) => JSON.stringify(input).includes("同じ内容を複数の節に繰り返さず")));
+assert.match(JSON.stringify(aiInputs[5]), /異なる種目同士の重量・回数・セット数は比較せず/);
 assert.ok(statements.some((statement) => statement.sql.includes("INSERT INTO ai_usage_daily")));
 assert.ok(statements.some((statement) => statement.sql.includes("INSERT INTO ai_result_cache")));
 

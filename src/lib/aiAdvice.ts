@@ -94,15 +94,21 @@ export function buildAnonymousAdviceContext(input: {
   memory?: AiAdviceMemory;
   previousConsultation?: AiConsultation;
 }) {
-  const trends = [7, 28, 90].map((days) => buildTrendWindow(input, days));
+  const trends = [
+    ...(input.contentScope !== "workout" ? [7, 28, 90].map((days) => buildTrendWindow(input, days)) : []),
+    ...(input.contentScope !== "food" ? buildWorkoutComparison(input) : []),
+  ];
   const memoryLines = (input.memory?.items ?? [])
-    .filter((item) => item.active)
+    .filter((item) => item.active && !isInvalidWorkoutUniformityAdvice(item.text))
     .slice(-20)
     .map((item) => `- [${item.category}] ${sanitizeFreeText(item.text, 240)}`);
   const previous = input.previousConsultation
     ? [
         `- 前回の要約: ${sanitizeFreeText(input.previousConsultation.response.summary, 500)}`,
-        ...input.previousConsultation.response.actions.slice(0, 4).map((action) => `- 前回の行動案: ${sanitizeFreeText(action, 240)}`),
+        ...input.previousConsultation.response.actions
+          .filter((action) => !isInvalidWorkoutUniformityAdvice(action))
+          .slice(0, 4)
+          .map((action) => `- 前回の行動案: ${sanitizeFreeText(action, 240)}`),
       ]
     : [];
   const report = sanitizeAdviceReport(input.fullReport);
@@ -157,11 +163,6 @@ function buildTrendWindow(input: {
   const dates = new Set(dateRange(addDays(input.appDate, -(days - 1)), input.appDate));
   const foods = input.foodEntries.filter((entry) => dates.has(entry.app_date));
   const weights = input.weightLogs.filter((entry) => dates.has(entry.app_date));
-  const sessions = input.workoutSessions.filter((entry) => dates.has(entry.app_date));
-  const sessionIds = new Set(sessions.map((entry) => entry.id));
-  const exercises = input.workoutExercises.filter((entry) => sessionIds.has(entry.session_id));
-  const exerciseIds = new Set(exercises.map((entry) => entry.id));
-  const sets = input.workoutSets.filter((entry) => exerciseIds.has(entry.workout_exercise_id) && !entry.is_warmup);
   const foodDays = new Set(foods.map((entry) => entry.app_date)).size;
   const totals = foods.reduce((sum, entry) => ({
     calories: sum.calories + entry.calories,
@@ -172,19 +173,153 @@ function buildTrendWindow(input: {
   const firstWeight = [...weights].sort((a, b) => a.app_date.localeCompare(b.app_date))[0]?.weight_kg;
   const lastWeight = [...weights].sort((a, b) => b.app_date.localeCompare(a.app_date))[0]?.weight_kg;
   const divisor = Math.max(foodDays, 1);
-  const includeFood = input.contentScope !== "workout";
-  const includeWorkout = input.contentScope !== "food";
   return [
     `### 直近${days}日`,
-    ...(includeFood ? [
-      `- 食事記録日: ${foodDays}/${days}日`,
-      `- 記録日の平均: ${Math.round(totals.calories / divisor)} kcal / P ${round1(totals.protein / divisor)}g / F ${round1(totals.fat / divisor)}g / C ${round1(totals.carbs / divisor)}g`,
-      `- 体重記録: ${weights.length}件${firstWeight !== undefined && lastWeight !== undefined ? ` / 期間変化 ${signed(round1(lastWeight - firstWeight))}kg` : ""}`,
-    ] : []),
-    ...(includeWorkout ? [
-      `- ワークアウト: ${sessions.length}回 / 種目 ${exercises.length}件 / 本セット ${sets.length}件`,
-    ] : []),
+    `- 食事記録日: ${foodDays}/${days}日`,
+    `- 記録日の平均: ${Math.round(totals.calories / divisor)} kcal / P ${round1(totals.protein / divisor)}g / F ${round1(totals.fat / divisor)}g / C ${round1(totals.carbs / divisor)}g`,
+    `- 体重記録: ${weights.length}件${firstWeight !== undefined && lastWeight !== undefined ? ` / 期間変化 ${signed(round1(lastWeight - firstWeight))}kg` : ""}`,
   ].join("\n");
+}
+
+function buildWorkoutComparison(input: {
+  appDate: string;
+  workoutSessions: WorkoutSession[];
+  workoutExercises: WorkoutExercise[];
+  workoutSets: WorkoutSet[];
+}) {
+  const recentStart = addDays(input.appDate, -6);
+  const previousEnd = addDays(input.appDate, -7);
+  const previousStart = addDays(input.appDate, -13);
+  const monthStart = addDays(input.appDate, -27);
+  const recent = summarizeWorkoutWindow(input, recentStart, input.appDate);
+  const previous = summarizeWorkoutWindow(input, previousStart, previousEnd);
+  const month = summarizeWorkoutWindow(input, monthStart, input.appDate);
+  const comparisons = buildSameExerciseComparisons(input, monthStart, input.appDate);
+  return [
+    "### ワークアウト比較",
+    formatWorkoutWindow("直近7日", recent),
+    formatWorkoutWindow("直前7日（直近7日と重複なし）", previous),
+    `- 直近28日の週平均: 実施日 ${round1(month.activeDays / 4)}日 / セッション ${round1(month.sessions / 4)}回 / 種目実施 ${round1(month.exercises / 4)}件 / 本セット ${round1(month.workingSets / 4)}セット`,
+    `- 直近7日の部位別本セット: ${formatBodyPartSets(recent.bodyPartSets)}`,
+    `- 直前7日の部位別本セット: ${formatBodyPartSets(previous.bodyPartSets)}`,
+    "",
+    "### 同一種目の直近比較",
+    ...(comparisons.length ? comparisons : ["- 同じ種目の比較可能な記録なし"]),
+  ];
+}
+
+function summarizeWorkoutWindow(
+  input: {
+    workoutSessions: WorkoutSession[];
+    workoutExercises: WorkoutExercise[];
+    workoutSets: WorkoutSet[];
+  },
+  start: string,
+  end: string,
+) {
+  const sessions = input.workoutSessions.filter((session) => session.app_date >= start && session.app_date <= end);
+  const sessionIds = new Set(sessions.map((session) => session.id));
+  const exercises = input.workoutExercises.filter((exercise) => sessionIds.has(exercise.session_id));
+  const exerciseIds = new Set(exercises.map((exercise) => exercise.id));
+  const workingSets = input.workoutSets.filter((set) => exerciseIds.has(set.workout_exercise_id) && !set.is_warmup);
+  const bodyPartByExercise = new Map(exercises.map((exercise) => [exercise.id, exercise.body_part]));
+  const bodyPartSets = new Map<string, number>();
+  workingSets.forEach((set) => {
+    const bodyPart = bodyPartByExercise.get(set.workout_exercise_id) || "未分類";
+    bodyPartSets.set(bodyPart, (bodyPartSets.get(bodyPart) ?? 0) + 1);
+  });
+  return {
+    start,
+    end,
+    activeDays: new Set(sessions.map((session) => session.app_date)).size,
+    sessions: sessions.length,
+    exercises: exercises.length,
+    workingSets: workingSets.length,
+    bodyPartSets,
+  };
+}
+
+function formatWorkoutWindow(
+  label: string,
+  summary: ReturnType<typeof summarizeWorkoutWindow>,
+) {
+  return `- ${label} (${summary.start}〜${summary.end}): 実施日 ${summary.activeDays}日 / セッション ${summary.sessions}回 / 種目実施 ${summary.exercises}件 / 本セット ${summary.workingSets}セット`;
+}
+
+function formatBodyPartSets(bodyPartSets: Map<string, number>) {
+  const rows = [...bodyPartSets.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .map(([bodyPart, sets]) => `${bodyPart} ${sets}セット`);
+  return rows.length ? rows.join(" / ") : "記録なし";
+}
+
+function buildSameExerciseComparisons(
+  input: {
+    workoutSessions: WorkoutSession[];
+    workoutExercises: WorkoutExercise[];
+    workoutSets: WorkoutSet[];
+  },
+  start: string,
+  end: string,
+) {
+  const sessions = input.workoutSessions.filter((session) => session.app_date >= start && session.app_date <= end);
+  const sessionById = new Map(sessions.map((session) => [session.id, session]));
+  const setsByExercise = new Map<string, WorkoutSet[]>();
+  input.workoutSets.filter((set) => !set.is_warmup).forEach((set) => {
+    setsByExercise.set(set.workout_exercise_id, [...(setsByExercise.get(set.workout_exercise_id) ?? []), set]);
+  });
+  const occurrences = new Map<string, Array<{
+    date: string;
+    name: string;
+    sets: WorkoutSet[];
+  }>>();
+  input.workoutExercises.forEach((exercise) => {
+    const session = sessionById.get(exercise.session_id);
+    if (!session) return;
+    const sets = setsByExercise.get(exercise.id) ?? [];
+    if (!sets.length) return;
+    const key = exercise.exercise_id || `${exercise.exercise_name.trim().toLowerCase()}|${exercise.equipment_type}`;
+    occurrences.set(key, [...(occurrences.get(key) ?? []), {
+      date: session.app_date,
+      name: exercise.exercise_name,
+      sets,
+    }]);
+  });
+  return [...occurrences.values()]
+    .filter((rows) => rows.length >= 2)
+    .map((rows) => rows.sort((a, b) => b.date.localeCompare(a.date)).slice(0, 2))
+    .sort((a, b) => b[0].date.localeCompare(a[0].date))
+    .slice(0, 8)
+    .map(([latest, previous]) => `- ${latest.name}: ${previous.date} ${formatWorkoutOccurrence(previous.sets)} → ${latest.date} ${formatWorkoutOccurrence(latest.sets)}`);
+}
+
+function formatWorkoutOccurrence(sets: WorkoutSet[]) {
+  const best = [...sets].sort((a, b) => workoutSetComparisonScore(b) - workoutSetComparisonScore(a))[0];
+  const load = best.load_type === "bodyweight"
+    ? "自重"
+    : best.load_type === "weighted"
+      ? `+${best.weight_kg ?? 0}kg`
+      : best.load_type === "assisted"
+        ? `補助${best.weight_kg ?? 0}kg`
+        : typeof best.weight_kg === "number"
+          ? `${best.weight_kg}kg`
+          : "重量未記録";
+  return `${sets.length}セット / best ${load}×${best.reps ?? "回数未記録"}`;
+}
+
+function workoutSetComparisonScore(set: WorkoutSet) {
+  const weight = set.weight_kg ?? 0;
+  const reps = set.reps ?? 0;
+  if (set.load_type === "assisted") return reps - weight / 10;
+  return weight ? weight * (1 + reps / 30) : reps;
+}
+
+function isInvalidWorkoutUniformityAdvice(value: string) {
+  const normalized = value.replace(/\s+/g, "");
+  return /(種目ごと|異なる種目).{0,20}重量.{0,12}(均一|揃え|一定)/
+    .test(normalized)
+    || /セット数.{0,12}(均一|揃え|一定)/.test(normalized)
+    || /部位.{0,20}ボリューム.{0,12}(均一|揃え|一定)/.test(normalized);
 }
 
 export async function requestAiAdvice(input: {

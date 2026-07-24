@@ -779,7 +779,15 @@ async function handleWorkersAiAdvice(context: PagesContext, user: AppUser) {
   const usageDate = utcDate();
   await reserveAdviceQuota(context.env, user.id, usageDate);
   const scopeInstruction = contentScope === "workout"
-    ? "今回はワークアウトだけを評価し、食事・目標カロリーの助言へ話題を広げないでください。記録にある種目名、重量、回数、セット数、部位別頻度のうち利用可能な具体値を最低2点使ってください。比較データがなければ伸び・停滞を断定しないでください。"
+    ? [
+        "今回はワークアウトだけを評価し、食事・目標カロリーの助言へ話題を広げないでください。",
+        "異なる種目同士の重量・回数・セット数は比較せず、均一化や同じ値に揃えることを提案しないでください。",
+        "部位別セット数は均等である必要はありません。分割法、目標、回復状況が不明なら、偏りを改善点と断定しないでください。",
+        "重量や回数の伸び・停滞は「同一種目の直近比較」にデータがある場合だけ評価してください。",
+        "直近7日と直前7日は重複しない期間です。28日は週平均だけを使い、重複する累計値を時系列の増減として扱わないでください。",
+        "実施日数とセッション数を区別し、同日に複数セッションがあり得る前提で評価してください。",
+        "記録にある種目名、重量、回数、セット数、部位別頻度のうち利用可能な具体値を最低2点使ってください。",
+      ].join("\n")
     : contentScope === "food"
       ? "今回は食事だけを評価し、ワークアウト内容の助言へ話題を広げないでください。記録にある食品・メニュー名、カロリー、P/F/Cのうち質問に関係する具体値を使ってください。"
       : "今回は食事とワークアウトの両方を、質問に直接関係する範囲で評価してください。";
@@ -1001,6 +1009,14 @@ function finalizeAiAdviceResponse(
   contentScope: "food" | "workout" | "both",
 ): AiAdviceApiResponse {
   const questionKey = normalizeAdviceTextKey(question);
+  const isInvalidWorkoutAdvice = (value: string) => {
+    if (contentScope !== "workout") return false;
+    const normalized = value.replace(/\s+/g, "");
+    return /(種目ごと|異なる種目).{0,20}重量.{0,12}(均一|揃え|一定)/.test(normalized)
+      || /セット数.{0,12}(均一|揃え|一定)/.test(normalized)
+      || /部位.{0,20}ボリューム.{0,12}(均一|揃え|一定)/.test(normalized)
+      || /(7日|28日|90日).{0,50}(7日|28日|90日).{0,50}(増加|減少)/.test(normalized);
+  };
   const isPromptLeak = (value: string) => {
     const key = normalizeAdviceTextKey(value);
     if (!key) return true;
@@ -1016,7 +1032,7 @@ function finalizeAiAdviceResponse(
     return values.flatMap((value) => {
       const cleaned = cleanText(stripAdviceListMarker(value), 300);
       const key = normalizeAdviceTextKey(cleaned);
-      if (!cleaned || !key || seen.has(key) || excluded.has(key) || isPromptLeak(cleaned)) return [];
+      if (!cleaned || !key || seen.has(key) || excluded.has(key) || isPromptLeak(cleaned) || isInvalidWorkoutAdvice(cleaned)) return [];
       seen.add(key);
       return [cleaned];
     });
@@ -1031,8 +1047,10 @@ function finalizeAiAdviceResponse(
       : "記録全体の振り返り";
   let headline = cleanText(response.headline, 100);
   let summary = cleanText(response.summary, 1_200);
-  if (!headline || isPromptLeak(headline)) headline = defaultHeadline;
-  if (!summary || isPromptLeak(summary)) summary = observations[0] || actions[0] || "記録を基に、次に試す内容を整理しました。";
+  if (!headline || isPromptLeak(headline) || isInvalidWorkoutAdvice(headline)) headline = defaultHeadline;
+  if (!summary || isPromptLeak(summary) || isInvalidWorkoutAdvice(summary)) {
+    summary = observations[0] || actions[0] || "記録を基に、次に試す内容を整理しました。";
+  }
   if (normalizeAdviceTextKey(headline) === normalizeAdviceTextKey(summary)) {
     summary = observations[0] || actions[0] || "記録を基に、次に試す内容を整理しました。";
   }
@@ -1041,7 +1059,7 @@ function finalizeAiAdviceResponse(
     const label = cleanText(item.label, 80);
     const value = cleanText(item.value, 120);
     const key = normalizeAdviceTextKey(`${label}:${value}`);
-    if (!label || !value || isPromptLeak(label) || isPromptLeak(value) || evidenceSeen.has(key)) return [];
+    if (!label || !value || isPromptLeak(label) || isPromptLeak(value) || isInvalidWorkoutAdvice(`${label} ${value}`) || evidenceSeen.has(key)) return [];
     evidenceSeen.add(key);
     return [{ label, value, period: cleanText(item.period, 80) || undefined }];
   });
@@ -1049,7 +1067,7 @@ function finalizeAiAdviceResponse(
   const memoryUpdates = response.memory_updates.flatMap((item) => {
     const text = cleanText(item.text, 240);
     const key = normalizeAdviceTextKey(text);
-    if (!text || !key || isPromptLeak(text) || memorySeen.has(key)) return [];
+    if (!text || !key || isPromptLeak(text) || isInvalidWorkoutAdvice(text) || memorySeen.has(key)) return [];
     memorySeen.add(key);
     return [{ category: item.category, text }];
   });

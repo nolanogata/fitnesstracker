@@ -76,13 +76,87 @@ const workoutContext = buildAnonymousAdviceContext({
     updated_at: timestamp,
   }],
   weightLogs: [],
-  workoutSessions: [],
-  workoutExercises: [],
-  workoutSets: [],
+  workoutSessions: [{
+    id: "session_previous",
+    app_date: "2026-07-20",
+    logged_at: "2026-07-20T09:00:00.000Z",
+    title: "胸",
+    workout_type: "strength",
+    body_parts: ["胸"],
+    created_at: timestamp,
+    updated_at: timestamp,
+  }, {
+    id: "session_latest",
+    app_date: "2026-07-24",
+    logged_at: "2026-07-24T09:00:00.000Z",
+    title: "胸",
+    workout_type: "strength",
+    body_parts: ["胸"],
+    created_at: timestamp,
+    updated_at: timestamp,
+  }],
+  workoutExercises: [{
+    id: "exercise_previous",
+    session_id: "session_previous",
+    exercise_id: "bench_press",
+    exercise_name: "ベンチプレス",
+    body_part: "胸",
+    equipment_type: "バーベル",
+    order: 0,
+    created_at: timestamp,
+    updated_at: timestamp,
+  }, {
+    id: "exercise_latest",
+    session_id: "session_latest",
+    exercise_id: "bench_press",
+    exercise_name: "ベンチプレス",
+    body_part: "胸",
+    equipment_type: "バーベル",
+    order: 0,
+    created_at: timestamp,
+    updated_at: timestamp,
+  }],
+  workoutSets: [{
+    id: "set_previous",
+    workout_exercise_id: "exercise_previous",
+    set_order: 1,
+    weight_kg: 60,
+    reps: 10,
+    is_warmup: false,
+    created_at: timestamp,
+    updated_at: timestamp,
+  }, {
+    id: "set_latest",
+    workout_exercise_id: "exercise_latest",
+    set_order: 1,
+    weight_kg: 62.5,
+    reps: 8,
+    is_warmup: false,
+    created_at: timestamp,
+    updated_at: timestamp,
+  }],
+  memory: {
+    id: "default",
+    items: [{
+      id: "bad_memory",
+      category: "focus",
+      text: "種目ごとの重量を均一にする",
+      source: "ai",
+      active: true,
+      created_at: timestamp,
+      updated_at: timestamp,
+    }],
+    created_at: timestamp,
+    updated_at: timestamp,
+  },
 });
 assert.match(workoutContext, /ワークアウト内容について/);
 assert.match(workoutContext, /ベンチプレス 60kg 10回 3セット/);
 assert.doesNotMatch(workoutContext, /適正な目標カロリー|AIへの依頼|相談したいこと|非表示にする食事|食事記録日/);
+assert.match(workoutContext, /直前7日（直近7日と重複なし）/);
+assert.match(workoutContext, /直近28日の週平均/);
+assert.match(workoutContext, /ベンチプレス: 2026-07-20 1セット \/ best 60kg×10 → 2026-07-24 1セット \/ best 62.5kg×8/);
+assert.doesNotMatch(workoutContext, /種目ごとの重量を均一/);
 
 const parsed = parseExternalAiHandoff(`回答本文
 \`\`\`phase_log_handoff_v1
