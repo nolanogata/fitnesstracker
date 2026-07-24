@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import {
   applyAdviceMemoryUpdates,
+  aiAdviceTopicPresets,
+  buildAiAdviceQuestion,
   buildAnonymousAdviceContext,
   parseExternalAiHandoff,
 } from "../src/lib/aiAdvice.ts";
@@ -65,5 +67,16 @@ const memory = applyAdviceMemoryUpdates({
 }, parsed!, timestamp);
 assert.ok(memory.items.some((item) => item.id === "manual"));
 assert.ok(memory.items.some((item) => item.text === "夕食記録を優先"));
+
+assert.deepEqual(
+  {
+    mode: aiAdviceTopicPresets.remaining.mode,
+    scope: aiAdviceTopicPresets.remaining.contentScope,
+  },
+  { mode: "day", scope: "food" },
+);
+assert.match(buildAiAdviceQuestion("remaining", "コンビニで買いたい"), /残りカロリーとPFC/);
+assert.match(buildAiAdviceQuestion("remaining", "コンビニで買いたい"), /補足: コンビニで買いたい/);
+assert.equal(buildAiAdviceQuestion("custom", "  今週の改善点は？  "), "今週の改善点は？");
 
 console.log("AI advice context and memory tests passed");

@@ -188,12 +188,16 @@ import { getAiReportDeliveryContent, latestCopiedAiReport } from "./lib/aiReport
 import {
   appendExternalAiHandoffInstruction,
   applyAdviceMemoryUpdates,
+  aiAdviceTopicOrder,
+  aiAdviceTopicPresets,
+  buildAiAdviceQuestion,
   buildAnonymousAdviceContext,
   fetchAiAdviceUsage,
   parseExternalAiHandoff,
   requestAiAdvice,
   workersAiAdviceConsentVersion,
   type AiAdviceError,
+  type AiAdviceTopic,
   type AiAdviceUsage,
 } from "./lib/aiAdvice";
 import { getWeeklyWorkoutStatus, type WeeklyWorkoutStatus } from "./lib/workoutStatus";
@@ -446,6 +450,7 @@ type CalendarCell = {
 type ReportMode = HistoryGrouping;
 type AiReportWizardStep = "period" | "delivery" | "content" | "activity" | "question" | "result";
 type AiConsultationView = "menu" | "app" | "external" | "history" | "memory";
+type AiAdviceStep = "topic" | "details" | "result";
 type ActivityProfileDraft = {
   activity_level: ActivityLevel;
   average_steps: number | "";
@@ -1353,6 +1358,16 @@ const achievementProgressSpecs: Record<string, AchievementProgressSpec> = {
   streak_365: { metric: "streak", target: 365, unit: "日" },
 };
 const appUpdates: AppUpdate[] = [
+  {
+    id: "2026-07-24-ai-advice-topics",
+    title: "アプリ内AI相談を選びやすく改善",
+    date: "2026-07-24",
+    items: [
+      "AI相談を「テーマ選択」「条件と補足」「回答」の3画面に分けました。",
+      "食事、今日の残り、ワークアウト、ゴール設定の定型相談と、自由入力を選べるようにしました。",
+      "選んだテーマに合う期間と記録対象を自動設定し、必要な場合だけ補足を入力できます。",
+    ],
+  },
   {
     id: "2026-07-24-workers-ai-advice",
     title: "アプリ内AI相談と引継ぎメモを追加",
@@ -9030,6 +9045,9 @@ function SettingsTab(props: {
   const [reportCoverage, setReportCoverage] = useState<ReportCoverage>(() => props.appDate === todayAppDate(props.settings?.day_boundary_hour ?? 3) ? "partial" : "completed");
   const [reportActivity, setReportActivity] = useState<DailyActivityContext>(() => ({ date: props.appDate, relative_activity_level: "unknown", data_source: "unknown" }));
   const [aiConsultationView, setAiConsultationView] = useState<AiConsultationView>("menu");
+  const [aiAdviceStep, setAiAdviceStep] = useState<AiAdviceStep>("topic");
+  const [aiAdviceTopic, setAiAdviceTopic] = useState<AiAdviceTopic>();
+  const [aiAdviceDetail, setAiAdviceDetail] = useState("");
   const [aiConsultations, setAiConsultations] = useState<AiConsultation[]>([]);
   const [aiAdviceMemory, setAiAdviceMemory] = useState<AiAdviceMemory>();
   const [aiAdviceUsage, setAiAdviceUsage] = useState<AiAdviceUsage>();
@@ -10197,12 +10215,24 @@ function SettingsTab(props: {
     });
     props.showToast("アプリ内AI相談を有効にしました");
   };
-  const submitAiAdvice = async (nextQuestion = question) => {
+  const selectAiAdviceTopic = (topic: AiAdviceTopic) => {
+    const preset = aiAdviceTopicPresets[topic];
+    setAiAdviceTopic(topic);
+    setAiAdviceDetail("");
+    setReportMode(preset.mode);
+    setReportContentScope(preset.contentScope);
+    setAiAdviceError("");
+    setAiAdviceStep("details");
+  };
+  const currentAiAdviceQuestion = aiAdviceTopic
+    ? buildAiAdviceQuestion(aiAdviceTopic, aiAdviceDetail)
+    : "";
+  const submitAiAdvice = async (nextQuestion?: string) => {
     if (!adviceConsentGranted) {
       setAiAdviceError("最初にデータ送信について確認してください。");
       return;
     }
-    const trimmedQuestion = nextQuestion.trim();
+    const trimmedQuestion = (nextQuestion ?? currentAiAdviceQuestion).trim();
     if (!trimmedQuestion) {
       setAiAdviceError("相談したいことを入力してください。");
       return;
@@ -10266,6 +10296,7 @@ function SettingsTab(props: {
       setAiAdviceThreadId(threadId);
       setAiAdviceTurnIndex(turnIndex + 1);
       setAiAdviceResponse(response.result);
+      setAiAdviceStep("result");
       setAiAdviceMemory(nextMemory);
       setAiFollowUp("");
       await loadAiConsultationData();
@@ -10280,6 +10311,9 @@ function SettingsTab(props: {
     setAiAdviceThreadId(undefined);
     setAiAdviceTurnIndex(0);
     setAiAdviceResponse(undefined);
+    setAiAdviceStep("topic");
+    setAiAdviceTopic(undefined);
+    setAiAdviceDetail("");
     setAiAdviceError("");
     setAiFollowUp("");
   };
@@ -10350,6 +10384,14 @@ function SettingsTab(props: {
     setMemoryDraft("");
   };
   const activeMemoryItems = aiAdviceMemory?.items.filter((item) => item.active) ?? [];
+  const aiAdviceTopicIcons: Record<AiAdviceTopic, ReactNode> = {
+    food: <Utensils size={19} />,
+    remaining: <Soup size={19} />,
+    workout: <Dumbbell size={19} />,
+    goal: <Trophy size={19} />,
+    custom: <Pencil size={19} />,
+  };
+  const aiAdviceStepIndex = ({ topic: 0, details: 1, result: 2 } satisfies Record<AiAdviceStep, number>)[aiAdviceStep];
   const aiConsultationSection = (
     <div className="space-y-4">
       {aiConsultationView === "menu" && (
@@ -10409,54 +10451,133 @@ function SettingsTab(props: {
             </div>
           )}
           {adviceConsentGranted && !aiAdviceResponse && (
-            <div className="mt-4 space-y-4">
-              <div>
-                <p className="text-xs font-black text-moss">期間</p>
-                <div className="mt-2 grid grid-cols-3 gap-2">
-                  {(["day", "week", "month"] as ReportMode[]).map((mode) => (
-                    <button className={`mode-button min-h-10 text-xs ${reportMode === mode ? "mode-button-active" : ""}`} key={mode} onClick={() => setReportMode(mode)}>
-                      {mode === "day" ? "今日" : mode === "week" ? "7日" : "30日"}
+            <div className="mt-4">
+              <div className="grid grid-cols-3 gap-1.5" aria-hidden="true">
+                {(["topic", "details", "result"] as AiAdviceStep[]).map((step, index) => (
+                  <span className={`h-1.5 rounded-full ${index <= aiAdviceStepIndex ? "bg-leaf" : "bg-line"}`} key={step} />
+                ))}
+              </div>
+
+              {aiAdviceStep === "topic" && (
+                <div className="mt-5">
+                  <p className="text-xs font-black text-moss">1 / 3</p>
+                  <h3 className="mt-1 text-lg font-black">何について相談しますか？</h3>
+                  <p className="mt-2 text-xs leading-relaxed text-moss">選んだ内容に合う期間と記録を自動で準備します。</p>
+                  <div className="mt-4 grid gap-2">
+                    {aiAdviceTopicOrder.map((topic) => {
+                      const preset = aiAdviceTopicPresets[topic];
+                      return (
+                        <button className="mode-button min-h-16 justify-between px-4 text-left" key={topic} onClick={() => selectAiAdviceTopic(topic)}>
+                          <span className="flex min-w-0 items-center gap-3">
+                            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-rice">{aiAdviceTopicIcons[topic]}</span>
+                            <span className="min-w-0">
+                              <strong className="block text-sm">{preset.label}</strong>
+                              <small className="mt-1 block text-xs leading-relaxed opacity-70">{preset.description}</small>
+                            </span>
+                          </span>
+                          <ChevronRight className="shrink-0" size={17} />
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {aiAdviceStep === "details" && aiAdviceTopic && (
+                <div className="mt-5 space-y-4">
+                  <div>
+                    <p className="text-xs font-black text-moss">2 / 3</p>
+                    <h3 className="mt-1 text-lg font-black">{aiAdviceTopicPresets[aiAdviceTopic].label}</h3>
+                    <p className="mt-2 text-xs leading-relaxed text-moss">{aiAdviceTopicPresets[aiAdviceTopic].description}</p>
+                  </div>
+
+                  {aiAdviceTopic !== "remaining" && (
+                    <div>
+                      <p className="text-xs font-black text-moss">見る期間</p>
+                      <div className="mt-2 grid grid-cols-3 gap-2">
+                        {(["day", "week", "month"] as ReportMode[]).map((mode) => (
+                          <button className={`mode-button min-h-10 text-xs ${reportMode === mode ? "mode-button-active" : ""}`} key={mode} onClick={() => setReportMode(mode)}>
+                            {mode === "day" ? "今日" : mode === "week" ? "7日" : "30日"}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {aiAdviceTopic === "remaining" && (
+                    <div className="rounded-2xl border border-line bg-rice p-3 text-xs leading-relaxed text-moss">
+                      今日の食事記録、目標、残りカロリー・PFCを使って候補を考えます。
+                    </div>
+                  )}
+
+                  {aiAdviceTopic === "custom" && (
+                    <div>
+                      <p className="text-xs font-black text-moss">相談に含める記録</p>
+                      <div className="mt-2 grid grid-cols-3 gap-2">
+                        {([
+                          ["food", "食事"],
+                          ["workout", "運動"],
+                          ["both", "両方"],
+                        ] as Array<[AiReportContentScope, string]>).map(([scope, label]) => (
+                          <button className={`mode-button min-h-10 text-xs ${reportContentScope === scope ? "mode-button-active" : ""}`} key={scope} onClick={() => setReportContentScope(scope)}>{label}</button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {reportMode === "day" && (
+                    <div>
+                      <p className="text-xs font-black text-moss">今日の活動量（任意）</p>
+                      <div className="mt-2 grid grid-cols-3 gap-2">
+                        {([
+                          ["low", "少ない"],
+                          ["normal", "いつも通り"],
+                          ["high", "多い"],
+                        ] as Array<[RelativeActivityLevel, string]>).map(([level, label]) => (
+                          <button className={`mode-button min-h-10 text-xs ${reportActivity.relative_activity_level === level ? "mode-button-active" : ""}`} key={level} onClick={() => setReportActivity((current) => ({ ...current, relative_activity_level: level }))}>{label}</button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <label className="onboarding-field">
+                    <span>{aiAdviceTopic === "custom" ? "相談したいこと" : "補足したいこと（任意）"}</span>
+                    <textarea
+                      className="min-h-28"
+                      value={aiAdviceDetail}
+                      onChange={(event) => setAiAdviceDetail(event.target.value)}
+                      placeholder={aiAdviceTopic === "custom"
+                        ? "例: 最近体重が停滞している原因と、今週試すことを教えて"
+                        : aiAdviceTopic === "remaining"
+                          ? "例: コンビニで買えるもの、温かい食事がいい"
+                          : "条件や気になっていることがあれば入力"}
+                    />
+                  </label>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <button className="secondary-button" disabled={aiAdviceLoading} onClick={() => {
+                      setAiAdviceStep("topic");
+                      setAiAdviceError("");
+                    }}><ChevronLeft size={17} />戻る</button>
+                    <button className="primary-button" disabled={aiAdviceLoading || (aiAdviceTopic === "custom" && !aiAdviceDetail.trim())} onClick={() => void submitAiAdvice()}>
+                      <Sparkles size={17} />{aiAdviceLoading ? "作成中…" : "相談する"}
                     </button>
-                  ))}
+                  </div>
                 </div>
-              </div>
-              <div>
-                <p className="text-xs font-black text-moss">相談に含める記録</p>
-                <div className="mt-2 grid grid-cols-3 gap-2">
-                  {([
-                    ["food", "食事"],
-                    ["workout", "運動"],
-                    ["both", "両方"],
-                  ] as Array<[AiReportContentScope, string]>).map(([scope, label]) => (
-                    <button className={`mode-button min-h-10 text-xs ${reportContentScope === scope ? "mode-button-active" : ""}`} key={scope} onClick={() => setReportContentScope(scope)}>{label}</button>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <p className="text-xs font-black text-moss">普段と比べた活動量</p>
-                <div className="mt-2 grid grid-cols-3 gap-2">
-                  {([
-                    ["low", "少ない"],
-                    ["normal", "いつも通り"],
-                    ["high", "多い"],
-                  ] as Array<[RelativeActivityLevel, string]>).map(([level, label]) => (
-                    <button className={`mode-button min-h-10 text-xs ${reportActivity.relative_activity_level === level ? "mode-button-active" : ""}`} key={level} onClick={() => setReportActivity((current) => ({ ...current, relative_activity_level: level }))}>{label}</button>
-                  ))}
-                </div>
-              </div>
-              <label className="onboarding-field">
-                <span>相談したいこと</span>
-                <textarea className="min-h-32" value={question} onChange={(event) => setQuestion(event.target.value)} placeholder="例: 最近体重が停滞している原因と、今週試すことを教えて" />
-              </label>
-              <button className="primary-button w-full" disabled={aiAdviceLoading} onClick={() => void submitAiAdvice()}>
-                <Sparkles size={17} />{aiAdviceLoading ? "回答を作成中…" : "アプリ内AIに相談"}
-              </button>
+              )}
             </div>
           )}
           {aiAdviceResponse && (
             <div className="mt-4 space-y-4">
+              <div>
+                <div className="grid grid-cols-3 gap-1.5" aria-hidden="true">
+                  <span className="h-1.5 rounded-full bg-leaf" />
+                  <span className="h-1.5 rounded-full bg-leaf" />
+                  <span className="h-1.5 rounded-full bg-leaf" />
+                </div>
+                <p className="mt-4 text-xs font-black text-moss">3 / 3 · AIアドバイス</p>
+              </div>
               <div className="rounded-2xl border border-line p-4">
-                <p className="text-xs font-black text-moss">AIアドバイス</p>
                 <h3 className="mt-1 text-lg font-black">{aiAdviceResponse.headline}</h3>
                 <p className="mt-3 text-sm leading-relaxed">{aiAdviceResponse.summary}</p>
                 {aiAdviceResponse.observations.length > 0 && <AdviceList title="記録から見えること" items={aiAdviceResponse.observations} />}
@@ -10487,6 +10608,7 @@ function SettingsTab(props: {
               <p className="font-bold">{aiAdviceError}</p>
               <button className="secondary-button mt-3 w-full" onClick={() => {
                 setAiAdviceError("");
+                setQuestion(currentAiAdviceQuestion);
                 setReportWizardStep("period");
                 setAiConsultationView("external");
               }}><Copy size={17} />自分のAIで相談する</button>

@@ -20,6 +20,62 @@ export type AiAdviceUsage = {
   photo: { used: number; per_user_limit: number };
 };
 
+export type AiAdviceTopic = "food" | "remaining" | "workout" | "goal" | "custom";
+
+export const aiAdviceTopicOrder: AiAdviceTopic[] = ["food", "remaining", "workout", "goal", "custom"];
+
+export const aiAdviceTopicPresets: Record<AiAdviceTopic, {
+  label: string;
+  description: string;
+  mode: "day" | "week" | "month";
+  contentScope: "food" | "workout" | "both";
+  prompt: string;
+}> = {
+  food: {
+    label: "食事内容について",
+    description: "食事の傾向、良い点、改善できる点を見る",
+    mode: "week",
+    contentScope: "food",
+    prompt: "食事内容を振り返り、記録から見える良い点と改善点、次に試す具体策を教えてください。",
+  },
+  remaining: {
+    label: "残りで何を食べられるか",
+    description: "今日の残りカロリーとPFCから候補を考える",
+    mode: "day",
+    contentScope: "food",
+    prompt: "今日の目標と現在の摂取量、残りカロリーとPFCを踏まえ、残りで食べられる具体的な食事候補を複数教えてください。未記録や不明な値は推測で埋めないでください。",
+  },
+  workout: {
+    label: "ワークアウト内容について",
+    description: "頻度、部位、ボリューム、次のトレーニングを見る",
+    mode: "week",
+    contentScope: "workout",
+    prompt: "ワークアウト内容を振り返り、頻度、部位、ボリュームの良い点と改善点、次に行う具体的なトレーニング案を教えてください。",
+  },
+  goal: {
+    label: "ゴール設定について",
+    description: "体重推移と記録から、今の目標が現実的かを見る",
+    mode: "month",
+    contentScope: "both",
+    prompt: "現在の体重推移、食事、運動、設定中のゴールを踏まえ、目標と期間が現実的か、必要ならどこを調整すべきか教えてください。",
+  },
+  custom: {
+    label: "自分で入力",
+    description: "相談したい内容を自由に入力する",
+    mode: "week",
+    contentScope: "both",
+    prompt: "",
+  },
+};
+
+export function buildAiAdviceQuestion(topic: AiAdviceTopic, detail: string) {
+  const supplement = detail.trim();
+  if (topic === "custom") return supplement;
+  return supplement
+    ? `${aiAdviceTopicPresets[topic].prompt}\n\n補足: ${supplement}`
+    : aiAdviceTopicPresets[topic].prompt;
+}
+
 export type AiAdviceError = Error & {
   code?: string;
   fallbackAvailable?: boolean;
