@@ -1,0 +1,28 @@
+name: Purge redacted history references
+
+on:
+  push:
+    branches: ["main"]
+    paths: [".github/workflows/purge-redacted-history-runs.yml"]
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  purge:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete workflow runs that retain redacted commits
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          for run_id in \
+            30063301797 \
+            30068748445 \
+            30071653496 \
+            30073630820
+          do
+            gh api --method DELETE "repos/${GH_REPO}/actions/runs/${run_id}"
+          done
