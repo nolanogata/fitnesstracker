@@ -552,7 +552,6 @@ async function handleGeminiPhoto(context: PagesContext, user: AppUser) {
     body: JSON.stringify({
       contents: [{ role: "user", parts }],
       generationConfig: {
-        temperature: 0.15,
         maxOutputTokens: 4096,
         responseMimeType: "application/json",
         responseSchema: geminiResponseSchema,
@@ -560,9 +559,19 @@ async function handleGeminiPhoto(context: PagesContext, user: AppUser) {
     }),
   });
   if (!response.ok) {
+    const upstream = await readGeminiApiError(response);
+    console.error("gemini_upstream_error", JSON.stringify({
+      model,
+      status: response.status,
+      error_status: upstream.status,
+      reason: upstream.reason,
+    }));
     await recordAiUsage(context.env.DB, user.id, usageDate, model, false);
     if (response.status === 429) throw new HttpError(429, "gemini_quota_exhausted", "本日のアプリ内写真判定枠を使い切った可能性があります。");
+    if (response.status === 400) throw new HttpError(502, "gemini_request_invalid", "Gemini APIへの送信形式を確認できませんでした。");
+    if (response.status === 401) throw new HttpError(503, "gemini_key_invalid", "Gemini APIキーを確認できません。");
     if (response.status === 403) throw new HttpError(503, "gemini_permission_denied", "Gemini APIの設定を確認できません。");
+    if (response.status === 404) throw new HttpError(503, "gemini_model_unavailable", "指定したGeminiモデルを利用できません。");
     throw new HttpError(502, "gemini_unavailable", "写真判定サービスへ接続できませんでした。");
   }
   const gemini = await response.json() as {
@@ -594,6 +603,30 @@ async function handleGeminiPhoto(context: PagesContext, user: AppUser) {
       created_at = excluded.created_at
   `).bind(user.id, imageHash, JSON.stringify(result), model, expires, now.toISOString()).run();
   return json({ result, model, cached: false });
+}
+
+async function readGeminiApiError(response: Response) {
+  try {
+    const payload = await response.json() as {
+      error?: {
+        status?: string;
+        details?: Array<{
+          reason?: string;
+          metadata?: { reason?: string };
+        }>;
+      };
+    };
+    const details = payload.error?.details ?? [];
+    const reason = details
+      .map((detail) => detail.reason || detail.metadata?.reason)
+      .find((value): value is string => Boolean(value));
+    return {
+      status: cleanText(payload.error?.status, 80) || "unknown",
+      reason: cleanText(reason, 120) || "unknown",
+    };
+  } catch {
+    return { status: "unknown", reason: "unparseable_response" };
+  }
 }
 
 async function handleAiUsage(context: PagesContext, user: AppUser) {

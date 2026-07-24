@@ -59,7 +59,11 @@ export async function analyzeWithGemini(input: {
   if (!response.ok || !data.result || !data.model) {
     const error = new Error(data.message || "アプリ内写真判定に失敗しました。") as GeminiPhotoError;
     error.code = data.error;
-    error.fallbackAvailable = ["gemini_quota_exhausted", "gemini_unavailable"].includes(data.error ?? "");
+    error.fallbackAvailable = [
+      "gemini_quota_exhausted",
+      "gemini_model_unavailable",
+      "gemini_unavailable",
+    ].includes(data.error ?? "");
     throw error;
   }
   return { result: data.result, model: data.model, cached: Boolean(data.cached) };
