@@ -58,6 +58,7 @@ export async function analyzeWithGemini(input: {
         result?: Record<string, unknown>;
         model?: string;
         cached?: boolean;
+        trace_id?: string;
       };
     } catch {
       return {};
@@ -65,7 +66,8 @@ export async function analyzeWithGemini(input: {
   })();
   if (!response.ok || !data.result || !data.model) {
     const statusHint = response.status ? `（HTTP ${response.status}）` : "";
-    const error = new Error(data.message || `アプリ内写真判定に失敗しました。${statusHint}`) as GeminiPhotoError;
+    const traceHint = data.trace_id ? `（診断ID: ${data.trace_id}）` : "";
+    const error = new Error(`${data.message || `アプリ内写真判定に失敗しました。${statusHint}`}${traceHint}`) as GeminiPhotoError;
     error.code = data.error;
     error.fallbackAvailable = [
       "gemini_quota_exhausted",

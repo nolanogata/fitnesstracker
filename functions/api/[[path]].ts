@@ -1,3 +1,9 @@
+import {
+  GeminiGenerationError,
+  generateGeminiContent,
+  type GeminiContentPart,
+} from "./geminiGenerateContent.ts";
+
 type D1Result<T = unknown> = {
   results?: T[];
   success: boolean;
@@ -117,13 +123,24 @@ export const onRequest = async (context: PagesContext): Promise<Response> => {
     const status = error instanceof HttpError ? error.status : 500;
     const code = error instanceof HttpError ? error.code : "internal_error";
     if (status >= 500) console.error(code, error instanceof Error ? error.message : String(error));
-    return json({ error: code, message: error instanceof HttpError ? error.message : "処理に失敗しました。" }, status);
+    return json({
+      error: code,
+      message: error instanceof HttpError ? error.message : "処理に失敗しました。",
+      trace_id: error instanceof HttpError ? error.traceId : undefined,
+    }, status);
   }
 };
 
 class HttpError extends Error {
-  constructor(public status: number, public code: string, message: string) {
+  readonly status: number;
+  readonly code: string;
+  readonly traceId?: string;
+
+  constructor(status: number, code: string, message: string, traceId?: string) {
     super(message);
+    this.status = status;
+    this.code = code;
+    this.traceId = traceId;
   }
 }
 
@@ -527,6 +544,7 @@ async function handleGeminiPhoto(context: PagesContext, user: AppUser) {
   const model = body.use_fallback
     ? context.env.GEMINI_FALLBACK_MODEL || "gemini-3.5-flash-lite"
     : context.env.GEMINI_PRIMARY_MODEL || "gemini-3.6-flash";
+  const fallbackModel = context.env.GEMINI_FALLBACK_MODEL || "gemini-3.5-flash-lite";
   const usageDate = pacificDate();
   await enforceAiLimit(context.env, user.id, usageDate, model);
   const hashInput = `${model}:${body.brand_hint ?? ""}:${body.food_image ?? ""}:${body.evidence_image ?? ""}`;
@@ -537,98 +555,70 @@ async function handleGeminiPhoto(context: PagesContext, user: AppUser) {
   `).bind(user.id, imageHash, new Date().toISOString()).first<{ response_json: string; model: string }>();
   if (cached) return json({ result: JSON.parse(cached.response_json), model: cached.model, cached: true });
 
-  const input: Array<Record<string, unknown>> = [{ type: "text", text: geminiFoodPrompt(body.brand_hint) }];
+  const parts: GeminiContentPart[] = [{ text: geminiFoodPrompt(body.brand_hint) }];
   if (foodImage) {
-    input.push({
-      type: "image",
-      mime_type: foodImage.contentType,
-      data: bytesToBase64(foodImage.bytes),
-    });
+    parts.push({ inlineData: { mimeType: foodImage.contentType, data: bytesToBase64(foodImage.bytes) } });
   }
   if (evidenceImage) {
-    input.push({
-      type: "text",
-      text: "次の画像は、補助情報となるレシートまたは商品パッケージ・栄養成分表示です。",
-    });
-    input.push({
-      type: "image",
-      mime_type: evidenceImage.contentType,
-      data: bytesToBase64(evidenceImage.bytes),
-    });
+    parts.push({ text: "次の画像は、補助情報となるレシートまたは商品パッケージ・栄養成分表示です。" });
+    parts.push({ inlineData: { mimeType: evidenceImage.contentType, data: bytesToBase64(evidenceImage.bytes) } });
   }
-  const response = await fetch("https://generativelanguage.googleapis.com/v1/interactions", {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      "x-goog-api-key": context.env.GEMINI_API_KEY,
-    },
-    body: JSON.stringify({
-      model,
-      input: [{ type: "user_input", content: input }],
-      store: false,
-      response_format: {
-        type: "text",
-        mime_type: "application/json",
-        schema: geminiResponseSchema,
+  const traceId = crypto.randomUUID().slice(0, 8);
+  let generated: Awaited<ReturnType<typeof generateGeminiContent<Record<string, unknown>>>>;
+  try {
+    generated = await generateGeminiContent({
+      apiKey: context.env.GEMINI_API_KEY,
+      models: body.use_fallback ? [fallbackModel] : [model, fallbackModel],
+      parts,
+      parse: (text) => {
+        const result = JSON.parse(text) as Record<string, unknown>;
+        validateGeminiResult(result);
+        return result;
       },
-    }),
-  });
-  if (!response.ok) {
-    const upstream = await readGeminiApiError(response);
-    console.error("gemini_upstream_error", JSON.stringify({
-      model,
-      status: response.status,
-      error_status: upstream.status,
-      reason: upstream.reason,
-      message: upstream.message,
-    }));
-    await recordAiUsage(context.env.DB, user.id, usageDate, model, false);
+    });
+  } catch (error) {
+    if (!(error instanceof GeminiGenerationError)) throw error;
+    const attempts = error.attempts;
+    const lastAttempt = attempts.at(-1);
+    await recordAiUsage(context.env.DB, user.id, usageDate, lastAttempt?.model || model, false);
+    console.error("gemini_upstream_error", JSON.stringify({ trace_id: traceId, attempts }));
     await audit(
       context.env.DB,
       user.id,
       "gemini_upstream_error",
-      "gemini_model",
-      model,
+      "gemini_trace",
+      traceId,
+      { trace_id: traceId, endpoint: "generateContent", attempts },
+    ).catch(() => undefined);
+    const statuses = attempts.map((attempt) => attempt.status);
+    if (statuses.includes(401)) throw new HttpError(503, "gemini_key_invalid", "Gemini APIキーを確認できません。", traceId);
+    if (statuses.includes(403)) throw new HttpError(503, "gemini_permission_denied", "Gemini APIの権限または無料枠設定を確認できません。", traceId);
+    if (statuses.length > 0 && statuses.every((status) => status === 429)) {
+      throw new HttpError(429, "gemini_quota_exhausted", "Geminiの無料利用枠を使い切った可能性があります。", traceId);
+    }
+    if (statuses.length > 0 && statuses.every((status) => status === 404)) {
+      throw new HttpError(503, "gemini_model_unavailable", "設定中のGeminiモデルを利用できません。", traceId);
+    }
+    if (attempts.some((attempt) => attempt.reason === "invalid_model_output" || attempt.reason === "empty_model_output")) {
+      throw new HttpError(502, "gemini_invalid_response", "写真判定結果を安全に読み取れませんでした。", traceId);
+    }
+    throw new HttpError(502, "gemini_unavailable", "Gemini写真判定へ接続できませんでした。", traceId);
+  }
+  if (generated.attempts.length) {
+    await audit(
+      context.env.DB,
+      user.id,
+      "gemini_failover",
+      "gemini_trace",
+      traceId,
       {
-        status: response.status,
-        error_status: upstream.status,
-        reason: upstream.reason,
-        message: upstream.message,
+        trace_id: traceId,
+        selected_model: generated.model,
+        failed_attempts: generated.attempts,
       },
     ).catch(() => undefined);
-    if (response.status === 429) throw new HttpError(429, "gemini_quota_exhausted", "本日のアプリ内写真判定枠を使い切った可能性があります。");
-    if (response.status === 400) throw new HttpError(502, "gemini_request_invalid", "Gemini APIへの送信形式を確認できませんでした。");
-    if (response.status === 401) throw new HttpError(503, "gemini_key_invalid", "Gemini APIキーを確認できません。");
-    if (response.status === 403) throw new HttpError(503, "gemini_permission_denied", "Gemini APIの設定を確認できません。");
-    if (response.status === 404) throw new HttpError(503, "gemini_model_unavailable", "指定したGeminiモデルを利用できません。");
-    throw new HttpError(502, "gemini_unavailable", "写真判定サービスへ接続できませんでした。");
   }
-  const gemini = await response.json() as {
-    steps?: Array<{
-      type?: string;
-      content?: Array<{ type?: string; text?: string }>;
-    }>;
-  };
-  const text = (gemini.steps ?? [])
-    .filter((step) => step.type === "model_output")
-    .flatMap((step) => step.content ?? [])
-    .filter((part) => part.type === "text")
-    .map((part) => part.text ?? "")
-    .join("")
-    .trim();
-  if (!text) {
-    await recordAiUsage(context.env.DB, user.id, usageDate, model, false);
-    throw new HttpError(502, "gemini_empty_response", "写真から候補を読み取れませんでした。");
-  }
-  let result: Record<string, unknown>;
-  try {
-    result = JSON.parse(text) as Record<string, unknown>;
-  } catch {
-    await recordAiUsage(context.env.DB, user.id, usageDate, model, false);
-    throw new HttpError(502, "gemini_invalid_response", "写真判定結果の形式が不正です。");
-  }
-  validateGeminiResult(result);
-  await recordAiUsage(context.env.DB, user.id, usageDate, model, true);
+  await recordAiUsage(context.env.DB, user.id, usageDate, generated.model, true);
   const now = new Date();
   const expires = new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString();
   await context.env.DB.prepare(`
@@ -639,38 +629,13 @@ async function handleGeminiPhoto(context: PagesContext, user: AppUser) {
       model = excluded.model,
       expires_at = excluded.expires_at,
       created_at = excluded.created_at
-  `).bind(user.id, imageHash, JSON.stringify(result), model, expires, now.toISOString()).run();
-  return json({ result, model, cached: false });
-}
-
-async function readGeminiApiError(response: Response) {
-  try {
-    const payload = await response.json() as {
-      code?: number;
-      status?: string;
-      message?: string;
-      error?: {
-        code?: number;
-        status?: string;
-        message?: string;
-        details?: Array<{
-          reason?: string;
-          metadata?: { reason?: string };
-        }>;
-      };
-    };
-    const details = payload.error?.details ?? [];
-    const reason = details
-      .map((detail) => detail.reason || detail.metadata?.reason)
-      .find((value): value is string => Boolean(value));
-    return {
-      status: cleanText(payload.error?.status || payload.status, 80) || "unknown",
-      reason: cleanText(reason, 120) || "unknown",
-      message: cleanText(payload.error?.message || payload.message, 240) || "unknown",
-    };
-  } catch {
-    return { status: "unknown", reason: "unparseable_response", message: "unparseable_response" };
-  }
+  `).bind(user.id, imageHash, JSON.stringify(generated.value), generated.model, expires, now.toISOString()).run();
+  return json({
+    result: generated.value,
+    model: generated.model,
+    cached: false,
+    fallback_used: generated.attempts.length > 0,
+  });
 }
 
 async function handleAiUsage(context: PagesContext, user: AppUser) {
