@@ -59,6 +59,6 @@ GEMINI_GLOBAL_DAILY_LIMIT = "10"
 CATALOG_EVIDENCE_PER_USER_DAILY_LIMIT = "2"
 CATALOG_EVIDENCE_GLOBAL_DAILY_LIMIT = "4"
 
-# Add required secrets with:
+# Configure required secrets in the Cloudflare dashboard or with:
 # npx wrangler secret put GEMINI_API_KEY
 # npx wrangler secret put ADMIN_EMAILS
