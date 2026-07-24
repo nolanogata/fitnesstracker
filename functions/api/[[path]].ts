@@ -537,24 +537,39 @@ async function handleGeminiPhoto(context: PagesContext, user: AppUser) {
   `).bind(user.id, imageHash, new Date().toISOString()).first<{ response_json: string; model: string }>();
   if (cached) return json({ result: JSON.parse(cached.response_json), model: cached.model, cached: true });
 
-  const parts: Array<Record<string, unknown>> = [{ text: geminiFoodPrompt(body.brand_hint) }];
-  if (foodImage) parts.push({ inline_data: { mime_type: foodImage.contentType, data: bytesToBase64(foodImage.bytes) } });
-  if (evidenceImage) {
-    parts.push({ text: "次の画像は、補助情報となるレシートまたは商品パッケージ・栄養成分表示です。" });
-    parts.push({ inline_data: { mime_type: evidenceImage.contentType, data: bytesToBase64(evidenceImage.bytes) } });
+  const input: Array<Record<string, unknown>> = [{ type: "text", text: geminiFoodPrompt(body.brand_hint) }];
+  if (foodImage) {
+    input.push({
+      type: "image",
+      mime_type: foodImage.contentType,
+      data: bytesToBase64(foodImage.bytes),
+    });
   }
-  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
+  if (evidenceImage) {
+    input.push({
+      type: "text",
+      text: "次の画像は、補助情報となるレシートまたは商品パッケージ・栄養成分表示です。",
+    });
+    input.push({
+      type: "image",
+      mime_type: evidenceImage.contentType,
+      data: bytesToBase64(evidenceImage.bytes),
+    });
+  }
+  const response = await fetch("https://generativelanguage.googleapis.com/v1beta/interactions", {
     method: "POST",
     headers: {
       "content-type": "application/json",
       "x-goog-api-key": context.env.GEMINI_API_KEY,
+      "Api-Revision": "2026-05-20",
     },
     body: JSON.stringify({
-      contents: [{ role: "user", parts }],
-      generationConfig: {
-        maxOutputTokens: 4096,
-        responseMimeType: "application/json",
-        responseJsonSchema: geminiResponseSchema,
+      model,
+      input,
+      response_format: {
+        type: "text",
+        mime_type: "application/json",
+        schema: geminiResponseSchema,
       },
     }),
   });
@@ -567,6 +582,18 @@ async function handleGeminiPhoto(context: PagesContext, user: AppUser) {
       reason: upstream.reason,
     }));
     await recordAiUsage(context.env.DB, user.id, usageDate, model, false);
+    await audit(
+      context.env.DB,
+      user.id,
+      "gemini_upstream_error",
+      "gemini_model",
+      model,
+      {
+        status: response.status,
+        error_status: upstream.status,
+        reason: upstream.reason,
+      },
+    ).catch(() => undefined);
     if (response.status === 429) throw new HttpError(429, "gemini_quota_exhausted", "本日のアプリ内写真判定枠を使い切った可能性があります。");
     if (response.status === 400) throw new HttpError(502, "gemini_request_invalid", "Gemini APIへの送信形式を確認できませんでした。");
     if (response.status === 401) throw new HttpError(503, "gemini_key_invalid", "Gemini APIキーを確認できません。");
@@ -575,9 +602,18 @@ async function handleGeminiPhoto(context: PagesContext, user: AppUser) {
     throw new HttpError(502, "gemini_unavailable", "写真判定サービスへ接続できませんでした。");
   }
   const gemini = await response.json() as {
-    candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
+    steps?: Array<{
+      type?: string;
+      content?: Array<{ type?: string; text?: string }>;
+    }>;
   };
-  const text = gemini.candidates?.[0]?.content?.parts?.map((part) => part.text ?? "").join("").trim();
+  const text = (gemini.steps ?? [])
+    .filter((step) => step.type === "model_output")
+    .flatMap((step) => step.content ?? [])
+    .filter((part) => part.type === "text")
+    .map((part) => part.text ?? "")
+    .join("")
+    .trim();
   if (!text) {
     await recordAiUsage(context.env.DB, user.id, usageDate, model, false);
     throw new HttpError(502, "gemini_empty_response", "写真から候補を読み取れませんでした。");
