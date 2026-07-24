@@ -14,6 +14,8 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
+  CirclePause,
+  CircleUserRound,
   Coffee,
   Copy,
   Croissant,
@@ -29,6 +31,7 @@ import {
   Heart,
   Home,
   LogOut,
+  Megaphone,
   Minus,
   Palette,
   Pencil,
@@ -229,8 +232,8 @@ type ManualFoodWizardStep = "basic" | "unit" | "purpose" | "category" | "nutriti
 type AiFoodImportStep = "prompt" | "paste" | "read" | "match" | "timing" | "confirm";
 type WorkoutFocus = "dateLog" | undefined;
 type MyTrainingWizardStep = "method" | "source" | "basic" | "defaults" | "presets" | "confirm";
-type SettingsFocus = "ai" | "activity" | "backup" | "myMenu" | "goal" | undefined;
-type SettingsSection = "ai" | "activity" | "backup" | "goal" | "theme" | "records" | "myMenu" | "myTraining" | "general";
+type SettingsFocus = "ai" | "activity" | "backup" | "myMenu" | "goal" | "profile" | undefined;
+type SettingsSection = "ai" | "activity" | "backup" | "goal" | "theme" | "records" | "myMenu" | "myTraining" | "general" | "profile";
 type MyMenuSection = "list" | "method" | "new" | "edit";
 type MyTrainingSection = "list";
 type GoalSettingsSection = "guided" | "manual" | "custom";
@@ -1334,6 +1337,17 @@ const achievementProgressSpecs: Record<string, AchievementProgressSpec> = {
   streak_365: { metric: "streak", target: 365, unit: "日" },
 };
 const appUpdates: AppUpdate[] = [
+  {
+    id: "2026-07-24-home-account-announcements",
+    title: "Homeの操作とプロフィール設定を整理",
+    date: "2026-07-24",
+    items: [
+      "Home右上にアカウントメニューを追加し、ユーザー情報、ログアウト、チートデー、一時停止をまとめました。",
+      "更新内容と再読み込みをメガホンのお知らせ画面にまとめました。",
+      "記録リマインダーをポップアップ化し、プロフィール関連の設定を1つの階層に整理しました。",
+      "初回のWelcome画面を新しくし、旧バックアップの復元を補助メニューへ移しました。",
+    ],
+  },
   {
     id: "2026-07-23-chain-combo-context",
     title: "組み合わせ提案の注文条件を改善",
@@ -2506,8 +2520,10 @@ function App() {
   const [cheatDayDates, setCheatDayDates] = useState<string[]>(() => loadCheatDayDates());
   const [dismissedRecordReminderIds, setDismissedRecordReminderIds] = useState<string[]>(() => loadDismissedRecordReminders());
   const [isUpdateNotesOpen, setIsUpdateNotesOpen] = useState(false);
+  const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
   const [showStaleAppPrompt, setShowStaleAppPrompt] = useState(false);
   const [isHeaderReloading, setIsHeaderReloading] = useState(false);
+  const [cloudUser, setCloudUser] = useState<{ email: string; role: "user" | "admin" }>();
   const [currentTime, setCurrentTime] = useState(() => new Date());
   const [selectedAppDate, setSelectedAppDate] = useState<string>();
   const [isThemeCharacterVisible, setIsThemeCharacterVisible] = useState(true);
@@ -2555,9 +2571,8 @@ function App() {
   const pauseModeSettings = useMemo(() => getPauseModeSettings(settings), [settings]);
   const activeSpecialMode = useMemo(() => getActiveSpecialMode(appDate, specialModeSettings), [appDate, specialModeSettings]);
   const activePauseMode = useMemo(() => getActivePauseMode(appDate, pauseModeSettings), [appDate, pauseModeSettings]);
+  const isPauseModeEnabled = pauseModeSettings.some((mode) => mode.enabled);
   const isDeveloperTestMode = useMemo(() => isDeveloperTestModeActive(settings, currentTime), [settings?.developer_test_active_until, currentTime]);
-  const shouldShowActivityProfilePrompt = !settings?.activity_profile
-    && (!settings?.activity_profile_prompt_next_at || settings.activity_profile_prompt_next_at <= actualAppDate);
   const shouldForceTrophyAnimation = isDeveloperTestMode && !!settings?.developer_force_trophy_animation;
   const developerProgressPercent = isDeveloperTestMode ? settings?.developer_progress_percent : undefined;
   const openSpecialFoodMode = () => {
@@ -2567,33 +2582,6 @@ function App() {
     setFoodFocus("specialMode");
     setTab("food");
   };
-  const useCurrentActivityProfile = async () => {
-    const timestamp = nowIso();
-    await db.settings.update("local", {
-      activity_profile: {
-        activity_level: activeGoal?.activity_level ?? "moderate",
-        averaging_period: "initial_setup",
-        data_source: "initial_setup",
-        confirmed_at: timestamp,
-        updated_at: timestamp,
-      },
-      activity_profile_prompt_dismissed_at: undefined,
-      activity_profile_prompt_next_at: undefined,
-      updated_at: timestamp,
-    });
-    await refresh();
-    showToast("普段の活動量を保存しました");
-  };
-  const deferActivityProfilePrompt = async () => {
-    const timestamp = nowIso();
-    await db.settings.update("local", {
-      activity_profile_prompt_dismissed_at: timestamp,
-      activity_profile_prompt_next_at: addDays(actualAppDate, 30),
-      updated_at: timestamp,
-    });
-    await refresh();
-  };
-
   const refresh = async () => {
     const [nextSettings, nextProfile, nextGoals, nextMenu, rawFood, nextWeights, nextExercises, nextTemplates, nextSessions, nextWorkoutExercises, nextSets, nextReports] =
       await Promise.all([
@@ -2656,6 +2644,21 @@ function App() {
       cancelled = true;
       window.removeEventListener("online", handleOnline);
       window.clearInterval(interval);
+    };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    fetch("/api/session", { headers: { accept: "application/json" } })
+      .then(async (response) => response.ok ? response.json() : undefined)
+      .then((data: { user?: { email?: string; role?: "user" | "admin" } } | undefined) => {
+        const email = data?.user?.email;
+        const role = data?.user?.role;
+        if (active && email && role) setCloudUser({ email, role });
+      })
+      .catch(() => undefined);
+    return () => {
+      active = false;
     };
   }, []);
 
@@ -2814,7 +2817,6 @@ function App() {
   const latestWeight = weightLogs.at(-1);
   const dayTotals = useMemo(() => sumFood(todayEntries), [todayEntries]);
   const target = useMemo(() => activeGoal ?? defaultGoal(profile), [activeGoal, profile]);
-  const needsGoalTargetPeriod = !!activeGoal && (!activeGoal.target_date || typeof activeGoal.target_body_fat_percentage !== "number");
   const isCheatDay = cheatDayDates.includes(appDate);
   const isSpecialModeDay = !!activeSpecialMode;
   const isPauseModeDay = !!activePauseMode;
@@ -3102,6 +3104,40 @@ function App() {
       window.location.reload();
     }
   };
+  const togglePauseModeFromAccount = async () => {
+    if (!settings) return;
+    const timestamp = nowIso();
+    const pause_modes = isPauseModeEnabled
+      ? pauseModeSettings.map((mode) => ({ ...mode, enabled: false, updated_at: timestamp }))
+      : [{
+          ...(pauseModeSettings[0] ?? { id: "pause_default" }),
+          enabled: true,
+          label: pauseModeSettings[0]?.label ?? "一時停止",
+          short_label: pauseModeSettings[0]?.short_label ?? "PAUSE",
+          start_date: appDate,
+          end_date: addDays(appDate, 6),
+          updated_at: timestamp,
+        }, ...pauseModeSettings.slice(1).map((mode) => ({ ...mode, enabled: false, updated_at: timestamp }))];
+    await db.settings.update("local", { pause_modes, updated_at: timestamp });
+    await refresh();
+    showToast(isPauseModeEnabled ? "一時停止モードをOFFにしました" : "今日から7日間、一時停止モードをONにしました");
+  };
+  const logoutAndSwitchUser = async () => {
+    const confirmed = window.confirm(
+      "現在の記録をクラウドへ同期してから、この端末の表示用データを消去し、ログアウトします。続けますか？",
+    );
+    if (!confirmed) return;
+    const result = await runCloudSync();
+    if (result.state !== "synced") {
+      showToast(`ログアウトを中止しました。${result.message}`);
+      return;
+    }
+    await db.delete();
+    for (const key of Object.keys(localStorage)) {
+      if (key.startsWith("phase-log-")) localStorage.removeItem(key);
+    }
+    window.location.assign("/cdn-cgi/access/logout");
+  };
   const toggleCheatDay = () => {
     setCheatDayDates((current) => {
       const next = current.includes(appDate) ? current.filter((date) => date !== appDate) : [...current, appDate].sort();
@@ -3116,6 +3152,13 @@ function App() {
       localStorage.setItem(dismissedRecordReminderStorageKey, JSON.stringify(next));
       return next;
     });
+  };
+  const openProfileSettings = () => {
+    setIsAccountMenuOpen(false);
+    setSettingsFocus("profile");
+    setFoodFocus(undefined);
+    setWorkoutFocus(undefined);
+    setTab("settings");
   };
   const editRecordDate = (date: string, targetTab: EditableRecordTab) => {
     setSelectedAppDate(date === actualAppDate ? undefined : date);
@@ -3279,16 +3322,20 @@ function App() {
                 <Trophy size={18} />
               </button>
               <button
-                className={`home-header-cheat ${isCheatDay ? "home-header-cheat-active" : ""}`}
-                aria-pressed={isCheatDay}
-                aria-label={isCheatDay ? "チートデーを解除" : "チートデーに設定"}
-                onClick={toggleCheatDay}
-                title={isCheatDay ? "チートデーを解除" : "チートデーに設定"}
+                className={`home-header-announcements ${(!!latestUpdate && seenUpdateId !== latestUpdate.id) || showStaleAppPrompt ? "home-header-announcements-unread" : ""}`}
+                aria-label="お知らせ"
+                onClick={openUpdateNotes}
+                title="お知らせ"
               >
-                !
+                <Megaphone size={18} />
               </button>
-              <button className="home-header-reload" disabled={isHeaderReloading} aria-label="最新の情報にリロード" onClick={reloadFromHeader}>
-                <RotateCcw className={isHeaderReloading ? "home-header-reload-loading" : ""} size={18} />
+              <button
+                className="home-header-account"
+                aria-label="アカウントメニュー"
+                onClick={() => setIsAccountMenuOpen(true)}
+                title="アカウント"
+              >
+                <CircleUserRound size={19} />
               </button>
             </div>
           ) : (
@@ -3348,10 +3395,6 @@ function App() {
               isFlashing: isThemePowerFlash,
               onTap: handleThemePowerTap,
             } : undefined}
-            backupInfo={backupInfo}
-            recordReminder={recordReminder}
-            needsGoalTargetPeriod={needsGoalTargetPeriod}
-            showActivityProfilePrompt={shouldShowActivityProfilePrompt}
             setTab={(nextTab) => {
               setSettingsFocus(undefined);
               setFoodFocus(nextTab === "food" ? "favorite" : undefined);
@@ -3382,26 +3425,6 @@ function App() {
               setWorkoutFocus(undefined);
               setTab("settings");
             }}
-            openActivityProfile={() => {
-              setSettingsFocus("activity");
-              setFoodFocus(undefined);
-              setWorkoutFocus(undefined);
-              setTab("settings");
-            }}
-            useCurrentActivityProfile={useCurrentActivityProfile}
-            deferActivityProfilePrompt={deferActivityProfilePrompt}
-            openBackup={() => {
-              setSettingsFocus("backup");
-              setFoodFocus(undefined);
-              setWorkoutFocus(undefined);
-              setTab("settings");
-            }}
-            dismissRecordReminder={dismissRecordReminder}
-            latestUpdate={latestUpdate}
-            hasUnreadUpdate={!!latestUpdate && seenUpdateId !== latestUpdate.id}
-            showStaleAppPrompt={showStaleAppPrompt}
-            openUpdateNotes={openUpdateNotes}
-            reloadLatestApp={reloadLatestApp}
             refresh={refresh}
             showToast={showToast}
             unlockAchievement={unlockAchievementLater}
@@ -3495,7 +3518,6 @@ function App() {
             markBackupNow={markBackupNow}
             cloudSyncStatus={cloudSyncStatus}
             syncCloud={runCloudSync}
-            openUpdateNotes={openUpdateNotes}
             refresh={refresh}
             showToast={showToast}
             unlockAllAchievements={unlockAllAchievements}
@@ -3507,8 +3529,39 @@ function App() {
       {isUpdateNotesOpen && (
         <UpdateNotesModal
           updates={appUpdates}
+          needsReload={showStaleAppPrompt}
+          isReloading={isHeaderReloading}
+          onReload={() => void reloadFromHeader()}
           onClose={() => setIsUpdateNotesOpen(false)}
           onOpenTrophies={() => void openTrophies()}
+        />
+      )}
+      {isAccountMenuOpen && (
+        <AccountMenuModal
+          profileName={profile?.name}
+          email={cloudUser?.email}
+          role={cloudUser?.role}
+          appDate={appDate}
+          isCheatDay={isCheatDay}
+          isPauseModeEnabled={isPauseModeEnabled}
+          onToggleCheatDay={toggleCheatDay}
+          onTogglePauseMode={() => void togglePauseModeFromAccount()}
+          onOpenProfile={openProfileSettings}
+          onLogout={cloudUser ? () => void logoutAndSwitchUser() : undefined}
+          onClose={() => setIsAccountMenuOpen(false)}
+        />
+      )}
+      {tab === "home" && recordReminder && !isUpdateNotesOpen && !isAccountMenuOpen && !isTrophyOpen && (
+        <RecordReminderModal
+          reminder={recordReminder}
+          onLater={() => dismissRecordReminder(recordReminder.id)}
+          onRecord={() => {
+            dismissRecordReminder(recordReminder.id);
+            setSettingsFocus(undefined);
+            setFoodFocus("favorite");
+            setWorkoutFocus(undefined);
+            setTab("food");
+          }}
         />
       )}
       {isTrophyOpen && (
@@ -4237,32 +4290,17 @@ function HomeTab(props: {
     isFlashing: boolean;
     onTap: () => void;
   };
-  backupInfo: BackupInfo;
-  recordReminder?: RecordReminder;
-  needsGoalTargetPeriod: boolean;
-  showActivityProfilePrompt: boolean;
   setTab: (tab: Tab) => void;
   openGoalSettings: () => void;
   openTodayFoodLog: () => void;
   openTodayWorkoutLog: () => void;
   openAiReport: () => void;
-  openActivityProfile: () => void;
-  useCurrentActivityProfile: () => Promise<void>;
-  deferActivityProfilePrompt: () => Promise<void>;
-  openBackup: () => void;
-  dismissRecordReminder: (id: string) => void;
-  latestUpdate?: AppUpdate;
-  hasUnreadUpdate: boolean;
-  showStaleAppPrompt: boolean;
-  openUpdateNotes: () => void;
-  reloadLatestApp: () => Promise<void>;
   refresh: () => Promise<void>;
   showToast: (text: string) => void;
   unlockAchievement: (id: string) => void;
 }) {
   const [weight, setWeight] = useState(props.latestWeight?.weight_kg ?? props.profile?.current_weight_kg ?? 70);
   const [bodyFat, setBodyFat] = useState(props.latestWeight?.body_fat_percentage ?? props.profile?.body_fat_percentage ?? 20);
-  const [isReloadingLatest, setIsReloadingLatest] = useState(false);
   const [isCheckInOpen, setIsCheckInOpen] = useState(false);
   const [isPerfectFoodOpen, setIsPerfectFoodOpen] = useState(false);
   const [isEstimateDetailOpen, setIsEstimateDetailOpen] = useState(false);
@@ -4282,7 +4320,6 @@ function HomeTab(props: {
   const developerProgressPercent = typeof props.developerProgressPercent === "number"
     ? Math.max(0, Math.min(110, Math.round(props.developerProgressPercent)))
     : undefined;
-  const backupTitle = props.backupInfo.level === "danger" ? "バックアップ推奨" : "そろそろバックアップ";
   const todayWorkoutCalories = useMemo(() => {
     const sessionIds = new Set(props.todayWorkouts.map((session) => session.id));
     const exerciseIds = new Set(
@@ -4498,86 +4535,6 @@ function HomeTab(props: {
         <span>{isPullRefreshing ? "更新中" : pullOffset >= pullThreshold ? "離して更新" : "更新"}</span>
       </div>
       <div className="home-dashboard" style={pullOffset > 0 ? { transform: `translateY(${Math.min(18, pullOffset * 0.16)}px)` } : undefined}>
-        {props.latestUpdate && props.hasUnreadUpdate && (
-        <button className="home-notice flex w-full items-center gap-3 px-4 py-3 text-left" onClick={props.openUpdateNotes}>
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-bold">更新があります</p>
-            <p className="mt-1 truncate text-xs text-moss">{props.latestUpdate.title}</p>
-          </div>
-          <ChevronRight className="shrink-0 text-muted" size={18} />
-        </button>
-      )}
-
-      {props.needsGoalTargetPeriod && (
-        <button className="home-notice flex w-full items-center gap-3 px-4 py-3 text-left" onClick={props.openGoalSettings}>
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-bold">目標日と体脂肪率を追加できます</p>
-            <p className="mt-1 text-xs text-moss">いつまでに、どの体脂肪率を目指すか設定すると、毎日の目標が分かりやすくなります。</p>
-          </div>
-          <ChevronRight className="shrink-0 text-muted" size={18} />
-        </button>
-      )}
-
-      {props.showActivityProfilePrompt && (
-        <div className="home-notice flex items-start gap-3 px-4 py-3">
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-bold">普段の活動量を確認しましょう</p>
-            <p className="mt-1 text-xs leading-relaxed text-moss">活動量を設定すると、AI相談レポートで普段との差を判断しやすくなります。</p>
-            <div className="mt-3 grid grid-cols-2 gap-2">
-              <button className="secondary-button px-3 py-2 text-xs" onClick={() => void props.useCurrentActivityProfile()}>現在の設定を使用</button>
-              <button className="primary-button px-3 py-2 text-xs" onClick={props.openActivityProfile}>詳しく設定</button>
-            </div>
-            <button className="mt-2 w-full py-1 text-xs font-bold text-moss" onClick={() => void props.deferActivityProfilePrompt()}>後で設定する</button>
-          </div>
-        </div>
-      )}
-
-      {props.showStaleAppPrompt && (
-        <div className="home-notice flex items-center gap-3 px-4 py-3">
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-bold">長時間更新していません</p>
-            <p className="mt-1 text-xs text-moss">最新のメニューや修正を反映するには更新してください。</p>
-          </div>
-          <button
-            className="secondary-button shrink-0 px-3 py-2 text-xs"
-            disabled={isReloadingLatest}
-            onClick={async () => {
-              setIsReloadingLatest(true);
-              try {
-                await props.reloadLatestApp();
-              } catch {
-                window.location.reload();
-              }
-            }}
-          >
-            <RotateCcw size={15} />{isReloadingLatest ? "更新中" : "更新"}
-          </button>
-        </div>
-      )}
-
-      {props.recordReminder && (
-        <div className="home-notice home-reminder-notice flex items-center gap-3 px-4 py-3">
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-bold">{props.recordReminder.title}</p>
-            <p className="mt-1 text-xs leading-relaxed text-moss">{props.recordReminder.message}</p>
-          </div>
-          <div className="flex shrink-0 items-center gap-2">
-            <button className="secondary-button px-3 py-2 text-xs" onClick={() => props.dismissRecordReminder(props.recordReminder!.id)}>あとで</button>
-            <button className="primary-button px-3 py-2 text-xs" onClick={() => props.setTab("food")}>記録</button>
-          </div>
-        </div>
-      )}
-
-      {props.backupInfo.level !== "ok" && (
-        <button className="home-notice flex w-full items-center gap-3 px-4 py-3 text-left" onClick={props.openBackup}>
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-bold">{backupTitle}</p>
-            <p className="mt-1 text-xs leading-relaxed text-moss">{backupMessage(props.backupInfo)}</p>
-          </div>
-          <ChevronRight className="shrink-0 text-muted" size={18} />
-        </button>
-      )}
-
       <section
         className={`home-hero-card home-hero-${calorieMoodClass} ${heroThemeGlowClass} ${props.activeSpecialMode?.id === "hokkaido_trip" ? "home-hero-hokkaido" : ""}`}
         style={heroStyle}
@@ -5425,8 +5382,11 @@ function PerfectFoodMetric({ label, value, suffix }: { label: string; value: num
   );
 }
 
-function UpdateNotesModal({ updates, onClose, onOpenTrophies }: {
+function UpdateNotesModal({ updates, needsReload, isReloading, onReload, onClose, onOpenTrophies }: {
   updates: AppUpdate[];
+  needsReload: boolean;
+  isReloading: boolean;
+  onReload: () => void;
   onClose: () => void;
   onOpenTrophies?: () => void;
 }) {
@@ -5436,15 +5396,30 @@ function UpdateNotesModal({ updates, onClose, onOpenTrophies }: {
     latestUpdate.items.some((item) => item.includes("トロフィー"))
   );
   return (
-    <div className="fixed inset-0 z-50 flex items-end bg-ink/30 px-4 pb-4">
-      <div className="compact-card max-h-[82vh] w-full overflow-y-auto p-4">
+    <div className="fixed inset-0 z-50 flex items-end bg-ink/30 px-4 pb-4" onClick={onClose}>
+      <div className="announcement-sheet compact-card max-h-[86vh] w-full overflow-y-auto p-4" onClick={(event) => event.stopPropagation()}>
         <div className="flex items-start justify-between gap-3">
-          <div>
-            <p className="text-lg font-bold">更新内容</p>
-            <p className="mt-1 text-xs text-moss">アプリに入った変更だけを表示しています。</p>
+          <div className="flex min-w-0 items-center gap-3">
+            <span className="announcement-sheet-icon"><Megaphone size={20} /></span>
+            <div>
+              <p className="text-lg font-bold">お知らせ</p>
+              <p className="mt-1 text-xs text-moss">更新内容や運用からのお知らせを確認できます。</p>
+            </div>
           </div>
           <button className="icon-button h-9 w-9" aria-label="閉じる" onClick={onClose}>×</button>
         </div>
+        <section className={`announcement-refresh-panel mt-4 ${needsReload ? "announcement-refresh-panel-needed" : ""}`}>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-black">{needsReload ? "新しい状態に更新できます" : "アプリを再読み込み"}</p>
+            <p className="mt-1 text-xs leading-relaxed text-moss">
+              {needsReload ? "長時間開いたままです。最新メニューや修正を反映します。" : "表示や同期に違和感がある場合に使ってください。"}
+            </p>
+          </div>
+          <button className="secondary-button shrink-0 px-3 py-2 text-xs" disabled={isReloading} onClick={onReload}>
+            <RotateCcw className={isReloading ? "home-header-reload-loading" : ""} size={15} />
+            {isReloading ? "更新中" : "更新"}
+          </button>
+        </section>
         {latestUpdateHasTrophy && onOpenTrophies && (
           <button className="primary-button mt-4 w-full" onClick={() => {
             onClose();
@@ -5463,6 +5438,120 @@ function UpdateNotesModal({ updates, onClose, onOpenTrophies }: {
               </ul>
             </section>
           ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AccountMenuModal({ profileName, email, role, appDate, isCheatDay, isPauseModeEnabled, onToggleCheatDay, onTogglePauseMode, onOpenProfile, onLogout, onClose }: {
+  profileName?: string;
+  email?: string;
+  role?: "user" | "admin";
+  appDate: string;
+  isCheatDay: boolean;
+  isPauseModeEnabled: boolean;
+  onToggleCheatDay: () => void;
+  onTogglePauseMode: () => void;
+  onOpenProfile: () => void;
+  onLogout?: () => void;
+  onClose: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-[66] flex items-end bg-ink/35 px-4 pb-4" onClick={onClose}>
+      <div className="account-sheet compact-card w-full p-4" onClick={(event) => event.stopPropagation()}>
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-3">
+            <span className="account-avatar"><CircleUserRound size={24} /></span>
+            <div className="min-w-0">
+              <p className="truncate text-lg font-black">{profileName?.trim() || "ユーザー"}</p>
+              <p className="mt-0.5 truncate text-xs font-semibold text-moss">{email ?? "ログイン情報なし"}</p>
+              {role === "admin" && <span className="mini-chip mt-2">管理者</span>}
+            </div>
+          </div>
+          <button className="icon-button h-9 w-9 shrink-0" aria-label="閉じる" onClick={onClose}>×</button>
+        </div>
+
+        <button className="account-profile-link mt-4" onClick={onOpenProfile}>
+          <span>
+            <strong>プロフィール</strong>
+            <small>基本情報・ゴール・活動量を確認</small>
+          </span>
+          <ChevronRight size={18} />
+        </button>
+
+        <section className="account-toggle-list mt-3">
+          <div className="account-toggle-row">
+            <span className="account-toggle-icon">!</span>
+            <span className="min-w-0 flex-1">
+              <strong>チートデー</strong>
+              <small>{formatJapaneseDate(appDate)} の評価を例外扱い</small>
+            </span>
+            <button
+              className={`special-mode-toggle account-switch ${isCheatDay ? "special-mode-toggle-on" : ""}`}
+              type="button"
+              aria-pressed={isCheatDay}
+              aria-label="チートデーを切り替え"
+              onClick={onToggleCheatDay}
+            >
+              <span className="special-mode-toggle-track"><span className="special-mode-toggle-knob" /></span>
+              <span className="sr-only">{isCheatDay ? "ON" : "OFF"}</span>
+            </button>
+          </div>
+          <div className="account-toggle-row">
+            <span className="account-toggle-icon"><CirclePause size={18} /></span>
+            <span className="min-w-0 flex-1">
+              <strong>一時停止モード</strong>
+              <small>{isPauseModeEnabled ? "設定中の期間をOFFにします" : "今日から7日間を例外扱い"}</small>
+            </span>
+            <button
+              className={`special-mode-toggle account-switch ${isPauseModeEnabled ? "special-mode-toggle-on" : ""}`}
+              type="button"
+              aria-pressed={isPauseModeEnabled}
+              aria-label="一時停止モードを切り替え"
+              onClick={onTogglePauseMode}
+            >
+              <span className="special-mode-toggle-track"><span className="special-mode-toggle-knob" /></span>
+              <span className="sr-only">{isPauseModeEnabled ? "ON" : "OFF"}</span>
+            </button>
+          </div>
+        </section>
+
+        {onLogout ? (
+          <>
+            <button className="secondary-button mt-4 w-full" onClick={onLogout}><LogOut size={17} />ログアウト／ユーザー切替</button>
+            <p className="mt-2 text-[11px] font-semibold leading-relaxed text-moss">同期後、この端末の表示用データを消去してCloudflare Accessからログアウトします。</p>
+          </>
+        ) : (
+          <p className="mt-4 rounded-2xl bg-rice px-3 py-2 text-xs font-semibold leading-relaxed text-moss">
+            Cloudflare版でログインすると、ここにメールアドレスとログアウト操作が表示されます。
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function RecordReminderModal({ reminder, onLater, onRecord }: {
+  reminder: RecordReminder;
+  onLater: () => void;
+  onRecord: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-[64] flex items-end bg-ink/30 px-4 pb-4" onClick={onLater}>
+      <div className="record-reminder-sheet compact-card w-full p-4" onClick={(event) => event.stopPropagation()}>
+        <div className="flex items-start gap-3">
+          <span className="record-reminder-icon"><Utensils size={20} /></span>
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-black uppercase tracking-[0.12em] text-moss">Record reminder</p>
+            <h2 className="mt-1 text-xl font-black">{reminder.title}</h2>
+            <p className="mt-2 text-sm leading-relaxed text-moss">{reminder.message}</p>
+          </div>
+          <button className="icon-button h-9 w-9 shrink-0" aria-label="あとで" onClick={onLater}>×</button>
+        </div>
+        <div className="mt-5 grid grid-cols-2 gap-2">
+          <button className="secondary-button" onClick={onLater}>あとで</button>
+          <button className="primary-button" onClick={onRecord}><Utensils size={17} />記録する</button>
         </div>
       </div>
     </div>
@@ -8836,7 +8925,6 @@ function SettingsTab(props: {
   markBackupNow: () => void;
   cloudSyncStatus: CloudSyncStatus;
   syncCloud: () => Promise<CloudSyncStatus>;
-  openUpdateNotes: () => void;
   refresh: () => Promise<void>;
   showToast: (text: string) => void;
   unlockAllAchievements: () => Promise<void>;
@@ -8849,6 +8937,7 @@ function SettingsTab(props: {
   };
 }) {
   const [activeSettingsSection, setActiveSettingsSection] = useState<SettingsSection | undefined>(() => props.focus);
+  const [settingsParent, setSettingsParent] = useState<"profile">();
   const [themeCharacterCandidate, setThemeCharacterCandidate] = useState<Exclude<ThemeCharacter, "none">>();
   const [goalDraft, setGoalDraft] = useState(() => settingsGoalDraftFrom(props.activeGoal, props.profile, props.settings?.activity_profile));
   const [activeGoalSettingsSection, setActiveGoalSettingsSection] = useState<GoalSettingsSection>();
@@ -8857,7 +8946,6 @@ function SettingsTab(props: {
   const [editingUserMenuItemId, setEditingUserMenuItemId] = useState<string>();
   const [sharingOfficialMenuItem, setSharingOfficialMenuItem] = useState<MenuItem>();
   const [cloudRole, setCloudRole] = useState<"user" | "admin">();
-  const [cloudEmail, setCloudEmail] = useState<string>();
   const [adminCatalogReviewOpen, setAdminCatalogReviewOpen] = useState(false);
   const [activeMyMenuSection, setActiveMyMenuSection] = useState<MyMenuSection | undefined>(() => props.focus === "myMenu" ? "method" : undefined);
   const [myMenuWizardStep, setMyMenuWizardStep] = useState<ManualFoodWizardStep>("basic");
@@ -8893,7 +8981,6 @@ function SettingsTab(props: {
       .then((data: { user?: { email?: string; role?: "user" | "admin" } } | undefined) => {
         if (active) {
           setCloudRole(data?.user?.role);
-          setCloudEmail(data?.user?.email);
         }
       })
       .catch(() => undefined);
@@ -9065,6 +9152,7 @@ function SettingsTab(props: {
   useEffect(() => {
     if (!props.focus) return;
     setActiveSettingsSection(props.focus);
+    if (props.focus === "goal" || props.focus === "activity") setSettingsParent("profile");
     if (props.focus === "myMenu") {
       setEditingUserMenuItemId(undefined);
       setPresetDraft({ ...emptyManual, savePreset: true });
@@ -10123,6 +10211,7 @@ function SettingsTab(props: {
     </section>
   );
   const sectionTitles: Record<SettingsSection, { title: string; subtitle: string }> = {
+    profile: { title: "プロフィール", subtitle: "基本情報、ゴール、活動量をまとめて管理します。" },
     ai: { title: "AI相談レポート", subtitle: "AIに渡す相談材料を生成します。" },
     activity: { title: "活動量プロフィール", subtitle: "普段の生活でどの程度動いているかを設定します。" },
     backup: { title: "エクスポート", subtitle: "バックアップ保存とログ出力を管理します。" },
@@ -10131,7 +10220,7 @@ function SettingsTab(props: {
     records: { title: "記録設定", subtitle: "旅行や休養など、通常評価と分けたい期間を管理します。" },
     myMenu: { title: "マイメニュー", subtitle: "自分用の食事メニューを登録・編集します。" },
     myTraining: { title: "マイトレ", subtitle: "自分用のワークアウト種目を登録・編集します。" },
-    general: { title: "一般", subtitle: "チェックイン表示、ユーザー名、更新履歴、開発者モードを管理します。" },
+    general: { title: "基本情報・表示", subtitle: "ユーザー名とHomeのチェックイン表示を管理します。" },
   };
   const activeSectionTitle = activeSettingsSection ? sectionTitles[activeSettingsSection] : undefined;
   const goBackFromSettingsSection = () => {
@@ -10166,6 +10255,11 @@ function SettingsTab(props: {
       setActiveExportSection(undefined);
       return;
     }
+    if (settingsParent === "profile" && (activeSettingsSection === "general" || activeSettingsSection === "goal" || activeSettingsSection === "activity")) {
+      setSettingsParent(undefined);
+      setActiveSettingsSection("profile");
+      return;
+    }
     setActiveSettingsSection(undefined);
   };
 
@@ -10174,17 +10268,15 @@ function SettingsTab(props: {
       {!activeSettingsSection && (
         <>
           <section className="compact-card divide-y divide-line overflow-hidden">
+            <SettingsMenuRow title="プロフィール" description={`${props.profile?.name || "ユーザー名 未設定"} / ${phaseLabels[goalDraft.phase]}`} icon={<CircleUserRound size={18} />} onClick={() => setActiveSettingsSection("profile")} />
             <SettingsMenuRow title="AI相談レポート" description="期間と送信内容を選んでAI用レポートを作成" icon={<FileText size={18} />} onClick={() => { setReportWizardStep("period"); setActiveSettingsSection("ai"); }} />
-            <SettingsMenuRow title="活動量プロフィール" description={props.settings?.activity_profile ? `${activityLabels[props.settings.activity_profile.activity_level]} / 確認済み` : "普段の活動量を確認"} icon={<Activity size={18} />} onClick={() => setActiveSettingsSection("activity")} />
             <SettingsMenuRow title="エクスポート" description="バックアップ保存 / 食事・ワークアウトのログ出力" icon={<Archive size={18} />} onClick={() => setActiveSettingsSection("backup")} />
-            <SettingsMenuRow title="ゴール設定" description={`${phaseLabels[goalDraft.phase]} / ${calculated?.target_calories ?? "-"}kcal`} icon={<SlidersHorizontal size={18} />} onClick={() => setActiveSettingsSection("goal")} />
             <SettingsMenuRow title="テーマ設定" description={`${props.resolvedTheme === "dark" ? "ダーク" : "ライト"} / ${themeAccentLabels[props.themeAccent]} / ${themeCharacterLabels[props.themeCharacter]}`} icon={<Palette size={18} />} onClick={() => setActiveSettingsSection("theme")} />
           </section>
           <section className="compact-card divide-y divide-line overflow-hidden">
             <SettingsMenuRow title="記録設定" description={`旅行 ${isTravelModeEnabled ? "ON" : "OFF"} / 一時停止 ${isPauseModeEnabled ? "ON" : "OFF"}`} icon={<CalendarDays size={18} />} onClick={() => setActiveSettingsSection("records")} />
             <SettingsMenuRow title="マイメニュー" description={`登録済み ${userMenuItems.length}件`} icon={<Store size={18} />} onClick={() => setActiveSettingsSection("myMenu")} />
             <SettingsMenuRow title="マイトレ" description={`登録済み ${myTrainingExercises.length}件`} icon={<Dumbbell size={18} />} onClick={() => setActiveSettingsSection("myTraining")} />
-            <SettingsMenuRow title="一般" description={props.profile?.name || "ユーザー名 未設定"} icon={<Settings size={18} />} onClick={() => setActiveSettingsSection("general")} />
           </section>
         </>
       )}
@@ -10196,6 +10288,38 @@ function SettingsTab(props: {
             <h2 className="text-lg font-black">{activeSectionTitle.title}</h2>
             <p className="mt-1 text-xs font-semibold text-moss">{activeSectionTitle.subtitle}</p>
           </div>
+        </section>
+      )}
+
+      {activeSettingsSection === "profile" && (
+        <section className="compact-card divide-y divide-line overflow-hidden">
+          <SettingsMenuRow
+            title="基本情報・表示"
+            description={`ユーザー名 ${props.profile?.name || "未設定"} / Homeの表示`}
+            icon={<CircleUserRound size={18} />}
+            onClick={() => {
+              setSettingsParent("profile");
+              setActiveSettingsSection("general");
+            }}
+          />
+          <SettingsMenuRow
+            title="ゴール"
+            description={`${phaseLabels[goalDraft.phase]} / ${calculated?.target_calories ?? "-"}kcal`}
+            icon={<SlidersHorizontal size={18} />}
+            onClick={() => {
+              setSettingsParent("profile");
+              setActiveSettingsSection("goal");
+            }}
+          />
+          <SettingsMenuRow
+            title="活動量プロフィール"
+            description={props.settings?.activity_profile ? `${activityLabels[props.settings.activity_profile.activity_level]} / 確認済み` : "普段の活動量を確認"}
+            icon={<Activity size={18} />}
+            onClick={() => {
+              setSettingsParent("profile");
+              setActiveSettingsSection("activity");
+            }}
+          />
         </section>
       )}
 
@@ -10612,30 +10736,6 @@ function SettingsTab(props: {
             const result = await props.syncCloud();
             props.showToast(result.state === "synced" ? "クラウドと同期しました" : result.message);
           }}><RotateCcw size={17} />今すぐ同期</button>
-          {cloudEmail && (
-            <div className="mt-4 border-t border-line pt-4">
-              <p className="text-xs font-bold text-ink">ログイン中: {cloudEmail}</p>
-              <button className="secondary-button mt-2 w-full" onClick={async () => {
-                const confirmed = window.confirm(
-                  "現在の記録をクラウドへ同期してから、この端末の表示用データを消去し、ログアウトします。続けますか？",
-                );
-                if (!confirmed) return;
-                const result = await props.syncCloud();
-                if (result.state !== "synced") {
-                  props.showToast(`ログアウトを中止しました。${result.message}`);
-                  return;
-                }
-                await db.delete();
-                for (const key of Object.keys(localStorage)) {
-                  if (key.startsWith("phase-log-")) localStorage.removeItem(key);
-                }
-                window.location.assign("/cdn-cgi/access/logout");
-              }}><LogOut size={17} />ログアウト／ユーザー切替</button>
-              <p className="mt-2 text-[11px] font-semibold leading-relaxed text-moss">
-                Cloudflare Access全体からログアウトします。別のメールで再ログインすると、そのユーザーの記録だけが読み込まれます。
-              </p>
-            </div>
-          )}
         </section>
       )}
 
@@ -10918,15 +11018,13 @@ function SettingsTab(props: {
       </section>}
 
       {activeSettingsSection === "general" && <section className="compact-card p-4 text-sm text-moss">
-        <p className="font-semibold text-ink">100% トラッカー</p>
-        <p className="mt-2">記録はこの端末に保存されます。端末の故障や機種変更に備えて、定期的にエクスポートしてください。</p>
-        <p className="mt-2 text-xs">レポート名: <span className="font-bold text-ink">{props.profile?.name || "未設定"}</span></p>
+        <p className="font-semibold text-ink">ユーザープロフィール</p>
+        <p className="mt-2 text-xs">表示名: <span className="font-bold text-ink">{props.profile?.name || "未設定"}</span></p>
         <div className="mt-3 grid gap-2">
           <button className="secondary-button w-full" onClick={() => {
             setProfileNameDraft(props.profile?.name ?? "");
             setIsProfileNameOpen(true);
           }}><Pencil size={17} />ユーザー名変更</button>
-          <button className="secondary-button w-full" onClick={props.openUpdateNotes}><FileText size={17} />更新内容</button>
           <button className="secondary-button w-full" onClick={handleDeveloperModeTap}>
             <Settings size={17} />{props.isDeveloperTestMode ? "開発者モードメニュー" : "開発者モード"}
             {props.isDeveloperTestMode && <span className="mini-chip ml-auto">テスト中</span>}
@@ -11155,6 +11253,7 @@ function Onboarding({ refresh }: { refresh: () => Promise<void> }) {
   const [stepKey, setStepKey] = useState<OnboardingStepKey>("welcome");
   const [activityMode, setActivityMode] = useState<OnboardingActivityMode>();
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [showRestoreOptions, setShowRestoreOptions] = useState(false);
   const [draft, setDraft] = useState({
     name: "Nick",
     height_cm: 170,
@@ -11306,16 +11405,23 @@ function Onboarding({ refresh }: { refresh: () => Promise<void> }) {
     if (stepKey === "welcome") {
       return (
         <div className="grid gap-3">
-          <button className="primary-button w-full" onClick={() => setStepKey("name")}><ChevronRight size={18} />初期設定を始める</button>
-          <section className="onboarding-panel">
-            <p className="text-sm font-bold text-ink">すでにバックアップがある場合</p>
-            <p className="mt-2 text-sm leading-relaxed text-moss">これまでの記録と設定を引き継げます。読み込むと、この端末のデータはバックアップの内容に置き換わります。</p>
-            <label className="secondary-button mt-4 w-full cursor-pointer">
-              <Archive size={17} />バックアップから復元
-              <input className="hidden" type="file" accept="application/json" onChange={restoreBackup} />
-            </label>
-            {restoreMessage && <p className={`mt-3 rounded-2xl px-3 py-2 text-xs font-semibold ${restoreFailed ? "bg-clay/10 text-clay" : "bg-leaf/10 text-ink"}`}>{restoreMessage}</p>}
-          </section>
+          <button className="primary-button onboarding-start-button w-full" onClick={() => setStepKey("name")}>
+            初期設定を始める<ChevronRight size={18} />
+          </button>
+          <button className="onboarding-restore-link" onClick={() => setShowRestoreOptions((current) => !current)}>
+            <Archive size={14} />以前のバックアップを使う
+            <ChevronRight className={showRestoreOptions ? "rotate-90" : ""} size={14} />
+          </button>
+          {showRestoreOptions && (
+            <section className="onboarding-restore-panel">
+              <p className="text-xs leading-relaxed text-moss">旧バージョンのJSONがある場合のみ使用します。読み込むと、この端末のデータが置き換わります。</p>
+              <label className="secondary-button mt-3 w-full cursor-pointer">
+                <Archive size={17} />JSONを選んで復元
+                <input className="hidden" type="file" accept="application/json" onChange={restoreBackup} />
+              </label>
+              {restoreMessage && <p className={`mt-3 rounded-2xl px-3 py-2 text-xs font-semibold ${restoreFailed ? "bg-clay/10 text-clay" : "bg-leaf/10 text-ink"}`}>{restoreMessage}</p>}
+            </section>
+          )}
         </div>
       );
     }
@@ -11500,21 +11606,35 @@ function Onboarding({ refresh }: { refresh: () => Promise<void> }) {
             <NumberInput label="C g (0=自動)" value={draft.target_carbs_g} onChange={(value) => setDraft({ ...draft, target_carbs_g: Math.max(0, Math.round(value)) })} />
           </div>
         )}
-        <p className="rounded-3xl bg-surface p-3 text-xs leading-relaxed text-moss">開始後はSettingsの「ゴール設定」と「活動量プロフィール」から変更できます。データは端末内に保存されます。</p>
+        <p className="rounded-3xl bg-surface p-3 text-xs leading-relaxed text-moss">開始後はSettingsの「プロフィール」から、ゴールと活動量を変更できます。Cloudflare版ではログイン中の自分の領域へ自動保存されます。</p>
       </div>
     );
   };
 
   if (stepKey === "welcome") {
     return (
-      <main className="onboarding-shell mx-auto min-h-screen max-w-[430px] px-4 py-8 text-ink">
+      <main className="onboarding-shell onboarding-welcome-shell mx-auto min-h-screen max-w-[430px] px-4 py-8 text-ink">
         <div className="onboarding-card onboarding-welcome-card compact-card p-5">
+          <div className="onboarding-welcome-aura" aria-hidden="true">
+            <span />
+            <span />
+            <span />
+          </div>
           <section className="onboarding-welcome">
-            <p className="text-xs font-black uppercase tracking-[0.16em] text-moss">100% Tracker</p>
-            <h1 className="mt-3 text-4xl font-black tracking-normal">Welcome</h1>
-            <p className="mt-3 text-sm leading-relaxed text-moss">食事・体重・ワークアウトを記録して、自分の100%を目指します。</p>
+            <div className="onboarding-welcome-mark">
+              <span>100%</span>
+              <Sparkles size={19} />
+            </div>
+            <p className="onboarding-welcome-kicker mt-6">100% Tracker</p>
+            <h1 className="onboarding-welcome-title mt-3">Welcome.</h1>
+            <p className="mt-3 text-sm font-semibold leading-relaxed text-moss">食事・体重・ワークアウトをひとつに。<br />今日の積み重ねを、自分の100%へ。</p>
+            <div className="onboarding-welcome-features mt-6">
+              <span><Utensils size={15} />食事</span>
+              <span><Weight size={15} />体重</span>
+              <span><Dumbbell size={15} />運動</span>
+            </div>
           </section>
-          <div className="mt-8">{renderStep()}</div>
+          <div className="relative z-10 mt-8">{renderStep()}</div>
         </div>
       </main>
     );
