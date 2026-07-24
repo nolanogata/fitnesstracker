@@ -767,7 +767,7 @@ async function handleWorkersAiAdvice(context: PagesContext, user: AppUser) {
   if (!contentScope || !question || !adviceContext) {
     throw new HttpError(400, "advice_content_required", "相談内容を入力してください。");
   }
-  const model = context.env.WORKERS_AI_ADVICE_MODEL || "@cf/qwen/qwen3-30b-a3b-fp8";
+  const model = context.env.WORKERS_AI_ADVICE_MODEL || "@cf/meta/llama-3.1-8b-instruct-fast";
   const requestHash = await sha256Hex(`advice:${user.id}:${requestId}:${model}:${adviceContext}:${question}`);
   const cached = await context.env.DB.prepare(`
     SELECT response_json, model FROM ai_result_cache

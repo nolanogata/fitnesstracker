@@ -80,7 +80,7 @@ const env = {
   },
   ACCESS_TEAM_DOMAIN: "example.cloudflareaccess.com",
   ACCESS_AUD: "test-audience",
-  WORKERS_AI_ADVICE_MODEL: "@cf/qwen/qwen3-30b-a3b-fp8",
+  WORKERS_AI_ADVICE_MODEL: "@cf/meta/llama-3.1-8b-instruct-fast",
   AI_ADVICE_PER_USER_DAILY_LIMIT: "3",
   AI_ADVICE_GLOBAL_DAILY_LIMIT: "30",
   DEV_AUTH_BYPASS: "1",
@@ -118,7 +118,7 @@ for (let index = 0; index < 3; index += 1) {
   assert.equal(response.status, 200);
   const payload = await response.json() as { result: { headline: string }; model: string };
   assert.equal(payload.result.headline, "今週は記録の安定を優先");
-  assert.equal(payload.model, "@cf/qwen/qwen3-30b-a3b-fp8");
+  assert.equal(payload.model, "@cf/meta/llama-3.1-8b-instruct-fast");
 }
 
 const limited = await advise(4);
