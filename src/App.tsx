@@ -9056,6 +9056,7 @@ function SettingsTab(props: {
   const [aiAdviceTurnIndex, setAiAdviceTurnIndex] = useState(0);
   const [aiAdviceLoading, setAiAdviceLoading] = useState(false);
   const [aiAdviceError, setAiAdviceError] = useState("");
+  const [aiAdviceNotice, setAiAdviceNotice] = useState("");
   const [aiFollowUp, setAiFollowUp] = useState("");
   const [externalAiPaste, setExternalAiPaste] = useState("");
   const [memoryDraft, setMemoryDraft] = useState("");
@@ -10222,6 +10223,7 @@ function SettingsTab(props: {
     setReportMode(preset.mode);
     setReportContentScope(preset.contentScope);
     setAiAdviceError("");
+    setAiAdviceNotice("");
     setAiAdviceStep("details");
   };
   const currentAiAdviceQuestion = aiAdviceTopic
@@ -10262,6 +10264,7 @@ function SettingsTab(props: {
     });
     setAiAdviceLoading(true);
     setAiAdviceError("");
+    setAiAdviceNotice("");
     try {
       const response = await requestAiAdvice({
         requestId: makeId("advice_request"),
@@ -10289,17 +10292,29 @@ function SettingsTab(props: {
         updated_at: timestamp,
       };
       const nextMemory = applyAdviceMemoryUpdates(aiAdviceMemory, response.result, timestamp);
-      await db.transaction("rw", [db.ai_consultations, db.ai_advice_memory], async () => {
-        await db.ai_consultations.put(consultation);
-        await db.ai_advice_memory.put(nextMemory);
-      });
+      let historySaved = true;
+      try {
+        await db.transaction("rw", [db.ai_consultations, db.ai_advice_memory], async () => {
+          await db.ai_consultations.put(consultation);
+          await db.ai_advice_memory.put(nextMemory);
+        });
+      } catch (error) {
+        historySaved = false;
+        console.error("ai_advice_local_save_error", error);
+      }
       setAiAdviceThreadId(threadId);
       setAiAdviceTurnIndex(turnIndex + 1);
       setAiAdviceResponse(response.result);
       setAiAdviceStep("result");
       setAiAdviceMemory(nextMemory);
       setAiFollowUp("");
-      await loadAiConsultationData();
+      if (historySaved) {
+        await loadAiConsultationData().catch((error) => {
+          console.error("ai_advice_history_reload_error", error);
+        });
+      } else {
+        setAiAdviceNotice("回答は取得できましたが、この端末の相談履歴には保存できませんでした。回答はこの画面で確認できます。");
+      }
     } catch (error) {
       const adviceError = error as AiAdviceError;
       setAiAdviceError(adviceError.message);
@@ -10315,6 +10330,7 @@ function SettingsTab(props: {
     setAiAdviceTopic(undefined);
     setAiAdviceDetail("");
     setAiAdviceError("");
+    setAiAdviceNotice("");
     setAiFollowUp("");
   };
   const importExternalAiHandoff = async () => {
@@ -10612,6 +10628,11 @@ function SettingsTab(props: {
                 setReportWizardStep("period");
                 setAiConsultationView("external");
               }}><Copy size={17} />自分のAIで相談する</button>
+            </div>
+          )}
+          {aiAdviceNotice && (
+            <div className="mt-4 rounded-2xl border border-line p-3 text-sm">
+              <p className="font-bold">{aiAdviceNotice}</p>
             </div>
           )}
         </section>
