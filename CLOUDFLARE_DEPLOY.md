@@ -70,6 +70,9 @@ Cloudflare Workers AI. It does not use the Gemini API key or Gemini quota.
 - Production: 3 advice calls per user and 30 total per UTC day.
 - Preview: 1 advice call per user and 5 total per UTC day.
 - Model: `@cf/meta/llama-3.1-8b-instruct-fast`（Cloudflare JSON Mode対応・低コスト）。
+- Advice responses use `json_object` mode and are validated by the Worker. Avoid
+  a complex `json_schema` here because Cloudflare documents that schema
+  compliance can occasionally fail even on supported models.
 
 Keep the account on Workers Free. When the Workers AI free allocation or the
 app limit is reached, the API fails closed and the UI offers the external-AI

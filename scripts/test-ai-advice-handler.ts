@@ -13,6 +13,16 @@ type Prepared = {
 const counters = new Map<string, number>();
 const statements: Prepared[] = [];
 const aiInputs: Array<Record<string, unknown>> = [];
+const adviceResult = {
+  headline: "今週は記録の安定を優先",
+  summary: "記録できている日の傾向を基準に、小さく調整してください。",
+  observations: ["7日間の食事記録は5日です。"],
+  evidence: [{ label: "食事記録", value: "5/7日", period: "直近7日" }],
+  actions: ["夕食だけでも記録を続ける"],
+  cautions: ["未記録日を0kcalとして評価しない"],
+  follow_up_question: "続けにくい曜日はありますか？",
+  memory_updates: [{ category: "focus", text: "食事記録の継続を優先" }],
+};
 const fakeDb = {
   prepare(sql: string): Prepared {
     const statement: Prepared = {
@@ -64,18 +74,9 @@ const env = {
   AI: {
     async run(_model: string, input: Record<string, unknown>) {
       aiInputs.push(input);
-      return {
-        response: {
-          headline: "今週は記録の安定を優先",
-          summary: "記録できている日の傾向を基準に、小さく調整してください。",
-          observations: ["7日間の食事記録は5日です。"],
-          evidence: [{ label: "食事記録", value: "5/7日", period: "直近7日" }],
-          actions: ["夕食だけでも記録を続ける"],
-          cautions: ["未記録日を0kcalとして評価しない"],
-          follow_up_question: "続けにくい曜日はありますか？",
-          memory_updates: [{ category: "focus", text: "食事記録の継続を優先" }],
-        },
-      };
+      if (aiInputs.length === 1) return { response: adviceResult };
+      if (aiInputs.length === 2) return { response: JSON.stringify(adviceResult) };
+      return { choices: [{ message: { content: `\`\`\`json\n${JSON.stringify(adviceResult)}\n\`\`\`` } }] };
     },
   },
   ACCESS_TEAM_DOMAIN: "example.cloudflareaccess.com",
@@ -126,6 +127,10 @@ assert.equal(limited.status, 429);
 assert.equal((await limited.json() as { error: string }).error, "user_advice_limit");
 assert.equal(aiInputs.length, 3);
 assert.ok(aiInputs.every((input) => !JSON.stringify(input).includes("tester@example.com")));
+assert.ok(aiInputs.every((input) => (
+  (input.response_format as { type?: string } | undefined)?.type === "json_object"
+)));
+assert.ok(aiInputs.every((input) => !("json_schema" in ((input.response_format as Record<string, unknown> | undefined) ?? {}))));
 assert.ok(statements.some((statement) => statement.sql.includes("INSERT INTO ai_usage_daily")));
 assert.ok(statements.some((statement) => statement.sql.includes("INSERT INTO ai_result_cache")));
 

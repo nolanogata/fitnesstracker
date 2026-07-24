@@ -784,6 +784,8 @@ async function handleWorkersAiAdvice(context: PagesContext, user: AppUser) {
     "医療診断、薬の指示、極端なカロリー制限、危険な減量を提案しないでください。",
     "根拠は与えられた期間と値だけを使い、存在しない数値を作らないでください。",
     "回答は日本語で、実行案は最大3つに絞ってください。",
+    "説明文やMarkdownを付けず、次の形のJSONオブジェクトだけを返してください。",
+    JSON.stringify(aiAdviceResponseExample),
   ].join("\n");
   let result: AiAdviceApiResponse;
   try {
@@ -795,12 +797,10 @@ async function handleWorkersAiAdvice(context: PagesContext, user: AppUser) {
       temperature: 0.2,
       max_tokens: 900,
       response_format: {
-        type: "json_schema",
-        json_schema: aiAdviceJsonSchema,
+        type: "json_object",
       },
-    }) as { response?: unknown };
-    const value = typeof raw?.response === "string" ? JSON.parse(raw.response) : raw?.response ?? raw;
-    result = normalizeAiAdviceResponse(value);
+    });
+    result = normalizeAiAdviceResponse(parseWorkersAiAdviceValue(raw));
   } catch (error) {
     await recordAiUsage(context.env.DB, user.id, usageDate, model, false, "advice");
     console.error("workers_ai_advice_error", error instanceof Error ? error.message : String(error));
@@ -894,41 +894,44 @@ type AiAdviceApiResponse = {
   }>;
 };
 
-const aiAdviceJsonSchema = {
-  type: "object",
-  properties: {
-    headline: { type: "string" },
-    summary: { type: "string" },
-    observations: { type: "array", items: { type: "string" } },
-    evidence: {
-      type: "array",
-      items: {
-        type: "object",
-        properties: {
-          label: { type: "string" },
-          value: { type: "string" },
-          period: { type: "string" },
-        },
-        required: ["label", "value"],
-      },
-    },
-    actions: { type: "array", items: { type: "string" } },
-    cautions: { type: "array", items: { type: "string" } },
-    follow_up_question: { type: "string" },
-    memory_updates: {
-      type: "array",
-      items: {
-        type: "object",
-        properties: {
-          category: { type: "string", enum: ["constraint", "focus", "experiment", "pattern", "unresolved"] },
-          text: { type: "string" },
-        },
-        required: ["category", "text"],
-      },
-    },
-  },
-  required: ["headline", "summary", "observations", "evidence", "actions", "cautions", "memory_updates"],
+const aiAdviceResponseExample = {
+  headline: "短い見出し",
+  summary: "記録を踏まえた結論",
+  observations: ["記録から確認できる事実"],
+  evidence: [{ label: "根拠名", value: "記録内の値", period: "対象期間" }],
+  actions: ["次に試す具体策"],
+  cautions: ["断定を避ける点や安全上の注意"],
+  follow_up_question: "必要なら追加で確認する質問。なければ空文字",
+  memory_updates: [{ category: "focus", text: "次回へ引き継ぐ短い要点" }],
 };
+
+function parseWorkersAiAdviceValue(raw: unknown): unknown {
+  const root = asRecord(raw);
+  const response = root?.response;
+  if (response && typeof response === "object") return response;
+  if (typeof response === "string") return parseJsonObjectText(response);
+  const choices = Array.isArray(root?.choices) ? root.choices : [];
+  const firstChoice = asRecord(choices[0]);
+  const message = asRecord(firstChoice?.message);
+  if (message?.content && typeof message.content === "object") return message.content;
+  if (typeof message?.content === "string") return parseJsonObjectText(message.content);
+  if (raw && typeof raw === "object" && !root?.response && choices.length === 0) return raw;
+  throw new Error("invalid_advice_response_shape");
+}
+
+function parseJsonObjectText(text: string): unknown {
+  const trimmed = text.trim()
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/\s*```$/i, "");
+  try {
+    return JSON.parse(trimmed);
+  } catch {
+    const start = trimmed.indexOf("{");
+    const end = trimmed.lastIndexOf("}");
+    if (start >= 0 && end > start) return JSON.parse(trimmed.slice(start, end + 1));
+    throw new Error("invalid_advice_json");
+  }
+}
 
 function normalizeAiAdviceResponse(value: unknown): AiAdviceApiResponse {
   if (!value || typeof value !== "object") throw new Error("invalid_advice_response");
